@@ -1,0 +1,8 @@
+resolver: lts-22.6
+packages:
+- hwm
+save-hackage-creds: false
+extra-deps:
+- fastsum-0.1.1.1
+- list-extras-0.4.1.6
+- type-aligned-0.9.6

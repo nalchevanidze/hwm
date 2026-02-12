@@ -1,0 +1,14 @@
+resolver: lts-18.10
+packages:
+- hwm
+save-hackage-creds: false
+extra-deps:
+- aeson-1.4.4.0
+- base-orphans-0.8.1
+- fastsum-0.1.0.0
+- megaparsec-7.0.5
+- modern-uri-0.3.0.0
+- relude-0.3.0
+- retry-0.8.1.0
+- time-compat-1.9.2.2
+- websockets-0.12.6.0

@@ -1,0 +1,37 @@
+language: en
+useGitignore: true
+ignorePaths:
+  - cspell.yml
+  - package.json
+  - ./.stack-work
+  - ./**/*.cabal
+  - ./**/*.json
+  - ./node_modules
+overrides:
+  - filename: "**/docs/APIReference-*.md"
+    ignoreRegExpList:
+      - /href="[^"]*"/
+ignoreRegExpList:
+  - u\{[0-9a-f]{1,8}\}
+words:
+  - Aeson
+  - bimap
+  - concat
+  - Creds
+  - fmap
+  - hackage
+  - hwm
+  - mconcat
+  - mempty
+  - metavar
+  - normalise
+  - pkgs
+  - Posix
+  - prefs
+  - Relude
+  - sdist
+  - Semigroup
+  - subparser
+  - uncons
+  - uncurry
+  - unwords

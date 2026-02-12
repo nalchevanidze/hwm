@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        ghc: ["9.6.3"]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    name: GHC ${{ matrix.ghc }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nalchevanidze/hmm/actions/ghc@main
+        with:
+          ghc: ${{ matrix.ghc }}
+
+      - name: Install dependencies
+        run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+
+      - name: Build
+        run: stack build --fast
+
+      - name: Build Bench and Haddock
+        run: stack build --fast --no-run-benchmarks --haddock --no-haddock-deps
+
+  hlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: lint
+        run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true

@@ -1,0 +1,15 @@
+.DS_Store
+stack.yaml.lock
+.stack-work/
+.idea/
+dist/
+docs/vendor
+out/
+dist-newstyle/
+node_modules/
+.cspellcache
+.env
+.vscode/*.log
+__ormolu__
+.envrc
+.hwm
