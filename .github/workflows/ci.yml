@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: nalchevanidze/hmm/actions/cli@main
       - name: format
-        run: hwm format --check
+        run: hmm format --check
 
   artifacts:
     strategy:
