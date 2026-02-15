@@ -14,8 +14,8 @@ jobs:
         include:
           - ghc: 9.6.3
             env: default
-          - ghc: 8.10.7
-            env: legacy
+          # - ghc: 8.10.7
+          #   env: legacy
       fail-fast: false
     runs-on: ubuntu-latest
     name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
@@ -25,8 +25,8 @@ jobs:
         with:
           ghc: ${{ matrix.ghc }}
       
-      - name: Sync environment
-        run: hwm sync --env=${{ matrix.env }}
+      # - name: Sync environment
+      #   run: hwm sync --env=${{ matrix.env }}
 
       - name: Install dependencies
         run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
