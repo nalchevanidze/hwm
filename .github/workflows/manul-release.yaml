@@ -1,0 +1,61 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g., v0.0.1)'
+        required: true
+        default: 'v0.0.1'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  publish_release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: Release ${{ github.event.inputs.version }}
+          draft: false
+          prerelease: false
+
+  upload_artifact:
+    needs: publish_release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+          - os: macos-latest
+            target: mac-os
+          - os: windows-latest
+            target: windows
+
+    name: Upload Artifact ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup GHC
+        uses: nalchevanidze/hmm/actions/ghc@main
+
+      - name: Package
+        uses: nalchevanidze/hmm/actions/pkg@main
+        with:
+          package: hwm
+          executable: hwm
+          smoke_test: -v
+          upload_url: ${{ needs.publish_release.outputs.upload_url }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
