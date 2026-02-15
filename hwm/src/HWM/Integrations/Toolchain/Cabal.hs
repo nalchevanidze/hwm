@@ -13,9 +13,10 @@ import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.Verbosity (normal)
 import HWM.Core.Formatting (Status (..))
-import HWM.Core.Pkg (Pkg (..), pkgYamlPath)
+import HWM.Core.Pkg (Pkg (..), cabalFilePath, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Domain.ConfigT (ConfigT)
+import HWM.Runtime.Files (remove)
 import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
@@ -35,8 +36,8 @@ isError PackageDistSuspiciousWarn {} = False
 isError PackageDistSuspicious {} = False
 
 validateHackage :: Pkg -> FilePath -> ConfigT [Status]
-validateHackage pkg cabalFilePath = do
-  gpd <- liftIO $ readGenericPackageDescription normal cabalFilePath
+validateHackage pkg path = do
+  gpd <- liftIO $ readGenericPackageDescription normal path
   let ls = checkPackage gpd Nothing
   for_ ls $ \l -> do
     injectIssue
@@ -44,13 +45,14 @@ validateHackage pkg cabalFilePath = do
           { issueMessage = "Invalid package: " <> show l,
             issueSeverity = if isError l then SeverityError else SeverityWarning,
             issueTopic = pkgMemberId pkg,
-            issueDetails = Just GenericIssue {issueFile = cabalFilePath}
+            issueDetails = Just GenericIssue {issueFile = path}
           }
       )
   pure (map toStatus ls)
 
 syncCabal :: Pkg -> ConfigT Status
 syncCabal pkg = do
+  remove (cabalFilePath pkg)
   let programName = ProgramName $ toString $ pkgName pkg
   let ops = setTarget (pkgYamlPath pkg) $ setProgramName programName defaultOptions
   Result {..} <- liftIO $ hpackResult ops

@@ -16,6 +16,7 @@ module HWM.Core.Pkg
     pkgYamlPath,
     pkgId,
     scanPkgs,
+    cabalFilePath,
   )
 where
 
@@ -66,6 +67,9 @@ getPkgInfo = readYaml . normalise . ensurePackageYaml
 
 pkgFile :: Pkg -> FilePath -> FilePath
 pkgFile Pkg {..} file = normalise $ joinPath [pkgDirPath, file]
+
+cabalFilePath :: Pkg -> FilePath
+cabalFilePath Pkg {..} = normalise $ joinPath [pkgDirPath, toString pkgName <> ".cabal"]
 
 pkgId :: Pkg -> Text
 pkgId Pkg {pkgGroup, pkgMemberId} = pkgGroup <> "/" <> pkgMemberId
