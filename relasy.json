@@ -1,0 +1,13 @@
+{
+  "pkgs": {
+    "cli": "hwm",
+    "lib": "hwm"
+  },
+  "project": {
+    "type": "custom",
+    "pkg": "https://hackage.haskell.org/package/{{PKG}}",
+    "version": "hwm version",
+    "bump": "hwm version {{BUMP}}",
+    "postBump": "hwm sync"
+  }
+}

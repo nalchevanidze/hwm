@@ -1,0 +1,14 @@
+# hash: 5de52d9ec780a3b2befdf3fc91b9d9d7e14068bb2954067d51be8fa7c5d62368
+version: 0.0.1
+bounds: ">= 0.0.0 && < 0.1.0"
+groups:
+  - name: libs
+    packages:
+      - hwm
+builds:
+  - ghc: 9.6.3
+    resolver: lts-22.6
+    allow-newer: true
+dependencies:
+  - unordered-containers  >=  0.2.8     &&  <   0.3.0
+  - yaml                  >=  0.8.32    &&  <   1.0.0
