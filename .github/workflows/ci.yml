@@ -21,12 +21,12 @@ jobs:
     name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hmm/actions/ghc@main
+      - uses: nalchevanidze/hwm/actions/ghc@main
         with:
           ghc: ${{ matrix.ghc }}
       
-      # - name: Sync environment
-      #   run: hwm sync --env=${{ matrix.env }}
+      - name: Sync environment
+        run: hwm sync --env=${{ matrix.env }}
 
       - name: Install dependencies
         run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
@@ -61,10 +61,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hmm/actions/ghc@main
+      - uses: nalchevanidze/hwm/actions/ghc@main
 
       - name: Binary
-        uses: nalchevanidze/hmm/actions/pkg@main
+        uses: nalchevanidze/hwm/actions/pkg@main
         with:
           package: hwm
           executable: hwm

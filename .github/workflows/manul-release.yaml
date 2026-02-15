@@ -49,10 +49,10 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Setup GHC
-        uses: nalchevanidze/hmm/actions/ghc@main
+        uses: nalchevanidze/hwm/actions/ghc@main
 
       - name: Package
-        uses: nalchevanidze/hmm/actions/pkg@main
+        uses: nalchevanidze/hwm/actions/pkg@main
         with:
           package: hwm
           executable: hwm

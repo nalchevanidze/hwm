@@ -1,0 +1,16 @@
+name: Install HWM
+description: Install and setup HWM CLI tool
+inputs:
+  version:
+    description: Version of HWM to install
+    required: false
+    default: 1.0.0
+
+runs:
+  using: "composite"
+  steps:
+    - uses: nalchevanidze/hwm/actions/install@main
+      with:
+        version: ${{ inputs.version }}
+        repo: nalchevanidze/hwm
+        app: hwm

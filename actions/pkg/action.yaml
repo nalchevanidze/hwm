@@ -1,0 +1,90 @@
+name: "Stack Build Zip"
+description: "Build a Stack package executable and produce a cross-platform zip"
+inputs:
+  package:
+    description: "Stack package name to build (e.g. morpheus-graphql-code-gen)"
+    required: true
+  executable:
+    description: "Executable base name (e.g. awesome-tool). Must match the name of the executable produced by stack build (without .exe suffix)."
+    required: true
+  zip_name:
+    description: "Zip base name (defaults to executable base name). Produces <zip_name>.zip"
+    required: false
+    default: ""
+  stack_build_args:
+    description: "Extra args passed to 'stack build'"
+    required: false
+    default: ""
+  smoke_test:
+    description: "Optional args for a smoke test run after packaging. Leave empty to skip. Example: 'about' or '--version'"
+    required: false
+    default: ""
+  upload_url:
+    description: "If provided, uploads the produced zip to this GitHub Release upload_url. Leave empty to skip."
+    required: false
+    default: ""
+  github_token:
+    description: "Token used to upload the release asset (pass secrets.GITHUB_TOKEN or a PAT). Required if upload_url is set."
+    required: false
+    default: ""
+
+outputs:
+  zip_file:
+    description: "Path to the produced zip file"
+    value: "${{ steps.build.outputs.zip_file }}"
+  bin_file:
+    description: "OS-specific executable filename (adds .exe on Windows)"
+    value: "${{ steps.build.outputs.bin_file }}"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install 7-Zip (7z)
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          choco install -y 7zip
+          echo "/c/Program Files/7-Zip" >> "$GITHUB_PATH"
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          brew update
+          brew install p7zip
+        else
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+        fi
+
+    - name: Build & package
+      id: build
+      shell: bash
+      run: bash "${{ github.action_path }}/scripts/build.sh" --package "${{ inputs.package }}" --app "${{ inputs.executable }}"
+
+    - name: Smoke test (optional)
+      if: "${{ inputs.smoke_test != '' }}"
+      shell: bash
+      run: |
+        set -euo pipefail
+        ZIP_PATH="${{ steps.build.outputs.zip_file }}"
+        BIN="${{ steps.build.outputs.bin_file }}"
+
+        rm -rf out_smoke
+        mkdir -p out_smoke
+        7z x "$ZIP_PATH" -o"./out_smoke" -y
+
+        if [[ "$RUNNER_OS" != "Windows" ]]; then
+          chmod +x "./out_smoke/$BIN" || true
+        fi
+
+        "./out_smoke/$BIN" ${{ inputs.smoke_test }}
+        rm -rf out_smoke
+
+    - name: Upload Release Asset (optional)
+      if: "${{ inputs.upload_url != '' }}"
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: "${{ inputs.github_token }}"
+      with:
+        upload_url: ${{ inputs.upload_url }}
+        asset_path: ${{ steps.build.outputs.zip_file }}
+        asset_name: ${{  steps.build.outputs.zip_file }}
+        asset_content_type: application/zip
