@@ -13,6 +13,7 @@ where
 import Data.Time (getCurrentTime)
 import HWM.Core.Common (Name)
 import Relude
+import System.Directory (createDirectoryIfMissing)
 import qualified System.IO as TIO
 
 logRoot :: FilePath
@@ -26,6 +27,7 @@ log name table content = do
   timestamp <- liftIO getCurrentTime
   let logInfo = [("TIMESTAMP", show timestamp)]
   let path = logPath name
+  liftIO $ createDirectoryIfMissing True logRoot
   let boxTop = "┌──────────────────────────────────────────────────────────"
       boxBottom = "└──────────────────────────────────────────────────────────"
       rows = map (\(k, v) -> "│ " <> k <> ": " <> v) (table <> logInfo)
