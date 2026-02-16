@@ -1,70 +1,68 @@
 # hash: 6630a1e10310ac71031c1b9a1e28264c29e8437104656cd10ed34286918f0c67
 name: hwm
-version: 0.0.3
-bounds: ">= 0.0.0 && < 0.1.0"
+version: 0.0.4
+bounds: '>= 0.0.0 && < 0.1.0'
 workspace:
-  - name: libs
-    members:
-      - hwm
-    publish: true
+- name: libs
+  members:
+  - hwm
+  publish: true
 matrix:
   default-environment: default
   environments:
-    - name: legacy
-      ghc: 8.10.7
-      resolver: lts-18.10
-      extra-deps:
-        aeson: 1.4.4.0
-        base-orphans: 0.8.1
-        fastsum: 0.1.0.0
-        megaparsec: 7.0.5
-        modern-uri: 0.3.0.0
-        relude: 0.3.0
-        retry: 0.8.1.0
-        time-compat: 1.9.2.2
-        websockets: 0.12.6.0
-    - name: default
-      ghc: 9.6.3
-      resolver: lts-22.6
-      extra-deps:
-        fastsum: 0.1.1.1
-        list-extras: 0.4.1.6
-        type-aligned: 0.9.6
+  - name: legacy
+    ghc: 8.10.7
+    resolver: lts-18.10
+    extra-deps:
+      aeson: 1.4.4.0
+      base-orphans: 0.8.1
+      fastsum: 0.1.0.0
+      megaparsec: 7.0.5
+      modern-uri: 0.3.0.0
+      relude: 0.3.0
+      retry: 0.8.1.0
+      time-compat: 1.9.2.2
+      websockets: 0.12.6.0
+  - name: default
+    ghc: 9.6.3
+    resolver: lts-22.6
+    extra-deps:
+      fastsum: 0.1.1.1
+      list-extras: 0.4.1.6
+      type-aligned: 0.9.6
 registry:
-  - Cabal                 >=  3.8       &&  <=  3.16.1.0
-  - Glob                  >=  0.7.0     &&  <   1.0.0
-  - aeson                 >=  1.4.4     &&  <   3.0.0
-  - ansi-terminal         >=  0.11.3    &&  <=  1.1.5
-  - async                 >=  2.2.4     &&  <   2.3.0
-  - base                  >=  4.7.0     &&  <   5.0.0
-  - base16-bytestring     >=  1.0.0     &&  <   2.0.0
-  - bytestring            >=  0.10.4    &&  <=  0.12.2.0
-  - containers            >=  0.4.2.1   &&  <=  0.8
-  - cryptohash-sha256     >=  0.11.100  &&  <=  0.11.102.1
-  - directory             >=  1.0       &&  <=  1.3.10.1
-  - filepath              >=  1.1.0     &&  <=  1.5.5.0
-  - hpack                 >=  0.36.0    &&  <=  0.39.1
-  - modern-uri            >=  0.1.0.0   &&  <   1.0.0
-  - mtl                   >=  2.0.0     &&  <   2.6.0
-  - optparse-applicative  >=  0.12.0    &&  <   0.20.0
-  - process               >=  1.0.0     &&  <   2.0.0
-  - relude                >=  0.3.0     &&  <   2.0.0
-  - req                   >=  3.0.0     &&  <=  3.13.4
-  - stm                   >=  2.4       &&  <   2.6.0
-  - text                  >=  1.2.3     &&  <   3.0.0
-  - time                  >=  1.9.2     &&  <   2.0.0
-  - transformers          >=  0.5.6     &&  <   0.7.0
-  - typed-process         >=  0.1.0     &&  <   0.4.0
-  - unordered-containers  >=  0.2.8     &&  <   0.3.0
-  - yaml                  >=  0.8.32    &&  <   1.0.0
+- Cabal                 >=  3.8       &&  <=  3.16.1.0
+- Glob                  >=  0.7.0     &&  <   1.0.0
+- aeson                 >=  1.4.4     &&  <   3.0.0
+- ansi-terminal         >=  0.11.3    &&  <=  1.1.5
+- async                 >=  2.2.4     &&  <   2.3.0
+- base                  >=  4.7.0     &&  <   5.0.0
+- base16-bytestring     >=  1.0.0     &&  <   2.0.0
+- bytestring            >=  0.10.4    &&  <=  0.12.2.0
+- containers            >=  0.4.2.1   &&  <=  0.8
+- cryptohash-sha256     >=  0.11.100  &&  <=  0.11.102.1
+- directory             >=  1.0       &&  <=  1.3.10.1
+- filepath              >=  1.1.0     &&  <=  1.5.5.0
+- hpack                 >=  0.36.0    &&  <=  0.39.1
+- modern-uri            >=  0.1.0.0   &&  <   1.0.0
+- mtl                   >=  2.0.0     &&  <   2.6.0
+- optparse-applicative  >=  0.12.0    &&  <   0.20.0
+- process               >=  1.0.0     &&  <   2.0.0
+- relude                >=  0.3.0     &&  <   2.0.0
+- req                   >=  3.0.0     &&  <=  3.13.4
+- stm                   >=  2.4       &&  <   2.6.0
+- text                  >=  1.2.3     &&  <   3.0.0
+- time                  >=  1.9.2     &&  <   2.0.0
+- transformers          >=  0.5.6     &&  <   0.7.0
+- typed-process         >=  0.1.0     &&  <   0.4.0
+- unordered-containers  >=  0.2.8     &&  <   0.3.0
+- yaml                  >=  0.8.32    &&  <   1.0.0
 scripts:
   build: stack build --fast
   clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
-  install: stack install
-  lint:
-    curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
-    -s .
-  test: stack test {TARGET} --fast
   format: sh scripts/format.sh
   format:fix: sh scripts/format.sh --fix
-
+  install: stack install
+  lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
+    -s .
+  test: stack test {TARGET} --fast
