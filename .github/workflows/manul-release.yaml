@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release Version (e.g., v0.0.1)'
+        description: "Release Version (e.g., v0.0.1)"
         required: true
-        default: 'v0.0.1'
+        default: "v0.0.1"
 
 permissions:
   contents: write
@@ -33,6 +33,17 @@ jobs:
         with:
           name: hwm-logs
           path: .hwm/logs/
+
+      - name: Show sdist.log
+        if: always()
+        run: |
+          if [ -f .hwm/logs/sdist.log ]; then
+            echo "::group::.hwm/logs/sdist.log"
+            cat .hwm/logs/sdist.log
+            echo "::endgroup::"
+          else
+            echo "No .hwm/logs/sdist.log found"
+          fi
 
       - name: Create Release
         id: create_release
