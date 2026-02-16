@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           hwm
-version:        0.0.4
+version:        0.0.5
 synopsis:       Haskell Workspace Manager - Orchestrates Stack, Cabal, and HLS
 description:    HWM (Haskell Workspace Manager) manages multi-package Haskell projects by
                 generating and synchronizing configuration files for Stack, Cabal, Hpack, and HLS
