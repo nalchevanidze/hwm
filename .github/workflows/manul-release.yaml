@@ -18,6 +18,19 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
+      - name: Upload Packages
+        run: hwm publish libs
+        env:
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+
+      - name: Upload HWM logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hwm-logs
+          path: .hwm/logs/
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1

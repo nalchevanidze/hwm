@@ -18,11 +18,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: nalchevanidze/hwm/actions/ghc@main
 
+
       - name: Upload Packages
         run: hwm publish libs
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+
+      - name: Upload HWM logs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hwm-logs
+          path: .hwm/logs/
 
       - name: Publish GitHub Release (from merged release PR)
         uses: nalchevanidze/relasy/actions/publish-release@v1.1.1
