@@ -16,6 +16,7 @@ module HWM.Core.Result
     Severity (..),
     IssueDetails (..),
     fromEither,
+    maxSeverity,
   )
 where
 
@@ -63,11 +64,13 @@ class MonadIssue m where
   catchIssues :: m a -> m (Maybe Severity, a)
   mapIssue :: (Issue -> Issue) -> m a -> m a
 
+maxSeverity :: [Issue] -> Maybe Severity
+maxSeverity [] = Nothing
+maxSeverity issues_ = Just $ maximum $ map issueSeverity issues_
+
 instance MonadIssue (Result Issue) where
   injectIssue issue = Success () [issue]
-  catchIssues m@(Success _ ls) = do
-    let l = if null ls then Nothing else Just (maximum $ map issueSeverity ls)
-     in (l,) <$> m
+  catchIssues m@(Success _ ls) = (maxSeverity ls,) <$> m
   catchIssues m@Failure {} = (Just SeverityError,) <$> m
   mapIssue f (Success x ls) = Success x (map f ls)
   mapIssue f (Failure e) = Failure (f <$> e)
