@@ -21,29 +21,29 @@ jobs:
       - uses: actions/checkout@v4
       - uses: nalchevanidze/hwm/actions/ghc@main
 
-      - name: Upload Packages
-        run: hwm publish libs
-        env:
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+      # - name: Upload Packages
+      #   run: hwm publish libs
+      #   env:
+      #     HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+      #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
 
-      - name: Upload HWM logs artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: hwm-logs
-          path: .hwm/logs/
+      # - name: Upload HWM logs artifact
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: hwm-logs
+      #     path: .hwm/logs/
 
-      - name: Show sdist.log
-        if: always()
-        run: |
-          if [ -f .hwm/logs/sdist.log ]; then
-            echo "::group::.hwm/logs/sdist.log"
-            cat .hwm/logs/sdist.log
-            echo "::endgroup::"
-          else
-            echo "No .hwm/logs/sdist.log found"
-          fi
+      # - name: Show sdist.log
+      #   if: always()
+      #   run: |
+      #     if [ -f .hwm/logs/sdist.log ]; then
+      #       echo "::group::.hwm/logs/sdist.log"
+      #       cat .hwm/logs/sdist.log
+      #       echo "::endgroup::"
+      #     else
+      #       echo "No .hwm/logs/sdist.log found"
+      #     fi
 
       - name: Create Release
         id: create_release
