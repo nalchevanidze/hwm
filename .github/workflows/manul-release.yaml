@@ -18,6 +18,12 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
+      - name: Upload Packages
+        run: hwm publish libs
+        env:
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -47,11 +53,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup GHC
-        uses: nalchevanidze/hwm/actions/ghc@main
+      - uses: nalchevanidze/hwm/actions/ghc@main
 
-      - name: Package
+      - name: Upload Executable Binary
         uses: nalchevanidze/hwm/actions/pkg@main
         with:
           package: hwm
