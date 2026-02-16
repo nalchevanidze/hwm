@@ -60,23 +60,22 @@ fi
 usage() {
   cat >&2 <<'EOF'
 Usage:
-  install.sh --repo <owner/repo> --app <name> --version <tag> [--bin-dir <dir>]
+  install.sh --version <tag> [--bin-dir <dir>]
 
 Notes:
-  - Downloads: https://github.com/<repo>/releases/download/<tag>/<app>-<os>-<arch>.zip
+  - Downloads: https://github.com/nalchevanidze/hwm/releases/download/<tag>/hwm-<os>-<arch>.zip
   - If tag doesn't work, it automatically retries with/without leading 'v'.
 EOF
 }
 
-REPO=""
-APP_NAME=""
+# Hardcoded values
+REPO="nalchevanidze/hwm"
+APP_NAME="hwm"
 VERSION=""
 BIN_DIR=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --repo)    REPO="${2:-}"; shift 2;;
-    --app)     APP_NAME="${2:-}"; shift 2;;
     --version) VERSION="${2:-}"; shift 2;;
     --bin-dir) BIN_DIR="${2:-}"; shift 2;;
     -h|--help) usage; exit 0;;
@@ -84,8 +83,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$REPO" || -z "$APP_NAME" || -z "$VERSION" ]]; then
-  echo "ERROR: --repo, --app, and --version are required." >&2
+if [[ -z "$VERSION" ]]; then
+  echo "ERROR: --version is required." >&2
   usage
   exit 2
 fi

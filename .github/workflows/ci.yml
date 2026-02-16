@@ -42,15 +42,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: lint
-        run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
+        run: curl -sSL https://raw.githubusercontent.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
 
   format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hmm/actions/cli@main
-      - name: format
-        run: hmm format --check
+      - run: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s
 
   artifacts:
     strategy:
