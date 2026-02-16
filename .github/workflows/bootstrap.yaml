@@ -11,6 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Create/ensure required labels exist
-        uses: nalchevanidze/relasy/actions/bootstrap-labels@v1.1.0
+        uses: nalchevanidze/relasy/actions/bootstrap-labels@v1.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
