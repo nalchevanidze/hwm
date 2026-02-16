@@ -17,7 +17,7 @@ import HWM.Core.Formatting
     statusIcon,
   )
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Core.Result (Issue)
+import HWM.Core.Result (Issue, Severity (..), maxSeverity)
 import HWM.Domain.ConfigT (ConfigT, askVersion, askWorkspaceGroups)
 import HWM.Domain.Workspace (WorkspaceGroup, canPublish, memberPkgs, pkgGroupName, selectGroup)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
@@ -28,7 +28,7 @@ failIssues :: [Issue] -> ConfigT ()
 failIssues [] = pure ()
 failIssues issues = do
   printSummary issues
-  liftIO exitFailure
+  when (maxSeverity issues == Just SeverityError) $ liftIO exitFailure
 
 collectGroups :: Maybe Name -> [WorkspaceGroup] -> ConfigT [WorkspaceGroup]
 collectGroups Nothing ws = pure $ filter canPublish ws
