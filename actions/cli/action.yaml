@@ -4,7 +4,7 @@ inputs:
   version:
     description: Version of HWM to install
     required: false
-    default: 0.0.3
+    default: 0.0.4
 
 runs:
   using: "composite"
