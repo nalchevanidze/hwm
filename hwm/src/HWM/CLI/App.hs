@@ -84,7 +84,7 @@ parseOutdatedOptions :: Parser OutdatedOptions
 parseOutdatedOptions =
   OutdatedOptions
     <$> flag 'f' "fix" "Automatically fix outdated dependencies"
-    <*> flag 'F' "force" "Force fix outdated dependencies"
+    <*> flag 'F' "force" "Force fix outdated dependencies. including warning-level updates (e.g., major version bumps)"
 
 parseCommand :: Parser Command
 parseCommand =
