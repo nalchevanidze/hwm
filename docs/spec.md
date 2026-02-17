@@ -21,6 +21,7 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool that replaces manual c
 | Workspace Groups | Logical collections that resolve package directories, prefixes, publish flags |
 | Build Matrix     | Named GHC/resolver environments + filters for scripts/sync                    |
 | Registry         | Central dependency bounds shared across packages                              |
+| Bounds Auditing  | Ensures dependency bounds are safe: not inside matrix window, warns if outside|
 | Scripts          | Template commands with `{TARGET}` substitution                                |
 
 ---
@@ -102,6 +103,11 @@ type BuildEnv = {
 
 // Dependency Specification
 type Dependency = string; // Format: "pkg-name >= X.Y && < Z.W"
+
+// Bounds Safety:
+// - HWM audits dependency bounds using the oldest environment in the matrix and the latest Stackage nightly.
+// - Bounds must not be inside the matrix window (between oldest and newest tested envs); if so, an error is raised.
+// - If bounds are outside the matrix window, a warning is shown (may break on untested versions).
 
 // Version (SemVer)
 type Version = string; // Format: "X.Y.Z" or "X.Y.Z.W"
@@ -509,46 +515,82 @@ scripts:
 
 ### 3. hwm outdated [--fix]
 
-**Purpose:** Check for newer dependency versions on Hackage
+
+**Purpose:**
+Detect and fix dependency version bounds in your registry by comparing them against the actual package sets provided by Stackage LTS (for your oldest tested environment) and the latest Stackage Nightly snapshot. This ensures that your declared bounds are both safe and meaningful: all supported versions are tested, and you are not allowing versions that could break your build.
+
+**How It Works & Why:**
+
+it fetches the exact package sets from Stackage snapshots:
+
+- **Oldest LTS**: Represents the minimum version of each dependency that your build matrix tests. This is the lower bound of your "supported window".
+- **Latest Nightly**: Represents the maximum version of each dependency that is available and can be tested. This is the upper bound of your "supported window".
+
+By comparing your registry bounds to these two snapshots, HWM can:
+- Guarantee that every version you claim to support is actually tested in CI (no false sense of safety).
+- Prevent accidental breakage from untested versions (e.g., if you allow a version newer than Nightly, you risk breakage as soon as it is released).
+- Warn you if your bounds are too restrictive (excluding versions that are tested and available).
 
 **Behavior:**
 
-1. Clears version cache (state.json)
+1. Clears version cache (state.json) to ensure fresh snapshot data.
 2. For each package in `registry`:
-   - Queries Hackage API: `https://hackage.haskell.org/package/{pkg}/preferred`
-   - Compares latest version with current upper bound
-3. Reports outdated packages
-4. If `--fix`:
-   - Updates `registry` in hwm.yaml
-   - Runs `hwm sync` to propagate changes
+  - Fetches version information from the oldest Stackage LTS and the latest Stackage Nightly snapshot (e.g., https://github.com/commercialhaskell/stackage-snapshots/blob/master/nightly/2026/2/17.yaml).
+  - Compares your declared lower and upper bounds to the actual minimum and maximum versions available in these snapshots.
+3. Audits each dependency's bounds:
+  - **Error:** If your bounds are inside the matrix window (i.e., you allow only a subset of the tested versions), this is considered dangerous: you may miss regressions or breakages. HWM will raise an error and require you to fix it.
+  - **Warning:** If your bounds are outside the matrix window (i.e., you allow versions not tested by any environment), this is risky: you may claim support for versions that are not actually tested. HWM will warn you, but not block you by default.
+  - **OK:** If your bounds exactly match the matrix window (from oldest LTS to latest Nightly), your registry is safe and fully covered by your build matrix.
+4. Reports all outdated, unsafe, or misaligned dependencies in a clear audit table.
+5. If `--fix` is used:
+  - Updates your registry in hwm.yaml to match the tested window (fixing only errors by default).
+  - Runs `hwm sync` to propagate changes to all generated files.
+6. If `--fix --force` is used:
+  - Also fixes warnings, expanding or contracting your bounds to exactly match the tested window.
 
 **Options:**
 
-- `-f, --fix`: Auto-update bounds and sync
+- `-f, --fix`: Auto-update bounds and sync (only errors: bounds inside matrix window)
+- `--force`: With --fix, also fixes warnings (bounds outside matrix window)
+
+**Note:**
+Hackage preferred versions are no longer used for auditing or updating bounds. All dependency version checks are performed using Stackage LTS and Nightly snapshots only. This guarantees that your registry reflects only what is actually tested in your build matrix.
 
 **Examples:**
 
 ```bash
-# Check for updates (read-only)
+# Check for updates and audit bounds
 hwm outdated
 
-# Auto-apply updates
+# Auto-apply updates (fix errors only)
 hwm outdated --fix
+
+# Auto-apply updates (fix errors and warnings)
+hwm outdated --fix --force
 ```
 
 **Output (Check Mode):**
+
 
 ```
 • update dependencies
   mode .. check
 
-• registry
-  megaparsec .... ↑ 9.7.0
+• audit
+  Glob                  >= 0.7.0     ->   0.10.1        &&    <  1.0.0       ->   0.10.2
+  aeson                 >= 1.4.4     ->   1.5.6.0       &&    <  3.0.0       ->   2.2.3.0
+  ...
 
-•  warnings
+• ▌ errors ▌
+
   • registry
-  ├─ Found 1 outdated dependencies: Run 'hwm outdated --fix' to update.
+  └─- • Found 11 outdated dependencies: Run 'hwm outdated --fix --force' to update.
+  └─- • Found 2 outdated dependencies: Run 'hwm outdated --fix' to update.
 ```
+
+**Note:**
+- `--fix` will only fix errors (bounds inside the matrix window).
+- To also fix warnings (bounds outside the matrix window), use `--fix --force`.
 
 **Output (Fix Mode):**
 
