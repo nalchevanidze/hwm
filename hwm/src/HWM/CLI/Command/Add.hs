@@ -1,16 +1,43 @@
-module HWM.CLI.Command.Add (addCommand, runAdd) where
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
-import Options.Applicative
-import HWM.Core.Options (globalOptionsParser)
+module HWM.CLI.Command.Add (runAdd, AddOptions (..)) where
 
-addCommand :: Mod CommandFields (IO ())
-addCommand = command "add" $ info (helper <*> addOptionsParser) 
-  (progDesc "Add a package to the workspace")
+import HWM.Core.Common (Name)
+import HWM.Domain.ConfigT (ConfigT, askWorkspaceGroups)
+import HWM.Runtime.UI (putLine)
+import Relude
+import qualified Data.Set as S
+import HWM.Domain.Workspace (resolveTargets, pkgGroupName, memberPkgs)
+import HWM.Core.Formatting (chalk, Color (..), genMaxLen)
+import HWM.Core.Pkg (Pkg(..), pkgYamlPath)
+import HWM.Runtime.Files (rewrite_, statusM)
+import HWM.Integrations.Toolchain.Cabal (syncCabal)
 
-addOptionsParser :: Parser (IO ())
-addOptionsParser = runAdd <$> argument str (metavar "PACKAGE" <> help "Package name to add")
+data AddOptions = AddOptions
+  { packageName :: Name,
+    workspaceId :: Name
+  }
+  deriving (Show)
 
-runAdd :: String -> IO ()
-runAdd pkg = do
-  putStrLn $ "Adding package: " ++ pkg
-  -- TODO: Implement actual add logic
+runAdd :: AddOptions -> ConfigT ()
+runAdd AddOptions {..} = do
+
+  ws <- askWorkspaceGroups
+  targets <- fmap (S.toList . S.fromList) (resolveTargets ws [workspaceId])
+  for_ groups $ \g -> do
+    putLine ""
+    putLine $ "• " <> chalk Bold (pkgGroupName g)
+    dirs <- memberPkgs g
+    let maxLen = genMaxLen (map pkgMemberId dirs)
+    for_ dirs $ \pkg -> do
+      let path = pkgYamlPath pkg
+      package <- statusM path (rewrite_ path (updatePackage pkg))
+      cabal <- syncCabal pkg
+      -- putLine
+      --   ( subPathSign
+      --       <> padDots maxLen (pkgMemberId pkg)
+      --       <> displayStatus [("pkg", package), ("cabal", cabal)]
+      --   )
+      pure ()

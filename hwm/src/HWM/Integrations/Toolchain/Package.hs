@@ -62,16 +62,8 @@ instance FromJSON Package where
 instance ToJSON Package where
   toJSON = genericToJSON aesonYAMLOptions
 
-updatePackage :: Pkg -> Maybe Package -> ConfigT Package
-updatePackage pkg Nothing =
-  throwError
-    $ Issue
-      { issueTopic = pkgMemberId pkg,
-        issueMessage = "could not find package file",
-        issueSeverity = SeverityWarning,
-        issueDetails = Just GenericIssue {issueFile = pkgYamlPath pkg}
-      }
-updatePackage pkg (Just Package {..}) = do
+mapPackage :: Pkg -> Package -> ConfigT Package
+mapPackage pkg Package {..} = do
   let path = pkgYamlPath pkg
       pkgId = pkgMemberId pkg
   newLibrary <- traverse (updateLibrary pkgId "library" path) library
@@ -131,15 +123,28 @@ syncPackages = sectionWorkspace $ do
     putLine $ "• " <> chalk Bold (pkgGroupName g)
     dirs <- memberPkgs g
     let maxLen = genMaxLen (map pkgMemberId dirs)
-    for_ dirs $ \pkg -> do
-      let path = pkgYamlPath pkg
-      package <- statusM path (rewrite_ path (updatePackage pkg))
-      cabal <- syncCabal pkg
-      putLine
-        ( subPathSign
-            <> padDots maxLen (pkgMemberId pkg)
-            <> displayStatus [("pkg", package), ("cabal", cabal)]
-        )
+    for_ dirs $ \pkg -> updatePackage maxLen (mapPackage pkg) pkg
+
+updatePackage :: Int -> (Package -> ConfigT Package) -> Pkg -> ConfigT ()
+updatePackage maxLen f pkg = do
+  let path = pkgYamlPath pkg
+  package <- statusM path (rewrite_ path maybePackage)
+  cabal <- syncCabal pkg
+  putLine
+    ( subPathSign
+        <> padDots maxLen (pkgMemberId pkg)
+        <> displayStatus [("pkg", package), ("cabal", cabal)]
+    )
+  where
+    maybePackage Nothing =
+      throwError
+        $ Issue
+          { issueTopic = pkgMemberId pkg,
+            issueMessage = "could not find package file",
+            issueSeverity = SeverityWarning,
+            issueDetails = Just GenericIssue {issueFile = pkgYamlPath pkg}
+          }
+    maybePackage (Just package) = f package
 
 collectPackageDependencies :: Package -> [Dependency]
 collectPackageDependencies Package {..} =
