@@ -13,6 +13,7 @@ module HWM.Integrations.Toolchain.Package
     deriveRegistry,
     packageDiffs,
     validatePackage,
+    updatePackage,
   )
 where
 

@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module HWM.CLI.Command.Add (runAdd, AddOptions (..)) where
 
@@ -14,6 +15,7 @@ import HWM.Core.Formatting (chalk, Color (..), genMaxLen)
 import HWM.Core.Pkg (Pkg(..), pkgYamlPath)
 import HWM.Runtime.Files (rewrite_, statusM)
 import HWM.Integrations.Toolchain.Cabal (syncCabal)
+import HWM.Integrations.Toolchain.Package
 
 data AddOptions = AddOptions
   { packageName :: Name,
@@ -23,21 +25,10 @@ data AddOptions = AddOptions
 
 runAdd :: AddOptions -> ConfigT ()
 runAdd AddOptions {..} = do
-
   ws <- askWorkspaceGroups
   targets <- fmap (S.toList . S.fromList) (resolveTargets ws [workspaceId])
-  for_ groups $ \g -> do
-    putLine ""
-    putLine $ "• " <> chalk Bold (pkgGroupName g)
-    dirs <- memberPkgs g
-    let maxLen = genMaxLen (map pkgMemberId dirs)
-    for_ dirs $ \pkg -> do
-      let path = pkgYamlPath pkg
-      package <- statusM path (rewrite_ path (updatePackage pkg))
-      cabal <- syncCabal pkg
-      -- putLine
-      --   ( subPathSign
-      --       <> padDots maxLen (pkgMemberId pkg)
-      --       <> displayStatus [("pkg", package), ("cabal", cabal)]
-      --   )
-      pure ()
+  putLine ""
+  putLine $ "• " <> chalk Bold packageName
+  let maxLen = genMaxLen (map pkgMemberId targets)
+  for_ targets $ \pkg -> updatePackage maxLen pure pkg
+
