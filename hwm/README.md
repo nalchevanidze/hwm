@@ -88,26 +88,6 @@ Visit the GitHub repository for:
 * Contributing guidelines
 * Examples and use cases
 
-## More Than a Config Generator: Your Project Auditor & Assistant
-
-HWM is not just a config generator—it is an active assistant for project maintenance and safety:
-
-- **Auditing Power:** HWM audits your dependency bounds against real, tested package sets from Stackage LTS and Nightly snapshots. This means:
-  - You only claim support for versions you actually test in CI.
-  - You avoid breakage from untested versions (e.g., new releases on Hackage that aren't in Stackage yet).
-  - You get clear errors if your bounds are too narrow (missing tested versions) or warnings if they're too wide (including untested versions).
-- **Why Stackage Snapshots?**
-  - Stackage snapshots are curated, reproducible sets of package versions. By aligning your bounds with these, you guarantee that your project is always buildable and testable in real environments.
-- **Automated Fixes:** With `hwm outdated --fix` and `--force`, you can automatically update your bounds to match the tested window, keeping your project safe and future-proof with minimal effort.
-
-### Example: Auditing in Action
-
-Suppose your registry claims to support `aeson >= 1.4.4 && < 3.0.0`, but your matrix only tests up to `aeson-2.2.3.0` (latest Nightly). HWM will warn you that you are claiming support for versions you don't test. If you restrict your bounds to `>= 2.0 && < 2.2.0` but your matrix tests from `1.4.4` to `2.2.3.0`, HWM will error, since you are missing tested versions.
-
-**This makes HWM a true assistant for long-term project health, not just a file generator.**
-
-- **No More Bounds Headaches:** HWM automates and audits your dependency bounds, so you never have to manually guess or maintain safe version ranges again. Your bounds always reflect what is actually tested, eliminating a major source of maintenance pain in Haskell projects.
-
 ## Origin
 
 HWM was born out of necessity to manage the [Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql) ecosystem with 15+ packages across multiple GHC versions.
