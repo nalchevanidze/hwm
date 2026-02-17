@@ -1,20 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.CLI.Command.Outdated (runOutdated) where
 
 import Data.Foldable (Foldable (maximum, minimum))
-import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, padDots)
+import HWM.Core.Formatting (Color (..), Format (..), chalk)
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (SeverityWarning))
-import HWM.Domain.Bounds (BoundsAudit (..), auditBounds, updateDepBounds)
+import HWM.Domain.Bounds (BoundsAudit (..), auditBounds, formatAudit, updateDepBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
 import HWM.Domain.Dependencies (mapDeps, traverseDeps)
 import HWM.Domain.Matrix (BuildEnvironment (..), getBuildEnvroments)
 import HWM.Integrations.Toolchain.Package (syncPackages)
 import HWM.Runtime.Cache (getSnapshot)
-import HWM.Runtime.UI (indent, putLine, section, sectionConfig, sectionTableM)
+import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
 import Relude hiding (maxBound, minBound)
 
 runOutdated :: Bool -> ConfigT ()
@@ -30,16 +29,14 @@ runOutdated autoFix = do
 
   audits <- mapDeps (auditBounds legacy bleedingEdge) originalRegistry
 
-  let c1 = genMaxLen (map (format . auditPkgName) audits)
-  let c2 = genMaxLen (map (format . minBound) audits)
-  let c3 = genMaxLen (map (format . maxBound) audits)
-
   if null audits
     then do
       indent 1 $ putLine "all dependencies are up to date."
     else do
       indent 1 $ do
-        for_ audits $ \BoundsAudit {..} -> putLine $ padDots c1 (format auditPkgName) <> padDots c2 (format minBound) <> padDots c3 (format maxBound)
+        printGenTable
+          $ (\a -> [format $ auditPkgName a] <> formatAudit (minBound a) <> formatAudit (maxBound a))
+          <$> audits
 
       registry' <- traverseDeps updateDepBounds originalRegistry
 

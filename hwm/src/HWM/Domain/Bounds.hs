@@ -21,8 +21,8 @@ module HWM.Domain.Bounds
     auditBounds,
     BoundAudit (..),
     BoundCompliance (..),
-    formatLowerStatus,
     BoundsAudit (..),
+    formatAudit,
   )
 where
 
@@ -66,7 +66,7 @@ data Bound = Bound
 instance Format Bound where
   format Bound {..} = unwords $ (toText restriction <> eq) : [toText version]
     where
-      eq = if orEquals then "=" else ""
+      eq = if orEquals then "=" else " "
 
 instance Ord Bound where
   compare a b =
@@ -199,17 +199,17 @@ data BoundAudit = BoundAudit
   }
   deriving (Show, Eq)
 
-formatLowerStatus :: BoundCompliance -> Version -> Text
-formatLowerStatus Conflict version = chalk Red $ "(↓" <> format version <> ")"
-formatLowerStatus Unverified version = chalk Yellow $ "(↑" <> format version <> ")"
-formatLowerStatus Missing version = chalk Cyan $ " ○ (" <> format version <> ")"
-formatLowerStatus Valid version = chalk Green $ "(✓" <> format version <> ")"
+formatStatus :: BoundCompliance -> Text
+formatStatus Conflict = chalk Red "-"
+formatStatus Unverified = chalk Yellow "+"
+formatStatus Missing = chalk Cyan " !"
+formatStatus Valid = chalk Green "✓"
 
-instance Format BoundAudit where
-  format (BoundAudit Nothing Nothing _) = "x"
-  format (BoundAudit Nothing (Just x) _) = "○ " <> format x
-  format (BoundAudit (Just x) Nothing _) = format x
-  format (BoundAudit (Just reg) (Just mat) auditStatus) = format reg <> formatLowerStatus auditStatus mat
+formatAudit :: BoundAudit -> [Text]
+formatAudit (BoundAudit Nothing Nothing _) = ["", ""]
+formatAudit (BoundAudit Nothing (Just x) s) = [formatStatus s <> " " <> chalk Dim (format x), ""]
+formatAudit (BoundAudit (Just x) Nothing s) = [formatStatus s <> " " <> chalk Dim (format x), ""]
+formatAudit (BoundAudit (Just reg) (Just mat) s) = [formatStatus s <> " " <> chalk Dim (format reg), " -> " <> format mat]
 
 data BoundsAudit = BoundsAudit
   { auditPkgName :: PkgName,

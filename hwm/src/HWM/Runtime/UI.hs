@@ -23,13 +23,14 @@ module HWM.Runtime.UI
     printSummary,
     statusIndicator,
     runSpinner,
+    printGenTable,
   )
 where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (MonadError (..))
-import Data.List (groupBy, maximum)
+import Data.List (groupBy, maximum, (!!))
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import HWM.Core.Formatting (Color (..), Format (..), Status (..), chalk, indentBlockNum, padDots, renderSummaryStatus, subPathSign)
@@ -125,6 +126,18 @@ sectionConfig size = section "config" . tableM size
 forTable :: (MonadUI m) => Int -> [a] -> (a -> (Text, Text)) -> m ()
 forTable minSize rows f =
   tableM minSize (map (second pure . f) rows)
+
+printGenTable :: (MonadUI m) => [[Text]] -> m ()
+printGenTable rows =
+  let n = if null rows then 0 else maximum (map length rows)
+      padRow r = take n (r ++ repeat "")
+      paddedRows = map padRow rows
+      colWidths = [maximum (0 : map (T.length . (!! i)) paddedRows) | i <- [0 .. n - 1]]
+      formatRow row =
+        let padded = padRow row
+            cells = zipWith (`T.justifyLeft` ' ') colWidths padded
+         in putLine $ T.intercalate "  " cells
+   in traverse_ formatRow rows
 
 isError :: Issue -> Bool
 isError i = issueSeverity i == SeverityError
