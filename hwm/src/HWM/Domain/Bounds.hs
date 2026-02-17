@@ -140,7 +140,7 @@ updateBound forceOverride res compliance registryBound matrixVersion
   | otherwise = registryBound <|> matrixBound
   where
     preferMatrix = matrixBound <|> registryBound
-    matrixBound = Bound res False <$> matrixVersion
+    matrixBound = Bound res True <$> matrixVersion
 
 auditBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> BoundsAudit
 auditBounds legacy nightly name Bounds {..} =
