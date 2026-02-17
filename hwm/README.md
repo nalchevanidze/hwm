@@ -15,7 +15,11 @@ In a typical Haskell monorepo:
 
 ## The Solution
 
+
 You define the "what" in `hwm.yaml`. HWM handles the "how."
+
+**Automatic Bounds Auditing:**
+HWM checks your dependency bounds using the oldest environment in your build matrix and the latest Stackage nightly. Bounds must not be inside the tested matrix window (error), and if they are outside, you get a warning (may break on untested versions). This ensures your registry bounds are always safe and meaningful.
 
 ```yaml
 name: my-project
@@ -68,7 +72,9 @@ hwm run build
 * `hwm status` - Check if generated files are in sync
 * `hwm sync` - Regenerate all configuration files
 * `hwm run <script>` - Run scripts across build matrix
-* `hwm outdated` - Check for dependency updates
+* `hwm outdated` - Check for dependency updates and audit bounds safety
+  * `--fix` will only fix errors (bounds that are inside the matrix window).
+  * To also fix warnings (bounds outside the matrix window), use `--fix --force`.
 * `hwm version <bump>` - Atomically bump versions
 * `hwm publish <group>` - Publish to Hackage
 

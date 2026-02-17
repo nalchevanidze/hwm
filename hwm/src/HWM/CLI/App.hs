@@ -18,6 +18,7 @@ import HWM.CLI.Command
     runCommand,
   )
 import HWM.CLI.Command.Init (InitOptions (..))
+import HWM.CLI.Command.Outdated (OutdatedOptions (..))
 import HWM.CLI.Command.Run (ScriptOptions (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Parsing (Parse (..), parseOptions)
@@ -41,7 +42,7 @@ import Options.Applicative
     switch,
   )
 import Options.Applicative.Builder (str, strOption)
-import Relude hiding (ByteString, fix)
+import Relude
 
 -- Helper for building commands (unchanged, just added type signature clarity)
 commands :: [(String, String, Parser a)] -> Parser a
@@ -79,6 +80,12 @@ parseInitOptions =
     <$> flag 'f' "force" "Force override existing hwm.yaml"
     <*> optional (argument str (metavar "NAME" <> help "Optional project name (defaults to current directory name)"))
 
+parseOutdatedOptions :: Parser OutdatedOptions
+parseOutdatedOptions =
+  OutdatedOptions
+    <$> flag 'f' "fix" "Automatically fix outdated dependencies"
+    <*> flag 'F' "force" "Force fix outdated dependencies. including warning-level updates (e.g., major version bumps)"
+
 parseCommand :: Parser Command
 parseCommand =
   commands
@@ -92,7 +99,7 @@ parseCommand =
       ),
       ( "outdated",
         "Check for newer dependencies on Hackage.",
-        Outdated <$> switch (long "fix" <> short 'f' <> help "Write changes to hwm.yaml")
+        Outdated <$> parseOutdatedOptions
       ),
       ( "publish",
         "Upload packages to Hackage/Registry.",

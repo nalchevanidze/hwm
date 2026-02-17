@@ -15,6 +15,7 @@ Haskell has excellent build systems (`stack`, `cabal`, `nix`) and a powerful IDE
 
 ---
 
+
 ## 🧩 The "Missing Link" Architecture
 
 HWM sits one layer above your toolchain to ensure consistency without replacing standard workflows.
@@ -43,9 +44,13 @@ In a typical Haskell monorepo (like `morpheus-graphql`), maintaining consistency
 
 ---
 
+
 ## ✅ The Solution
 
 You define the "what" (structure, bounds, matrix) in `hwm.yaml`. HWM handles the "how."
+
+
+> HWM is not just a config generator—it also acts as an assistant for project maintenance and safety, auditing your dependency bounds against real, tested package sets and helping you keep your project healthy.
 
 ### 1. Centralized Config (`hwm.yaml`)
 
@@ -124,8 +129,6 @@ cabal install hwm
 
 ### Zero-Config Onboarding
 
-### Zero-Config Onboarding
-
 Already have a Stack project? Transform it into an HWM workspace in seconds. 
 HWM automatically detects your packages, infers dependencies, and generates the configuration.
 
@@ -151,18 +154,34 @@ hwm run build
 
 ## 🛠️ Key Workflows
 
-### 📦 Automated Dependency Management
 
-Replace external bots with a built-in command that understands your workspace.
+### 📦 Automated Dependency Management & Auditing
+
+HWM's `outdated` command is more than a simple update checker:
+
+- **Auditing Power:** HWM audits your dependency bounds against real, tested package sets from Stackage LTS and Nightly snapshots. This means:
+  - You only claim support for versions you actually test in CI.
+  - You avoid breakage from untested versions (e.g., new releases on Hackage that aren't in Stackage yet).
+  - You get clear errors if your bounds are too narrow (missing tested versions) or warnings if they're too wide (including untested versions).
+- **Why Stackage Snapshots?**
+  - Stackage snapshots are curated, reproducible sets of package versions. By aligning your bounds with these, you guarantee that your project is always buildable and testable in real environments.
+- **Automated Fixes:** With `hwm outdated --fix` and `--force`, you can automatically update your bounds to match the tested window, keeping your project safe and future-proof with minimal effort.
+
+**This makes HWM a true assistant for long-term project health, not just a file generator.**
+
+- **No More Bounds Headaches:** HWM automates and audits your dependency bounds, so you never have to manually guess or maintain safe version ranges again. Your bounds always reflect what is actually tested, eliminating a major source of maintenance pain in Haskell projects.
 
 ```bash
-# Check Hackage for updates to your registry
+# Check Hackage for updates to your registry and audit bounds
 hwm outdated
 
 # Auto-update bounds in hwm.yaml and sync all packages
 hwm outdated --fix
-
 ```
+
+<p align="center">
+  <img src="images/outdated.png" alt="HWM Outdated Command" width="600">
+</p>
 
 ### 🚀 Synchronized Releases
 
@@ -188,7 +207,7 @@ Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM prov
 | **Config Source** | Decentralized (30+ files) | Centralized (`flake.nix`) | **Centralized (`hwm.yaml`)** |
 | **Primary Role** | Build Tool | Build & Deployment | **Workspace Manager** |
 | **Atomic Versioning** | ❌ Manual (File by file) | ❌ Manual (Edit .cabal) | **✅ One Command (`hwm version`)** |
-| **Publishing** | ❌ Manual `cabal upload` | ❌ Custom CI Scripts | **✅ Atomic `hwm publish**` |
+| **Publishing** | ❌ Manual `cabal upload` | ❌ Custom CI Scripts | **✅ Atomic `hwm publish`** |
 | **Dependency Sync** | ❌ Manual (Error-prone) | ⚠️ Pinned (Lockfile) | **✅ Automatic Registry** |
 | **Matrix Scripts** | ❌ Manual Context Switch | ⚠️ Complex Shells | **✅ Parallel (`hwm run --env=all`)** |
 | **IDE Support** | ⚠️ Often Broken | ⚠️ Requires Plugins | **✅ Auto-Generated (`hie.yaml`)** |
@@ -199,9 +218,9 @@ Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM prov
 
 Detailed specifications and internal guides can be found in `docs/`:
 
-* **[Feature Specification](https://www.google.com/search?q=docs/spec.md)** – The complete Public API, configuration schema (`hwm.yaml`), and CLI behavior.
-* **[Architecture](https://www.google.com/search?q=docs/architecture.md)** – Internal design principles, data flow, and module structure.
-* **[Roadmap](https://www.google.com/search?q=docs/roadmap.md)** – Future plans and upcoming features.
+* **[Feature Specification](docs/spec.md)** – The complete Public API, configuration schema (`hwm.yaml`), and CLI behavior.
+* **[Architecture](docs/architecture.md)** – Internal design principles, data flow, and module structure.
+* **[Roadmap](docs/roadmap.md)** – Future plans and upcoming features.
 
 ---
 

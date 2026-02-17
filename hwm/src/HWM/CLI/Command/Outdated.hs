@@ -2,47 +2,68 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Outdated (runOutdated) where
+module HWM.CLI.Command.Outdated
+  ( runOutdated,
+    OutdatedOptions (..),
+  )
+where
 
-import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, padDots)
-import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (SeverityWarning))
-import HWM.Domain.Bounds (printUpperBound, updateDepBounds)
+import Data.Foldable (Foldable (minimum))
+import HWM.Core.Formatting (Color (..), chalk)
+import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
+import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, auditHasAny, formatAudit, updateDepBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
-import HWM.Domain.Dependencies (Dependency (..), toDependencyList, traverseDeps)
+import HWM.Domain.Dependencies (mapDeps, mapWithName)
+import HWM.Domain.Matrix (BuildEnvironment (..), getBuildEnvroments)
 import HWM.Integrations.Toolchain.Package (syncPackages)
-import HWM.Runtime.Cache (clearVersions)
-import HWM.Runtime.UI (indent, putLine, section, sectionConfig, sectionTableM)
-import Relude
+import HWM.Runtime.Cache (getLatestNightlySnapshot, getSnapshot)
+import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
+import Relude hiding (maxBound, minBound)
 
-runOutdated :: Bool -> ConfigT ()
-runOutdated autoFix = do
+data OutdatedOptions = OutdatedOptions
+  { autoFix :: Bool,
+    forceAutofix :: Bool
+  }
+  deriving (Show)
+
+runOutdated :: OutdatedOptions -> ConfigT ()
+runOutdated OutdatedOptions {..} = do
   sectionTableM 0 "update dependencies" [("mode", pure $ chalk Cyan (if autoFix then "auto-fix" else "check"))]
-
-  clearVersions
   originalRegistry <- asks (registry . config)
-  section "registry" $ pure ()
-  registry' <- traverseDeps updateDepBounds originalRegistry
+  env <- getBuildEnvroments
+  legacy <- getSnapshot (minimum $ map buildResolver env)
+  nightly <- getLatestNightlySnapshot
 
-  let updates = map snd $ filter (uncurry (/=)) (zip (toDependencyList originalRegistry) (toDependencyList registry'))
-  let maxLen = genMaxLen (map (format . name) updates)
+  let dependencyAudits = filter (auditHasAny (/= Valid)) $ mapWithName (auditBounds legacy nightly) originalRegistry
 
-  if null updates
+  section "audit" $ printGenTable $ formatAudit <$> dependencyAudits
+
+  let errorCount = length $ filter (auditHasAny (== Conflict)) dependencyAudits
+
+  if null dependencyAudits
     then do
       indent 1 $ putLine "all dependencies are up to date."
     else do
-      indent 1 $ for_ updates $ \Dependency {..} -> putLine $ padDots maxLen (format name) <> "↑ " <> printUpperBound bounds
-
       if autoFix
-        then ((\cf -> pure $ cf {registry = registry'}) `updateConfig`) $ do
+        then ((\cf -> pure $ cf {registry = mapDeps (updateDepBounds forceAutofix legacy nightly) originalRegistry}) `updateConfig`) $ do
           sectionConfig 0 [("hwm.yaml", pure $ chalk Green "✓")]
           syncPackages
-        else
+        else do
           injectIssue
             ( Issue
                 { issueDetails = Nothing,
-                  issueMessage = "Found " <> show (length updates) <> " outdated dependencies: Run 'hwm outdated --fix' to update.",
+                  issueMessage = "Found " <> show (length dependencyAudits - errorCount) <> " outdated dependencies: Run 'hwm outdated --fix --force' to update.",
                   issueTopic = "registry",
                   issueSeverity = SeverityWarning
                 }
             )
+          when (errorCount > 0)
+            $ injectIssue
+              ( Issue
+                  { issueDetails = Nothing,
+                    issueMessage = "Found " <> show errorCount <> " outdated dependencies: Run 'hwm outdated --fix' to update.",
+                    issueTopic = "registry",
+                    issueSeverity = SeverityError
+                  }
+              )

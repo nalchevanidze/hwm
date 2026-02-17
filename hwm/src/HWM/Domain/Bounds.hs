@@ -12,30 +12,29 @@ module HWM.Domain.Bounds
     BoundsByName,
     versionBounds,
     updateDepBounds,
-    getBound,
     Bound (..),
     Restriction (..),
-    printUpperBound,
     hasBounds,
-    boundsScore,
     boundsBetter,
+    auditBounds,
+    BoundAudit (..),
+    BoundCompliance (..),
+    BoundsAudit (..),
+    formatAudit,
+    auditHasAny,
   )
 where
 
-import Control.Monad.Except (MonadError)
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (..),
     Value (..),
   )
-import Data.List (maximum, minimum)
-import HWM.Core.Formatting (Format (..), formatList)
-import HWM.Core.Has (Has)
+import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList)
 import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
-import HWM.Core.Result (Issue)
 import HWM.Core.Version (Bump (..), Version, dropPatch, nextVersion)
-import HWM.Runtime.Cache (Cache, getVersions)
+import HWM.Runtime.Cache (Snapshot, getVersion)
 import Relude
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
@@ -62,7 +61,7 @@ data Bound = Bound
 instance Format Bound where
   format Bound {..} = unwords $ (toText restriction <> eq) : [toText version]
     where
-      eq = if orEquals then "=" else ""
+      eq = if orEquals then "=" else " "
 
 instance Ord Bound where
   compare a b =
@@ -78,17 +77,24 @@ instance Parse Bound where
     version <- parse value
     pure Bound {..}
 
-newtype Bounds = Bounds [Bound]
+data Bounds = Bounds
+  { lowerBound :: Maybe Bound,
+    upperBound :: Maybe Bound
+  }
   deriving (Generic, Show, Eq)
 
 type BoundsByName = '[]
 
 instance Parse Bounds where
-  parse "" = pure $ Bounds []
-  parse str = Bounds <$> sepBy "&&" str
+  parse "" = pure $ Bounds Nothing Nothing
+  parse str = do
+    bounds <- sepBy "&&" str
+    let lower = find (\Bound {..} -> restriction == Min) bounds
+    let upper = find (\Bound {..} -> restriction == Max) bounds
+    pure $ Bounds lower upper
 
 instance Format Bounds where
-  format (Bounds xs) = formatList " && " $ sort xs
+  format (Bounds lower upper) = formatList " && " $ sort $ catMaybes [lower, upper]
 
 instance ToString Bounds where
   toString = toString . format
@@ -103,46 +109,90 @@ instance ToJSON Bounds where
 versionBounds :: Version -> Bounds
 versionBounds version =
   Bounds
-    [ Bound Min True (dropPatch version),
-      Bound Max False (nextVersion Minor version)
-    ]
-
-getBound :: Restriction -> Bounds -> [Bound]
-getBound v (Bounds xs) = maybeToList $ find (\Bound {..} -> restriction == v) xs
-
-printUpperBound :: Bounds -> Text
-printUpperBound bounds = case getBound Max bounds of
-  [Bound {version}] -> format version
-  _ -> ""
+    { lowerBound = Just $ Bound Min True (dropPatch version),
+      upperBound = Just $ Bound Max False (nextVersion Minor version)
+    }
 
 hasBounds :: Bounds -> Bool
-hasBounds b =
-  let lower = getBound Min b
-      upper = getBound Max b
-   in not (null lower && null upper)
+hasBounds Bounds {..} = isJust lowerBound || isJust upperBound
 
 boundsScore :: Bounds -> Int
-boundsScore b = length (getBound Min b) + length (getBound Max b)
+boundsScore Bounds {..} = length (maybeToList lowerBound) + length (maybeToList upperBound)
 
 boundsBetter :: Bounds -> Bounds -> Bool
 boundsBetter a b = boundsScore a > boundsScore b
 
-getLatest :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => PkgName -> m Bound
-getLatest = fmap (Bound Max True . head) . getVersions
+auditBound :: Maybe Bound -> Maybe Version -> (Version -> Version -> Bool) -> BoundAudit
+auditBound registryBound matrixVersion isConflict
+  | null registryBound = BoundAudit {auditStatus = Missing, ..}
+  | match isConflict registryBound matrixVersion = BoundAudit {auditStatus = Conflict, ..}
+  | match (flip isConflict) registryBound matrixVersion = BoundAudit {auditStatus = Unverified, ..}
+  | otherwise = BoundAudit {auditStatus = Valid, ..}
+  where
+    match :: (Version -> Version -> Bool) -> Maybe Bound -> Maybe Version -> Bool
+    match f (Just Bound {version}) (Just target) = f version target
+    match _ _ _ = False
 
-updateDepBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => PkgName -> Bounds -> m Bounds
-updateDepBounds name bounds = do
-  latest <- getLatest name
-  let upper = getBound Max bounds
-  let newVersion = maximum (latest : upper)
-  _min <- initiateMin name bounds
-  pure (Bounds (_min <> [newVersion]))
+updateBound :: Bool -> Restriction -> BoundCompliance -> Maybe Bound -> Maybe Version -> Maybe Bound
+updateBound forceOverride res compliance registryBound matrixVersion
+  | compliance == Conflict = preferMatrix
+  | forceOverride && compliance == Unverified = preferMatrix
+  | otherwise = registryBound <|> matrixBound
+  where
+    preferMatrix = matrixBound <|> registryBound
+    matrixBound = Bound res True <$> matrixVersion
 
-initiateMin :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => PkgName -> Bounds -> m [Bound]
-initiateMin name bounds = do
-  let mi = getBound Min bounds
-  if null mi
-    then do
-      ls <- fmap (Bound Min True) <$> getVersions name
-      pure [minimum ls]
-    else pure mi
+auditBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> BoundsAudit
+auditBounds legacy nightly name Bounds {..} =
+  BoundsAudit
+    { auditPkgName = name,
+      auditMinBound = auditBound lowerBound (getVersion name legacy) (>),
+      auditMaxBound = auditBound upperBound (getVersion name nightly) (<)
+    }
+
+updateDepBounds :: Bool -> Snapshot -> Snapshot -> PkgName -> Bounds -> Bounds
+updateDepBounds forceOverride legacy nightly name Bounds {..} =
+  Bounds
+    { lowerBound = updateBound forceOverride Min (auditStatus $ auditMinBound audit) lowerBound (getVersion name legacy),
+      upperBound = updateBound forceOverride Max (auditStatus $ auditMaxBound audit) upperBound (getVersion name nightly)
+    }
+  where
+    audit = auditBounds legacy nightly name Bounds {..}
+
+auditHasAny :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
+auditHasAny f BoundsAudit {..} = any (f . auditStatus) [auditMinBound, auditMaxBound]
+
+data BoundCompliance
+  = Conflict
+  | Unverified
+  | Missing
+  | Valid
+  deriving (Show, Eq)
+
+data BoundAudit = BoundAudit
+  { registryBound :: Maybe Bound,
+    matrixVersion :: Maybe Version,
+    auditStatus :: BoundCompliance
+  }
+  deriving (Show, Eq)
+
+formatStatus :: BoundCompliance -> Text
+formatStatus Conflict = chalk Red "-> "
+formatStatus Unverified = chalk Yellow "-> "
+formatStatus Missing = chalk Cyan " ! "
+formatStatus Valid = chalk Green " ✓ "
+
+formatBoundAudit :: BoundAudit -> [Text]
+formatBoundAudit (BoundAudit Nothing Nothing s) = ["", formatStatus s]
+formatBoundAudit (BoundAudit Nothing (Just x) s) = [chalk Dim (format x), formatStatus s]
+formatBoundAudit (BoundAudit (Just x) Nothing s) = [chalk Dim (format x), formatStatus s]
+formatBoundAudit (BoundAudit (Just reg) (Just mat) s) = [chalk Dim (format reg), formatStatus s <> "  " <> format mat]
+
+data BoundsAudit = BoundsAudit
+  { auditPkgName :: PkgName,
+    auditMinBound :: BoundAudit,
+    auditMaxBound :: BoundAudit
+  }
+
+formatAudit :: BoundsAudit -> [Text]
+formatAudit a = [format $ auditPkgName a] <> formatBoundAudit (auditMinBound a) <> [chalk Dim "  &&  "] <> formatBoundAudit (auditMaxBound a)

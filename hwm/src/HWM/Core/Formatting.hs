@@ -205,7 +205,7 @@ commonPrefix names =
             else fromMaybe name (T.stripPrefix "-" name)
 
 indentBlockNum :: Int -> Text -> Text
-indentBlockNum i = indentBlock (T.replicate i " ")
+indentBlockNum i = indentBlock (T.replicate (i * 2) " ")
 
 indentBlock :: Text -> Text -> Text
 indentBlock prefix text

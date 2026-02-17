@@ -1,7 +1,7 @@
 # hash: e7b77bc2760df12d8332ef151b6fe7570d382a3b26df1c3274bf1a53e0c1632f
 name: hwm
 version: 0.0.5
-bounds: '>= 0.0.0 && < 0.1.0'
+bounds: '>= 0.0.0 && <  0.1.0'
 workspace:
 - name: libs
   members:
@@ -35,7 +35,7 @@ registry:
 - Glob                  >=  0.7.0     &&  <   1.0.0
 - aeson                 >=  1.4.4     &&  <   3.0.0
 - ansi-terminal         >=  0.11.3    &&  <=  1.1.5
-- async                 >=  2.2.4     &&  <   2.3.0
+- async                 >   2.2.3     &&  <   2.3.0
 - base                  >=  4.7.0     &&  <   5.0.0
 - base16-bytestring     >=  1.0.0     &&  <   2.0.0
 - bytestring            >=  0.10.4    &&  <=  0.12.2.0
@@ -43,9 +43,9 @@ registry:
 - cryptohash-sha256     >=  0.11.100  &&  <=  0.11.102.1
 - directory             >=  1.0       &&  <=  1.3.10.1
 - filepath              >=  1.1.0     &&  <=  1.5.5.0
-- hpack                 >=  0.36.0    &&  <=  0.39.1
+- hpack                 >   0.34.4    &&  <=  0.39.1
 - modern-uri            >=  0.1.0.0   &&  <   1.0.0
-- mtl                   >=  2.0.0     &&  <   2.6.0
+- mtl                   >   2.0.0     &&  <   2.6.0
 - optparse-applicative  >=  0.12.0    &&  <   0.20.0
 - process               >=  1.0.0     &&  <   2.0.0
 - relude                >=  0.3.0     &&  <   2.0.0

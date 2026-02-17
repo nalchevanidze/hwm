@@ -10,7 +10,7 @@
 
 module HWM.Core.Pkg
   ( Pkg (..),
-    PkgName,
+    PkgName (..),
     makePkg,
     pkgFile,
     pkgYamlPath,

@@ -13,6 +13,7 @@ module HWM.Core.Parsing
     genUrl,
     Parse (..),
     parseOptions,
+    parsePkgString,
   )
 where
 
@@ -85,3 +86,11 @@ class Parse a where
 instance Parse Int where
   parse t =
     maybe (fail $ "Could not parse Int: '" <> toString t <> "'!") pure (readMaybe $ toString t)
+
+parsePkgString :: Text -> (Text, Text)
+parsePkgString input =
+  let base = T.takeWhile (/= '@') input
+      (namePart, versionPart) = T.breakOnEnd "-" base
+   in if T.null versionPart || T.null namePart
+        then (base, "")
+        else (T.dropEnd 1 namePart, versionPart)

@@ -22,24 +22,29 @@ module HWM.Runtime.Cache
     prepareDir,
     getSnapshotGHC,
     Snapshot (..),
+    getSnapshot,
+    getVersion,
+    getLatestNightlySnapshot,
   )
 where
 
 import qualified Control.Concurrent.STM as STM
 import Control.Monad.Except (MonadError (..))
-import Data.Aeson (FromJSON, ToJSON, eitherDecode, (.:))
+import Data.Aeson (FromJSON, ToJSON, Value, eitherDecode, (.:))
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (withObject)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map
 import qualified Data.Text as T
-import Data.Yaml (decodeEither', prettyPrintParseException)
+import Data.Time (getCurrentTime, utctDay)
+import Data.Time.Format (defaultTimeLocale, formatTime)
+import Data.Yaml (Object, Parser, decodeEither', prettyPrintParseException)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Has (Has, askEnv)
-import HWM.Core.Parsing (genUrl)
-import HWM.Core.Pkg (PkgName)
+import HWM.Core.Parsing (genUrl, parse, parsePkgString)
+import HWM.Core.Pkg (PkgName (..))
 import HWM.Core.Result (Issue, Result (..), ResultT (..))
 import HWM.Core.Version (Version, parseGHCVersion)
 import HWM.Runtime.Files (select)
@@ -113,14 +118,14 @@ clearVersions = updateRegistry (\reg -> reg {versions = mempty})
 getReq :: (Url s, Option s) -> Req LbsResponse
 getReq (u, o) = req GET u NoReqBody lbsResponse o
 
-parse :: (MonadError Issue m) => Text -> m (Req LbsResponse)
-parse url = do
+parseBody :: (MonadError Issue m) => Text -> m (Req LbsResponse)
+parseBody url = do
   uri <- maybe (throwError $ fromString $ "Invalid Endpoint: " <> toString url <> "!") pure (mkURI url >>= useURI)
   pure (either getReq getReq uri)
 
 http :: (MonadError Issue m, MonadIO m) => Text -> [Text] -> m BL.ByteString
 http dom p = do
-  request <- parse (genUrl dom p)
+  request <- parseBody (genUrl dom p)
   responseBody <$> liftIO (runReq defaultHttpConfig request)
 
 hackage :: (MonadIO m, MonadError Issue m) => Text -> m (Map Name (NonEmpty Version))
@@ -140,11 +145,27 @@ getVersions name = do
 prepareDir :: (MonadIO m) => FilePath -> m ()
 prepareDir dir = liftIO $ createDirectoryIfMissing True dir
 
-newtype Snapshot = Snapshot {snapshotCompiler :: Text}
+data Snapshot = Snapshot {snapshotCompiler :: Version, snapshotPackages :: Map PkgName Version}
   deriving (Show)
 
+parseValue :: Value -> Parser (PkgName, Version)
+parseValue = withObject "Package" $ \v -> do
+  package <- v .: "hackage"
+  let (name, versionStr) = parsePkgString package
+  version <- parse versionStr
+  pure (PkgName name, version)
+
+parseMap :: [Value] -> Parser (Map PkgName Version)
+parseMap pairs = Map.fromList <$> mapM parseValue pairs
+
 instance FromJSON Snapshot where
-  parseJSON = withObject "Snapshot" $ \v -> Snapshot <$> (v .: "resolver" >>= (.: "compiler"))
+  parseJSON = withObject "Snapshot" $ \v ->
+    Snapshot <$> readCompilerVersion v <*> (v .: "packages" >>= parseMap)
+
+readCompilerVersion :: Object -> Parser Version
+readCompilerVersion v = do
+  x <- (v .: "resolver" >>= (.: "compiler")) <|> v .: "compiler"
+  parseGHCVersion x
 
 genName :: (MonadError Issue m) => Text -> m [Text]
 genName resolver
@@ -160,12 +181,24 @@ genName resolver
               lastPart = NE.last parts
            in pure (prefix : segments <> [lastPart <> ".yaml"])
 
-getSnapshotGHC :: (MonadIO m, MonadError Issue m) => Text -> m Version
-getSnapshotGHC name = do
+getSnapshotGHC :: (MonadIO m, MonadError Issue m) => Name -> m Version
+getSnapshotGHC name = snapshotCompiler <$> getSnapshot name
+
+getSnapshot :: (MonadError Issue m, MonadIO m) => Text -> m Snapshot
+getSnapshot name = do
   pathSegments <- genName name
   body <- runResultT (http "https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master" pathSegments)
   case body of
     Failure {failure} -> throwError $ fromString $ "HTTP Error: " <> show failure
     Success {result} -> case decodeEither' (BL.toStrict result) of
-      Left err -> throwError $ fromString $ "Snapshot Error: " <> prettyPrintParseException err
-      Right snapshot -> either (throwError . fromString) pure (parseGHCVersion (snapshotCompiler snapshot))
+      Left err -> throwError $ fromString $ "Snapshot Error: " <> toString (T.intercalate "/" pathSegments) <> " - " <> prettyPrintParseException err
+      Right snapshot -> pure snapshot
+
+getVersion :: PkgName -> Snapshot -> Maybe Version
+getVersion name snapshot = Map.lookup name (snapshotPackages snapshot)
+
+getLatestNightlySnapshot :: (MonadIO m, MonadError Issue m) => m Snapshot
+getLatestNightlySnapshot = do
+  today <- liftIO $ utctDay <$> getCurrentTime
+  let name = "nightly-" <> T.pack (formatTime defaultTimeLocale "%Y-%-m-%-d" today)
+  getSnapshot name
