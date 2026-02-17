@@ -140,6 +140,13 @@ auditBound registryBound matrixVersion isConflict
       BoundAudit {auditStatus = Unverified, ..}
   | otherwise = BoundAudit {auditStatus = Valid, ..}
 
+updateBound :: BoundCompliance -> Maybe Bound -> Maybe Version -> Maybe Bound
+updateBound compliance registryBound matrixVersion
+  | compliance == Conflict = matrixBound <|> registryBound
+  | otherwise = registryBound <|> matrixBound
+  where
+    matrixBound = Bound Min False <$> matrixVersion
+
 auditBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> BoundsAudit
 auditBounds legacy nightly name Bounds {..} =
   BoundsAudit
@@ -149,11 +156,12 @@ auditBounds legacy nightly name Bounds {..} =
     }
 
 updateDepBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> Bounds
-updateDepBounds legacy nightly name Bounds {..} =
+updateDepBounds legacy nightly name Bounds {..} = 
   Bounds
-    { lowerBound = pickBy (getVersion name legacy) lowerBound minimum,
-      upperBound = pickBy (getVersion name nightly) upperBound maximum
+    { lowerBound = updateBound (auditStatus $ auditMinBound audit) lowerBound (getVersion name legacy),
+      upperBound = updateBound (auditStatus $ auditMaxBound audit) upperBound (getVersion name nightly)
     }
+    where audit = auditBounds legacy nightly name Bounds {..}
 
 auditHasAny :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
 auditHasAny f BoundsAudit {..} = any (f . auditStatus) [auditMinBound, auditMaxBound]
