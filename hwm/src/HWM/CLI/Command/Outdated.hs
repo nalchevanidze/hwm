@@ -1,7 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Outdated (runOutdated) where
+module HWM.CLI.Command.Outdated
+  ( runOutdated,
+    OutdatedOptions (..),
+  )
+where
 
 import Data.Foldable (Foldable (minimum))
 import HWM.Core.Formatting (Color (..), chalk)
@@ -16,8 +21,14 @@ import HWM.Runtime.Cache (getLatestNightlySnapshot, getSnapshot)
 import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
 import Relude hiding (maxBound, minBound)
 
-runOutdated :: Bool -> ConfigT ()
-runOutdated autoFix = do
+data OutdatedOptions = OutdatedOptions
+  { autoFix :: Bool,
+    forceAutofix :: Bool
+  }
+  deriving (Show)
+
+runOutdated :: OutdatedOptions -> ConfigT ()
+runOutdated OutdatedOptions {..} = do
   sectionTableM 0 "update dependencies" [("mode", pure $ chalk Cyan (if autoFix then "auto-fix" else "check"))]
   originalRegistry <- asks (registry . config)
   env <- getBuildEnvroments
@@ -35,7 +46,7 @@ runOutdated autoFix = do
       indent 1 $ putLine "all dependencies are up to date."
     else do
       if autoFix
-        then ((\cf -> pure $ cf {registry = mapDeps (updateDepBounds legacy nightly) originalRegistry}) `updateConfig`) $ do
+        then ((\cf -> pure $ cf {registry = mapDeps (updateDepBounds forceAutofix legacy nightly) originalRegistry}) `updateConfig`) $ do
           sectionConfig 0 [("hwm.yaml", pure $ chalk Green "✓")]
           syncPackages
         else do

@@ -133,11 +133,13 @@ auditBound registryBound matrixVersion isConflict
     match f (Just Bound {version}) (Just target) = f version target
     match _ _ _ = False
 
-updateBound :: BoundCompliance -> Maybe Bound -> Maybe Version -> Maybe Bound
-updateBound compliance registryBound matrixVersion
-  | compliance == Conflict = matrixBound <|> registryBound
+updateBound :: Bool -> BoundCompliance -> Maybe Bound -> Maybe Version -> Maybe Bound
+updateBound forceOverride compliance registryBound matrixVersion
+  | compliance == Conflict = preferMatrix
+  | forceOverride && compliance == Unverified = preferMatrix
   | otherwise = registryBound <|> matrixBound
   where
+    preferMatrix = matrixBound <|> registryBound
     matrixBound = Bound Min False <$> matrixVersion
 
 auditBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> BoundsAudit
@@ -148,11 +150,11 @@ auditBounds legacy nightly name Bounds {..} =
       auditMaxBound = auditBound upperBound (getVersion name nightly) (<)
     }
 
-updateDepBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> Bounds
-updateDepBounds legacy nightly name Bounds {..} =
+updateDepBounds :: Bool -> Snapshot -> Snapshot -> PkgName -> Bounds -> Bounds
+updateDepBounds forceOverride legacy nightly name Bounds {..} =
   Bounds
-    { lowerBound = updateBound (auditStatus $ auditMinBound audit) lowerBound (getVersion name legacy),
-      upperBound = updateBound (auditStatus $ auditMaxBound audit) upperBound (getVersion name nightly)
+    { lowerBound = updateBound forceOverride (auditStatus $ auditMinBound audit) lowerBound (getVersion name legacy),
+      upperBound = updateBound forceOverride (auditStatus $ auditMaxBound audit) upperBound (getVersion name nightly)
     }
   where
     audit = auditBounds legacy nightly name Bounds {..}
