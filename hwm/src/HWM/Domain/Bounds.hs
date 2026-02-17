@@ -114,6 +114,10 @@ versionBounds version =
       upperBound = Just $ Bound Max False (nextVersion Minor version)
     }
 
+pickBy :: Maybe Version -> Maybe Bound -> ([Bound] -> Bound) -> Maybe Bound
+pickBy Nothing registry _ = registry
+pickBy (Just stackage) registry f = Just $ f (Bound Min True stackage : toList registry)
+
 hasBounds :: Bounds -> Bool
 hasBounds Bounds {..} = isJust lowerBound || isJust upperBound
 
@@ -136,9 +140,6 @@ auditBound registryBound matrixVersion isConflict
       BoundAudit {auditStatus = Unverified, ..}
   | otherwise = BoundAudit {auditStatus = Valid, ..}
 
-isAudit :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
-isAudit f BoundsAudit {..} = all (f . auditStatus) [auditMinBound, auditMaxBound]
-
 auditBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> BoundsAudit
 auditBounds legacy nightly name Bounds {..} =
   BoundsAudit
@@ -147,10 +148,6 @@ auditBounds legacy nightly name Bounds {..} =
       auditMaxBound = auditBound upperBound (getVersion name nightly) (<)
     }
 
-pickBy :: Maybe Version -> Maybe Bound -> ([Bound] -> Bound) -> Maybe Bound
-pickBy Nothing registry _ = registry
-pickBy (Just stackage) registry f = Just $ f (Bound Min True stackage : toList registry)
-
 updateDepBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> Bounds
 updateDepBounds legacy nightly name Bounds {..} =
   Bounds
@@ -158,11 +155,14 @@ updateDepBounds legacy nightly name Bounds {..} =
       upperBound = pickBy (getVersion name nightly) upperBound maximum
     }
 
+isAudit :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
+isAudit f BoundsAudit {..} = all (f . auditStatus) [auditMinBound, auditMaxBound]
+
 data BoundCompliance
   = Conflict
-  | Unverified 
-  | Missing 
-  | Valid 
+  | Unverified
+  | Missing
+  | Valid
   deriving (Show, Eq)
 
 data BoundAudit = BoundAudit
