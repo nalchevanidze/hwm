@@ -35,7 +35,7 @@ runOutdated autoFix = do
     else do
       indent 1 $ do
         printGenTable
-          $ (\a -> [format $ auditPkgName a] <> formatAudit (minBound a) <> formatAudit (maxBound a))
+          $ (\a -> [format $ auditPkgName a] <> formatAudit (minBound a) <> [chalk Dim "&&"] <> formatAudit (maxBound a))
           <$> audits
 
       registry' <- traverseDeps updateDepBounds originalRegistry
