@@ -24,7 +24,6 @@ module HWM.Domain.Bounds
   )
 where
 
-import Control.Monad.Except (MonadError)
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (..),
@@ -32,12 +31,10 @@ import Data.Aeson
   )
 import Data.List (maximum, minimum)
 import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList)
-import HWM.Core.Has (Has)
 import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
-import HWM.Core.Result (Issue (..), MonadIssue)
 import HWM.Core.Version (Bump (..), Version, dropPatch, nextVersion)
-import HWM.Runtime.Cache (Cache, Snapshot, getVersion)
+import HWM.Runtime.Cache (Snapshot, getVersion)
 import Relude
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
@@ -125,44 +122,37 @@ boundsScore Bounds {..} = length (maybeToList lowerBound) + length (maybeToList 
 boundsBetter :: Bounds -> Bounds -> Bool
 boundsBetter a b = boundsScore a > boundsScore b
 
-isMore :: Maybe Bound -> Maybe Version -> Bool
-isMore (Just Bound {version}) (Just target) = version > target
-isMore _ _ = False
+compareBound :: (Version -> t -> Bool) -> Maybe Bound -> Maybe t -> Bool
+compareBound f (Just Bound {version}) (Just target) = f version target
+compareBound _ _ _ = False
 
-isLess :: Maybe Bound -> Maybe Version -> Bool
-isLess (Just Bound {version}) (Just target) = version < target
-isLess _ _ = False
-
-auditLowerBound :: Maybe Bound -> Maybe Version -> BoundAudit
-auditLowerBound registryBound matrixVersion
+auditBound :: Maybe Bound -> Maybe Version -> (Version -> Version -> Bool) -> BoundAudit
+auditBound registryBound matrixVersion isConflict 
   | null registryBound = BoundAudit {auditStatus = Missing, ..}
-  | isMore registryBound matrixVersion = BoundAudit {auditStatus = Conflict, ..}
-  | isLess registryBound matrixVersion = BoundAudit {auditStatus = Unverified, ..}
-  | otherwise = BoundAudit {auditStatus = Valid, ..}
-
-auditUpperBound :: Maybe Bound -> Maybe Version -> BoundAudit
-auditUpperBound registryBound matrixVersion
-  | null registryBound = BoundAudit {auditStatus = Missing, ..}
-  | isLess registryBound matrixVersion =
+  | compareBound isConflict registryBound matrixVersion =
       BoundAudit {auditStatus = Conflict, ..}
-  | isMore registryBound matrixVersion =
+  | compareBound (flip isConflict) registryBound matrixVersion =
       BoundAudit {auditStatus = Unverified, ..}
   | otherwise = BoundAudit {auditStatus = Valid, ..}
 
-auditBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache, MonadIssue m) => Snapshot -> Snapshot -> PkgName -> Bounds -> m BoundsAudit
-auditBounds legacy bleedingEdge name Bounds {..} = do
-  pure
-    $ BoundsAudit
-      { auditPkgName = name,
-        minBound = auditLowerBound lowerBound (getVersion name legacy),
-        maxBound = auditUpperBound upperBound (getVersion name bleedingEdge)
-      }
+auditBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> BoundsAudit
+auditBounds legacy nightly name Bounds {..} =
+  BoundsAudit
+    { auditPkgName = name,
+      minBound = auditBound lowerBound (getVersion name legacy) (>) ,
+      maxBound = auditBound upperBound (getVersion name nightly) (<)
+    }
 
-updateDepBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache, MonadIssue m) => Snapshot -> Snapshot -> PkgName -> Bounds -> m Bounds
-updateDepBounds legacy bleedingEdge name Bounds {..} = do
-  let newVersion = maximum (toList upperBound <> toList (Bound Max True <$> getVersion name bleedingEdge))
-  let minVersion = minimum (toList lowerBound <> toList (Bound Min True <$> getVersion name legacy))
-  pure (Bounds {lowerBound = Just minVersion, upperBound = Just newVersion})
+pickBy :: Maybe Version -> Maybe Bound -> ([Bound] -> Bound) -> Maybe Bound
+pickBy Nothing registry _ = registry
+pickBy (Just stackage) registry f = Just $ f (Bound Min True stackage : toList registry)
+
+updateDepBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> Bounds
+updateDepBounds legacy nightly name Bounds {..} =
+  Bounds
+    { lowerBound = pickBy (getVersion name legacy) lowerBound minimum,
+      upperBound = pickBy (getVersion name nightly) upperBound maximum
+    }
 
 data BoundCompliance
   = Conflict -- Was: AboveRecommended (The "Red" scenario)

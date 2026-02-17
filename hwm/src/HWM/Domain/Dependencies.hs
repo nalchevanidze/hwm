@@ -7,7 +7,7 @@ module HWM.Domain.Dependencies
   ( Dependencies,
     Dependency (..),
     getBounds,
-    traverseDeps,
+    mapDeps,
     toDependencyList,
     fromDependencyList,
     mergeDependencies,
@@ -15,7 +15,7 @@ module HWM.Domain.Dependencies
     externalRegistry,
     DependencyGraph (..),
     sortByDependencyHierarchy,
-    mapDeps,
+    mapWithName,
   )
 where
 
@@ -64,11 +64,11 @@ newtype Dependencies = Dependencies {unpackDeps :: Map PkgName Bounds}
 getBounds :: (MonadError Issue m) => PkgName -> Dependencies -> m Bounds
 getBounds name = select "Package " name . unpackDeps
 
-traverseDeps :: (Applicative f) => (PkgName -> Bounds -> f Bounds) -> Dependencies -> f Dependencies
-traverseDeps f (Dependencies xs) = Dependencies <$> Map.traverseWithKey f xs
+mapDeps :: (PkgName -> Bounds -> Bounds) -> Dependencies -> Dependencies
+mapDeps f (Dependencies xs) = Dependencies $ Map.mapWithKey f xs
 
-mapDeps :: (Applicative f) => (PkgName -> Bounds -> f b) -> Dependencies -> f [b]
-mapDeps f (Dependencies xs) = sequenceA $ Map.elems $ Map.mapWithKey f xs
+mapWithName :: (PkgName -> Bounds -> b) -> Dependencies -> [b]
+mapWithName f (Dependencies xs) = Map.elems $ Map.mapWithKey f xs
 
 initDependencies :: [Dependency] -> Dependencies
 initDependencies = Dependencies . Map.fromList . map toDuple
