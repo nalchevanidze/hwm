@@ -1,4 +1,4 @@
-# hash: 6630a1e10310ac71031c1b9a1e28264c29e8437104656cd10ed34286918f0c67
+# hash: e7b77bc2760df12d8332ef151b6fe7570d382a3b26df1c3274bf1a53e0c1632f
 name: hwm
 version: 0.0.5
 bounds: '>= 0.0.0 && < 0.1.0'
@@ -8,7 +8,7 @@ workspace:
   - hwm
   publish: true
 matrix:
-  default-environment: default
+  default-environment: stable
   environments:
   - name: legacy
     ghc: 8.10.7
@@ -23,7 +23,7 @@ matrix:
       retry: 0.8.1.0
       time-compat: 1.9.2.2
       websockets: 0.12.6.0
-  - name: default
+  - name: stable
     ghc: 9.6.3
     resolver: lts-22.6
     extra-deps:
