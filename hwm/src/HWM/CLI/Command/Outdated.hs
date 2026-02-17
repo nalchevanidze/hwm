@@ -3,7 +3,7 @@
 
 module HWM.CLI.Command.Outdated (runOutdated) where
 
-import Data.Foldable (Foldable (maximum, minimum))
+import Data.Foldable (Foldable (minimum))
 import HWM.Core.Formatting (Color (..), chalk)
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (SeverityWarning))
 import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, formatAudit, isAudit, updateDepBounds)
@@ -12,7 +12,7 @@ import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
 import HWM.Domain.Dependencies (mapDeps, mapWithName)
 import HWM.Domain.Matrix (BuildEnvironment (..), getBuildEnvroments)
 import HWM.Integrations.Toolchain.Package (syncPackages)
-import HWM.Runtime.Cache (getSnapshot)
+import HWM.Runtime.Cache (getLatestNightlySnapshot, getSnapshot)
 import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
 import Relude hiding (maxBound, minBound)
 
@@ -22,8 +22,9 @@ runOutdated autoFix = do
   originalRegistry <- asks (registry . config)
   env <- getBuildEnvroments
   legacy <- getSnapshot (minimum $ map buildResolver env)
-  bleedingEdge <- getSnapshot (maximum $ map buildResolver env)
-  let dependencyAudits = filter (isAudit (/= Valid)) $ mapWithName (auditBounds legacy bleedingEdge) originalRegistry
+  nightly <- getLatestNightlySnapshot
+
+  let dependencyAudits = filter (isAudit (/= Valid)) $ mapWithName (auditBounds legacy nightly) originalRegistry
 
   section "audit" $ printGenTable $ formatAudit <$> dependencyAudits
 
@@ -32,7 +33,7 @@ runOutdated autoFix = do
       indent 1 $ putLine "all dependencies are up to date."
     else do
       if autoFix
-        then ((\cf -> pure $ cf {registry = mapDeps (updateDepBounds legacy bleedingEdge) originalRegistry}) `updateConfig`) $ do
+        then ((\cf -> pure $ cf {registry = mapDeps (updateDepBounds legacy nightly) originalRegistry}) `updateConfig`) $ do
           sectionConfig 0 [("hwm.yaml", pure $ chalk Green "✓")]
           syncPackages
         else

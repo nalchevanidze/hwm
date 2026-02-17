@@ -24,6 +24,7 @@ module HWM.Runtime.Cache
     Snapshot (..),
     getSnapshot,
     getVersion,
+    getLatestNightlySnapshot,
   )
 where
 
@@ -36,6 +37,8 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import Data.Time (getCurrentTime, utctDay)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Yaml (Object, Parser, decodeEither', prettyPrintParseException)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
@@ -193,3 +196,9 @@ getSnapshot name = do
 
 getVersion :: PkgName -> Snapshot -> Maybe Version
 getVersion name snapshot = Map.lookup name (snapshotPackages snapshot)
+  
+getLatestNightlySnapshot :: (MonadIO m, MonadError Issue m) => m Snapshot
+getLatestNightlySnapshot = do
+  today <- liftIO $ utctDay <$> getCurrentTime
+  let name = "nightly-" <> T.pack (formatTime defaultTimeLocale "%Y-%-m-%-d" today)
+  getSnapshot name
