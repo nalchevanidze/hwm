@@ -200,16 +200,16 @@ data BoundAudit = BoundAudit
   deriving (Show, Eq)
 
 formatStatus :: BoundCompliance -> Text
-formatStatus Conflict = chalk Red "-"
-formatStatus Unverified = chalk Yellow "+"
-formatStatus Missing = chalk Cyan " !"
-formatStatus Valid = chalk Green "✓"
+formatStatus Conflict = chalk Red "-> "
+formatStatus Unverified = chalk Yellow "-> "
+formatStatus Missing = chalk Cyan " ! "
+formatStatus Valid = chalk Green " ✓ "
 
 formatAudit :: BoundAudit -> [Text]
-formatAudit (BoundAudit Nothing Nothing _) = ["", ""]
-formatAudit (BoundAudit Nothing (Just x) s) = [formatStatus s <> " " <> chalk Dim (format x), ""]
-formatAudit (BoundAudit (Just x) Nothing s) = [formatStatus s <> " " <> chalk Dim (format x), ""]
-formatAudit (BoundAudit (Just reg) (Just mat) s) = [formatStatus s <> " " <> chalk Dim (format reg), " -> " <> format mat]
+formatAudit (BoundAudit Nothing Nothing s) = ["", formatStatus s]
+formatAudit (BoundAudit Nothing (Just x) s) = [chalk Dim (format x), formatStatus s]
+formatAudit (BoundAudit (Just x) Nothing s) = [chalk Dim (format x), formatStatus s]
+formatAudit (BoundAudit (Just reg) (Just mat) s) = [chalk Dim (format reg), formatStatus s <> "  " <> format mat]
 
 data BoundsAudit = BoundsAudit
   { auditPkgName :: PkgName,
