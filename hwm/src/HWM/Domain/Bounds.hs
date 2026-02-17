@@ -21,7 +21,7 @@ module HWM.Domain.Bounds
     BoundCompliance (..),
     BoundsAudit (..),
     formatAudit,
-    isAudit,
+    auditHasAny,
   )
 where
 
@@ -155,8 +155,8 @@ updateDepBounds legacy nightly name Bounds {..} =
       upperBound = pickBy (getVersion name nightly) upperBound maximum
     }
 
-isAudit :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
-isAudit f BoundsAudit {..} = all (f . auditStatus) [auditMinBound, auditMaxBound]
+auditHasAny :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
+auditHasAny f BoundsAudit {..} = any (f . auditStatus) [auditMinBound, auditMaxBound]
 
 data BoundCompliance
   = Conflict

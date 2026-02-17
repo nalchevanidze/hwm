@@ -6,7 +6,7 @@ module HWM.CLI.Command.Outdated (runOutdated) where
 import Data.Foldable (Foldable (minimum))
 import HWM.Core.Formatting (Color (..), chalk)
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (SeverityWarning))
-import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, formatAudit, isAudit, updateDepBounds)
+import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, formatAudit, auditHasAny, updateDepBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
 import HWM.Domain.Dependencies (mapDeps, mapWithName)
@@ -24,7 +24,7 @@ runOutdated autoFix = do
   legacy <- getSnapshot (minimum $ map buildResolver env)
   nightly <- getLatestNightlySnapshot
 
-  let dependencyAudits = filter (isAudit (/= Valid)) $ mapWithName (auditBounds legacy nightly) originalRegistry
+  let dependencyAudits = filter (auditHasAny (/= Valid)) $ mapWithName (auditBounds legacy nightly) originalRegistry
 
   section "audit" $ printGenTable $ formatAudit <$> dependencyAudits
 
