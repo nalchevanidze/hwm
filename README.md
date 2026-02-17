@@ -5,7 +5,7 @@
 Haskell has excellent build systems (`stack`, `cabal`, `nix`) and a powerful IDE (`hls`), but they don't talk to each other in a monorepo. HWM bridges this gap by acting as a **single source of truth**, automatically generating and synchronizing the configuration files those tools expect.
 
 > [!IMPORTANT]
-> **Project Status: Alpha (v0.1.0)** > HWM is in early, active development. While it currently powers the [Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql) ecosystem, the API may evolve. We value your feedback—please [open an issue](https://github.com/nalchevanidze/hwm/issues) if you encounter bugs or have feature suggestions.
+> **Project Status: Alpha** > HWM is in early, active development. While it currently powers the [Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql) ecosystem, the API may evolve. We value your feedback—please [open an issue](https://github.com/nalchevanidze/hwm/issues) if you encounter bugs or have feature suggestions.
 
 **Stop fighting your configuration. Start building your project.**
 
