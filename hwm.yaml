@@ -1,7 +1,7 @@
 # hash: 6630a1e10310ac71031c1b9a1e28264c29e8437104656cd10ed34286918f0c67
 name: hwm
 version: 0.0.5
-bounds: '>= 0.0.0 && < 0.1.0'
+bounds: '>= 0.0.0 && <  0.1.0'
 workspace:
 - name: libs
   members:
