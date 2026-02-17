@@ -8,7 +8,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module HWM.Domain.Matrix
   ( BuildEnv (..),
@@ -38,7 +37,7 @@ import HWM.Core.Common
 import HWM.Core.Formatting (Color (..), Format (..), availableOptions, chalk)
 import HWM.Core.Has (Has, HasAll, askEnv)
 import HWM.Core.Pkg (Pkg (..), PkgName, pkgId)
-import HWM.Core.Result (Issue (Issue))
+import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Workspace (WorkspaceGroup, memberPkgs)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getRegistry, getVersions)
