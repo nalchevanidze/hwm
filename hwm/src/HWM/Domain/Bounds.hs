@@ -33,14 +33,13 @@ import Data.Aeson
     Value (..),
   )
 import Data.List (maximum, minimum)
-import qualified Data.Map as M
 import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList)
 import HWM.Core.Has (Has)
 import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
 import HWM.Core.Result (Issue (..), MonadIssue)
 import HWM.Core.Version (Bump (..), Version, dropPatch, nextVersion)
-import HWM.Runtime.Cache (Cache, Snapshot (snapshotPackages), getVersions)
+import HWM.Runtime.Cache (Cache, Snapshot, getVersion, getVersions)
 import Relude
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
@@ -165,8 +164,8 @@ auditBounds legacy bleedingEdge name bounds = do
   pure
     $ BoundsAudit
       { auditPkgName = name,
-        minBound = auditLowerBound (getLower bounds) (M.lookup name $ snapshotPackages legacy),
-        maxBound = auditUpperBound (getUpper bounds) (M.lookup name $ snapshotPackages bleedingEdge)
+        minBound = auditLowerBound (getLower bounds) (getVersion name legacy),
+        maxBound = auditUpperBound (getUpper bounds) (getVersion name bleedingEdge)
       }
 
 updateDepBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache, MonadIssue m) => PkgName -> Bounds -> m Bounds
@@ -201,10 +200,10 @@ data BoundAudit = BoundAudit
   deriving (Show, Eq)
 
 formatLowerStatus :: BoundCompliance -> Version -> Text
-formatLowerStatus Conflict version = chalk Red $ " ↓ (" <> format version <> ")"
-formatLowerStatus Unverified version = chalk Yellow $ " ↑ (" <> format version <> ")"
+formatLowerStatus Conflict version = chalk Red $ "(↓" <> format version <> ")"
+formatLowerStatus Unverified version = chalk Yellow $ "(↑" <> format version <> ")"
 formatLowerStatus Missing version = chalk Cyan $ " ○ (" <> format version <> ")"
-formatLowerStatus Valid version = chalk Green $ " ✓ (" <> format version <> ")"
+formatLowerStatus Valid version = chalk Green $ "(✓" <> format version <> ")"
 
 instance Format BoundAudit where
   format (BoundAudit Nothing Nothing _) = "x"

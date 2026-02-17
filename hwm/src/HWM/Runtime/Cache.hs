@@ -23,6 +23,7 @@ module HWM.Runtime.Cache
     getSnapshotGHC,
     Snapshot (..),
     getSnapshot,
+    getVersion,
   )
 where
 
@@ -189,3 +190,6 @@ getSnapshot name = do
     Success {result} -> case decodeEither' (BL.toStrict result) of
       Left err -> throwError $ fromString $ "Snapshot Error: " <> toString (T.intercalate "/" pathSegments) <> " - " <> prettyPrintParseException err
       Right snapshot -> pure snapshot
+
+getVersion :: PkgName -> Snapshot -> Maybe Version
+getVersion name snapshot = Map.lookup name (snapshotPackages snapshot)
