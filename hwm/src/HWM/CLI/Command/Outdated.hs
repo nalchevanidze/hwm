@@ -36,9 +36,9 @@ runOutdated autoFix = do
       indent 1 $ do
         printGenTable
           $ (\a -> [format $ auditPkgName a] <> formatAudit (minBound a) <> [chalk Dim "  &&  "] <> formatAudit (maxBound a))
-          <$> audits 
+          <$> audits
 
-      registry' <- traverseDeps updateDepBounds originalRegistry
+      registry' <- traverseDeps (updateDepBounds legacy bleedingEdge) originalRegistry
 
       if autoFix
         then ((\cf -> pure $ cf {registry = registry'}) `updateConfig`) $ do

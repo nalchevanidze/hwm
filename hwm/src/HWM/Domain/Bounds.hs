@@ -12,11 +12,9 @@ module HWM.Domain.Bounds
     BoundsByName,
     versionBounds,
     updateDepBounds,
-    getBound,
     Bound (..),
     Restriction (..),
     hasBounds,
-    boundsScore,
     boundsBetter,
     auditBounds,
     BoundAudit (..),
@@ -39,7 +37,7 @@ import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
 import HWM.Core.Result (Issue (..), MonadIssue)
 import HWM.Core.Version (Bump (..), Version, dropPatch, nextVersion)
-import HWM.Runtime.Cache (Cache, Snapshot, getVersion, getVersions)
+import HWM.Runtime.Cache (Cache, Snapshot, getVersion)
 import Relude
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
@@ -82,17 +80,24 @@ instance Parse Bound where
     version <- parse value
     pure Bound {..}
 
-newtype Bounds = Bounds [Bound]
+data Bounds = Bounds
+  { lowerBound :: Maybe Bound,
+    upperBound :: Maybe Bound
+  }
   deriving (Generic, Show, Eq)
 
 type BoundsByName = '[]
 
 instance Parse Bounds where
-  parse "" = pure $ Bounds []
-  parse str = Bounds <$> sepBy "&&" str
+  parse "" = pure $ Bounds Nothing Nothing
+  parse str = do
+    bounds <- sepBy "&&" str
+    let lower = find (\Bound {..} -> restriction == Min) bounds
+    let upper = find (\Bound {..} -> restriction == Max) bounds
+    pure $ Bounds lower upper
 
 instance Format Bounds where
-  format (Bounds xs) = formatList " && " $ sort xs
+  format (Bounds lower upper) = formatList " && " $ sort $ catMaybes [lower, upper]
 
 instance ToString Bounds where
   toString = toString . format
@@ -107,33 +112,18 @@ instance ToJSON Bounds where
 versionBounds :: Version -> Bounds
 versionBounds version =
   Bounds
-    [ Bound Min True (dropPatch version),
-      Bound Max False (nextVersion Minor version)
-    ]
-
-getBound :: Restriction -> Bounds -> [Bound]
-getBound v (Bounds xs) = maybeToList $ find (\Bound {..} -> restriction == v) xs
-
-getLower :: Bounds -> Maybe Bound
-getLower = listToMaybe . getBound Min
-
-getUpper :: Bounds -> Maybe Bound
-getUpper = listToMaybe . getBound Max
+    { lowerBound = Just $ Bound Min True (dropPatch version),
+      upperBound = Just $ Bound Max False (nextVersion Minor version)
+    }
 
 hasBounds :: Bounds -> Bool
-hasBounds b =
-  let lower = getBound Min b
-      upper = getBound Max b
-   in not (null lower && null upper)
+hasBounds Bounds {..} = isJust lowerBound || isJust upperBound
 
 boundsScore :: Bounds -> Int
-boundsScore b = length (getBound Min b) + length (getBound Max b)
+boundsScore Bounds {..} = length (maybeToList lowerBound) + length (maybeToList upperBound)
 
 boundsBetter :: Bounds -> Bounds -> Bool
 boundsBetter a b = boundsScore a > boundsScore b
-
-getLatest :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => PkgName -> m Bound
-getLatest = fmap (Bound Max True . head) . getVersions
 
 isMore :: Maybe Bound -> Maybe Version -> Bool
 isMore (Just Bound {version}) (Just target) = version > target
@@ -160,30 +150,19 @@ auditUpperBound registryBound matrixVersion
   | otherwise = BoundAudit {auditStatus = Valid, ..}
 
 auditBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache, MonadIssue m) => Snapshot -> Snapshot -> PkgName -> Bounds -> m BoundsAudit
-auditBounds legacy bleedingEdge name bounds = do
+auditBounds legacy bleedingEdge name Bounds {..} = do
   pure
     $ BoundsAudit
       { auditPkgName = name,
-        minBound = auditLowerBound (getLower bounds) (getVersion name legacy),
-        maxBound = auditUpperBound (getUpper bounds) (getVersion name bleedingEdge)
+        minBound = auditLowerBound lowerBound (getVersion name legacy),
+        maxBound = auditUpperBound upperBound (getVersion name bleedingEdge)
       }
 
-updateDepBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache, MonadIssue m) => PkgName -> Bounds -> m Bounds
-updateDepBounds name bounds = do
-  latest <- getLatest name
-  let upper = getBound Max bounds
-  let newVersion = maximum (latest : upper)
-  _min <- initiateMin name bounds
-  pure (Bounds (_min <> [newVersion]))
-
-initiateMin :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => PkgName -> Bounds -> m [Bound]
-initiateMin name bounds = do
-  let mi = getBound Min bounds
-  if null mi
-    then do
-      ls <- fmap (Bound Min True) <$> getVersions name
-      pure [minimum ls]
-    else pure mi
+updateDepBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache, MonadIssue m) => Snapshot -> Snapshot -> PkgName -> Bounds -> m Bounds
+updateDepBounds legacy bleedingEdge name Bounds {..} = do
+  let newVersion = maximum (toList upperBound <> toList (Bound Max True <$> getVersion name bleedingEdge))
+  let minVersion = minimum (toList lowerBound <> toList (Bound Min True <$> getVersion name legacy))
+  pure (Bounds {lowerBound = Just minVersion, upperBound = Just newVersion})
 
 data BoundCompliance
   = Conflict -- Was: AboveRecommended (The "Red" scenario)
