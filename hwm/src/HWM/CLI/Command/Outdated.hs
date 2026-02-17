@@ -6,7 +6,7 @@ module HWM.CLI.Command.Outdated (runOutdated) where
 import Data.Foldable (Foldable (minimum))
 import HWM.Core.Formatting (Color (..), chalk)
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (SeverityWarning))
-import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, formatAudit, auditHasAny, updateDepBounds)
+import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, auditHasAny, formatAudit, updateDepBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
 import HWM.Domain.Dependencies (mapDeps, mapWithName)

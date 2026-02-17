@@ -196,7 +196,7 @@ getSnapshot name = do
 
 getVersion :: PkgName -> Snapshot -> Maybe Version
 getVersion name snapshot = Map.lookup name (snapshotPackages snapshot)
-  
+
 getLatestNightlySnapshot :: (MonadIO m, MonadError Issue m) => m Snapshot
 getLatestNightlySnapshot = do
   today <- liftIO $ utctDay <$> getCurrentTime

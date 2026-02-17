@@ -30,7 +30,6 @@ import Data.Aeson
     ToJSON (..),
     Value (..),
   )
-import Data.List (maximum, minimum)
 import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList)
 import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
@@ -114,10 +113,6 @@ versionBounds version =
       upperBound = Just $ Bound Max False (nextVersion Minor version)
     }
 
-pickBy :: Maybe Version -> Maybe Bound -> ([Bound] -> Bound) -> Maybe Bound
-pickBy Nothing registry _ = registry
-pickBy (Just stackage) registry f = Just $ f (Bound Min True stackage : toList registry)
-
 hasBounds :: Bounds -> Bool
 hasBounds Bounds {..} = isJust lowerBound || isJust upperBound
 
@@ -127,18 +122,16 @@ boundsScore Bounds {..} = length (maybeToList lowerBound) + length (maybeToList 
 boundsBetter :: Bounds -> Bounds -> Bool
 boundsBetter a b = boundsScore a > boundsScore b
 
-compareBound :: (Version -> t -> Bool) -> Maybe Bound -> Maybe t -> Bool
-compareBound f (Just Bound {version}) (Just target) = f version target
-compareBound _ _ _ = False
-
 auditBound :: Maybe Bound -> Maybe Version -> (Version -> Version -> Bool) -> BoundAudit
 auditBound registryBound matrixVersion isConflict
   | null registryBound = BoundAudit {auditStatus = Missing, ..}
-  | compareBound isConflict registryBound matrixVersion =
-      BoundAudit {auditStatus = Conflict, ..}
-  | compareBound (flip isConflict) registryBound matrixVersion =
-      BoundAudit {auditStatus = Unverified, ..}
+  | match isConflict registryBound matrixVersion = BoundAudit {auditStatus = Conflict, ..}
+  | match (flip isConflict) registryBound matrixVersion = BoundAudit {auditStatus = Unverified, ..}
   | otherwise = BoundAudit {auditStatus = Valid, ..}
+  where
+    match :: (Version -> Version -> Bool) -> Maybe Bound -> Maybe Version -> Bool
+    match f (Just Bound {version}) (Just target) = f version target
+    match _ _ _ = False
 
 updateBound :: BoundCompliance -> Maybe Bound -> Maybe Version -> Maybe Bound
 updateBound compliance registryBound matrixVersion
@@ -156,12 +149,13 @@ auditBounds legacy nightly name Bounds {..} =
     }
 
 updateDepBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> Bounds
-updateDepBounds legacy nightly name Bounds {..} = 
+updateDepBounds legacy nightly name Bounds {..} =
   Bounds
     { lowerBound = updateBound (auditStatus $ auditMinBound audit) lowerBound (getVersion name legacy),
       upperBound = updateBound (auditStatus $ auditMaxBound audit) upperBound (getVersion name nightly)
     }
-    where audit = auditBounds legacy nightly name Bounds {..}
+  where
+    audit = auditBounds legacy nightly name Bounds {..}
 
 auditHasAny :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
 auditHasAny f BoundsAudit {..} = any (f . auditStatus) [auditMinBound, auditMaxBound]
