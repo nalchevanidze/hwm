@@ -15,6 +15,7 @@ Haskell has excellent build systems (`stack`, `cabal`, `nix`) and a powerful IDE
 
 ---
 
+
 ## 🧩 The "Missing Link" Architecture
 
 HWM sits one layer above your toolchain to ensure consistency without replacing standard workflows.
@@ -43,9 +44,13 @@ In a typical Haskell monorepo (like `morpheus-graphql`), maintaining consistency
 
 ---
 
+
 ## ✅ The Solution
 
 You define the "what" (structure, bounds, matrix) in `hwm.yaml`. HWM handles the "how."
+
+
+> HWM is not just a config generator—it also acts as an assistant for project maintenance and safety, auditing your dependency bounds against real, tested package sets and helping you keep your project healthy.
 
 ### 1. Centralized Config (`hwm.yaml`)
 
@@ -149,18 +154,34 @@ hwm run build
 
 ## 🛠️ Key Workflows
 
-### 📦 Automated Dependency Management
 
-Replace external bots with a built-in command that understands your workspace.
+### 📦 Automated Dependency Management & Auditing
+
+HWM's `outdated` command is more than a simple update checker:
+
+- **Auditing Power:** HWM audits your dependency bounds against real, tested package sets from Stackage LTS and Nightly snapshots. This means:
+  - You only claim support for versions you actually test in CI.
+  - You avoid breakage from untested versions (e.g., new releases on Hackage that aren't in Stackage yet).
+  - You get clear errors if your bounds are too narrow (missing tested versions) or warnings if they're too wide (including untested versions).
+- **Why Stackage Snapshots?**
+  - Stackage snapshots are curated, reproducible sets of package versions. By aligning your bounds with these, you guarantee that your project is always buildable and testable in real environments.
+- **Automated Fixes:** With `hwm outdated --fix` and `--force`, you can automatically update your bounds to match the tested window, keeping your project safe and future-proof with minimal effort.
+
+**This makes HWM a true assistant for long-term project health, not just a file generator.**
+
+- **No More Bounds Headaches:** HWM automates and audits your dependency bounds, so you never have to manually guess or maintain safe version ranges again. Your bounds always reflect what is actually tested, eliminating a major source of maintenance pain in Haskell projects.
 
 ```bash
-# Check Hackage for updates to your registry
+# Check Hackage for updates to your registry and audit bounds
 hwm outdated
 
 # Auto-update bounds in hwm.yaml and sync all packages
 hwm outdated --fix
-
 ```
+
+<p align="center">
+  <img src="images/outdated.png" alt="HWM Outdated Command" width="600">
+</p>
 
 ### 🚀 Synchronized Releases
 
