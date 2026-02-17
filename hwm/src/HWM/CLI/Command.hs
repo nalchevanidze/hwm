@@ -14,6 +14,7 @@ where
 import Data.Version (showVersion)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
 import HWM.CLI.Command.Outdated (OutdatedOptions (..), runOutdated)
+import HWM.CLI.Command.Add (runAdd)
 import HWM.CLI.Command.Publish (publish)
 import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
@@ -34,6 +35,7 @@ data Command
   | Run {runOptions :: ScriptOptions}
   | Status
   | Init {initOptions :: InitOptions}
+  | Add {packageName :: String}
   deriving (Show)
 
 currentVersion :: String
@@ -47,6 +49,7 @@ command Sync {tag} = sync tag
 command Run {runOptions} = runScript runOptions
 command Status = showStatus
 command Init {} = pure ()
+command Add {packageName} = liftIO (runAdd packageName)
 
 runCommand :: Command -> Options -> IO ()
 runCommand Init {initOptions} ops = initWorkspace initOptions ops >> runConfigT showStatus ops

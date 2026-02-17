@@ -109,6 +109,10 @@ parseCommand =
         "Run a script defined in hwm.yaml",
         Run <$> parseScriptOptions (argument (pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run"))
       ),
+      ( "add",
+        "Add a package to the workspace.",
+        Add <$> argument str (metavar "PACKAGE" <> help "Package name to add")
+      ),
       ( "status",
         "Show the current environment, version, and sync status.",
         pure Status
