@@ -4,40 +4,44 @@
 
 module HWM.CLI.Command.Outdated (runOutdated) where
 
-import Data.Foldable (Foldable (minimum))
+import Data.Foldable (Foldable (maximum, minimum))
 import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, padDots)
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (SeverityWarning))
-import HWM.Domain.Bounds (printUpperBound, updateDepBounds)
+import HWM.Domain.Bounds (BoundAudit (..), BoundsAudit (..), auditBounds, formatLowerStatus, updateDepBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
-import HWM.Domain.Dependencies (Dependency (..), toDependencyList, traverseDeps)
+import HWM.Domain.Dependencies (mapDeps, traverseDeps)
 import HWM.Domain.Matrix (BuildEnvironment (..), getBuildEnvroments)
 import HWM.Integrations.Toolchain.Package (syncPackages)
-import HWM.Runtime.Cache (clearVersions, getSnapshot)
+import HWM.Runtime.Cache (getSnapshot)
 import HWM.Runtime.UI (indent, putLine, section, sectionConfig, sectionTableM)
-import Relude
+import Relude hiding (maxBound, minBound)
 
 runOutdated :: Bool -> ConfigT ()
 runOutdated autoFix = do
   sectionTableM 0 "update dependencies" [("mode", pure $ chalk Cyan (if autoFix then "auto-fix" else "check"))]
 
-  env <- getBuildEnvroments
-
-  let oldest = minimum $ map buildResolver env
-  sn <- getSnapshot oldest
-  clearVersions
   originalRegistry <- asks (registry . config)
-  section "registry" $ pure ()
-  registry' <- traverseDeps (updateDepBounds sn) originalRegistry
+  env <- getBuildEnvroments
+  legacy <- getSnapshot (minimum $ map buildResolver env)
+  bleedingEdge <- getSnapshot (maximum $ map buildResolver env)
 
-  let updates = map snd $ filter (uncurry (/=)) (zip (toDependencyList originalRegistry) (toDependencyList registry'))
-  let maxLen = genMaxLen (map (format . name) updates)
+  section "audit" $ pure ()
 
-  if null updates
+  audits <- mapDeps (auditBounds legacy bleedingEdge) originalRegistry
+
+  let c1 = genMaxLen (map (format . auditPkgName) audits)
+  let c2 = genMaxLen (map (format . minBound) audits)
+  let c3 = genMaxLen (map (format . maxBound) audits)
+
+  if null audits
     then do
       indent 1 $ putLine "all dependencies are up to date."
     else do
-      indent 1 $ for_ updates $ \Dependency {..} -> putLine $ padDots maxLen (format name) <> "↑ " <> printUpperBound bounds
+      indent 1 $ do
+        for_ audits $ \BoundsAudit {..} -> putLine $ padDots c1 (format auditPkgName) <> padDots c2 (format minBound) <> padDots c3 (format maxBound)
+
+      registry' <- traverseDeps updateDepBounds originalRegistry
 
       if autoFix
         then ((\cf -> pure $ cf {registry = registry'}) `updateConfig`) $ do
@@ -47,7 +51,7 @@ runOutdated autoFix = do
           injectIssue
             ( Issue
                 { issueDetails = Nothing,
-                  issueMessage = "Found " <> show (length updates) <> " outdated dependencies: Run 'hwm outdated --fix' to update.",
+                  issueMessage = "Found " <> show (length audits) <> " outdated dependencies: Run 'hwm outdated --fix' to update.",
                   issueTopic = "registry",
                   issueSeverity = SeverityWarning
                 }
