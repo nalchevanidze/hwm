@@ -35,7 +35,7 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map
 import qualified Data.Text as T
-import Data.Yaml (Parser, decodeEither', prettyPrintParseException)
+import Data.Yaml (Object, Parser, decodeEither', prettyPrintParseException)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Has (Has, askEnv)
@@ -141,7 +141,7 @@ getVersions name = do
 prepareDir :: (MonadIO m) => FilePath -> m ()
 prepareDir dir = liftIO $ createDirectoryIfMissing True dir
 
-data Snapshot = Snapshot {snapshotCompiler :: Text, snapshotPackages :: Map PkgName Version}
+data Snapshot = Snapshot {snapshotCompiler :: Version, snapshotPackages :: Map PkgName Version}
   deriving (Show)
 
 parseValue :: Value -> Parser (PkgName, Version)
@@ -156,7 +156,12 @@ parseMap pairs = Map.fromList <$> mapM parseValue pairs
 
 instance FromJSON Snapshot where
   parseJSON = withObject "Snapshot" $ \v ->
-    Snapshot <$> (v .: "resolver" >>= (.: "compiler")) <*> (v .: "packages" >>= parseMap)
+    Snapshot <$> readCompilerVersion v <*> (v .: "packages" >>= parseMap)
+
+readCompilerVersion :: Object -> Parser Version
+readCompilerVersion v = do
+  x <- (v .: "resolver" >>= (.: "compiler")) <|> v .: "compiler"
+  parseGHCVersion x
 
 genName :: (MonadError Issue m) => Text -> m [Text]
 genName resolver
@@ -173,7 +178,7 @@ genName resolver
            in pure (prefix : segments <> [lastPart <> ".yaml"])
 
 getSnapshotGHC :: (MonadIO m, MonadError Issue m) => Name -> m Version
-getSnapshotGHC name = getSnapshot name >>= either (throwError . fromString) pure . parseGHCVersion . snapshotCompiler
+getSnapshotGHC name = snapshotCompiler <$> getSnapshot name
 
 getSnapshot :: (MonadError Issue m, MonadIO m) => Text -> m Snapshot
 getSnapshot name = do
@@ -182,5 +187,5 @@ getSnapshot name = do
   case body of
     Failure {failure} -> throwError $ fromString $ "HTTP Error: " <> show failure
     Success {result} -> case decodeEither' (BL.toStrict result) of
-      Left err -> throwError $ fromString $ "Snapshot Error: " <> prettyPrintParseException err
+      Left err -> throwError $ fromString $ "Snapshot Error: " <> toString (T.intercalate "/" pathSegments) <> " - " <> prettyPrintParseException err
       Right snapshot -> pure snapshot

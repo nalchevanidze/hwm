@@ -207,7 +207,7 @@ formatLowerStatus Missing version = chalk Cyan $ " ○ (" <> format version <> "
 formatLowerStatus Valid version = chalk Green $ " ✓ (" <> format version <> ")"
 
 instance Format BoundAudit where
-  format (BoundAudit Nothing Nothing _) = ""
+  format (BoundAudit Nothing Nothing _) = "x"
   format (BoundAudit Nothing (Just x) _) = "○ " <> format x
   format (BoundAudit (Just x) Nothing _) = format x
   format (BoundAudit (Just reg) (Just mat) auditStatus) = format reg <> formatLowerStatus auditStatus mat
