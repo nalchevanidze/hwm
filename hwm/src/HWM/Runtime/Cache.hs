@@ -22,23 +22,24 @@ module HWM.Runtime.Cache
     prepareDir,
     getSnapshotGHC,
     Snapshot (..),
+    getSnapshot,
   )
 where
 
 import qualified Control.Concurrent.STM as STM
 import Control.Monad.Except (MonadError (..))
-import Data.Aeson (FromJSON, ToJSON, eitherDecode, (.:))
+import Data.Aeson (FromJSON, ToJSON, Value, eitherDecode, (.:))
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Types (withObject)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map
 import qualified Data.Text as T
-import Data.Yaml (decodeEither', prettyPrintParseException)
+import Data.Yaml (Parser, decodeEither', prettyPrintParseException)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Has (Has, askEnv)
-import HWM.Core.Parsing (genUrl)
+import HWM.Core.Parsing (genUrl, parse, parsePkgString)
 import HWM.Core.Pkg (PkgName)
 import HWM.Core.Result (Issue, Result (..), ResultT (..))
 import HWM.Core.Version (Version, parseGHCVersion)
@@ -113,14 +114,14 @@ clearVersions = updateRegistry (\reg -> reg {versions = mempty})
 getReq :: (Url s, Option s) -> Req LbsResponse
 getReq (u, o) = req GET u NoReqBody lbsResponse o
 
-parse :: (MonadError Issue m) => Text -> m (Req LbsResponse)
-parse url = do
+parseBody :: (MonadError Issue m) => Text -> m (Req LbsResponse)
+parseBody url = do
   uri <- maybe (throwError $ fromString $ "Invalid Endpoint: " <> toString url <> "!") pure (mkURI url >>= useURI)
   pure (either getReq getReq uri)
 
 http :: (MonadError Issue m, MonadIO m) => Text -> [Text] -> m BL.ByteString
 http dom p = do
-  request <- parse (genUrl dom p)
+  request <- parseBody (genUrl dom p)
   responseBody <$> liftIO (runReq defaultHttpConfig request)
 
 hackage :: (MonadIO m, MonadError Issue m) => Text -> m (Map Name (NonEmpty Version))
@@ -140,11 +141,22 @@ getVersions name = do
 prepareDir :: (MonadIO m) => FilePath -> m ()
 prepareDir dir = liftIO $ createDirectoryIfMissing True dir
 
-newtype Snapshot = Snapshot {snapshotCompiler :: Text}
+data Snapshot = Snapshot {snapshotCompiler :: Text, snapshotPackages :: Map Name Version}
   deriving (Show)
 
+parseValue :: Value -> Parser (Name, Version)
+parseValue = withObject "Package" $ \v -> do
+  package <- v .: "hackage"
+  let (name, versionStr) = parsePkgString package
+  version <- parse versionStr
+  pure (name, version)
+
+parseMap :: [Value] -> Parser (Map Name Version)
+parseMap pairs = Map.fromList <$> mapM parseValue pairs
+
 instance FromJSON Snapshot where
-  parseJSON = withObject "Snapshot" $ \v -> Snapshot <$> (v .: "resolver" >>= (.: "compiler"))
+  parseJSON = withObject "Snapshot" $ \v ->
+    Snapshot <$> (v .: "resolver" >>= (.: "compiler")) <*> (v .: "packages" >>= parseMap)
 
 genName :: (MonadError Issue m) => Text -> m [Text]
 genName resolver
@@ -160,12 +172,15 @@ genName resolver
               lastPart = NE.last parts
            in pure (prefix : segments <> [lastPart <> ".yaml"])
 
-getSnapshotGHC :: (MonadIO m, MonadError Issue m) => Text -> m Version
-getSnapshotGHC name = do
+getSnapshotGHC :: (MonadIO m, MonadError Issue m) => Name -> m Version
+getSnapshotGHC name = getSnapshot name >>= either (throwError . fromString) pure . parseGHCVersion . snapshotCompiler
+
+getSnapshot :: (MonadError Issue m, MonadIO m) => Text -> m Snapshot
+getSnapshot name = do
   pathSegments <- genName name
   body <- runResultT (http "https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master" pathSegments)
   case body of
     Failure {failure} -> throwError $ fromString $ "HTTP Error: " <> show failure
     Success {result} -> case decodeEither' (BL.toStrict result) of
       Left err -> throwError $ fromString $ "Snapshot Error: " <> prettyPrintParseException err
-      Right snapshot -> either (throwError . fromString) pure (parseGHCVersion (snapshotCompiler snapshot))
+      Right snapshot -> pure snapshot

@@ -35,7 +35,7 @@ import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Bump (..), Version, dropPatch, nextVersion)
-import HWM.Runtime.Cache (Cache, getVersions)
+import HWM.Runtime.Cache (Cache, getVersions, Snapshot)
 import Relude
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
@@ -130,8 +130,8 @@ boundsBetter a b = boundsScore a > boundsScore b
 getLatest :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => PkgName -> m Bound
 getLatest = fmap (Bound Max True . head) . getVersions
 
-updateDepBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => PkgName -> Bounds -> m Bounds
-updateDepBounds name bounds = do
+updateDepBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => Snapshot -> PkgName -> Bounds -> m Bounds
+updateDepBounds sp name bounds = do
   latest <- getLatest name
   let upper = getBound Max bounds
   let newVersion = maximum (latest : upper)
