@@ -5,7 +5,7 @@ module HWM.CLI.Command.Outdated (runOutdated) where
 
 import Data.Foldable (Foldable (minimum))
 import HWM.Core.Formatting (Color (..), chalk)
-import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (SeverityWarning))
+import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, auditHasAny, formatAudit, updateDepBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
@@ -42,6 +42,6 @@ runOutdated autoFix = do
                 { issueDetails = Nothing,
                   issueMessage = "Found " <> show (length dependencyAudits) <> " outdated dependencies: Run 'hwm outdated --fix' to update.",
                   issueTopic = "registry",
-                  issueSeverity = SeverityWarning
+                  issueSeverity = if  any (auditHasAny (== Conflict)) dependencyAudits then SeverityError else SeverityWarning
                 }
             )
