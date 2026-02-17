@@ -40,7 +40,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Has (Has, askEnv)
 import HWM.Core.Parsing (genUrl, parse, parsePkgString)
-import HWM.Core.Pkg (PkgName)
+import HWM.Core.Pkg (PkgName (..))
 import HWM.Core.Result (Issue, Result (..), ResultT (..))
 import HWM.Core.Version (Version, parseGHCVersion)
 import HWM.Runtime.Files (select)
@@ -141,17 +141,17 @@ getVersions name = do
 prepareDir :: (MonadIO m) => FilePath -> m ()
 prepareDir dir = liftIO $ createDirectoryIfMissing True dir
 
-data Snapshot = Snapshot {snapshotCompiler :: Text, snapshotPackages :: Map Name Version}
+data Snapshot = Snapshot {snapshotCompiler :: Text, snapshotPackages :: Map PkgName Version}
   deriving (Show)
 
-parseValue :: Value -> Parser (Name, Version)
+parseValue :: Value -> Parser (PkgName, Version)
 parseValue = withObject "Package" $ \v -> do
   package <- v .: "hackage"
   let (name, versionStr) = parsePkgString package
   version <- parse versionStr
-  pure (name, version)
+  pure (PkgName name, version)
 
-parseMap :: [Value] -> Parser (Map Name Version)
+parseMap :: [Value] -> Parser (Map PkgName Version)
 parseMap pairs = Map.fromList <$> mapM parseValue pairs
 
 instance FromJSON Snapshot where
