@@ -13,7 +13,7 @@ jobs:
       matrix:
         include:
           - ghc: 9.6.3
-            env: default
+            env: stable
           # - ghc: 8.10.7
           #   env: legacy
       fail-fast: false
