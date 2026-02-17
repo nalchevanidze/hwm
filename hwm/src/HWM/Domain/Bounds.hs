@@ -21,6 +21,7 @@ module HWM.Domain.Bounds
     BoundCompliance (..),
     BoundsAudit (..),
     formatAudit,
+    isAudit,
   )
 where
 
@@ -127,7 +128,7 @@ compareBound f (Just Bound {version}) (Just target) = f version target
 compareBound _ _ _ = False
 
 auditBound :: Maybe Bound -> Maybe Version -> (Version -> Version -> Bool) -> BoundAudit
-auditBound registryBound matrixVersion isConflict 
+auditBound registryBound matrixVersion isConflict
   | null registryBound = BoundAudit {auditStatus = Missing, ..}
   | compareBound isConflict registryBound matrixVersion =
       BoundAudit {auditStatus = Conflict, ..}
@@ -135,12 +136,15 @@ auditBound registryBound matrixVersion isConflict
       BoundAudit {auditStatus = Unverified, ..}
   | otherwise = BoundAudit {auditStatus = Valid, ..}
 
+isAudit :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
+isAudit f BoundsAudit {..} = all (f . auditStatus) [auditMinBound, auditMaxBound]
+
 auditBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> BoundsAudit
 auditBounds legacy nightly name Bounds {..} =
   BoundsAudit
     { auditPkgName = name,
-      minBound = auditBound lowerBound (getVersion name legacy) (>) ,
-      maxBound = auditBound upperBound (getVersion name nightly) (<)
+      auditMinBound = auditBound lowerBound (getVersion name legacy) (>),
+      auditMaxBound = auditBound upperBound (getVersion name nightly) (<)
     }
 
 pickBy :: Maybe Version -> Maybe Bound -> ([Bound] -> Bound) -> Maybe Bound
@@ -155,10 +159,10 @@ updateDepBounds legacy nightly name Bounds {..} =
     }
 
 data BoundCompliance
-  = Conflict -- Was: AboveRecommended (The "Red" scenario)
-  | Unverified -- Was: BelowRecommended (The "Yellow" scenario)
-  | Missing -- Was: NoBound
-  | Valid -- Was: Compliant
+  = Conflict
+  | Unverified 
+  | Missing 
+  | Valid 
   deriving (Show, Eq)
 
 data BoundAudit = BoundAudit
@@ -174,14 +178,17 @@ formatStatus Unverified = chalk Yellow "-> "
 formatStatus Missing = chalk Cyan " ! "
 formatStatus Valid = chalk Green " ✓ "
 
-formatAudit :: BoundAudit -> [Text]
-formatAudit (BoundAudit Nothing Nothing s) = ["", formatStatus s]
-formatAudit (BoundAudit Nothing (Just x) s) = [chalk Dim (format x), formatStatus s]
-formatAudit (BoundAudit (Just x) Nothing s) = [chalk Dim (format x), formatStatus s]
-formatAudit (BoundAudit (Just reg) (Just mat) s) = [chalk Dim (format reg), formatStatus s <> "  " <> format mat]
+formatBoundAudit :: BoundAudit -> [Text]
+formatBoundAudit (BoundAudit Nothing Nothing s) = ["", formatStatus s]
+formatBoundAudit (BoundAudit Nothing (Just x) s) = [chalk Dim (format x), formatStatus s]
+formatBoundAudit (BoundAudit (Just x) Nothing s) = [chalk Dim (format x), formatStatus s]
+formatBoundAudit (BoundAudit (Just reg) (Just mat) s) = [chalk Dim (format reg), formatStatus s <> "  " <> format mat]
 
 data BoundsAudit = BoundsAudit
   { auditPkgName :: PkgName,
-    minBound :: BoundAudit,
-    maxBound :: BoundAudit
+    auditMinBound :: BoundAudit,
+    auditMaxBound :: BoundAudit
   }
+
+formatAudit :: BoundsAudit -> [Text]
+formatAudit a = [format $ auditPkgName a] <> formatBoundAudit (auditMinBound a) <> [chalk Dim "  &&  "] <> formatBoundAudit (auditMaxBound a)

@@ -4,9 +4,9 @@
 module HWM.CLI.Command.Outdated (runOutdated) where
 
 import Data.Foldable (Foldable (maximum, minimum))
-import HWM.Core.Formatting (Color (..), Format (..), chalk)
+import HWM.Core.Formatting (Color (..), chalk)
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (SeverityWarning))
-import HWM.Domain.Bounds (BoundsAudit (..), auditBounds, formatAudit, updateDepBounds)
+import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, formatAudit, isAudit, updateDepBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
 import HWM.Domain.Dependencies (mapDeps, mapWithName)
@@ -23,11 +23,9 @@ runOutdated autoFix = do
   env <- getBuildEnvroments
   legacy <- getSnapshot (minimum $ map buildResolver env)
   bleedingEdge <- getSnapshot (maximum $ map buildResolver env)
-  let dependencyAudits = mapWithName (auditBounds legacy bleedingEdge) originalRegistry
-  section "audit"
-    $ printGenTable
-    $ (\a -> [format $ auditPkgName a] <> formatAudit (minBound a) <> [chalk Dim "  &&  "] <> formatAudit (maxBound a))
-    <$> dependencyAudits
+  let dependencyAudits = filter (isAudit (/= Valid)) $ mapWithName (auditBounds legacy bleedingEdge) originalRegistry
+
+  section "audit" $ printGenTable $ formatAudit <$> dependencyAudits
 
   if null dependencyAudits
     then do
