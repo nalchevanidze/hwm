@@ -173,13 +173,17 @@ getBuildEnvironment ::
   ) =>
   Maybe Name ->
   m BuildEnvironment
-getBuildEnvironment targetNameInput = do
-  targetName <- maybe (currentEnv <$> getRegistry) pure targetNameInput
+getBuildEnvironment inputName = do
   envs <- getBuildEnvroments
-  maybe
-    (throwError $ fromString $ toString ("No matching Environment for input '" <> targetName <> "'! " <> availableOptions (map buildName envs)))
-    pure
-    $ find ((targetName ==) . buildName) envs
+  defaultname <- defaultEnvironment <$> askEnv
+  case inputName of
+    Just name -> matchEnv envs name (select envs name)
+    Nothing -> do
+      cachedName <- currentEnv <$> getRegistry
+      matchEnv envs defaultname (select envs cachedName <|> select envs defaultname)
+  where
+    select envs name = find ((name ==) . buildName) envs
+    matchEnv envs name = maybe (throwError $ fromString $ toString ("No matching Environment for input '" <> name <> "'! " <> availableOptions (map buildName envs))) pure
 
 data HkgRef = HkgRef
   { pkgName :: PkgName,
