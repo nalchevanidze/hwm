@@ -16,7 +16,7 @@ import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
 import HWM.Domain.Dependencies (Dependency (Dependency), lookupBounds, singleDeps)
 import HWM.Domain.Matrix (getTestedRange)
-import HWM.Domain.Workspace (resolveTargets)
+import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Package
 import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM, sectionWorkspace)
 import Options.Applicative (argument, help, long, metavar, short, str, strOption)
@@ -32,13 +32,12 @@ instance ParseCLI RegistryAddOptions where
 
 runRegistryAdd :: RegistryAddOptions -> ConfigT ()
 runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
-  workspaces <- resolveTargets (maybeToList opsWorkspace)
-  let target = if null workspaces then "none (registry only)" else format (T.intercalate ", " (map pkgId workspaces))
+  workspaces <- resolveWorkspaces (maybeToList opsWorkspace)
   sectionTableM
     0
     "add dependency"
     [ ("package", pure $ chalk Magenta (format opsPkgName)),
-      ("target", pure $ chalk Cyan target)
+      ("target", pure $ chalk Cyan (maybe "none (registry only)" format opsWorkspace))
     ]
 
   registered <- asks (lookupBounds opsPkgName . registry . config)
@@ -59,7 +58,10 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
         putLine $ padDots 16 "registry" <> format bounds <> " (already registered)"
       addDepToPackage workspaces (Dependency opsPkgName bounds)
   where
-    addDepToPackage targets dependency =
-      unless (null targets) $ sectionWorkspace $ do
-        let maxLen = genMaxLen (map pkgMemberId targets)
-        for_ targets $ \pkg -> updatePackage maxLen (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg
+    addDepToPackage ws dependency =
+      unless (null ws) $ sectionWorkspace $ do
+        let maxLen = genMaxLen (map pkgMemberId $ concatMap snd ws)
+        for_ ws $ \(name, pkgs) -> do
+          putLine ""
+          putLine $ "• " <> chalk Bold name
+          for_ pkgs $ \pkg -> updatePackage maxLen (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg

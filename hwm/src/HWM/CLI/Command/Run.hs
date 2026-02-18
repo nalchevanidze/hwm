@@ -23,7 +23,7 @@ import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, config)
 import HWM.Domain.Matrix (BuildEnvironment (..), getBuildEnvironment, getBuildEnvroments)
-import HWM.Domain.Workspace (resolveTargets)
+import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (createEnvYaml, stackPath)
 import HWM.Runtime.Cache (prepareDir)
 import HWM.Runtime.Logging (logError, logRoot)
@@ -65,7 +65,7 @@ runScript scriptName ScriptOptions {..} = do
   case M.lookup scriptName (scripts cfg) of
     Just script -> do
       envs <- getEnvs scriptEnvs
-      targets <- resolveTargets scriptTargets
+      targets <- concatMap snd <$> resolveWorkspaces scriptTargets
       for_ envs (createEnvYaml . buildName)
       let multi = length envs > 1
       let cmdTemplate = if null scriptOptions then script else T.unwords (script : scriptOptions)

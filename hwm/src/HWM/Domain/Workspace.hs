@@ -13,11 +13,11 @@ module HWM.Domain.Workspace
     pkgRegistry,
     PkgRegistry,
     memberPkgs,
-    resolveTargets,
     selectGroup,
     canPublish,
     buildWorkspaceGroups,
     askWorkspaceGroups,
+    resolveWorkspaces,
   )
 where
 
@@ -74,18 +74,26 @@ resolveGroup g = Map.fromList . map ((,g) . pkgName) <$> memberPkgs g
 pkgRegistry :: (MonadIO m, MonadError Issue m) => [WorkspaceGroup] -> m PkgRegistry
 pkgRegistry = fmap Map.unions . traverse resolveGroup
 
+askWorkspaceGroups :: (MonadReader env m, Has env [WorkspaceGroup]) => m [WorkspaceGroup]
+askWorkspaceGroups = asks obtain
+
+resolveWorkspaces :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => [Name] -> m [(Name, [Pkg])]
+resolveWorkspaces names = do
+  ws <- askWorkspaceGroups
+  allPkgs <- (S.toList . S.fromList) . concat <$> traverse (resolveTarget ws) names
+  let grouped = groupByGroupName allPkgs
+  pure grouped
+
+groupByGroupName :: [Pkg] -> [(Name, [Pkg])]
+groupByGroupName pkgs =
+  let sorted = sortOn pkgGroup pkgs
+      grouped = groupBy (\a b -> pkgGroup a == pkgGroup b) sorted
+   in [(maybe "" pkgGroup (viaNonEmpty head g), g) | g <- grouped, not (null g)]
+
 parseTarget :: Text -> (Text, Maybe Text)
 parseTarget input = case T.breakOn "/" input of
   (pkg, "") -> (pkg, Nothing) -- No slash found
   (grp, rest) -> (grp, Just (T.drop 1 rest)) -- Drop the "/"
-
-askWorkspaceGroups :: (MonadReader env m, Has env [WorkspaceGroup]) => m [WorkspaceGroup]
-askWorkspaceGroups = asks obtain
-
-resolveTargets :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => [Name] -> m [Pkg]
-resolveTargets names = do
-  ws <- askWorkspaceGroups
-  (S.toList . S.fromList) . concat <$> traverse (resolveTarget ws) names
 
 resolveTarget :: (MonadIO m, MonadError Issue m) => [WorkspaceGroup] -> Text -> m [Pkg]
 resolveTarget ws target = do
@@ -93,16 +101,16 @@ resolveTarget ws target = do
   members <- selectGroup g ws >>= memberPkgs
   resolveT members n
 
-selectGroup :: (MonadError Issue m) => Name -> [WorkspaceGroup] -> m WorkspaceGroup
-selectGroup name groups =
-  maybe (throwError $ fromString $ toString ("Workspace group \"" <> name <> "\" not found! " <> availableOptions (map pkgGroupName groups))) pure (find ((== name) . pkgGroupName) groups)
-
 resolveT :: (MonadError Issue m) => [Pkg] -> Maybe Name -> m [Pkg]
 resolveT pkgs Nothing = pure pkgs
 resolveT pkgs (Just target) =
   case find (\p -> target == pkgMemberId p) pkgs of
     Just p -> pure [p]
     Nothing -> throwError $ fromString $ toString $ "Target not found: " <> target
+
+selectGroup :: (MonadError Issue m) => Name -> [WorkspaceGroup] -> m WorkspaceGroup
+selectGroup name groups =
+  maybe (throwError $ fromString $ toString ("Workspace group \"" <> name <> "\" not found! " <> availableOptions (map pkgGroupName groups))) pure (find ((== name) . pkgGroupName) groups)
 
 canPublish :: WorkspaceGroup -> Bool
 canPublish WorkspaceGroup {publish} = fromMaybe False publish
