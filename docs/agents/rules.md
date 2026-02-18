@@ -54,6 +54,8 @@ and only if it uses `Text` literals, it should also include:
 - **Error Types:** All errors **MUST** be wrapped in the `Issue` type for consistent error handling across the codebase.
 - **Maybe**: use `maybe` or `fromMaybe` monad for optional values instead of manual pattern matching or if else checks.
 - **Text**: Text manipulation should utilize `Data.Text` functions like `T.isInfixOf`, `T.pack`, etc., instead of converting to `String` for processing. where we use qualified imports for `Data.Text` as `T`.
+add changes in the file always in the same style as the existing code. and always at the end of the file. and if we need to import new module we should add it at the end of the import list and not in the middle of it. and we should not change the order of existing imports. and we should not change existing code style or formatting. we should only add new code in the same style as existing code.
+- Preferr WildRecord syntax for data types with many fields, and use record syntax for better readability and maintainability.
 
 ## 📜 4. Documentation & Files
 

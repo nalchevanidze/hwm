@@ -18,6 +18,7 @@ module HWM.Domain.Matrix
     hkgRefs,
     printEnvironments,
     getTestedRange,
+    removeEnvironmentByName,
   )
 where
 
@@ -248,3 +249,8 @@ getTestedRange = do
   legacy <- getSnapshot (minimum $ map buildResolver env)
   nightly <- getLatestNightlySnapshot
   pure TestedRange {legacy = legacy, nightly = nightly}
+
+-- | Remove an environment from the matrix by name
+removeEnvironmentByName :: Name -> Matrix -> Matrix
+removeEnvironmentByName envName matrix =
+  matrix {environments = filter ((envName /=) . name) (environments matrix)}
