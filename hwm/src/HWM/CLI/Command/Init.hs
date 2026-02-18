@@ -12,6 +12,7 @@ import Data.List
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (Cyan), Format (format), chalk, padDots)
 import HWM.Core.Options (Options (..))
+import HWM.Core.Parsing (ParseCLI (..), flag)
 import HWM.Core.Pkg (Pkg (..), scanPkgs)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
@@ -23,6 +24,7 @@ import HWM.Integrations.Toolchain.Package (deriveRegistry)
 import HWM.Integrations.Toolchain.Stack (buildMatrix, scanStackFiles)
 import HWM.Runtime.Files (forbidOverride)
 import HWM.Runtime.UI (MonadUI, putLine, runUI, section)
+import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (exitWith, notElem)
 import System.Directory (getCurrentDirectory)
 import System.FilePath
@@ -39,6 +41,12 @@ data InitOptions = InitOptions
     projectName :: Maybe Text
   }
   deriving (Show)
+
+instance ParseCLI InitOptions where
+  parseCLI =
+    InitOptions
+      <$> flag 'f' "force" "Force override existing hwm.yaml"
+      <*> optional (argument str (metavar "NAME" <> help "Optional project name (defaults to current directory name)"))
 
 initWorkspace :: InitOptions -> Options -> IO ()
 initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do

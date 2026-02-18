@@ -15,6 +15,7 @@ module HWM.Core.Parsing
     parseOptions,
     parsePkgString,
     ParseCLI (..),
+    flag,
   )
 where
 
@@ -31,7 +32,7 @@ import Data.Text
     uncons,
   )
 import qualified Data.Text as T
-import Options.Applicative (Mod, Parser, strOption)
+import Options.Applicative (Mod, Parser, help, long, short, strOption, switch)
 import Options.Applicative.Builder (OptionFields)
 import Relude hiding
   ( break,
@@ -45,6 +46,9 @@ import Relude hiding
   )
 
 type SourceText = Text
+
+flag :: Char -> String -> String -> Parser Bool
+flag s l h = switch (long l <> short s <> help h)
 
 parseOptions :: Mod OptionFields Text -> Parser [Text]
 parseOptions x = fmap (\raw -> raw >>= (map T.strip . T.splitOn ",")) (many (strOption x))

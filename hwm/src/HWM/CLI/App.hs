@@ -11,8 +11,7 @@ where
 
 import qualified Data.Text as T
 import HWM.CLI.Command (Command (..), Options (..), currentVersion, defaultOptions, runCommand)
-import HWM.CLI.Command.Init (InitOptions (..))
-import HWM.Core.Parsing (Parse (..), ParseCLI (..))
+import HWM.Core.Parsing (Parse (..), ParseCLI (..), flag)
 import Options.Applicative
   ( Parser,
     argument,
@@ -22,16 +21,13 @@ import Options.Applicative
     help,
     helper,
     info,
-    long,
     metavar,
     prefs,
     progDesc,
-    short,
     showHelpOnError,
+    str,
     subparser,
-    switch,
   )
-import Options.Applicative.Builder (str)
 import Relude
 
 -- Helper for building commands (unchanged, just added type signature clarity)
@@ -44,9 +40,6 @@ commands =
           command name (info (helper <*> value) (fullDesc <> progDesc desc))
       )
 
-flag :: Char -> String -> String -> Parser Bool
-flag s l h = switch (long l <> short s <> help h)
-
 run :: Parser a -> IO a
 run app =
   customExecParser
@@ -55,12 +48,6 @@ run app =
         (helper <*> app)
         (fullDesc <> progDesc "HWM - Haskell Workspace Manager for Monorepos")
     )
-
-parseInitOptions :: Parser InitOptions
-parseInitOptions =
-  InitOptions
-    <$> flag 'f' "force" "Force override existing hwm.yaml"
-    <*> optional (argument str (metavar "NAME" <> help "Optional project name (defaults to current directory name)"))
 
 parseCommand :: Parser Command
 parseCommand =
@@ -87,7 +74,7 @@ parseCommand =
       ),
       ( "init",
         "Initialize a new HWM workspace by scanning the current directory.",
-        Init <$> parseInitOptions
+        Init <$> parseCLI
       ),
       ( "registry",
         "Manage the dependency registry (add, audit, ls).",
