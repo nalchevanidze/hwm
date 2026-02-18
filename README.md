@@ -153,59 +153,74 @@ hwm run build
 
 ## 🛠️ Key Workflows
 
-### ➕ Smart Dependency Injection (`hwm add`)
 
-Stop manually searching for version bounds. `hwm add` injects dependencies into packages or groups and uses a "Sandwich" discovery logic to find the safest bounds.
+## 📚 Registry Management
 
-* **Registry Reuse:** If the package is in your `registry`, it uses existing bounds.
-* **Matrix Discovery:** If new, it audits your `legacy` (min) and `nightly` (max) snapshots to find the tested window.
-* **Hackage Fallback:** If not in snapshots, it pulls the latest preferred version from Hackage.
+The `registry` is the central source of dependency version bounds for all packages in your workspace. HWM provides a unified set of commands under `hwm registry` to manage, audit, and list dependencies:
+
+### ➕ Add Dependencies (`hwm registry add`)
+
+Stop manually searching for version bounds. `hwm registry add` injects dependencies into packages or groups and uses a "Sandwich" discovery logic to find the safest bounds.
+
+- **Registry Reuse:** If the package is in your `registry`, it uses existing bounds.
+- **Matrix Discovery:** If new, it audits your `legacy` (min) and `nightly` (max) snapshots to find the tested window.
+- **Hackage Fallback:** If not in snapshots, it pulls the latest preferred version from Hackage.
 
 ```bash
 # Add to a specific package
-hwm add aeson libs/core
+hwm registry add aeson libs/core
 
 # Add to an entire group (all packages in 'libs')
-hwm add servant libs
-
+hwm registry add servant libs
 ```
 
 <p align="center">
 <img src="images/add.png" alt="HWM Add Command" width="600">
 </p>
 
-### 📦 Automated Dependency Management & Auditing
+### 📦 Audit & Fix Dependencies (`hwm registry audit`)
 
-HWM's `outdated` command is more than a simple update checker:
+HWM audits your dependency bounds against real, tested package sets from Stackage LTS and Nightly snapshots. This means:
 
-* **Auditing Power:** HWM audits your dependency bounds against real, tested package sets from Stackage LTS and Nightly snapshots. This means:
-* You only claim support for versions you actually test in CI.
-* You avoid breakage from untested versions (e.g., new releases on Hackage that aren't in Stackage yet).
-* You get clear errors if your bounds are too narrow (missing tested versions) or warnings if they're too wide (including untested versions).
+- You only claim support for versions you actually test in CI.
+- You avoid breakage from untested versions (e.g., new releases on Hackage that aren't in Stackage yet).
+- You get clear errors if your bounds are too narrow (missing tested versions) or warnings if they're too wide (including untested versions).
 
+**Automated Fixes:** With `hwm registry audit --fix` and `--force`, you can automatically update your bounds to match the tested window, keeping your project safe and future-proof with minimal effort.
 
-* **Why Stackage Snapshots?**
-* Stackage snapshots are curated, reproducible sets of package versions. By aligning your bounds with these, you guarantee that your project is always buildable and testable in real environments.
-
-
-* **Automated Fixes:** With `hwm outdated --fix` and `--force`, you can automatically update your bounds to match the tested window, keeping your project safe and future-proof with minimal effort.
-
-**This makes HWM a true assistant for long-term project health, not just a file generator.**
-
-* **No More Bounds Headaches:** HWM automates and audits your dependency bounds, so you never have to manually guess or maintain safe version ranges again. Your bounds always reflect what is actually tested, eliminating a major source of maintenance pain in Haskell projects.
+**No More Bounds Headaches:** HWM automates and audits your dependency bounds, so you never have to manually guess or maintain safe version ranges again. Your bounds always reflect what is actually tested, eliminating a major source of maintenance pain in Haskell projects.
 
 ```bash
-# Check Hackage for updates to your registry and audit bounds
-hwm outdated
+# Audit registry and check for updates
+hwm registry audit
 
 # Auto-update bounds in hwm.yaml and sync all packages
-hwm outdated --fix
+hwm registry audit --fix
 
+# Auto-fix errors and warnings
+hwm registry audit --fix --force
 ```
 
 <p align="center">
 <img src="images/outdated.png" alt="HWM Outdated Command" width="600">
 </p>
+
+### 📋 List Registry (`hwm registry ls`)
+
+Lists all dependencies in the registry, showing their current bounds and status.
+
+```bash
+hwm registry ls
+```
+
+**Output:**
+
+```
+registry:
+  - aeson >= 2.0 && < 3.0
+  - text  >= 2.0 && < 3.0
+  ...
+```
 
 ### 🚀 Synchronized Releases
 

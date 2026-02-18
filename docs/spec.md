@@ -18,8 +18,7 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool for Haskell monorepos.
 
 - **Workspace Groups:** Logical package collections (dirs, prefixes, publish flags)
 - **Environments(Matrix):** Named GHC/resolver environments, script/env filters
-- **Registry:** Central dependency bounds for all packages
-- **Bounds Auditing:** Ensures safe dependency bounds (warn/error if out of matrix window)
+- **Registry:** Central dependency bounds for all packages, managed and audited via unified `hwm registry` commands (add, audit, ls)
 - **Scripts:** Template commands with `{TARGET}` substitution
 
 ## Comparison
@@ -41,7 +40,9 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool for Haskell monorepos.
 | `hwm init [OPTIONS]`       | Generate `hwm.yaml` from Stack project                 | Scans stack files, infers packages/groups, writes manifest                   |
 | `hwm sync [ENV]`           | Regenerate all config files for environment            | Updates stack.yaml, hie.yaml, package.yaml, cabal files                      |
 | `hwm run SCRIPT [OPTIONS]` | Run custom scripts across envs/targets                 | Supports `--target`/`--env`, `{TARGET}` required if using `--target`         |
-| `hwm outdated [--fix]`     | Audit/fix registry bounds                             | Compares to Stackage LTS/Nightly, `--fix` updates errors, `--force` warnings |
+| `hwm registry add <pkg> <target>` | Add dependency to registry and inject into packages/groups | Discovers safe bounds, updates registry, syncs workspace |
+| `hwm registry audit [--fix] [--force]` | Audit/fix registry bounds | Compares to Stackage LTS/Nightly, `--fix` updates errors, `--force` warnings |
+| `hwm registry ls` | List all dependencies in the registry | Shows current bounds and status |
 | `hwm version [BUMP]`       | Show or bump project version                          | `major`/`minor`/`patch`, updates bounds, propagates to all packages          |
 | `hwm publish [GROUP]`      | Build & upload packages                               | For groups with `publish: true` or specified, runs sdist/upload              |
 | `hwm status`               | Show project/env/workspace overview                   | Displays project name, version, envs, workspace structure                    |
@@ -52,130 +53,124 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool for Haskell monorepos.
 **Configuration Structure:**
 ```yaml
 name: string         # Project identifier
-version: string      # SemVer (e.g., "0.1.0")
-bounds: string       # Auto-generated (">= 0.1.0 && < 0.2.0")
-workspace: [WorkspaceGroup] # Package groups
-matrix: Matrix       # Build environments
-registry: [Dependency]      # Version constraints
-scripts: { name: command }  # Custom commands
-```
 
----
+## Registry Management
 
-## Configuration Schema (hwm.yaml)
+The `registry` is the central source of dependency version bounds for all packages in your workspace. HWM provides a unified set of commands under `hwm registry` to manage, audit, and list dependencies:
 
-### Complete Type Definitions
+### hwm registry add <pkg> <target>
 
-```typescript
-// Root Configuration
-type Config = {
-  name: string; // Project name
-  version: Version; // SemVer string
-  bounds: Bounds; // Auto-generated bounds
-  workspace: WorkspaceGroup[]; // Package groups
-  matrix: Matrix; // Build environments
-  registry: Dependency[]; // Global dependencies
-  scripts?: Record<string, string>; // Custom commands
-};
+Adds a dependency to specific packages or entire groups while maintaining workspace consistency. HWM determines the appropriate version bounds by auditing the project's build matrix and external package sets.
 
-// Workspace Group
-type WorkspaceGroup = {
-  name: string; // Required: Group identifier
-  dir?: string; // Optional: Base directory (default: "./")
-  prefix?: string; // Optional: Package name prefix
-  members: string[]; // Required: Member names
-  publish?: boolean; // Optional: Hackage publish flag (default: false, auto-detected for examples/benchmarks)
-};
+#### Discovery & UI Logic
 
-// Build Matrix
-type Matrix = {
-  defaultEnvironment: string; // Required: Default env name
-  environments: BuildEnv[]; // Required: List of environments
-};
+HWM adapts its output based on how it resolves the package version:
 
-// Build Environment
-type BuildEnv = {
-  name: string; // Required: Environment identifier
-  ghc: Version; // Required: GHC version
-  resolver: string; // Required: Stack resolver
-  extraDeps?: Record<string, Version>; // Optional: Extra dependencies
-  exclude?: string[]; // Optional: Package IDs to exclude
-  allowNewer?: boolean; // Optional: Enable --allow-newer
-};
-```
-
-
-## Workflow Examples (Condensed)
-
-**Initial Setup:**
-1. `hwm init`  
-2. `hwm sync`  
-3. Verify generated files  
-4. `hwm run build`
-
-**Multi-GHC Testing:**
-1. `hwm run test --env=all`  
-2. Check logs if failure  
-3. Run on specific envs: `hwm run test --env=legacy,nightly`
-
-**Dependency Update:**
-1. `hwm outdated`  
-2. Review changes  
-3. `hwm outdated --fix`  
-4. `hwm run test --env=all`
-
-**Release Process:**
-1. `hwm version minor`  
-2. `hwm run test --env=all`  
-3. `hwm publish libs`  
-4. `git tag vX.Y.Z && git push --tags`
-
----
-- **Latest Nightly**: Represents the maximum version of each dependency that is available and can be tested. This is the upper bound of your "supported window".
-
-By comparing your registry bounds to these two snapshots, HWM can:
-- Guarantee that every version you claim to support is actually tested in CI (no false sense of safety).
-- Prevent accidental breakage from untested versions (e.g., if you allow a version newer than Nightly, you risk breakage as soon as it is released).
-- Warn you if your bounds are too restrictive (excluding versions that are tested and available).
-
-
-### hwm outdated [--fix] [--force]
-
-**Behavior:**
-
-1. Clears version cache (state.json) to ensure fresh snapshot data.
-2. For each package in `registry`:
-  - Fetches version information from the oldest Stackage LTS and the latest Stackage Nightly snapshot (e.g., https://github.com/commercialhaskell/stackage-snapshots/blob/master/nightly/2026/2/17.yaml).
-  - Compares your declared lower and upper bounds to the actual minimum and maximum versions available in these snapshots.
-3. Audits each dependency's bounds:
-  - **Error:** If your bounds are inside the matrix window (i.e., you allow only a subset of the tested versions), this is considered dangerous: you may miss regressions or breakages. HWM will raise an error and require you to fix it.
-  - **Warning:** If your bounds are outside the matrix window (i.e., you allow versions not tested by any environment), this is risky: you may claim support for versions that are not actually tested. HWM will warn you, but not block you by default.
-  - **OK:** If your bounds exactly match the matrix window (from oldest LTS to latest Nightly), your registry is safe and fully covered by your build matrix.
-4. Reports all outdated, unsafe, or misaligned dependencies in a clear audit table.
-5. If `--fix` is used:
-  - Updates your registry in hwm.yaml to match the tested window (fixing only errors by default).
-  - Runs `hwm sync` to propagate changes to all generated files.
-6. If `--fix --force` is used:
-  - Also fixes warnings, expanding or contracting your bounds to exactly match the tested window.
-
-**Options:**
-
-- `-f, --fix`: Auto-update bounds and sync (only errors: bounds inside matrix window)
-- `--force`: With --fix, also fixes warnings (bounds outside matrix window)
-
-**Note:**
-Hackage preferred versions are no longer used for auditing or updating bounds. All dependency version checks are performed using Stackage LTS and Nightly snapshots only. This guarantees that your registry reflects only what is actually tested in your build matrix.
+- **Already Registered:** If the package is already in the global `registry`, HWM reuses the existing bounds and displays them with an `(already registered)` tag.
+- **Matrix Discovery:** If missing, HWM looks up the oldest (legacy) and newest (nightly) environments in your matrix to find the tested window.
+- **Hackage Fallback:** If not found in Stackage, HWM queries Hackage for the latest preferred version as the upper bound.
 
 **Examples:**
 
 ```bash
-# Check for updates and audit bounds
-hwm outdated
+# Add to a specific package
+hwm registry add aeson libs/core
 
-# Auto-apply updates (fix errors only)
-hwm outdated --fix
+# Add to an entire group
+hwm registry add servant libs
+```
 
-# Auto-apply updates (fix errors and warnings)
+#### Visual Examples
+
+| Type | CLI Output Representation |
+| --- | --- |
+| **Existing** | `registry ....... >= 0.14.1 && <= 0.20.3.0 (already registered)` |
+| **New (Full Matrix)** | `legacy ......... 0.14.1 (min)`<br>`nightly ........ 0.20.3.0 (max)` |
+| **New (Hackage)** | `legacy ......... missing (min)`<br>`nightly ........ missing`<br>`hackage ........ 0.0.5 (max)` |
+
+### hwm registry audit [--fix] [--force]
+
+Audits all dependencies in the registry against the tested window defined by your build matrix (Stackage LTS and Nightly). Ensures your bounds are safe and up-to-date.
+
+**Behavior:**
+
+1. Clears version cache to ensure fresh snapshot data.
+2. For each package in `registry`, fetches version info from the oldest LTS and latest Nightly.
+3. Compares your bounds to the actual min/max available in these snapshots.
+4. Reports errors (bounds too narrow), warnings (bounds too wide), or OK (fully covered).
+5. If `--fix`, updates registry to match tested window (errors only by default).
+6. If `--fix --force`, also fixes warnings.
+7. Runs `hwm sync` to propagate changes.
+
+**Options:**
+- `-f, --fix`: Auto-update bounds and sync (errors only)
+- `--force`: With --fix, also fixes warnings
+
+**Examples:**
+
+```bash
+# Audit registry
+hwm registry audit
+
+# Auto-fix errors
+hwm registry audit --fix
+
+# Auto-fix errors and warnings
+hwm registry audit --fix --force
+```
+
+**Output (Check Mode):**
+
+```
+• update dependencies
+  mode .. check
+
+• audit
+  Glob                  >= 0.7.0     ->   0.10.1        &&    <  1.0.0       ->   0.10.2
+  aeson                 >= 1.4.4     ->   1.5.6.0       &&    <  3.0.0       ->   2.2.3.0
+  ...
+
+• ▌ errors ▌
+
+  • registry
+  └─- • Found 11 outdated dependencies: Run 'hwm registry audit --fix --force' to update.
+  └─- • Found 2 outdated dependencies: Run 'hwm registry audit --fix' to update.
+```
+
+**Output (Fix Mode):**
+
+```
+• update dependencies (auto-fix)
+• registry ... megaparsec ↑ 9.7.0
+• config ... hwm.yaml ✓
+• workspace ... libs/core ⟳, libs/app ⟳, ...
+```
+
+**Updated Registry:**
+
+```yaml
+registry:
+  - megaparsec  >= 7.0.0 && <= 9.7.0 # Updated from < 8.0.0
+```
+
+### hwm registry ls
+
+Lists all dependencies in the registry, showing their current bounds and status.
+
+**Example:**
+
+```bash
+hwm registry ls
+```
+
+**Output:**
+
+```
+registry:
+  - aeson >= 2.0 && < 3.0
+  - text  >= 2.0 && < 3.0
+  ...
+```
 hwm outdated --fix --force
 ```
 
