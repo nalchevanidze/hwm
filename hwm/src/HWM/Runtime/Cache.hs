@@ -24,6 +24,7 @@ module HWM.Runtime.Cache
     getSnapshot,
     getVersion,
     getLatestNightlySnapshot,
+    http
   )
 where
 
@@ -122,6 +123,7 @@ parseBody url = do
 http :: (MonadError Issue m, MonadIO m) => Text -> [Text] -> m BL.ByteString
 http dom p = do
   request <- parseBody (genUrl dom p)
+  liftIO $ putStrLn "parsing" -- Debugging output, can be removed later
   responseBody <$> liftIO (runReq defaultHttpConfig request)
 
 hackage :: (MonadIO m, MonadError Issue m) => Text -> m (Map Name (NonEmpty Version))
