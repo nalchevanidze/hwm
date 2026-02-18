@@ -22,7 +22,7 @@ import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM, sectionWo
 import Options.Applicative (argument, help, long, metavar, short, str, strOption)
 import Relude
 
-data RegistryAddOptions = RegistryAddOptions {regPkg :: PkgName, regTarget :: Maybe Text} deriving (Show)
+data RegistryAddOptions = RegistryAddOptions {opsPkgName :: PkgName, opsWorkspace :: Maybe Text} deriving (Show)
 
 instance ParseCLI RegistryAddOptions where
   parseCLI =
@@ -31,29 +31,26 @@ instance ParseCLI RegistryAddOptions where
       <*> optional (strOption (long "workspace" <> short 'w' <> metavar "WORKSPACE" <> help "Target workspace ID"))
 
 runRegistryAdd :: RegistryAddOptions -> ConfigT ()
-runRegistryAdd RegistryAddOptions {regPkg, regTarget} = do
-  let packageName = regPkg
-      workspaceId = fromMaybe "default" regTarget
-
+runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
   ws <- askWorkspaceGroups
-  targets <- fmap (S.toList . S.fromList) (resolveTargets ws [workspaceId])
+  targets <- fmap (S.toList . S.fromList) (resolveTargets ws (maybeToList opsWorkspace))
 
   sectionTableM
     0
     "add dependency"
-    [ ("package", pure $ chalk Magenta (format packageName)),
+    [ ("package", pure $ chalk Magenta (format opsPkgName)),
       ("target", pure $ chalk Cyan (format (T.intercalate ", " (map pkgId targets))))
     ]
 
-  registered <- asks (lookupBounds packageName . registry . config)
+  registered <- asks (lookupBounds opsPkgName . registry . config)
   case registered of
     Nothing -> do
       range <- getTestedRange
       section "discovery" $ do
         putLine $ padDots 16 "registry" <> "missing (initiating lookup)"
 
-      bounds <- deriveBounds packageName range
-      let dependency = Dependency packageName bounds
+      bounds <- deriveBounds opsPkgName range
+      let dependency = Dependency opsPkgName bounds
 
       ((\cf -> pure cf {registry = registry cf <> singleDeps dependency}) `updateConfig`) $ do
         sectionConfig 0 [("hwm.yaml", pure $ chalk Green "✓")]
@@ -61,7 +58,7 @@ runRegistryAdd RegistryAddOptions {regPkg, regTarget} = do
     Just bounds -> do
       section "discovery" $ do
         putLine $ padDots 16 "registry" <> format bounds <> " (already registered)"
-      addDepToPackage targets (Dependency packageName bounds)
+      addDepToPackage targets (Dependency opsPkgName bounds)
   where
     addDepToPackage targets dependency = do
       sectionWorkspace $ do
