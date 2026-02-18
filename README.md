@@ -202,7 +202,7 @@ hwm registry audit --fix --force
 ```
 
 <p align="center">
-<img src="images/outdated.png" alt="HWM Outdated Command" width="600">
+<img src="images/audit.png" alt="HWM Outdated Command" width="600">
 </p>
 
 ### 📋 List Registry (`hwm registry ls`)

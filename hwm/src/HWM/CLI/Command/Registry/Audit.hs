@@ -27,12 +27,12 @@ instance ParseCLI RegistryAuditOptions where
 
 runRegistryAudit :: RegistryAuditOptions -> ConfigT ()
 runRegistryAudit RegistryAuditOptions {..} = do
-  sectionTableM 0 "update dependencies" [("mode", pure $ chalk Cyan (if auditFix then "auto-fix" else "check"))]
   originalRegistry <- asks (registry . config)
   range <- getTestedRange
+  sectionTableM 16 "audit" [("mode", pure (if auditFix then if auditForce then chalk Yellow "fix (force)" else chalk Cyan "fix" else "check"))]
 
   let dependencyAudits = filter (auditHasAny (/= Valid)) $ mapWithName (auditBounds range) originalRegistry
-  section "audit" $ printGenTable $ formatAudit <$> dependencyAudits
+  section "registry" $ printGenTable $ formatAudit <$> dependencyAudits
   let errorCount = length $ filter (auditHasAny (== Conflict)) dependencyAudits
 
   if null dependencyAudits
