@@ -17,9 +17,7 @@
 - Command `hwm reg add` ➔ `cli/command/reg/add.hs`
 - Command `hwm env ls` ➔ `cli/command/env/ls.hs`
 - **FORBIDDEN:** Flattened paths like `cli/command/reg_add.hs`.
-
-- **State Awareness:** Commands that modify state (`add`, `audit --fix`) **MUST** first call the internal `ls` or monitoring logic to verify the current environment status.
-
+- each cli command or options should be defined its own module e.g `RegistryAuditOptions` should be defined in `cli/command/reg/audit.hs` and its should have its own `ParseCLI` instance for parsing its options. where main App.hs should only be responsible for parsing the top level command and delegating to the correct module for parsing its options and executing its logic.
 ---
 
 ## ⚙️ 2. Core Abstractions & Monads

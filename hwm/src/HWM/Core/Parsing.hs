@@ -14,6 +14,7 @@ module HWM.Core.Parsing
     Parse (..),
     parseOptions,
     parsePkgString,
+    ParseCLI (..),
   )
 where
 
@@ -30,6 +31,7 @@ import Data.Text
     uncons,
   )
 import qualified Data.Text as T
+import Options.Applicative (Parser)
 import Relude hiding
   ( break,
     drop,
@@ -82,6 +84,9 @@ genUrl domain = intercalate "/" . (domain :)
 
 class Parse a where
   parse :: (MonadFail m) => Text -> m a
+
+class ParseCLI a where
+  parseCLI :: Parser a
 
 instance Parse Int where
   parse t =

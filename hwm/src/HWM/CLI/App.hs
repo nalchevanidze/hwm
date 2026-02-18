@@ -15,7 +15,7 @@ import HWM.CLI.Command.Registry (RegistryOptions(..), RegistryCommand(..))
 import HWM.CLI.Command.Init (InitOptions (..))
 import HWM.CLI.Command.Run (ScriptOptions (..))
 import HWM.Core.Common (Name)
-import HWM.Core.Parsing (Parse (..), parseOptions)
+import HWM.Core.Parsing (Parse (..), parseOptions, ParseCLI (..))
 import Options.Applicative
   ( Parser,
     argument,
@@ -149,7 +149,7 @@ parseRegistryCommand =
       ),
       ( "audit",
         "Audit and optionally fix the registry.",
-        RegistryAudit <$> flag 'f' "fix" "Automatically fix outdated dependencies"
+        RegistryAudit <$> parseCLI
       ),
       ( "ls",
         "List registry entries.",

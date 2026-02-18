@@ -2,9 +2,10 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Registry.Audit (runRegistryAudit) where
+module HWM.CLI.Command.Registry.Audit (runRegistryAudit, RegistryAuditOptions (..)) where
 
 import HWM.Core.Formatting (Color (..), chalk)
+import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, auditHasAny, formatAudit, updateDepBounds)
 import HWM.Domain.Config (Config (registry))
@@ -13,9 +14,16 @@ import HWM.Domain.Dependencies (mapDeps, mapWithName)
 import HWM.Domain.Matrix (getTestedRange)
 import HWM.Integrations.Toolchain.Package (syncPackages)
 import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
+import Options.Applicative
 import Relude
 
-data RegistryAuditOptions = RegistryAuditOptions {auditFix :: Bool, auditForce :: Bool}
+data RegistryAuditOptions = RegistryAuditOptions {auditFix :: Bool, auditForce :: Bool} deriving (Show)
+
+instance ParseCLI RegistryAuditOptions where
+  parseCLI =
+    RegistryAuditOptions
+      <$> switch (long "fix" <> help "Automatically fix issues")
+      <*> switch (long "force" <> help "Force actions")
 
 runRegistryAudit :: RegistryAuditOptions -> ConfigT ()
 runRegistryAudit RegistryAuditOptions {..} = do
