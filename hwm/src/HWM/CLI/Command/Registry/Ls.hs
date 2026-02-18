@@ -14,7 +14,5 @@ import Relude
 runRegistryLs :: Maybe Text -> ConfigT ()
 runRegistryLs regSearch = do
   deps <- asks (toDependencyList . registry . config)
-  let filtered = case regSearch of
-        Nothing -> deps
-        Just s -> filter (T.isInfixOf s . format) deps
+  let filtered = maybe deps (\s -> filter (T.isInfixOf s . format) deps) regSearch
   section "registry" $ forM_ (formatTable (map format filtered)) putLine

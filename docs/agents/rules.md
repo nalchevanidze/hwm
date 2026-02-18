@@ -42,16 +42,21 @@
 * **Required Pragmas:** Every new module **MUST** start with:
 ```haskell
 {-# LANGUAGE NoImplicitPrelude #-}
+
+```
+
+and only if it uses `Text` literals, it should also include: 
+
+```haskell
 {-# LANGUAGE OverloadedStrings #-}
 
 ```
 
-
 * **Prelude:** **MUST** import `Relude`.
 * **String Handling:** * Use `Text` instead of `String`.
 * **FORBIDDEN:** `T.pack` or `S.fromList` for literals. Use `OverloadedStrings` literals directly.
-
-
+* **Error Types:** All errors **MUST** be wrapped in the `Issue` type for consistent error handling across the codebase.
+* **Maybe**: use `maybe` or `fromMaybe` monad for optional values instead of manual pattern matching or if else checks.
 
 ---
 
