@@ -4,14 +4,12 @@
 
 module HWM.CLI.Command.Environment.SetDefault (EnvSetDefaultOptions, runEnvSetDefault) where
 
-import HWM.Core.Common (Name)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
 import qualified HWM.Domain.Matrix as Matrix
 import Options.Applicative (help, metavar, strArgument)
 import Relude
-import Control.Monad.Error.Class (throwError)
 
 newtype EnvSetDefaultOptions = EnvSetDefaultOptions {envName :: Text}
   deriving (Show)
