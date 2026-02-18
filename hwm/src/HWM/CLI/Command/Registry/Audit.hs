@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.CLI.Command.Registry.Audit (runRegistryAudit) where
@@ -14,9 +15,11 @@ import HWM.Integrations.Toolchain.Package (syncPackages)
 import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
 import Relude
 
-runRegistryAudit :: Bool -> ConfigT ()
-runRegistryAudit regFix = do
-  sectionTableM 0 "update dependencies" [("mode", pure $ chalk Cyan (if regFix then "auto-fix" else "check"))]
+data RegistryAuditOptions = RegistryAuditOptions {auditFix :: Bool, auditForce :: Bool}
+
+runRegistryAudit :: RegistryAuditOptions -> ConfigT ()
+runRegistryAudit RegistryAuditOptions {..} = do
+  sectionTableM 0 "update dependencies" [("mode", pure $ chalk Cyan (if auditFix then "auto-fix" else "check"))]
   originalRegistry <- asks (registry . config)
   range <- getTestedRange
 
@@ -28,8 +31,8 @@ runRegistryAudit regFix = do
     then do
       indent 1 $ putLine "all dependencies are up to date."
     else do
-      if regFix
-        then ((\cf -> pure $ cf {registry = mapDeps (updateDepBounds regFix range) originalRegistry}) `updateConfig`) $ do
+      if auditFix
+        then ((\cf -> pure $ cf {registry = mapDeps (updateDepBounds auditForce range) originalRegistry}) `updateConfig`) $ do
           sectionConfig 0 [("hwm.yaml", pure $ chalk Green "✓")]
           syncPackages
         else do
