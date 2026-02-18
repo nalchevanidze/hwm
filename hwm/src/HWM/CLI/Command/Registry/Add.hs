@@ -33,13 +33,14 @@ instance ParseCLI RegistryAddOptions where
 runRegistryAdd :: RegistryAddOptions -> ConfigT ()
 runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
   ws <- askWorkspaceGroups
-  targets <- fmap (S.toList . S.fromList) (resolveTargets ws (maybeToList opsWorkspace))
+  workspaces <- fmap (S.toList . S.fromList) (resolveTargets ws (maybeToList opsWorkspace))
 
+  let target = if null workspaces then "none (registry only)" else format (T.intercalate ", " (map pkgId workspaces))
   sectionTableM
     0
     "add dependency"
     [ ("package", pure $ chalk Magenta (format opsPkgName)),
-      ("target", pure $ chalk Cyan (format (T.intercalate ", " (map pkgId targets))))
+      ("target", pure $ chalk Cyan target)
     ]
 
   registered <- asks (lookupBounds opsPkgName . registry . config)
@@ -54,11 +55,11 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
 
       ((\cf -> pure cf {registry = registry cf <> singleDeps dependency}) `updateConfig`) $ do
         sectionConfig 0 [("hwm.yaml", pure $ chalk Green "✓")]
-        addDepToPackage targets dependency
+        addDepToPackage workspaces dependency
     Just bounds -> do
       section "discovery" $ do
         putLine $ padDots 16 "registry" <> format bounds <> " (already registered)"
-      addDepToPackage targets (Dependency opsPkgName bounds)
+      addDepToPackage workspaces (Dependency opsPkgName bounds)
   where
     addDepToPackage targets dependency = do
       sectionWorkspace $ do
