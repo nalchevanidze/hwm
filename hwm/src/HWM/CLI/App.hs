@@ -90,7 +90,7 @@ parseOutdatedOptions =
 parseAddOptions :: Parser AddOptions
 parseAddOptions =
   AddOptions
-    <$> argument str (metavar "PACKAGE" <> help "Package name to add")
+    <$> argument (str >>= parse) (metavar "PACKAGE" <> help "Package name to add")
     <*> argument str (metavar "WORKSPACE" <> help "Optional WORKSPACE ID to associate with the package")
 
 parseCommand :: Parser Command
