@@ -14,8 +14,8 @@ import HWM.Core.Result (Issue)
 import HWM.Runtime.Cache (http)
 import Relude
 
-data WRapper = WRapper
-  { snapshots :: [SnapshotInfo],
+data ValueWrapper = ValueWrapper
+  { snapshots :: [[(Text, Text, Text)]],
     totalCount :: Int
   }
   deriving (Show, Eq, Generic, FromJSON)
@@ -35,7 +35,7 @@ fetchStackageSnapshots :: (MonadIO m, MonadError Issue m) => m [SnapshotInfo]
 fetchStackageSnapshots = do
   body <- http "https://www.stackage.org/api/v1/" ["snapshots"]
   case eitherDecode body of
-    Right WRapper {..} -> pure snapshots
+    Right ValueWrapper {..} -> pure $ map (\(name, title, age) -> SnapshotInfo name title age) $ concat snapshots
     Left err -> throwError $ stackageError err
 
 fetchLtsSuggestions :: (MonadIO m, MonadError Issue m) => m (Map Text Text)

@@ -31,18 +31,18 @@ instance ParseCLI EnvAddOptions where
 
 runEnvAdd :: EnvAddOptions -> ConfigT ()
 runEnvAdd EnvAddOptions {..} = do
+  shortLtsMap <- fetchLtsSuggestions
   snapshots <- map snapshotName <$> fetchStackageSnapshots
-  ltsMap <- fetchLtsSuggestions
+  let suggestions = M.elems shortLtsMap <> take 12 (filter (not . isPrefixOf "nightly" . toString) snapshots)
 
-  case M.lookup envResolver ltsMap <|> find (== envResolver) snapshots of
+  case M.lookup envResolver shortLtsMap <|> find (== envResolver) snapshots of
     Nothing -> do
       let prefixMatches = filter (isPrefixOf (toString envResolver) . toString) snapshots
       let suggestionMsg = case prefixMatches of
             [] ->
-              let nonNightly = M.elems ltsMap <> take 12 (filter (not . isPrefixOf "nightly" . toString) snapshots)
-               in if null nonNightly
-                    then ""
-                    else " Here are some available snapshots: " <> T.intercalate ", " nonNightly <> "."
+              if null suggestions
+                then ""
+                else " Here are some available snapshots: " <> T.intercalate ", " suggestions <> "."
             [s] -> " Did you mean '" <> s <> "'?"
             suggestions -> " Did you mean one of: " <> T.intercalate ", " suggestions <> "?"
       throwError $ fromString $ "Resolver '" <> toString envResolver <> "' is not a valid Stackage snapshot." <> toString suggestionMsg
