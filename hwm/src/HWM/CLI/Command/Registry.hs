@@ -1,36 +1,39 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.CLI.Command.Registry
-  ( RegistryOptions (..),
-    RegistryCommand (..),
+  ( RegistryCommand (..),
     runRegistry,
   )
 where
 
-import HWM.CLI.Command.Registry.Add (runRegistryAdd)
-import HWM.CLI.Command.Registry.Audit (runRegistryAudit, RegistryAuditOptions)
-import HWM.CLI.Command.Registry.Ls (runRegistryLs)
+import HWM.CLI.Command.Registry.Add (RegistryAddOptions, runRegistryAdd)
+import HWM.CLI.Command.Registry.Audit (RegistryAuditOptions, runRegistryAudit)
+import HWM.CLI.Command.Registry.Ls (RegistryLsOptions, runRegistryLs)
+import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.ConfigT (ConfigT)
+import Options.Applicative (command, info, progDesc, subparser)
 import Relude
-import HWM.Core.Pkg (PkgName)
 
 -- | Subcommands for `hwm registry`
 data RegistryCommand
-  = RegistryAdd {regPkg :: PkgName, regTarget :: Maybe Text}
+  = RegistryAdd RegistryAddOptions
   | RegistryAudit RegistryAuditOptions
-  | RegistryLs {regSearch :: Maybe Text}
+  | RegistryLs RegistryLsOptions
   deriving (Show)
 
--- | Options for the registry command
-newtype RegistryOptions = RegistryOptions
-  { registryCommand :: RegistryCommand
-  }
-  deriving (Show)
-
-runRegistry :: RegistryOptions -> ConfigT ()
-runRegistry RegistryOptions {registryCommand} =
+runRegistry :: RegistryCommand -> ConfigT ()
+runRegistry registryCommand =
   case registryCommand of
-    RegistryAdd {regPkg, regTarget} -> runRegistryAdd regPkg regTarget
-    RegistryAudit options -> runRegistryAudit options
-    RegistryLs {regSearch} -> runRegistryLs regSearch
+    RegistryAdd opts -> runRegistryAdd opts
+    RegistryAudit opts -> runRegistryAudit opts
+    RegistryLs opts -> runRegistryLs opts
+
+instance ParseCLI RegistryCommand where
+  parseCLI =
+    subparser
+      ( mconcat
+          [ command "add" (info (RegistryAdd <$> parseCLI) (progDesc "Add a dependency to the registry.")),
+            command "audit" (info (RegistryAudit <$> parseCLI) (progDesc "Audit and optionally fix the registry.")),
+            command "ls" (info (RegistryLs <$> parseCLI) (progDesc "List registry entries."))
+          ]
+      )

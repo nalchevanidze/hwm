@@ -1,11 +1,15 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Registry.Add (runRegistryAdd) where
+module HWM.CLI.Command.Registry.Add (runRegistryAdd, RegistryAddOptions (..)) where
+
+-- removed accidental self-import
 
 import qualified Data.Set as S
 import qualified Data.Text as T
 import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, padDots)
+import HWM.Core.Parsing (ParseCLI (..), parse)
 import HWM.Core.Pkg (Pkg (..), PkgName (..), pkgId)
 import HWM.Domain.Bounds (deriveBounds)
 import HWM.Domain.Config (Config (registry))
@@ -15,13 +19,22 @@ import HWM.Domain.Matrix (getTestedRange)
 import HWM.Domain.Workspace (resolveTargets)
 import HWM.Integrations.Toolchain.Package
 import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM, sectionWorkspace)
+import Options.Applicative (argument, help, long, metavar, short, str, strOption)
 import Relude
 
-runRegistryAdd :: Text -> Maybe Text -> ConfigT ()
-runRegistryAdd regPkg regTarget = do
-  let packageName = PkgName regPkg
+data RegistryAddOptions = RegistryAddOptions {regPkg :: PkgName, regTarget :: Maybe Text} deriving (Show)
+
+instance ParseCLI RegistryAddOptions where
+  parseCLI =
+    RegistryAddOptions
+      <$> argument (str >>= parse) (metavar "PACKAGE" <> help "Package name to add")
+      <*> optional (strOption (long "workspace" <> short 'w' <> metavar "WORKSPACE" <> help "Target workspace ID"))
+
+runRegistryAdd :: RegistryAddOptions -> ConfigT ()
+runRegistryAdd RegistryAddOptions {regPkg, regTarget} = do
+  let packageName = regPkg
       workspaceId = fromMaybe "default" regTarget
-      
+
   ws <- askWorkspaceGroups
   targets <- fmap (S.toList . S.fromList) (resolveTargets ws [workspaceId])
 

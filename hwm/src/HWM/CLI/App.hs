@@ -9,13 +9,12 @@ module HWM.CLI.App
   )
 where
 
-import Data.Text (pack)
+import qualified Data.Text as T
 import HWM.CLI.Command (Command (..), Options (..), currentVersion, defaultOptions, runCommand)
-import HWM.CLI.Command.Registry (RegistryOptions(..), RegistryCommand(..))
 import HWM.CLI.Command.Init (InitOptions (..))
 import HWM.CLI.Command.Run (ScriptOptions (..))
 import HWM.Core.Common (Name)
-import HWM.Core.Parsing (Parse (..), parseOptions, ParseCLI (..))
+import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseOptions)
 import Options.Applicative
   ( Parser,
     argument,
@@ -66,14 +65,13 @@ parseScriptOptions name =
     <$> name
     <*> fmap parseOptions (many (strOption (long "target" <> short 't' <> metavar "TARGET" <> help "Limit to package (core) or group (libs)")))
     <*> fmap parseOptions (many (strOption (long "env" <> short 'e' <> metavar "ENV" <> help "Run in specific env (use 'all' for full matrix)")))
-    <*> many (argument (pack <$> str) (metavar "ARGS..." <> help "Arguments to forward to the script"))
+    <*> many (argument (T.pack <$> str) (metavar "ARGS..." <> help "Arguments to forward to the script"))
 
 parseInitOptions :: Parser InitOptions
 parseInitOptions =
   InitOptions
     <$> flag 'f' "force" "Force override existing hwm.yaml"
     <*> optional (argument str (metavar "NAME" <> help "Optional project name (defaults to current directory name)"))
-
 
 parseCommand :: Parser Command
 parseCommand =
@@ -92,7 +90,7 @@ parseCommand =
       ),
       ( "run",
         "Run a script defined in hwm.yaml",
-        Run <$> parseScriptOptions (argument (pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run"))
+        Run <$> parseScriptOptions (argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run"))
       ),
       ( "status",
         "Show the current environment, version, and sync status.",
@@ -104,7 +102,7 @@ parseCommand =
       ),
       ( "registry",
         "Manage the dependency registry (add, audit, ls).",
-        Registry <$> parseRegistryOptions
+        Registry <$> parseCLI
       )
     ]
     <|> (Run <$> parseScriptOptions (strArgument (metavar "SCRIPT")))
@@ -134,25 +132,3 @@ main = do
       Nothing -> do
         putStrLn "HWM: Missing command.\nTry 'hwm --help' for usage."
         exitFailure
-
-parseRegistryOptions :: Parser RegistryOptions
-parseRegistryOptions = RegistryOptions <$> parseRegistryCommand
-
-parseRegistryCommand :: Parser RegistryCommand
-parseRegistryCommand =
-  commands
-    [ ( "add",
-        "Add a dependency to the registry.",
-        RegistryAdd
-          <$> argument str (metavar "PACKAGE" <> help "Package name to add")
-          <*> optional (strOption (long "workspace" <> short 'w' <> metavar "WORKSPACE" <> help "Target workspace ID"))
-      ),
-      ( "audit",
-        "Audit and optionally fix the registry.",
-        RegistryAudit <$> parseCLI
-      ),
-      ( "ls",
-        "List registry entries.",
-        RegistryLs <$> optional (strOption (long "search" <> short 's' <> metavar "SEARCH" <> help "Filter registry entries"))
-      )
-    ]

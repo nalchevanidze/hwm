@@ -14,11 +14,11 @@ where
 import Data.Version (showVersion)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
 import HWM.CLI.Command.Publish (publish)
+import HWM.CLI.Command.Registry (RegistryCommand, runRegistry)
 import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
 import HWM.CLI.Command.Sync (sync)
 import HWM.CLI.Command.Version (runVersion)
-import HWM.CLI.Command.Registry (RegistryOptions(..), runRegistry)
 import HWM.Core.Common (Name)
 import HWM.Core.Options (Options (..), defaultOptions)
 import HWM.Core.Version (Bump (..))
@@ -33,13 +33,11 @@ data Command
   | Run {runOptions :: ScriptOptions}
   | Status
   | Init {initOptions :: InitOptions}
-  | Registry RegistryOptions
+  | Registry RegistryCommand
   deriving (Show)
 
 currentVersion :: String
 currentVersion = showVersion CLI.version
-
-
 
 command :: Command -> ConfigT ()
 command Publish {groupName} = publish groupName
