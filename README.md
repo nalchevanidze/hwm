@@ -170,6 +170,10 @@ hwm add servant libs
 
 ```
 
+<p align="center">
+<img src="images/add.png" alt="HWM Add Command" width="600">
+</p>
+
 ### 📦 Automated Dependency Management & Auditing
 
 HWM's `outdated` command is more than a simple update checker:
