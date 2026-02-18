@@ -30,7 +30,7 @@ data Command
   = Sync {tag :: Maybe Name}
   | Publish {groupName :: Maybe Name}
   | Version {bump :: Maybe Bump}
-  | Run {runOptions :: ScriptOptions}
+  | Run {scriptName :: Name, runOptions :: ScriptOptions}
   | Status
   | Init {initOptions :: InitOptions}
   | Registry RegistryCommand
@@ -43,7 +43,7 @@ command :: Command -> ConfigT ()
 command Publish {groupName} = publish groupName
 command Version {bump} = runVersion bump
 command Sync {tag} = sync tag
-command Run {runOptions} = runScript runOptions
+command Run {scriptName, runOptions} = runScript scriptName runOptions
 command Status = showStatus
 command Init {} = pure ()
 command (Registry options) = runRegistry options

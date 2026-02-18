@@ -12,9 +12,7 @@ where
 import qualified Data.Text as T
 import HWM.CLI.Command (Command (..), Options (..), currentVersion, defaultOptions, runCommand)
 import HWM.CLI.Command.Init (InitOptions (..))
-import HWM.CLI.Command.Run (ScriptOptions (..))
-import HWM.Core.Common (Name)
-import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseOptions)
+import HWM.Core.Parsing (Parse (..), ParseCLI (..))
 import Options.Applicative
   ( Parser,
     argument,
@@ -34,7 +32,7 @@ import Options.Applicative
     subparser,
     switch,
   )
-import Options.Applicative.Builder (str, strOption)
+import Options.Applicative.Builder (str)
 import Relude
 
 -- Helper for building commands (unchanged, just added type signature clarity)
@@ -59,14 +57,6 @@ run app =
         (fullDesc <> progDesc "HWM - Haskell Workspace Manager for Monorepos")
     )
 
-parseScriptOptions :: Parser Name -> Parser ScriptOptions
-parseScriptOptions name =
-  ScriptOptions
-    <$> name
-    <*> fmap parseOptions (many (strOption (long "target" <> short 't' <> metavar "TARGET" <> help "Limit to package (core) or group (libs)")))
-    <*> fmap parseOptions (many (strOption (long "env" <> short 'e' <> metavar "ENV" <> help "Run in specific env (use 'all' for full matrix)")))
-    <*> many (argument (T.pack <$> str) (metavar "ARGS..." <> help "Arguments to forward to the script"))
-
 parseInitOptions :: Parser InitOptions
 parseInitOptions =
   InitOptions
@@ -90,7 +80,7 @@ parseCommand =
       ),
       ( "run",
         "Run a script defined in hwm.yaml",
-        Run <$> parseScriptOptions (argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run"))
+        Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI
       ),
       ( "status",
         "Show the current environment, version, and sync status.",
@@ -105,7 +95,7 @@ parseCommand =
         Registry <$> parseCLI
       )
     ]
-    <|> (Run <$> parseScriptOptions (strArgument (metavar "SCRIPT")))
+    <|> (Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI)
 
 data Input = Input
   { v :: Bool,
