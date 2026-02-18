@@ -28,7 +28,6 @@ import Options.Applicative
     progDesc,
     short,
     showHelpOnError,
-    strArgument,
     subparser,
     switch,
   )
