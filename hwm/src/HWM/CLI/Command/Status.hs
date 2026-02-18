@@ -7,7 +7,7 @@ import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, monadStat
 import HWM.Core.Pkg (Pkg (..))
 import qualified HWM.Domain.Config as C
 import HWM.Domain.ConfigT (ConfigT, config)
-import HWM.Domain.Matrix (getBuildEnvironment, getBuildEnvroments, printEnvironments)
+import HWM.Domain.Matrix (getBuildEnvironment, getBuildEnvironments, printEnvironments)
 import HWM.Domain.Workspace (memberPkgs, pkgGroupName)
 import HWM.Integrations.Toolchain.Package (validatePackage)
 import HWM.Runtime.UI (putLine, sectionTableM, sectionWorkspace)
@@ -18,7 +18,7 @@ showStatus :: ConfigT ()
 showStatus = do
   cfg <- asks config
   active <- getBuildEnvironment Nothing
-  environments <- getBuildEnvroments
+  environments <- getBuildEnvironments
   sectionTableM
     0
     "project"

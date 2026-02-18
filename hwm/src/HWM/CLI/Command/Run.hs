@@ -22,7 +22,7 @@ import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, config)
-import HWM.Domain.Matrix (BuildEnvironment (..), getBuildEnvironment, getBuildEnvroments)
+import HWM.Domain.Matrix (BuildEnvironment (..), getBuildEnvironment, getBuildEnvironments)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (createEnvYaml, stackPath)
 import HWM.Runtime.Cache (prepareDir)
@@ -54,7 +54,7 @@ instance ParseCLI ScriptOptions where
       <*> many (argument str (metavar "ARGS..." <> help "Arguments to forward to the script"))
 
 getEnvs :: [Name] -> ConfigT [BuildEnvironment]
-getEnvs ["all"] = getBuildEnvroments
+getEnvs ["all"] = getBuildEnvironments
 getEnvs names = for names (getBuildEnvironment . Just)
 
 runScript :: Name -> ScriptOptions -> ConfigT ()
