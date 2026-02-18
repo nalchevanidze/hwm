@@ -33,7 +33,7 @@ instance ParseCLI RegistryAddOptions where
 runRegistryAdd :: RegistryAddOptions -> ConfigT ()
 runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
   ws <- askWorkspaceGroups
-  workspaces <- fmap (S.toList . S.fromList) (resolveTargets ws (maybeToList opsWorkspace))
+  workspaces <- resolveTargets ws (maybeToList opsWorkspace)
 
   let target = if null workspaces then "none (registry only)" else format (T.intercalate ", " (map pkgId workspaces))
   sectionTableM

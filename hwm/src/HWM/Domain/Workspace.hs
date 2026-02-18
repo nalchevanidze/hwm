@@ -32,6 +32,7 @@ import Data.Aeson.Types
   )
 import Data.List (groupBy)
 import qualified Data.Map as Map
+import qualified Data.Set as S
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (availableOptions, commonPrefix, slugify)
@@ -77,7 +78,7 @@ parseTarget input = case T.breakOn "/" input of
   (grp, rest) -> (grp, Just (T.drop 1 rest)) -- Drop the "/"
 
 resolveTargets :: (MonadIO m, MonadError Issue m) => [WorkspaceGroup] -> [Name] -> m [Pkg]
-resolveTargets ws names = concat <$> traverse (resolveTarget ws) names
+resolveTargets ws names = (S.toList . S.fromList) . concat <$> traverse (resolveTarget ws) names
 
 resolveTarget :: (MonadIO m, MonadError Issue m) => [WorkspaceGroup] -> Text -> m [Pkg]
 resolveTarget ws target = do

@@ -13,7 +13,6 @@ import Control.Concurrent.Async
 import Control.Monad.Error.Class (MonadError (..))
 import Data.List (intersect)
 import qualified Data.Map as M
-import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common (Name)
@@ -67,7 +66,7 @@ runScript scriptName ScriptOptions {..} = do
     Just script -> do
       envs <- getEnvs scriptEnvs
       ws <- askWorkspaceGroups
-      targets <- fmap (S.toList . S.fromList) (resolveTargets ws scriptTargets)
+      targets <- resolveTargets ws scriptTargets
       for_ envs (createEnvYaml . buildName)
       let multi = length envs > 1
       let cmdTemplate = if null scriptOptions then script else T.unwords (script : scriptOptions)
