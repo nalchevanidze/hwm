@@ -10,13 +10,8 @@ module HWM.CLI.App
 where
 
 import Data.Text (pack)
-import HWM.CLI.Command
-  ( Command (..),
-    Options (..),
-    currentVersion,
-    defaultOptions,
-    runCommand,
-  )
+import HWM.CLI.Command (Command (..), Options (..), currentVersion, defaultOptions, runCommand)
+import HWM.CLI.Command.Registry (RegistryOptions(..), RegistryCommand(..))
 import HWM.CLI.Command.Init (InitOptions (..))
 import HWM.CLI.Command.Run (ScriptOptions (..))
 import HWM.Core.Common (Name)
@@ -79,17 +74,6 @@ parseInitOptions =
     <$> flag 'f' "force" "Force override existing hwm.yaml"
     <*> optional (argument str (metavar "NAME" <> help "Optional project name (defaults to current directory name)"))
 
-parseOutdatedOptions :: Parser OutdatedOptions
-parseOutdatedOptions =
-  OutdatedOptions
-    <$> flag 'f' "fix" "Automatically fix outdated dependencies"
-    <*> flag 'F' "force" "Force fix outdated dependencies. including warning-level updates (e.g., major version bumps)"
-
-parseAddOptions :: Parser AddOptions
-parseAddOptions =
-  AddOptions
-    <$> argument (str >>= parse) (metavar "PACKAGE" <> help "Package name to add")
-    <*> argument str (metavar "WORKSPACE" <> help "Optional WORKSPACE ID to associate with the package")
 
 parseCommand :: Parser Command
 parseCommand =
@@ -102,10 +86,6 @@ parseCommand =
         "Show version or bump it (patch | minor | major).",
         Version <$> optional (argument (str >>= parse) (metavar "BUMP" <> help "Version bump type or specific version number"))
       ),
-      ( "outdated",
-        "Check for newer dependencies on Hackage.",
-        Outdated <$> parseOutdatedOptions
-      ),
       ( "publish",
         "Upload packages to Hackage/Registry.",
         Publish <$> optional (argument str (metavar "GROUP" <> help "Name of the workspace group to publish (default: all)"))
@@ -113,10 +93,6 @@ parseCommand =
       ( "run",
         "Run a script defined in hwm.yaml",
         Run <$> parseScriptOptions (argument (pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run"))
-      ),
-      ( "add",
-        "Add a package to the workspace.",
-        Add <$> parseAddOptions
       ),
       ( "status",
         "Show the current environment, version, and sync status.",
@@ -158,3 +134,25 @@ main = do
       Nothing -> do
         putStrLn "HWM: Missing command.\nTry 'hwm --help' for usage."
         exitFailure
+
+parseRegistryOptions :: Parser RegistryOptions
+parseRegistryOptions = RegistryOptions <$> parseRegistryCommand
+
+parseRegistryCommand :: Parser RegistryCommand
+parseRegistryCommand =
+  commands
+    [ ( "add",
+        "Add a dependency to the registry.",
+        RegistryAdd
+          <$> argument str (metavar "PACKAGE" <> help "Package name to add")
+          <*> optional (strOption (long "workspace" <> short 'w' <> metavar "WORKSPACE" <> help "Target workspace ID"))
+      ),
+      ( "audit",
+        "Audit and optionally fix the registry.",
+        RegistryAudit <$> flag 'f' "fix" "Automatically fix outdated dependencies"
+      ),
+      ( "ls",
+        "List registry entries.",
+        RegistryLs <$> optional (strOption (long "search" <> short 's' <> metavar "SEARCH" <> help "Filter registry entries"))
+      )
+    ]

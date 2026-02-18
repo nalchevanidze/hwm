@@ -1,40 +1,81 @@
+
 # 🤖 HWM: Agent Contribution Rules
 
-## 1. Research & Abstraction
+## 🟥 CRITICAL: MANDATORY VERIFICATION
 
-* **Search First:** Before proposing new inline code, search the existing codebase for relevant utilities or patterns.
-* **Reuse Abstractions:** Use existing types and internal APIs (e.g., `Registry` or `Matrix` modules) rather than writing custom configuration logic.
-* **Avoid "God Functions":** Keep CLI command handlers lean; logic that belongs in the core library must stay there.
+**The task is NOT finished until these steps are executed in order:**
 
-## 2. Code Integrity & DRY
+1. **Validation:** You **MUST** run `stack build` before reporting completion.
+2. **Success Requirement:** If the build fails, you are forbidden from stopping. You must analyze the error, fix it, and run `stack build` again until it passes.
+3. **No Assumptions:** Do not assume code works. Terminal output is the only proof of completion.
 
-* **Strict DRY Policy:** Do not duplicate logic for file path resolution, YAML parsing, or version bound calculations.
-* **Centralize Shared Logic:** If logic is needed across multiple commands, move it to a shared internal module.
-* **Standardized Error Handling:** Use the existing `MonadError m Issue` pattern. Ad-hoc printing is forbidden; error messages must be clear, actionable, and follow the project style.
-* **UI Abstraction:** Use the `MonadUI` class from `hwm/src/HWM/Runtime/UI.hs` instead of directly printing with `putStrLn` or using IO utilities.
-* **Consistent Formatting:** Use the `chalk` function for colored output to maintain a consistent user experience.
-* Generic monads (e.g., `MonadIO`, `MonadError`, `MonadUI`) **MUST** be used in CLI command implementations to ensure composability and testability. no direct IO or error handling without these abstractions. every IO should be lifted into generiic `MonadIO m` and every error should be thrown using `MonadError m Issue` with well-defined `Issue` types.
+---
 
-## 3. Syntax & Prelude
+## 🏗️ 1. Domain-Based Architecture
 
-* **No Implicit Prelude:** Every new Haskell module **MUST** include the `{-# LANGUAGE NoImplicitPrelude #-}` pragma at the top.
-* **Overloaded Strings:** don't use `T.pack` or `S.fromList`use pragma `{-# LANGUAGE OverloadedStrings #-}` and write string literals directly.
-* **Relude Integration:** Every new module **MUST** import `Relude` for consistency across the ecosystem.
-* **Text Handling:** Prefer `Text` over `String` for all textual data.
+* **Namespace Discipline:** All features must live in their resource namespace: `reg` (Registry), `env` (Matrix/Environment), or `pkg` (Workspace).
+* **Directory Mapping:** Strict 1-to-1 mapping between CLI command and directory.
+* Command `hwm reg add` ➔ `cli/command/reg/add.hs`
+* Command `hwm env ls` ➔ `cli/command/env/ls.hs`
+* **FORBIDDEN:** Flattened paths like `cli/command/reg_add.hs`.
 
-## 4. Resource-Oriented (Domain-Based) Architecture
 
-* **Namespace Discipline:** Features must reside in their respective resource namespace (`reg`, `env`, or `pkg`).
-* **Nested Directory Mapping:** A command `hwm x y` must have its module in `cli/command/x/y.hs` rather than a flattened `cli/command/xy.hs`.
-* **CLI State Awareness:** Commands modifying state (`add`, `audit --fix`) must re-verify environment health using internal monitoring (like `ls`) before proceeding.
-* **Implicit Sync:** Any feature modifying `hwm.yaml` must implicitly trigger synchronization to keep the workspace consistent.
+* **State Awareness:** Commands that modify state (`add`, `audit --fix`) **MUST** first call the internal `ls` or monitoring logic to verify the current environment status.
 
-## 5. Documentation & Schema
+---
 
-* **Spec Alignment:** New CLI flags or behaviors must be updated in `docs/spec.md` before implementation.
-* **Hash Integrity:** Respect the file hash system; ensure any changes to `hwm.yaml` update the hash-generation logic to prevent drift.
+## ⚙️ 2. Core Abstractions & Monads
+
+* **Monad Stack:** Use generic monad constraints only. **FORBIDDEN:** Direct `IO` or `String`-based error handling.
+* Use `MonadIO m` for all IO (lifted).
+* Use `MonadError Issue m` for all errors.
+* Use `MonadUI m` (from `HWM.Runtime.UI`) for all user interaction.
+
+
+* **UI & Output:** **FORBIDDEN:** `putStrLn` or `print`. Use `MonadUI` functions and the `chalk` utility for colored, consistent terminal output.
+* **DRY Policy:** Never duplicate logic for path resolution, YAML parsing, or version bounds. Search `hwm/src/HWM/` for existing utilities before writing new code.
+
+---
+
+## 📝 3. Haskell Syntax & Style
+
+* **Required Pragmas:** Every new module **MUST** start with:
+```haskell
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+```
+
+
+* **Prelude:** **MUST** import `Relude`.
+* **String Handling:** * Use `Text` instead of `String`.
+* **FORBIDDEN:** `T.pack` or `S.fromList` for literals. Use `OverloadedStrings` literals directly.
+
+
+
+---
+
+## 📜 4. Documentation & Files
+
+* **Spec-First:** Any change to CLI flags or logic **MUST** be mirrored in `docs/spec.md` before the code is finalized.
+* **HWM.yaml Integrity:** Any modification to `hwm.yaml` must:
+1. Update the internal hash-generation logic.
+2. Implicitly trigger `hwm sync`.
+
+
+
+---
+
+## 🔍 5. Research Protocol
+
+* **Step 1:** Search the codebase for the feature/pattern you are about to implement.
+* **Step 2:** Identify the `Issue` type in the error handling logic that matches your failure cases.
+* **Step 3:** Implement using the nested directory mapping.
+* **Step 4:** **Execute `stack build`.**
 
 ## 6. Verification & Completion
-
 * **Mandatory Build:** Before finalizing any task, you **MUST** run `stack build`.
-* **Success Requirement:** The work is not finished if the build fails. You must iterate until `stack build` passes.
+* **The "3-Strike" Circuit Breaker:** - If `stack build` fails, you may attempt to fix the code and rebuild up to **3 times**.
+    - If the build still fails after the 3rd attempt, you **MUST STOP** immediately.
+    - **FORBIDDEN:** Do not attempt a 4th or 5th build in a row. 
+    - **Action:** Report the specific compiler error to the user and ask for human intervention/guidance.

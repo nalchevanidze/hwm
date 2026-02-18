@@ -14,6 +14,7 @@ import HWM.Core.Pkg (PkgName(..))
 import HWM.CLI.Command.Registry.Add (runRegistryAdd)
 import HWM.CLI.Command.Registry.Audit (runRegistryAudit)
 import HWM.CLI.Command.Registry.Ls (runRegistryLs)
+import HWM.Domain.ConfigT (ConfigT)
 
 -- | Subcommands for `hwm registry`
 data RegistryCommand
