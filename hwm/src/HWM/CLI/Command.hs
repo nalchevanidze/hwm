@@ -12,9 +12,9 @@ module HWM.CLI.Command
 where
 
 import Data.Version (showVersion)
+import HWM.CLI.Command.Add (AddOptions, runAdd)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
 import HWM.CLI.Command.Outdated (OutdatedOptions (..), runOutdated)
-import HWM.CLI.Command.Add (runAdd, AddOptions)
 import HWM.CLI.Command.Publish (publish)
 import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
