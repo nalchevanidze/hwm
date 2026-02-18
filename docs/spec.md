@@ -43,10 +43,39 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool for Haskell monorepos.
 | `hwm registry add <pkg> <target>` | Add dependency to registry and inject into packages/groups | Discovers safe bounds, updates registry, syncs workspace |
 | `hwm registry audit [--fix] [--force]` | Audit/fix registry bounds | Compares to Stackage LTS/Nightly, `--fix` updates errors, `--force` warnings |
 | `hwm registry ls` | List all dependencies in the registry | Shows current bounds and status |
+| `hwm env add <name> <resolver>` | Add a new environment to the build matrix           | Adds a new environment (GHC/resolver) to the matrix, inferring GHC from resolver |
+| `hwm env remove <name>`    | Remove an environment from the build matrix            | Removes the specified environment from the matrix                            |
 | `hwm version [BUMP]`       | Show or bump project version                          | `major`/`minor`/`patch`, updates bounds, propagates to all packages          |
 | `hwm publish [GROUP]`      | Build & upload packages                               | For groups with `publish: true` or specified, runs sdist/upload              |
 | `hwm status`               | Show project/env/workspace overview                   | Displays project name, version, envs, workspace structure                    |
+### hwm env add <name> <resolver>
 
+Adds a new environment to the build matrix. The GHC version is inferred from the resolver (e.g., lts-22.30). The new environment is appended to the matrix in `hwm.yaml`.
+
+**Example:**
+
+```bash
+hwm env add nightly-2026-02-18 lts-24.25
+```
+
+**Behavior:**
+- Fetches the GHC version for the given resolver
+- Adds the environment to the matrix
+- Updates `hwm.yaml` and recalculates the file hash
+
+### hwm env remove <name>
+
+Removes an environment from the build matrix by name.
+
+**Example:**
+
+```bash
+hwm env remove nightly-2026-02-18
+```
+
+**Behavior:**
+- Removes the environment from the matrix
+- Updates `hwm.yaml` and recalculates the file hash
 **Global Flags:**  
 `--version` (show CLI version), `--quiet` (suppress logs), `--help` (show help)
 

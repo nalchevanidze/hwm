@@ -26,7 +26,6 @@ hwm init --new <project-name> [options]
 * **Git Initialization:** Runs `git init` and generates a comprehensive `.gitignore`.
 * **Hybrid Setup:** Ensures the generated Stack resolver matches the Nix compiler version.
 
-#### Options
 
 * `--template=NAME`: Use a specific starter template (lib, exe, servant, etc.)
 * `--interactive`: Prompt for details instead of using defaults.
@@ -46,7 +45,6 @@ Enhance `hwm init` (for existing directories) with additional configuration opti
 * Example: `hwm init --name=my-awesome-project`
 
 
-**`--version=VERSION`**
 * Override inferred project version.
 * Use case: Set a specific starting version instead of auto-detection.
 * Example: `hwm init --version=1.0.0`
