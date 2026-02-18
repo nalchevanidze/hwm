@@ -23,20 +23,23 @@ module HWM.Domain.Bounds
     formatAudit,
     auditHasAny,
     TestedRange (..),
-    testedBounds,
+    deriveBounds,
   )
 where
 
+import Control.Monad.Except
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (..),
     Value (..),
   )
 import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList)
+import HWM.Core.Has (Has)
 import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
+import HWM.Core.Result (Issue)
 import HWM.Core.Version (Bump (..), Version, dropPatch, nextVersion)
-import HWM.Runtime.Cache (Snapshot, getVersion)
+import HWM.Runtime.Cache (Cache, Snapshot, getVersion, getVersions)
 import Relude
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
@@ -204,9 +207,15 @@ data TestedRange = TestedRange
     nightly :: Snapshot
   }
 
-testedBounds ::  PkgName ->  TestedRange ->Bounds
-testedBounds name TestedRange {..} =
-  Bounds
-    { lowerBound = Bound Min True <$> getVersion name legacy,
-      upperBound = Bound Max True <$> getVersion name nightly
-    }
+deriveBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => PkgName -> TestedRange -> m Bounds
+deriveBounds name TestedRange {..} = do
+  let lower = getVersion name legacy
+  let upper = getVersion name nightly
+
+  newUpper <- maybe (head <$> getVersions name) pure upper
+
+  pure
+    Bounds
+      { lowerBound = Bound Min True <$> lower,
+        upperBound = Just (Bound Max True newUpper)
+      }
