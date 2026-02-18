@@ -6,11 +6,10 @@ module HWM.CLI.Command.Registry.Add (runRegistryAdd, RegistryAddOptions (..)) wh
 
 -- removed accidental self-import
 
-import qualified Data.Set as S
 import qualified Data.Text as T
 import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, padDots)
-import HWM.Core.Parsing (ParseCLI (..), parse)
-import HWM.Core.Pkg (Pkg (..), PkgName (..), pkgId)
+import HWM.Core.Parsing (ParseCLI (..), parse, parseOptions)
+import HWM.Core.Pkg (Pkg (..), PkgName (..))
 import HWM.Domain.Bounds (deriveBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
@@ -19,25 +18,25 @@ import HWM.Domain.Matrix (getTestedRange)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Package
 import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM, sectionWorkspace)
-import Options.Applicative (argument, help, long, metavar, short, str, strOption)
+import Options.Applicative (argument, help, long, metavar, short, str)
 import Relude
 
-data RegistryAddOptions = RegistryAddOptions {opsPkgName :: PkgName, opsWorkspace :: Maybe Text} deriving (Show)
+data RegistryAddOptions = RegistryAddOptions {opsPkgName :: PkgName, opsWorkspace :: [Text]} deriving (Show)
 
 instance ParseCLI RegistryAddOptions where
   parseCLI =
     RegistryAddOptions
       <$> argument (str >>= parse) (metavar "PACKAGE" <> help "Package name to add")
-      <*> optional (strOption (long "workspace" <> short 'w' <> metavar "WORKSPACE" <> help "Target workspace ID"))
+      <*> parseOptions (long "workspace" <> short 'w' <> metavar "WORKSPACE" <> help "Target workspace ID")
 
 runRegistryAdd :: RegistryAddOptions -> ConfigT ()
 runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
-  workspaces <- resolveWorkspaces (maybeToList opsWorkspace)
+  workspaces <- resolveWorkspaces opsWorkspace
   sectionTableM
     0
     "add dependency"
     [ ("package", pure $ chalk Magenta (format opsPkgName)),
-      ("target", pure $ chalk Cyan (maybe "none (registry only)" format opsWorkspace))
+      ("target", pure $ chalk Cyan (if null opsWorkspace then "none (registry only)" else T.unwords opsWorkspace))
     ]
 
   registered <- asks (lookupBounds opsPkgName . registry . config)

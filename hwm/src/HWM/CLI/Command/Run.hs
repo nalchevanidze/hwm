@@ -37,7 +37,6 @@ import Options.Applicative
     short,
     str,
   )
-import Options.Applicative.Builder (strOption)
 import Relude
 
 data ScriptOptions = ScriptOptions
@@ -50,8 +49,8 @@ data ScriptOptions = ScriptOptions
 instance ParseCLI ScriptOptions where
   parseCLI =
     ScriptOptions
-      <$> fmap parseOptions (many (strOption (long "target" <> short 't' <> metavar "TARGET" <> help "Limit to package (core) or group (libs)")))
-      <*> fmap parseOptions (many (strOption (long "env" <> short 'e' <> metavar "ENV" <> help "Run in specific env (use 'all' for full matrix)")))
+      <$> parseOptions (long "target" <> short 't' <> metavar "TARGET" <> help "Limit to package (core) or group (libs)")
+      <*> parseOptions (long "env" <> short 'e' <> metavar "ENV" <> help "Run in specific env (use 'all' for full matrix)")
       <*> many (argument str (metavar "ARGS..." <> help "Arguments to forward to the script"))
 
 getEnvs :: [Name] -> ConfigT [BuildEnvironment]

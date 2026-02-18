@@ -31,7 +31,8 @@ import Data.Text
     uncons,
   )
 import qualified Data.Text as T
-import Options.Applicative (Parser)
+import Options.Applicative (Mod, Parser, strOption)
+import Options.Applicative.Builder (OptionFields)
 import Relude hiding
   ( break,
     drop,
@@ -45,8 +46,8 @@ import Relude hiding
 
 type SourceText = Text
 
-parseOptions :: [Text] -> [Text]
-parseOptions raw = raw >>= (map T.strip . T.splitOn ",")
+parseOptions :: Mod OptionFields Text -> Parser [Text]
+parseOptions x = fmap (\raw -> raw >>= (map T.strip . T.splitOn ",")) (many (strOption x))
 
 parseField :: SourceText -> (SourceText, SourceText)
 parseField = second (strip . drop 1) . breakAt (== ':')
