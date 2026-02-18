@@ -19,7 +19,7 @@ import HWM.Domain.Workspace (memberPkgs, pkgGroupName, resolveTargets)
 import HWM.Integrations.Toolchain.Cabal (syncCabal)
 import HWM.Integrations.Toolchain.Package
 import HWM.Runtime.Files (rewrite_, statusM)
-import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM)
+import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM, sectionWorkspace)
 import Relude
 
 data AddOptions = AddOptions
@@ -43,13 +43,11 @@ runAdd AddOptions {..} = do
   registered <- asks (lookupBounds packageName . registry . config)
   case registered of
     Nothing -> do
+      range <- getTestedRange
       section "discovery" $ do
         putLine $ padDots 16 "registry" <> "missing (initiating lookup)"
 
-      -- "lts-18.10" ...... 1.5.6.0 (min)
-      -- "nightly" ........ 2.2.3.0 (max)
-
-      bounds <- maybe (getTestedRange >>= deriveBounds packageName) pure registered
+      bounds <- deriveBounds packageName range
       let dependency = Dependency packageName bounds
 
       ((\cf -> pure cf {registry = registry cf <> singleDeps dependency}) `updateConfig`) $ do
@@ -61,7 +59,6 @@ runAdd AddOptions {..} = do
       addDepToPackage targets (Dependency packageName bounds)
   where
     addDepToPackage targets dependency = do
-      putLine ""
-      putLine $ "• " <> chalk Bold (format packageName) <> " will be added to the following packages:"
-      let maxLen = genMaxLen (map pkgMemberId targets)
-      for_ targets $ \pkg -> updatePackage maxLen (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg
+      sectionWorkspace $ do
+        let maxLen = genMaxLen (map pkgMemberId targets)
+        for_ targets $ \pkg -> updatePackage maxLen (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg

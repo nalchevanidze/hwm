@@ -33,13 +33,14 @@ import Data.Aeson
     ToJSON (..),
     Value (..),
   )
-import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList)
+import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList, padDots)
 import HWM.Core.Has (Has)
 import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Bump (..), Version, dropPatch, nextVersion)
 import HWM.Runtime.Cache (Cache, Snapshot, getVersion, getVersions)
+import HWM.Runtime.UI
 import Relude
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
@@ -207,12 +208,18 @@ data TestedRange = TestedRange
     nightly :: Snapshot
   }
 
-deriveBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache) => PkgName -> TestedRange -> m Bounds
+deriveBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache, MonadUI m) => PkgName -> TestedRange -> m Bounds
 deriveBounds name TestedRange {..} = do
   let lower = getVersion name legacy
   let upper = getVersion name nightly
 
   newUpper <- maybe (head <$> getVersions name) pure upper
+
+  section "discovery" $ do
+    putLine $ padDots 16 "registry" <> "missing (initiating lookup)"
+    putLine $ padDots 16 "legacy" <> maybe (chalk Red "missing") (chalk Green . format) lower <> " (min)"
+    putLine $ padDots 16 "nightly" <> maybe (chalk Red "missing") ((<> " (max)") . chalk Green . format) upper
+    unless (isJust lower || isJust upper) $ putLine $ padDots 16 "hackage" <> chalk Green (format newUpper) <> " (max)"
 
   pure
     Bounds
