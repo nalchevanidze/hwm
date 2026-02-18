@@ -2,15 +2,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use lambda-case" #-}
 
 module HWM.Domain.ConfigT
   ( ConfigT (..),
@@ -21,8 +19,6 @@ module HWM.Domain.ConfigT
     unpackConfigT,
     askCache,
     askMatrix,
-    askPackages,
-    askWorkspaceGroups,
     askVersion,
     saveConfig,
     resolveResultUI,
@@ -38,12 +34,11 @@ import HWM.Core.Common (Check (..))
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Has (Has (..))
 import HWM.Core.Options (Options (..))
-import HWM.Core.Pkg (Pkg)
 import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runResultT)
 import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.Matrix (Matrix (..))
-import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup, memberPkgs, pkgRegistry)
+import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
 import HWM.Runtime.Files (addHash, readYaml, rewrite_)
 import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
@@ -158,14 +153,13 @@ runConfigT m opts@Options {..} = do
 resolveResultT :: ResultT (UIT IO) a -> Cache -> IO ()
 resolveResultT resT cache =
   runUI
-    ( runResultT resT >>= \r ->
-        case r of
-          Success {..} -> do
-            liftIO $ saveCache cache
-            printSummary issues
-          Failure {..} -> do
-            printSummary (toList failure)
-            exitFailure
+    ( runResultT resT >>= \case
+        Success {..} -> do
+          liftIO $ saveCache cache
+          printSummary issues
+        Failure {..} -> do
+          printSummary (toList failure)
+          exitFailure
     )
 
 resolveResultTSilent :: ResultT IO a -> IO a
@@ -188,13 +182,5 @@ unpackConfigT (ConfigT action) = runReaderT action
 askCache :: ConfigT Cache
 askCache = asks cache
 
-askWorkspaceGroups :: ConfigT [WorkspaceGroup]
-askWorkspaceGroups = asks (workspace . config)
-
 askMatrix :: ConfigT Matrix
 askMatrix = asks (matrix . config)
-
-askPackages :: ConfigT [Pkg]
-askPackages = do
-  groups <- askWorkspaceGroups
-  concat <$> traverse memberPkgs groups

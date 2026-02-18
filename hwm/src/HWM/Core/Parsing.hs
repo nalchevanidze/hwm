@@ -14,6 +14,8 @@ module HWM.Core.Parsing
     Parse (..),
     parseOptions,
     parsePkgString,
+    ParseCLI (..),
+    flag,
   )
 where
 
@@ -30,6 +32,8 @@ import Data.Text
     uncons,
   )
 import qualified Data.Text as T
+import Options.Applicative (Mod, Parser, help, long, short, strOption, switch)
+import Options.Applicative.Builder (OptionFields)
 import Relude hiding
   ( break,
     drop,
@@ -43,8 +47,11 @@ import Relude hiding
 
 type SourceText = Text
 
-parseOptions :: [Text] -> [Text]
-parseOptions raw = raw >>= (map T.strip . T.splitOn ",")
+flag :: Char -> String -> String -> Parser Bool
+flag s l h = switch (long l <> short s <> help h)
+
+parseOptions :: Mod OptionFields Text -> Parser [Text]
+parseOptions x = fmap (\raw -> raw >>= (map T.strip . T.splitOn ",")) (many (strOption x))
 
 parseField :: SourceText -> (SourceText, SourceText)
 parseField = second (strip . drop 1) . breakAt (== ':')
@@ -82,6 +89,9 @@ genUrl domain = intercalate "/" . (domain :)
 
 class Parse a where
   parse :: (MonadFail m) => Text -> m a
+
+class ParseCLI a where
+  parseCLI :: Parser a
 
 instance Parse Int where
   parse t =

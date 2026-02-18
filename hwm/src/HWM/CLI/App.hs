@@ -9,20 +9,9 @@ module HWM.CLI.App
   )
 where
 
-import Data.Text (pack)
-import HWM.CLI.Command
-  ( Command (..),
-    Options (..),
-    currentVersion,
-    defaultOptions,
-    runCommand,
-  )
-import HWM.CLI.Command.Add (AddOptions (..))
-import HWM.CLI.Command.Init (InitOptions (..))
-import HWM.CLI.Command.Outdated (OutdatedOptions (..))
-import HWM.CLI.Command.Run (ScriptOptions (..))
-import HWM.Core.Common (Name)
-import HWM.Core.Parsing (Parse (..), parseOptions)
+import qualified Data.Text as T
+import HWM.CLI.Command (Command (..), Options (..), currentVersion, defaultOptions, runCommand)
+import HWM.Core.Parsing (Parse (..), ParseCLI (..), flag)
 import Options.Applicative
   ( Parser,
     argument,
@@ -32,31 +21,17 @@ import Options.Applicative
     help,
     helper,
     info,
-    long,
     metavar,
     prefs,
     progDesc,
     short,
     showHelpOnError,
-    strArgument,
+    str,
     subparser,
-    switch,
   )
-import Options.Applicative.Builder (str, strOption)
 import Relude
 
 -- Helper for building commands (unchanged, just added type signature clarity)
-commands :: [(String, String, Parser a)] -> Parser a
-commands =
-  subparser
-    . mconcat
-    . map
-      ( \(name, desc, value) ->
-          command name (info (helper <*> value) (fullDesc <> progDesc desc))
-      )
-
-flag :: Char -> String -> String -> Parser Bool
-flag s l h = switch (long l <> short s <> help h)
 
 run :: Parser a -> IO a
 run app =
@@ -67,69 +42,56 @@ run app =
         (fullDesc <> progDesc "HWM - Haskell Workspace Manager for Monorepos")
     )
 
-parseScriptOptions :: Parser Name -> Parser ScriptOptions
-parseScriptOptions name =
-  ScriptOptions
-    <$> name
-    <*> fmap parseOptions (many (strOption (long "target" <> short 't' <> metavar "TARGET" <> help "Limit to package (core) or group (libs)")))
-    <*> fmap parseOptions (many (strOption (long "env" <> short 'e' <> metavar "ENV" <> help "Run in specific env (use 'all' for full matrix)")))
-    <*> many (argument (pack <$> str) (metavar "ARGS..." <> help "Arguments to forward to the script"))
-
-parseInitOptions :: Parser InitOptions
-parseInitOptions =
-  InitOptions
-    <$> flag 'f' "force" "Force override existing hwm.yaml"
-    <*> optional (argument str (metavar "NAME" <> help "Optional project name (defaults to current directory name)"))
-
-parseOutdatedOptions :: Parser OutdatedOptions
-parseOutdatedOptions =
-  OutdatedOptions
-    <$> flag 'f' "fix" "Automatically fix outdated dependencies"
-    <*> flag 'F' "force" "Force fix outdated dependencies. including warning-level updates (e.g., major version bumps)"
-
-parseAddOptions :: Parser AddOptions
-parseAddOptions =
-  AddOptions
-    <$> argument (str >>= parse) (metavar "PACKAGE" <> help "Package name to add")
-    <*> argument str (metavar "WORKSPACE" <> help "Optional WORKSPACE ID to associate with the package")
+commands :: [(String, Maybe String, String, Parser a)] -> Parser a
+commands =
+  subparser
+    . mconcat
+    . map
+      ( \(name, shortName, desc, value) ->
+          command name (info (helper <*> value) (fullDesc <> progDesc desc))
+            <> maybe mempty (\s -> command s (info (helper <*> value) (fullDesc <> progDesc desc))) shortName
+      )
 
 parseCommand :: Parser Command
 parseCommand =
   commands
     [ ( "sync",
+        Nothing,
         "Regenerate stack.yaml and .cabal files. Optional: switch environment.",
         Sync <$> optional (argument str (metavar "ENV" <> help "Switch to a specific environment (e.g., legacy, stable)"))
       ),
       ( "version",
+        Nothing,
         "Show version or bump it (patch | minor | major).",
         Version <$> optional (argument (str >>= parse) (metavar "BUMP" <> help "Version bump type or specific version number"))
       ),
-      ( "outdated",
-        "Check for newer dependencies on Hackage.",
-        Outdated <$> parseOutdatedOptions
-      ),
       ( "publish",
+        Nothing,
         "Upload packages to Hackage/Registry.",
         Publish <$> optional (argument str (metavar "GROUP" <> help "Name of the workspace group to publish (default: all)"))
       ),
       ( "run",
+        Nothing,
         "Run a script defined in hwm.yaml",
-        Run <$> parseScriptOptions (argument (pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run"))
-      ),
-      ( "add",
-        "Add a package to the workspace.",
-        Add <$> parseAddOptions
+        Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI
       ),
       ( "status",
+        Nothing,
         "Show the current environment, version, and sync status.",
         pure Status
       ),
       ( "init",
+        Nothing,
         "Initialize a new HWM workspace by scanning the current directory.",
-        Init <$> parseInitOptions
+        Init <$> parseCLI
+      ),
+      ( "registry",
+        Just "rg",
+        "Manage the dependency registry (add, audit, ls).",
+        Registry <$> parseCLI
       )
     ]
-    <|> (Run <$> parseScriptOptions (strArgument (metavar "SCRIPT")))
+    <|> (Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI)
 
 data Input = Input
   { v :: Bool,

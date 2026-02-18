@@ -271,6 +271,27 @@ By moving the complexity of workspace management into a declarative, automated t
 
 ---
 
+
+## 11 Resource-Oriented CLI
+
+
+✔️  📋 <code>hwm registry</code> (subcommands: <code>add, audit, ls</code>) [Done]
+
+### 🌍 `hwm matrix` (Alias: `env`)
+
+**Purpose:** Manages build environments and GHC/resolver configurations.
+
+* **`add <name>`**: Interactively adds a new environment to the build matrix.
+* **`ls`**: Lists all available environments and identifies the currently active one.
+* **`run <script> --env=<env>`**: Executes commands across specific or all matrix environments in parallel.
+
+### 📦 `hwm workspace` (Alias: `pkg`)
+
+**Purpose:** Manages the physical structure of the monorepo and member metadata.
+
+* **`add <dir>`**: Scaffolds a new package and registers it as a workspace member.
+* **`ls`**: Displays the workspace tree, grouping members by their defined logical groups (e.g., `libs`, `apps`).
+
 ## Contributing
 
 

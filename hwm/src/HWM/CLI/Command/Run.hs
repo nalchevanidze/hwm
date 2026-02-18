@@ -5,7 +5,7 @@
 
 module HWM.CLI.Command.Run
   ( runScript,
-    ScriptOptions (..),
+    ScriptOptions,
   )
 where
 
@@ -13,45 +13,58 @@ import Control.Concurrent.Async
 import Control.Monad.Error.Class (MonadError (..))
 import Data.List (intersect)
 import qualified Data.Map as M
-import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (..), Format (..), Status (Checked, Invalid), chalk, genMaxLen, padDots, statusIcon)
+import HWM.Core.Parsing (ParseCLI (..), parseOptions)
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Domain.Config (Config (..))
-import HWM.Domain.ConfigT (ConfigT, askWorkspaceGroups, config)
+import HWM.Domain.ConfigT (ConfigT, config)
 import HWM.Domain.Matrix (BuildEnvironment (..), getBuildEnvironment, getBuildEnvroments)
-import HWM.Domain.Workspace (resolveTargets)
+import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (createEnvYaml, stackPath)
 import HWM.Runtime.Cache (prepareDir)
 import HWM.Runtime.Logging (logError, logRoot)
 import HWM.Runtime.Process (inheritRun, silentRun)
 import HWM.Runtime.UI (putLine, runSpinner, sectionEnvironments, sectionWorkspace, statusIndicator)
+import Options.Applicative
+  ( argument,
+    help,
+    long,
+    metavar,
+    short,
+    str,
+  )
 import Relude
 
 data ScriptOptions = ScriptOptions
-  { scriptName :: Name,
-    scriptTargets :: [Name],
+  { scriptTargets :: [Name],
     scriptEnvs :: [Name],
     scriptOptions :: [Text]
   }
   deriving (Show)
 
+instance ParseCLI ScriptOptions where
+  parseCLI =
+    ScriptOptions
+      <$> parseOptions (long "target" <> short 't' <> metavar "TARGET" <> help "Limit to package (core) or group (libs)")
+      <*> parseOptions (long "env" <> short 'e' <> metavar "ENV" <> help "Run in specific env (use 'all' for full matrix)")
+      <*> many (argument str (metavar "ARGS..." <> help "Arguments to forward to the script"))
+
 getEnvs :: [Name] -> ConfigT [BuildEnvironment]
 getEnvs ["all"] = getBuildEnvroments
 getEnvs names = for names (getBuildEnvironment . Just)
 
-runScript :: ScriptOptions -> ConfigT ()
-runScript ScriptOptions {..} = do
+runScript :: Name -> ScriptOptions -> ConfigT ()
+runScript scriptName ScriptOptions {..} = do
   prepareDir logRoot
   cfg <- asks config
   case M.lookup scriptName (scripts cfg) of
     Just script -> do
       envs <- getEnvs scriptEnvs
-      ws <- askWorkspaceGroups
-      targets <- fmap (S.toList . S.fromList) (resolveTargets ws scriptTargets)
+      targets <- concatMap snd <$> resolveWorkspaces scriptTargets
       for_ envs (createEnvYaml . buildName)
       let multi = length envs > 1
       let cmdTemplate = if null scriptOptions then script else T.unwords (script : scriptOptions)

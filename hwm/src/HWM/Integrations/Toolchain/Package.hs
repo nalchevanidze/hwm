@@ -26,9 +26,9 @@ import HWM.Core.Formatting (Color (..), Format (..), chalk, displayStatus, genMa
 import HWM.Core.Pkg (Pkg (..), PkgName, pkgMemberId, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version)
-import HWM.Domain.ConfigT (ConfigT, askVersion, askWorkspaceGroups)
+import HWM.Domain.ConfigT (ConfigT, askVersion)
 import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), externalRegistry, normalizeDependencies, toDependencyList)
-import HWM.Domain.Workspace (memberPkgs, pkgGroupName)
+import HWM.Domain.Workspace (askWorkspaceGroups, memberPkgs, pkgGroupName)
 import HWM.Integrations.Toolchain.Cabal (syncCabal)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,

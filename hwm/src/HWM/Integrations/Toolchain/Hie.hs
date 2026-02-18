@@ -19,7 +19,8 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Options (Options (..), askOptions)
 import HWM.Core.Pkg (Pkg (..), PkgName, pkgFile, pkgYamlPath)
-import HWM.Domain.ConfigT (ConfigT, askPackages)
+import HWM.Domain.ConfigT (ConfigT)
+import HWM.Domain.Workspace (askWorkspaceGroups, memberPkgs)
 import HWM.Integrations.Toolchain.Lib (Libraries, Library (..))
 import HWM.Integrations.Toolchain.Package (Package (..))
 import HWM.Runtime.Files (readYaml, rewrite_)
@@ -78,5 +79,7 @@ genComponents path = do
 syncHie :: ConfigT ()
 syncHie = do
   Options {..} <- askOptions
-  components <- concat <$> (askPackages >>= traverse genComponents)
+  groups <- askWorkspaceGroups
+  pkgs <- concat <$> traverse memberPkgs groups
+  components <- concat <$> traverse genComponents pkgs
   rewrite_ hie (const $ pure $ packHie Components {stackYaml = stack, components})
