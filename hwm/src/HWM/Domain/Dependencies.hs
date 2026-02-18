@@ -16,7 +16,8 @@ module HWM.Domain.Dependencies
     DependencyGraph (..),
     sortByDependencyHierarchy,
     mapWithName,
-    singleDeps
+    singleDeps,
+    lookupBounds,
   )
 where
 
@@ -64,6 +65,9 @@ newtype Dependencies = Dependencies {unpackDeps :: Map PkgName Bounds}
 
 instance Semigroup Dependencies where
   (Dependencies a) <> (Dependencies b) = Dependencies (a <> b)
+
+lookupBounds :: PkgName -> Dependencies -> Maybe Bounds
+lookupBounds name (Dependencies m) = Map.lookup name m
 
 getBounds :: (MonadError Issue m) => PkgName -> Dependencies -> m Bounds
 getBounds name = select "Package " name . unpackDeps

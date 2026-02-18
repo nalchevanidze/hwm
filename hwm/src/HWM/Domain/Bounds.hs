@@ -8,7 +8,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Bounds
-  ( Bounds(..),
+  ( Bounds (..),
     BoundsByName,
     versionBounds,
     updateDepBounds,
@@ -22,6 +22,8 @@ module HWM.Domain.Bounds
     BoundsAudit (..),
     formatAudit,
     auditHasAny,
+    TestedRange (..),
+    testedBounds,
   )
 where
 
@@ -142,22 +144,22 @@ updateBound forceOverride res compliance registryBound matrixVersion
     preferMatrix = matrixBound <|> registryBound
     matrixBound = Bound res True <$> matrixVersion
 
-auditBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> BoundsAudit
-auditBounds legacy nightly name Bounds {..} =
+auditBounds :: TestedRange -> PkgName -> Bounds -> BoundsAudit
+auditBounds TestedRange {..} name Bounds {..} =
   BoundsAudit
     { auditPkgName = name,
       auditMinBound = auditBound lowerBound (getVersion name legacy) (>),
       auditMaxBound = auditBound upperBound (getVersion name nightly) (<)
     }
 
-updateDepBounds :: Bool -> Snapshot -> Snapshot -> PkgName -> Bounds -> Bounds
-updateDepBounds forceOverride legacy nightly name Bounds {..} =
+updateDepBounds :: Bool -> TestedRange -> PkgName -> Bounds -> Bounds
+updateDepBounds forceOverride TestedRange {..} name Bounds {..} =
   Bounds
     { lowerBound = updateBound forceOverride Min (auditStatus $ auditMinBound audit) lowerBound (getVersion name legacy),
       upperBound = updateBound forceOverride Max (auditStatus $ auditMaxBound audit) upperBound (getVersion name nightly)
     }
   where
-    audit = auditBounds legacy nightly name Bounds {..}
+    audit = auditBounds TestedRange {..} name Bounds {..}
 
 auditHasAny :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
 auditHasAny f BoundsAudit {..} = any (f . auditStatus) [auditMinBound, auditMaxBound]
@@ -196,3 +198,15 @@ data BoundsAudit = BoundsAudit
 
 formatAudit :: BoundsAudit -> [Text]
 formatAudit a = [format $ auditPkgName a] <> formatBoundAudit (auditMinBound a) <> [chalk Dim "  &&  "] <> formatBoundAudit (auditMaxBound a)
+
+data TestedRange = TestedRange
+  { legacy :: Snapshot,
+    nightly :: Snapshot
+  }
+
+testedBounds ::  PkgName ->  TestedRange ->Bounds
+testedBounds name TestedRange {..} =
+  Bounds
+    { lowerBound = Bound Min True <$> getVersion name legacy,
+      upperBound = Bound Max True <$> getVersion name nightly
+    }
