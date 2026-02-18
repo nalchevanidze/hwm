@@ -835,6 +835,98 @@ hwm run build
 
 ---
 
+This new feature, **Smart Dependency Injection**, transforms HWM from a configuration synchronizer into an active package manager. Below is the chapter description for the `hwm add` feature, designed to be integrated into your **Feature Specification & Public API** document.
+
+---
+
+### 7. hwm add <pkg> <target> [--dev]
+
+**Purpose:** Instantly inject a dependency into a package or group while maintaining workspace-wide version consistency. HWM automates the tedious process of looking up compatible versions, updating the central registry, and regenerating all affected manifest files.
+
+#### Logic & Bound Discovery
+
+HWM uses a **"Sandwich" Resolution Strategy** to ensure the new dependency is safe across your entire build matrix:
+
+1. **Registry Check:** If the package exists in the `registry`, HWM reuses those bounds.
+2. **Snapshot Lookup:** If new, HWM fetches the version of `<pkg>` from:
+* The **Oldest LTS** defined in your matrix (Lower Bound).
+* The **Latest Nightly** defined in your matrix (Upper Bound).
+
+
+3. **Hackage Fallback:** If the package is missing from the Nightly snapshot, HWM queries the **Hackage API** for the current "Preferred" version to set the upper limit.
+4. **Auto-Generation:** HWM calculates the range (e.g., `^>= 1.2 && < 1.5`), adds it to the `registry`, updates the target `package.yaml` files, and runs an implicit `hwm sync`.
+
+#### Arguments & Options
+
+* **`<pkg>`**: The Hackage package name (e.g., `aeson`, `lens`).
+* **`<target>`**:
+* **Group Name**: (e.g., `libs`) Adds the dependency to *every* member of that group.
+* **Member Path**: (e.g., `libs/core`) Adds it only to that specific package.
+
+
+* **`--dev`**: Adds the dependency to the `dev-dependencies` (test-suites and benchmarks) instead of the main library components.
+
+#### Examples
+
+```bash
+# Add 'text' to every package in the 'libs' group
+hwm add text libs
+
+# Add 'hspec' only to the test-suites of 'libs/core'
+hwm add hspec libs/core --dev
+
+# Add a brand new library 'effects' to the workspace
+# HWM will audit the matrix and add it to registry first
+hwm add effects libs/server
+
+```
+
+#### Output Flow
+
+```text
+• add dependency
+  package .. aeson
+  target ... libs (group)
+
+• discovery
+  registry ....... missing (initiating lookup)
+  lts-18.10 ...... 1.5.6.0 (min)
+  nightly ........ 2.2.3.0 (max)
+  
+• registry
+  added .......... aeson >= 1.5.6.0 && < 3.0.0
+
+./ workspace
+  • libs
+  └── core .............. ⟳
+  └── server ............ ⟳
+  └── client ............ ⟳
+
+• success
+
+```
+
+#### Constraints & Validation
+
+1. **Registry Dominance:** If a package is added that already exists in the `registry`, HWM will *never* create a second version entry. It enforces one version range for the entire monorepo.
+2. **Implicit Sync:** `hwm add` performs a "Safe Write." If the resulting `.cabal` files would fail to parse, the command rolls back the `hwm.yaml` changes.
+3. **Group Propagation:** When adding to a group, HWM intelligently skips members that already have that dependency listed to avoid duplicates.
+
+---
+
+#### Comparison: Manual vs. HWM Add
+
+| Action | Manual Workflow | HWM Add Workflow |
+| --- | --- | --- |
+| **Discovery** | Search Stackage/Hackage manually | **Automatic Matrix Audit** |
+| **Registry** | Update global list (if exists) | **Auto-injected into `registry**` |
+| **Manifests** | Edit 5+ `package.yaml` files | **Single CLI command** |
+| **Sync** | Run `hpack` or `stack build` | **Implicit `hwm sync**` |
+
+---
+
+**Would you like me to refine the error-handling section for this command, specifically for cases where a package version is incompatible with the oldest GHC in your matrix?**
+
 ### Workflow 2: Multi-GHC Testing
 
 **Scenario:** Test changes across GHC versions
