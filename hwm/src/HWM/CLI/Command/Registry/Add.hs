@@ -61,7 +61,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
         putLine $ padDots 16 "registry" <> format bounds <> " (already registered)"
       addDepToPackage workspaces (Dependency opsPkgName bounds)
   where
-    addDepToPackage targets dependency = do
-      sectionWorkspace $ do
+    addDepToPackage targets dependency =
+      unless (null targets) $ sectionWorkspace $ do
         let maxLen = genMaxLen (map pkgMemberId targets)
         for_ targets $ \pkg -> updatePackage maxLen (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg
