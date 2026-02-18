@@ -42,7 +42,7 @@ import qualified Data.Map.Strict as Map
 import GHC.Generics (Generic (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
-import HWM.Core.Pkg (PkgName)
+import HWM.Core.Pkg (Pkg (pkgMemberId), PkgName, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Bounds (Bounds)
 import HWM.Domain.Config (getRule)
@@ -88,22 +88,22 @@ updateDependency name = do
   getRule name pkgs cfg
 
 -- | Process dependencies with error handling - shared logic for both check and update
-processDependencies :: Text -> Text -> FilePath -> Dependencies -> (Dependency -> Maybe Bounds -> Maybe a) -> ConfigT [a]
-processDependencies memberId scope path deps processor = go [] [] (toDependencyList deps)
+processDependencies :: Pkg -> Text -> Dependencies -> (Dependency -> Maybe Bounds -> Maybe a) -> ConfigT [a]
+processDependencies pkg scope deps processor = go [] [] (toDependencyList deps)
   where
     go results issues [] = do
       -- Inject accumulated dependency issues at the end
       unless (null issues)
         $ injectIssue
           Issue
-            { issueTopic = memberId,
+            { issueTopic = pkgMemberId pkg,
               issueMessage = show (length issues) <> " dependency issue(s) in " <> scope,
               issueSeverity = SeverityWarning,
               issueDetails =
                 Just
                   DependencyIssue
                     { issueDependencies = issues,
-                      issueFile = path
+                      issueFile = pkgYamlPath pkg
                     }
             }
       pure (reverse results)
@@ -116,18 +116,18 @@ processDependencies memberId scope path deps processor = go [] [] (toDependencyL
         Nothing -> go results newIssues rest
         Just item -> go (item : results) newIssues rest
 
-updateDependencies :: Text -> Text -> FilePath -> Dependencies -> ConfigT Dependencies
-updateDependencies memberId scope path deps = do
-  updated <- processDependencies memberId scope path deps $ \(Dependency depName depBounds) maybeExpected ->
+updateDependencies :: Pkg -> Text -> Dependencies -> ConfigT Dependencies
+updateDependencies pkg scope deps = do
+  updated <- processDependencies pkg scope deps $ \(Dependency depName depBounds) maybeExpected ->
     case maybeExpected of
       Nothing -> Just (Dependency depName depBounds) -- Preserve original when lookup fails
       Just expected -> Just (Dependency depName expected)
   -- Return updated dependencies using fromDependencyList
   pure $ fromDependencyList updated
 
-checkDependencies :: Text -> Text -> FilePath -> Dependencies -> ConfigT [BoundsDiff]
-checkDependencies memberId scope path deps =
-  processDependencies memberId scope path deps $ \(Dependency depName depBounds) maybeExpected ->
+checkDependencies :: Pkg -> Text -> Dependencies -> ConfigT [BoundsDiff]
+checkDependencies pkg scope deps =
+  processDependencies pkg scope deps $ \(Dependency depName depBounds) maybeExpected ->
     case maybeExpected of
       Nothing -> Nothing -- Skip unknown dependencies in diff
       Just expected ->
@@ -135,23 +135,23 @@ checkDependencies memberId scope path deps =
           then Nothing
           else Just (scope, depName, depBounds, expected)
 
-updateLibrary :: Text -> Text -> FilePath -> Library -> ConfigT Library
-updateLibrary memberId scope path Library {..} = do
-  newDependencies <- traverse (updateDependencies memberId scope path) dependencies
+updateLibrary :: Pkg -> Text -> Library -> ConfigT Library
+updateLibrary pkg scope Library {..} = do
+  newDependencies <- traverse (updateDependencies pkg scope) dependencies
   pure $ Library {dependencies = newDependencies, ..}
 
-checkLibrary :: Text -> Text -> FilePath -> Library -> ConfigT [BoundsDiff]
-checkLibrary _ _ _ Library {dependencies = Nothing} = pure []
-checkLibrary memberId scope path Library {dependencies = Just deps} =
-  checkDependencies memberId scope path deps
+checkLibrary :: Pkg -> Text -> Library -> ConfigT [BoundsDiff]
+checkLibrary _ _ Library {dependencies = Nothing} = pure []
+checkLibrary pkg scope Library {dependencies = Just deps} =
+  checkDependencies pkg scope deps
 
-updateLibraries :: Text -> Text -> FilePath -> Maybe Libraries -> ConfigT (Maybe Libraries)
-updateLibraries _ _ _ Nothing = pure Nothing
-updateLibraries memberId scope path (Just libs) = do
-  updated <- traverse (\(name, lib) -> (name,) <$> updateLibrary memberId (scope <> ":" <> name) path lib) (Map.toList libs)
+updateLibraries :: Pkg -> Text -> Maybe Libraries -> ConfigT (Maybe Libraries)
+updateLibraries _ _ Nothing = pure Nothing
+updateLibraries pkg scope (Just libs) = do
+  updated <- traverse (\(name, lib) -> (name,) <$> updateLibrary pkg (scope <> ":" <> name) lib) (Map.toList libs)
   pure $ Just $ Map.fromList updated
 
-checkLibraries :: Text -> Text -> FilePath -> Libraries -> ConfigT [BoundsDiff]
-checkLibraries memberId scope path libs = concat <$> traverse step (Map.toList libs)
+checkLibraries :: Pkg -> Text -> Libraries -> ConfigT [BoundsDiff]
+checkLibraries pkg scope libs = concat <$> traverse step (Map.toList libs)
   where
-    step (name, lib) = checkLibrary memberId (scope <> ":" <> name) path lib
+    step (name, lib) = checkLibrary pkg (scope <> ":" <> name) lib

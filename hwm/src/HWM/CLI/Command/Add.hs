@@ -30,5 +30,5 @@ runAdd AddOptions {..} = do
   putLine ""
   putLine $ "• " <> chalk Bold packageName
   let maxLen = genMaxLen (map pkgMemberId targets)
-  for_ targets $ \pkg -> updatePackage maxLen pure pkg
+  for_ targets $ \pkg -> updatePackage maxLen (packageUpdateDependencies pkg) pkg
 
