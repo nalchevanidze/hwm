@@ -17,9 +17,7 @@ import HWM.CLI.Command
     defaultOptions,
     runCommand,
   )
-import HWM.CLI.Command.Add (AddOptions (..))
 import HWM.CLI.Command.Init (InitOptions (..))
-import HWM.CLI.Command.Outdated (OutdatedOptions (..))
 import HWM.CLI.Command.Run (ScriptOptions (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Parsing (Parse (..), parseOptions)
@@ -127,6 +125,10 @@ parseCommand =
       ( "init",
         "Initialize a new HWM workspace by scanning the current directory.",
         Init <$> parseInitOptions
+      ),
+      ( "registry",
+        "Manage the dependency registry (add, audit, ls).",
+        Registry <$> parseRegistryOptions
       )
     ]
     <|> (Run <$> parseScriptOptions (strArgument (metavar "SCRIPT")))

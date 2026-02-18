@@ -32,11 +32,12 @@ library
   exposed-modules:
       HWM.CLI.App
       HWM.CLI.Command
-      HWM.CLI.Command.Add
       HWM.CLI.Command.Init
-      HWM.CLI.Command.Outdated
       HWM.CLI.Command.Publish
       HWM.CLI.Command.Registry
+      HWM.CLI.Command.Registry.Add
+      HWM.CLI.Command.Registry.Audit
+      HWM.CLI.Command.Registry.Ls
       HWM.CLI.Command.Run
       HWM.CLI.Command.Status
       HWM.CLI.Command.Sync

@@ -12,9 +12,7 @@ module HWM.CLI.Command
 where
 
 import Data.Version (showVersion)
-import HWM.CLI.Command.Add (AddOptions, runAdd)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
-import HWM.CLI.Command.Outdated (OutdatedOptions (..), runOutdated)
 import HWM.CLI.Command.Publish (publish)
 import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
@@ -32,11 +30,9 @@ data Command
   = Sync {tag :: Maybe Name}
   | Publish {groupName :: Maybe Name}
   | Version {bump :: Maybe Bump}
-  | Outdated OutdatedOptions
   | Run {runOptions :: ScriptOptions}
   | Status
   | Init {initOptions :: InitOptions}
-  | Add AddOptions
   | Registry RegistryOptions
   deriving (Show)
 
@@ -44,15 +40,14 @@ currentVersion :: String
 currentVersion = showVersion CLI.version
 
 
+
 command :: Command -> ConfigT ()
 command Publish {groupName} = publish groupName
 command Version {bump} = runVersion bump
-command (Outdated options) = runOutdated options
 command Sync {tag} = sync tag
 command Run {runOptions} = runScript runOptions
 command Status = showStatus
 command Init {} = pure ()
-command (Add options) = runAdd options
 command (Registry options) = runRegistry options
 
 runCommand :: Command -> Options -> IO ()

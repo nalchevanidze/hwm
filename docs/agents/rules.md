@@ -1,25 +1,40 @@
-
 # 🤖 HWM: Agent Contribution Rules
 
-## 1. Research Before Implementation
+## 1. Research & Abstraction
 
-* **Search First:** Before proposing any new inline code, search the existing codebase for relevant utilities or patterns.
-* **Reuse Abstractions:** Use existing types and internal APIs (e.g., the `Registry` or `Matrix` modules) instead of writing custom logic for configuration handling.
-* **Avoid "God Functions":** If you are adding logic to a resource command like `hwm reg add`, ensure you aren't duplicating logic that belongs in the core library.
+* **Search First:** Before proposing new inline code, search the existing codebase for relevant utilities or patterns.
+* **Reuse Abstractions:** Use existing types and internal APIs (e.g., `Registry` or `Matrix` modules) rather than writing custom configuration logic.
+* **Avoid "God Functions":** Keep CLI command handlers lean; logic that belongs in the core library must stay there.
 
-## 2. Zero-Tolerance for Code Duplication
+## 2. Code Integrity & DRY
 
-* **Strict Dry Policy:** Do not duplicate logic for file path resolution, YAML parsing, or version bound calculations.
-* **Centralize Logic:** If a logic block is needed in two different commands, move it to a shared internal module.
-* **Uniform Error Handling:** Use the project's standard error reporting format which uses `MonadError m Issue`; do not create new ad-hoc error printing logic. and error messages should be clear and actionable, following the existing style.
+* **Strict DRY Policy:** Do not duplicate logic for file path resolution, YAML parsing, or version bound calculations.
+* **Centralize Shared Logic:** If logic is needed across multiple commands, move it to a shared internal module.
+* **Standardized Error Handling:** Use the existing `MonadError m Issue` pattern. Ad-hoc printing is forbidden; error messages must be clear, actionable, and follow the project style.
+* **UI Abstraction:** Use the `MonadUI` class from `hwm/src/HWM/Runtime/UI.hs` instead of directly printing with `putStrLn` or using IO utilities.
+* **Consistent Formatting:** Use the `chalk` function for colored output to maintain a consistent user experience.
+* Generic monads (e.g., `MonadIO`, `MonadError`, `MonadUI`) **MUST** be used in CLI command implementations to ensure composability and testability. no direct IO or error handling without these abstractions. every IO should be lifted into generiic `MonadIO m` and every error should be thrown using `MonadError m Issue` with well-defined `Issue` types.
 
-## 3. Resource-Oriented Command Integrity
+## 3. Syntax & Prelude
 
-* **Namespace Discipline:** Features must be implemented within their respective resource namespace (`reg`, `env`, or `pkg`). e.g command "hwm x y" module should be in `cli/command/x/ady` module instead of flatting it in `cli/command/xy`.
-* **CLI State Awareness:** Commands that modify state (like `add` or `audit --fix`) must always re-verify the environment using internal monitoring logic (like `ls`) before proceeding.
-* **Implicit Sync:** Any feature that modifies `hwm.yaml` must implicitly trigger the synchronization logic to keep the workspace consistent.
+* **No Implicit Prelude:** Every new Haskell module **MUST** include the `{-# LANGUAGE NoImplicitPrelude #-}` pragma at the top.
+* **Overloaded Strings:** don't use `T.pack` or `S.fromList`use pragma `{-# LANGUAGE OverloadedStrings #-}` and write string literals directly.
+* **Relude Integration:** Every new module **MUST** import `Relude` for consistency across the ecosystem.
+* **Text Handling:** Prefer `Text` over `String` for all textual data.
 
-## 4. Documentation & Schema
+## 4. Resource-Oriented (Domain-Based) Architecture
 
-* **Spec Alignment:** Every new CLI flag or behavior must be reflected in the `docs/spec.md` before implementation.
-* **Hash Integrity:** You must respect the file hash system; never suggest a change to `hwm.yaml` that would break the hash without updating the hash-generation logic.
+* **Namespace Discipline:** Features must reside in their respective resource namespace (`reg`, `env`, or `pkg`).
+* **Nested Directory Mapping:** A command `hwm x y` must have its module in `cli/command/x/y.hs` rather than a flattened `cli/command/xy.hs`.
+* **CLI State Awareness:** Commands modifying state (`add`, `audit --fix`) must re-verify environment health using internal monitoring (like `ls`) before proceeding.
+* **Implicit Sync:** Any feature modifying `hwm.yaml` must implicitly trigger synchronization to keep the workspace consistent.
+
+## 5. Documentation & Schema
+
+* **Spec Alignment:** New CLI flags or behaviors must be updated in `docs/spec.md` before implementation.
+* **Hash Integrity:** Respect the file hash system; ensure any changes to `hwm.yaml` update the hash-generation logic to prevent drift.
+
+## 6. Verification & Completion
+
+* **Mandatory Build:** Before finalizing any task, you **MUST** run `stack build`.
+* **Success Requirement:** The work is not finished if the build fails. You must iterate until `stack build` passes.

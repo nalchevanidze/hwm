@@ -1,35 +1,27 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module HWM.CLI.Command.Add (runAdd, AddOptions (..)) where
+module HWM.CLI.Command.Registry.Add (runRegistryAdd) where
 
 import qualified Data.Set as S
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, padDots)
-import HWM.Core.Pkg (Pkg (..), PkgName (..), pkgId, pkgYamlPath)
+import HWM.Core.Pkg (Pkg (..), PkgName (..), pkgId)
 import HWM.Domain.Bounds (Bounds (..), deriveBounds)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), askWorkspaceGroups, updateConfig)
 import HWM.Domain.Dependencies (Dependency (..), lookupBounds, singleDeps)
 import HWM.Domain.Matrix (getTestedRange)
 import HWM.Domain.Workspace (memberPkgs, pkgGroupName, resolveTargets)
-import HWM.Integrations.Toolchain.Cabal (syncCabal)
 import HWM.Integrations.Toolchain.Package
-import HWM.Runtime.Files (rewrite_, statusM)
 import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM, sectionWorkspace)
 import Relude
 
-data AddOptions = AddOptions
-  { packageName :: PkgName,
-    workspaceId :: Name
-  }
-  deriving (Show)
-
-runAdd :: AddOptions -> ConfigT ()
-runAdd AddOptions {..} = do
+runRegistryAdd :: Text -> Maybe Text -> ConfigT ()
+runRegistryAdd regPkg regTarget = do
+  let packageName = PkgName regPkg
+      workspaceId = fromMaybe "default" regTarget
   ws <- askWorkspaceGroups
   targets <- fmap (S.toList . S.fromList) (resolveTargets ws [workspaceId])
 

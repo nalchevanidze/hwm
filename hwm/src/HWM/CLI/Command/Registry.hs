@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+
 module HWM.CLI.Command.Registry (
     RegistryOptions(..),
     RegistryCommand(..),
@@ -8,7 +9,11 @@ module HWM.CLI.Command.Registry (
 ) where
 
 import Relude
-import HWM.Domain.ConfigT (ConfigT)
+import qualified Data.Text as T
+import HWM.Core.Pkg (PkgName(..))
+import HWM.CLI.Command.Registry.Add (runRegistryAdd)
+import HWM.CLI.Command.Registry.Audit (runRegistryAudit)
+import HWM.CLI.Command.Registry.Ls (runRegistryLs)
 
 -- | Subcommands for `hwm registry`
 data RegistryCommand
@@ -26,12 +31,6 @@ data RegistryOptions = RegistryOptions
 runRegistry :: RegistryOptions -> ConfigT ()
 runRegistry RegistryOptions{registryCommand} =
     case registryCommand of
-        RegistryAdd{regPkg, regTarget} -> do
-            -- TODO: Integrate logic from Add.hs here
-            pure ()
-        RegistryAudit{regFix} -> do
-            -- TODO: Integrate logic from Outdated.hs here
-            pure ()
-        RegistryLs{regSearch} -> do
-            -- TODO: List registry entries
-            pure ()
+        RegistryAdd{regPkg, regTarget} -> runRegistryAdd regPkg regTarget
+        RegistryAudit{regFix} -> runRegistryAudit regFix
+        RegistryLs{regSearch} -> runRegistryLs regSearch
