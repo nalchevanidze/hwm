@@ -13,6 +13,8 @@ module HWM.Integrations.Toolchain.Package
     deriveRegistry,
     packageDiffs,
     validatePackage,
+    updatePackage,
+    packageModifyDependencies,
   )
 where
 
@@ -62,25 +64,15 @@ instance FromJSON Package where
 instance ToJSON Package where
   toJSON = genericToJSON aesonYAMLOptions
 
-updatePackage :: Pkg -> Maybe Package -> ConfigT Package
-updatePackage pkg Nothing =
-  throwError
-    $ Issue
-      { issueTopic = pkgMemberId pkg,
-        issueMessage = "could not find package file",
-        issueSeverity = SeverityWarning,
-        issueDetails = Just GenericIssue {issueFile = pkgYamlPath pkg}
-      }
-updatePackage pkg (Just Package {..}) = do
-  let path = pkgYamlPath pkg
-      pkgId = pkgMemberId pkg
-  newLibrary <- traverse (updateLibrary pkgId "library" path) library
-  newTests <- updateLibraries pkgId "tests" path tests
-  newExecutables <- updateLibraries pkgId "executables" path executables
-  newBenchmarks <- updateLibraries pkgId "benchmarks" path benchmarks
-  newInternalLibraries <- updateLibraries pkgId "internal" path internalLibraries
-  newForeignLibraries <- updateLibraries pkgId "foreign" path foreignLibraries
-  newDependencies <- updateDependencies pkgId "dependencies" path dependencies
+mapPackage :: Pkg -> Package -> ConfigT Package
+mapPackage pkg Package {..} = do
+  newLibrary <- traverse (updateLibrary pkg "library") library
+  newTests <- updateLibraries pkg "tests" tests
+  newExecutables <- updateLibraries pkg "executables" executables
+  newBenchmarks <- updateLibraries pkg "benchmarks" benchmarks
+  newInternalLibraries <- updateLibraries pkg "internal" internalLibraries
+  newForeignLibraries <- updateLibraries pkg "foreign" foreignLibraries
+  newDependencies <- updateDependencies pkg "dependencies" dependencies
   newVersion <- askVersion
   pure
     $ Package
@@ -95,16 +87,19 @@ updatePackage pkg (Just Package {..}) = do
         ..
       }
 
+withMaybe :: (Applicative m) => (a -> m [b]) -> Maybe a -> m [b]
+withMaybe = maybe (pure [])
+
 -- | Determine whether a package already matches the expected configuration.
-packageDiffs :: Text -> FilePath -> Package -> ConfigT [BoundsDiff]
-packageDiffs memberId path Package {..} = do
-  depsDiffs <- checkDependencies memberId "dependencies" path dependencies
-  libraryDiffs <- traverseLibrary "library" library
-  testsDiffs <- traverseLibraries "tests" tests
-  executablesDiffs <- traverseLibraries "executables" executables
-  benchmarksDiffs <- traverseLibraries "benchmarks" benchmarks
-  internalDiffs <- traverseLibraries "internal" internalLibraries
-  foreignDiffs <- traverseLibraries "foreign" foreignLibraries
+packageDiffs :: Pkg -> Package -> ConfigT [BoundsDiff]
+packageDiffs pkg Package {..} = do
+  depsDiffs <- checkDependencies pkg "dependencies" dependencies
+  libraryDiffs <- withMaybe (checkLibrary pkg "library") library
+  testsDiffs <- withMaybe (checkLibraries pkg "tests") tests
+  executablesDiffs <- withMaybe (checkLibraries pkg "executables") executables
+  benchmarksDiffs <- withMaybe (checkLibraries pkg "benchmarks") benchmarks
+  internalDiffs <- withMaybe (checkLibraries pkg "internal") internalLibraries
+  foreignDiffs <- withMaybe (checkLibraries pkg "foreign") foreignLibraries
   pure
     ( depsDiffs
         <> libraryDiffs
@@ -114,14 +109,6 @@ packageDiffs memberId path Package {..} = do
         <> internalDiffs
         <> foreignDiffs
     )
-  where
-    traverseLibrary :: Text -> Maybe Library -> ConfigT [BoundsDiff]
-    traverseLibrary _ Nothing = pure []
-    traverseLibrary scope (Just lib) = checkLibrary memberId scope path lib
-
-    traverseLibraries :: Text -> Maybe Libraries -> ConfigT [BoundsDiff]
-    traverseLibraries _ Nothing = pure []
-    traverseLibraries scope (Just libs) = checkLibraries memberId scope path libs
 
 syncPackages :: ConfigT ()
 syncPackages = sectionWorkspace $ do
@@ -131,15 +118,33 @@ syncPackages = sectionWorkspace $ do
     putLine $ "• " <> chalk Bold (pkgGroupName g)
     dirs <- memberPkgs g
     let maxLen = genMaxLen (map pkgMemberId dirs)
-    for_ dirs $ \pkg -> do
-      let path = pkgYamlPath pkg
-      package <- statusM path (rewrite_ path (updatePackage pkg))
-      cabal <- syncCabal pkg
-      putLine
-        ( subPathSign
-            <> padDots maxLen (pkgMemberId pkg)
-            <> displayStatus [("pkg", package), ("cabal", cabal)]
-        )
+    for_ dirs $ \pkg -> updatePackage maxLen (mapPackage pkg) pkg
+
+packageModifyDependencies :: (Dependencies -> ConfigT Dependencies) -> Package -> ConfigT Package
+packageModifyDependencies f Package {..} = do
+  newDependencies <- f dependencies
+  pure Package {dependencies = newDependencies, ..}
+
+updatePackage :: Int -> (Package -> ConfigT Package) -> Pkg -> ConfigT ()
+updatePackage maxLen f pkg = do
+  let path = pkgYamlPath pkg
+  package <- statusM path (rewrite_ path maybePackage)
+  cabal <- syncCabal pkg
+  putLine
+    ( subPathSign
+        <> padDots maxLen (pkgMemberId pkg)
+        <> displayStatus [("pkg", package), ("cabal", cabal)]
+    )
+  where
+    maybePackage Nothing =
+      throwError
+        $ Issue
+          { issueTopic = pkgMemberId pkg,
+            issueMessage = "could not find package file",
+            issueSeverity = SeverityWarning,
+            issueDetails = Just GenericIssue {issueFile = pkgYamlPath pkg}
+          }
+    maybePackage (Just package) = f package
 
 collectPackageDependencies :: Package -> [Dependency]
 collectPackageDependencies Package {..} =
@@ -189,28 +194,23 @@ deriveDependencyGraph pkgs = DependencyGraph $ Map.fromList [(name pkg, internal
 validatePackage :: Pkg -> ConfigT ()
 validatePackage pkg = do
   let path = pkgYamlPath pkg
-      pkgId = pkgMemberId pkg
-
   currentPkg <- readYaml path :: ConfigT Package
   expectedVersion <- askVersion
-
   let currentVersion = version currentPkg
       versionMatch = currentVersion == expectedVersion
-  diffs <- packageDiffs pkgId path currentPkg
-
+  diffs <- packageDiffs pkg currentPkg
   unless versionMatch
     $ injectIssue
       Issue
-        { issueTopic = pkgId,
+        { issueTopic = pkgMemberId pkg,
           issueMessage = "version mismatch: " <> format currentVersion <> " → " <> format expectedVersion,
           issueSeverity = SeverityWarning,
           issueDetails = Just GenericIssue {issueFile = path}
         }
-
   unless (null diffs)
     $ injectIssue
       Issue
-        { issueTopic = pkgId,
+        { issueTopic = pkgMemberId pkg,
           issueMessage =
             let baseMsg =
                   if versionMatch

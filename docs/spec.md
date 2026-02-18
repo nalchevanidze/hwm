@@ -835,6 +835,61 @@ hwm run build
 
 ---
 
+This new feature, **Smart Dependency Injection**, transforms HWM from a configuration synchronizer into an active package manager. Below is the chapter description for the `hwm add` feature, designed to be integrated into your **Feature Specification & Public API** document.
+
+
+
+### 7. hwm add <pkg> <target>
+
+**Purpose:** Adds a dependency to specific packages or entire groups while maintaining workspace consistency. HWM determines the appropriate version bounds by auditing the project's build matrix and external package sets.
+
+#### 🧩 Discovery & UI Logic
+
+HWM adapts its output based on how it resolves the package version. This ensures transparency for new packages while remaining concise for existing ones.
+
+##### Scenario 1: Already Registered
+
+If the package is already defined in the global `registry`, HWM skips external lookups and reuses the existing source of truth.
+
+* **UI:** Displays the current registry bounds with an `(already registered)` tag.
+
+##### Scenario 2: Matrix Discovery
+
+If the package is missing from the registry, HWM performs a lookup against the **Oldest (Legacy)** and **Newest (Nightly)** environments defined in your `matrix`.
+
+* **UI:** Shows the specific versions found in each snapshot (e.g., `0.14.1 (min)` and `0.20.3.0 (max)`).
+* **Missing in Legacy:** If a package is too new for the legacy environment, it marks it as `missing (min)`, prompting the user that the lower bound will be set by the next available environment.
+
+##### Scenario 3: Hackage Fallback
+
+If the package is not found in the Stackage Nightly snapshot, HWM reaches out to the **Hackage API**.
+
+* **UI:** Adds a `hackage` line to the discovery section to show the latest preferred version used as the upper bound.
+
+---
+
+#### 🛠 Visual Examples
+
+| Type | CLI Output Representation |
+| --- | --- |
+| **Existing** | `registry ....... >= 0.14.1 && <= 0.20.3.0 (already registered)` |
+| **New (Full Matrix)** | `legacy ......... 0.14.1 (min)`<br>
+
+<br>`nightly ........ 0.20.3.0 (max)` |
+| **New (Hackage)** | `legacy ......... missing (min)`<br>
+
+<br>`nightly ........ missing`<br>
+
+<br>`hackage ........ 0.0.5 (max)` |
+
+---
+
+#### ⚙️ Execution Flow
+
+1. **Dependency Injection:** Adds the package name to the relevant `package.yaml` files for all members in the `<target>` (group or specific package).
+2. **Config Update:** Updates the `registry` and `hwm.yaml` file, ensuring the file hash is recalculated.
+3. **Workspace Sync:** Triggers an implicit `hwm sync` to regenerate `.cabal` and `stack.yaml` files, ensuring the IDE and build tools immediately recognize the new dependency.
+
 ### Workflow 2: Multi-GHC Testing
 
 **Scenario:** Test changes across GHC versions

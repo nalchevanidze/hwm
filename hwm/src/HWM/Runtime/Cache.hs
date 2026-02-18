@@ -18,7 +18,6 @@ module HWM.Runtime.Cache
     getVersions,
     Versions,
     VersionMap,
-    clearVersions,
     prepareDir,
     getSnapshotGHC,
     Snapshot (..),
@@ -111,9 +110,6 @@ updateRegistry :: (MonadReader env m, Has env Cache, MonadIO m) => (Registry -> 
 updateRegistry f = do
   c <- askCache
   modifyCache c f
-
-clearVersions :: (MonadReader env m, Has env Cache, MonadIO m) => m ()
-clearVersions = updateRegistry (\reg -> reg {versions = mempty})
 
 getReq :: (Url s, Option s) -> Req LbsResponse
 getReq (u, o) = req GET u NoReqBody lbsResponse o

@@ -8,7 +8,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Bounds
-  ( Bounds,
+  ( Bounds (..),
     BoundsByName,
     versionBounds,
     updateDepBounds,
@@ -22,19 +22,25 @@ module HWM.Domain.Bounds
     BoundsAudit (..),
     formatAudit,
     auditHasAny,
+    TestedRange (..),
+    deriveBounds,
   )
 where
 
+import Control.Monad.Except
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (..),
     Value (..),
   )
-import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList)
+import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList, padDots)
+import HWM.Core.Has (Has)
 import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
+import HWM.Core.Result (Issue)
 import HWM.Core.Version (Bump (..), Version, dropPatch, nextVersion)
-import HWM.Runtime.Cache (Snapshot, getVersion)
+import HWM.Runtime.Cache (Cache, Snapshot, getVersion, getVersions)
+import HWM.Runtime.UI
 import Relude
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
@@ -142,22 +148,22 @@ updateBound forceOverride res compliance registryBound matrixVersion
     preferMatrix = matrixBound <|> registryBound
     matrixBound = Bound res True <$> matrixVersion
 
-auditBounds :: Snapshot -> Snapshot -> PkgName -> Bounds -> BoundsAudit
-auditBounds legacy nightly name Bounds {..} =
+auditBounds :: TestedRange -> PkgName -> Bounds -> BoundsAudit
+auditBounds TestedRange {..} name Bounds {..} =
   BoundsAudit
     { auditPkgName = name,
       auditMinBound = auditBound lowerBound (getVersion name legacy) (>),
       auditMaxBound = auditBound upperBound (getVersion name nightly) (<)
     }
 
-updateDepBounds :: Bool -> Snapshot -> Snapshot -> PkgName -> Bounds -> Bounds
-updateDepBounds forceOverride legacy nightly name Bounds {..} =
+updateDepBounds :: Bool -> TestedRange -> PkgName -> Bounds -> Bounds
+updateDepBounds forceOverride TestedRange {..} name Bounds {..} =
   Bounds
     { lowerBound = updateBound forceOverride Min (auditStatus $ auditMinBound audit) lowerBound (getVersion name legacy),
       upperBound = updateBound forceOverride Max (auditStatus $ auditMaxBound audit) upperBound (getVersion name nightly)
     }
   where
-    audit = auditBounds legacy nightly name Bounds {..}
+    audit = auditBounds TestedRange {..} name Bounds {..}
 
 auditHasAny :: (BoundCompliance -> Bool) -> BoundsAudit -> Bool
 auditHasAny f BoundsAudit {..} = any (f . auditStatus) [auditMinBound, auditMaxBound]
@@ -196,3 +202,27 @@ data BoundsAudit = BoundsAudit
 
 formatAudit :: BoundsAudit -> [Text]
 formatAudit a = [format $ auditPkgName a] <> formatBoundAudit (auditMinBound a) <> [chalk Dim "  &&  "] <> formatBoundAudit (auditMaxBound a)
+
+data TestedRange = TestedRange
+  { legacy :: Snapshot,
+    nightly :: Snapshot
+  }
+
+deriveBounds :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Cache, MonadUI m) => PkgName -> TestedRange -> m Bounds
+deriveBounds name TestedRange {..} = do
+  let lower = getVersion name legacy
+  let upper = getVersion name nightly
+
+  newUpper <- maybe (head <$> getVersions name) pure upper
+
+  section "discovery" $ do
+    putLine $ padDots 16 "registry" <> "missing (initiating lookup)"
+    putLine $ padDots 16 "legacy" <> maybe (chalk Red "missing") (chalk Green . format) lower <> " (min)"
+    putLine $ padDots 16 "nightly" <> maybe (chalk Red "missing") ((<> " (max)") . chalk Green . format) upper
+    unless (isJust lower || isJust upper) $ putLine $ padDots 16 "hackage" <> chalk Green (format newUpper) <> " (max)"
+
+  pure
+    Bounds
+      { lowerBound = Bound Min True <$> lower,
+        upperBound = Just (Bound Max True newUpper)
+      }

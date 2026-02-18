@@ -12,6 +12,7 @@ module HWM.CLI.Command
 where
 
 import Data.Version (showVersion)
+import HWM.CLI.Command.Add (AddOptions, runAdd)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
 import HWM.CLI.Command.Outdated (OutdatedOptions (..), runOutdated)
 import HWM.CLI.Command.Publish (publish)
@@ -34,6 +35,7 @@ data Command
   | Run {runOptions :: ScriptOptions}
   | Status
   | Init {initOptions :: InitOptions}
+  | Add AddOptions
   deriving (Show)
 
 currentVersion :: String
@@ -47,6 +49,7 @@ command Sync {tag} = sync tag
 command Run {runOptions} = runScript runOptions
 command Status = showStatus
 command Init {} = pure ()
+command (Add options) = runAdd options
 
 runCommand :: Command -> Options -> IO ()
 runCommand Init {initOptions} ops = initWorkspace initOptions ops >> runConfigT showStatus ops

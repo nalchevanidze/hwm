@@ -17,6 +17,7 @@ module HWM.Domain.Matrix
     getBuildEnvironment,
     hkgRefs,
     printEnvironments,
+    getTestedRange,
   )
 where
 
@@ -27,6 +28,7 @@ import Data.Aeson
     genericParseJSON,
     genericToJSON,
   )
+import Data.Foldable (Foldable (..))
 import Data.List ((\\))
 import qualified Data.Map as M
 import Data.Traversable (for)
@@ -39,8 +41,9 @@ import HWM.Core.Has (Has, HasAll, askEnv)
 import HWM.Core.Pkg (Pkg (..), PkgName, pkgId)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
+import HWM.Domain.Bounds (TestedRange (..))
 import HWM.Domain.Workspace (WorkspaceGroup, memberPkgs)
-import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getRegistry, getVersions)
+import HWM.Runtime.Cache (Cache, Registry (currentEnv), Snapshot, VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
 import HWM.Runtime.Files (aesonYAMLOptions)
 import HWM.Runtime.UI (MonadUI, forTable, sectionEnvironments)
 import Relude
@@ -238,3 +241,10 @@ printEnvironments active environments =
         then chalk Cyan (buildResolver env <> " (active)")
         else chalk Gray (buildResolver env)
     )
+
+getTestedRange :: (Monad m, MonadReader env m, Has env [WorkspaceGroup], Has env Matrix, MonadIO m, MonadError Issue m) => m TestedRange
+getTestedRange = do
+  env <- getBuildEnvroments
+  legacy <- getSnapshot (minimum $ map buildResolver env)
+  nightly <- getLatestNightlySnapshot
+  pure TestedRange {legacy = legacy, nightly = nightly}

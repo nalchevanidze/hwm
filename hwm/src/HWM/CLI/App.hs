@@ -17,6 +17,7 @@ import HWM.CLI.Command
     defaultOptions,
     runCommand,
   )
+import HWM.CLI.Command.Add (AddOptions (..))
 import HWM.CLI.Command.Init (InitOptions (..))
 import HWM.CLI.Command.Outdated (OutdatedOptions (..))
 import HWM.CLI.Command.Run (ScriptOptions (..))
@@ -86,6 +87,12 @@ parseOutdatedOptions =
     <$> flag 'f' "fix" "Automatically fix outdated dependencies"
     <*> flag 'F' "force" "Force fix outdated dependencies. including warning-level updates (e.g., major version bumps)"
 
+parseAddOptions :: Parser AddOptions
+parseAddOptions =
+  AddOptions
+    <$> argument (str >>= parse) (metavar "PACKAGE" <> help "Package name to add")
+    <*> argument str (metavar "WORKSPACE" <> help "Optional WORKSPACE ID to associate with the package")
+
 parseCommand :: Parser Command
 parseCommand =
   commands
@@ -108,6 +115,10 @@ parseCommand =
       ( "run",
         "Run a script defined in hwm.yaml",
         Run <$> parseScriptOptions (argument (pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run"))
+      ),
+      ( "add",
+        "Add a package to the workspace.",
+        Add <$> parseAddOptions
       ),
       ( "status",
         "Show the current environment, version, and sync status.",
