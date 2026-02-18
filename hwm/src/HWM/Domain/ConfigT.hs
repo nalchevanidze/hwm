@@ -21,8 +21,6 @@ module HWM.Domain.ConfigT
     unpackConfigT,
     askCache,
     askMatrix,
-    askPackages,
-    askWorkspaceGroups,
     askVersion,
     saveConfig,
     resolveResultUI,
@@ -43,7 +41,7 @@ import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runRe
 import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.Matrix (Matrix (..))
-import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup, memberPkgs, pkgRegistry)
+import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup, askWorkspaceGroups, memberPkgs, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
 import HWM.Runtime.Files (addHash, readYaml, rewrite_)
 import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
@@ -188,13 +186,6 @@ unpackConfigT (ConfigT action) = runReaderT action
 askCache :: ConfigT Cache
 askCache = asks cache
 
-askWorkspaceGroups :: ConfigT [WorkspaceGroup]
-askWorkspaceGroups = asks (workspace . config)
-
 askMatrix :: ConfigT Matrix
 askMatrix = asks (matrix . config)
 
-askPackages :: ConfigT [Pkg]
-askPackages = do
-  groups <- askWorkspaceGroups
-  concat <$> traverse memberPkgs groups

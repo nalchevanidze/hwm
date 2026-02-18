@@ -13,7 +13,7 @@ import HWM.Core.Parsing (ParseCLI (..), parse)
 import HWM.Core.Pkg (Pkg (..), PkgName (..), pkgId)
 import HWM.Domain.Bounds (deriveBounds)
 import HWM.Domain.Config (Config (registry))
-import HWM.Domain.ConfigT (ConfigT, Env (config), askWorkspaceGroups, updateConfig)
+import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
 import HWM.Domain.Dependencies (Dependency (Dependency), lookupBounds, singleDeps)
 import HWM.Domain.Matrix (getTestedRange)
 import HWM.Domain.Workspace (resolveTargets)
@@ -32,9 +32,7 @@ instance ParseCLI RegistryAddOptions where
 
 runRegistryAdd :: RegistryAddOptions -> ConfigT ()
 runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
-  ws <- askWorkspaceGroups
-  workspaces <- resolveTargets ws (maybeToList opsWorkspace)
-
+  workspaces <- resolveTargets (maybeToList opsWorkspace)
   let target = if null workspaces then "none (registry only)" else format (T.intercalate ", " (map pkgId workspaces))
   sectionTableM
     0

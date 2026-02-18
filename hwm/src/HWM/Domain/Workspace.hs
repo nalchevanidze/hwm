@@ -17,6 +17,7 @@ module HWM.Domain.Workspace
     selectGroup,
     canPublish,
     buildWorkspaceGroups,
+    askWorkspaceGroups,
   )
 where
 
@@ -36,6 +37,7 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (availableOptions, commonPrefix, slugify)
+import HWM.Core.Has (Has (..))
 import HWM.Core.Pkg (Pkg (..), PkgName, makePkg)
 import HWM.Core.Result
 import HWM.Domain.Dependencies (DependencyGraph, sortByDependencyHierarchy)
@@ -77,8 +79,13 @@ parseTarget input = case T.breakOn "/" input of
   (pkg, "") -> (pkg, Nothing) -- No slash found
   (grp, rest) -> (grp, Just (T.drop 1 rest)) -- Drop the "/"
 
-resolveTargets :: (MonadIO m, MonadError Issue m) => [WorkspaceGroup] -> [Name] -> m [Pkg]
-resolveTargets ws names = (S.toList . S.fromList) . concat <$> traverse (resolveTarget ws) names
+askWorkspaceGroups :: (MonadReader env m, Has env [WorkspaceGroup]) => m [WorkspaceGroup]
+askWorkspaceGroups = asks obtain
+
+resolveTargets :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => [Name] -> m [Pkg]
+resolveTargets names = do
+  ws <- askWorkspaceGroups
+  (S.toList . S.fromList) . concat <$> traverse (resolveTarget ws) names
 
 resolveTarget :: (MonadIO m, MonadError Issue m) => [WorkspaceGroup] -> Text -> m [Pkg]
 resolveTarget ws target = do
