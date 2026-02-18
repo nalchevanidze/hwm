@@ -47,7 +47,7 @@ runRegistryAudit RegistryAuditOptions {..} = do
           injectIssue
             ( Issue
                 { issueDetails = Nothing,
-                  issueMessage = "Found " <> show (length dependencyAudits - errorCount) <> " outdated dependencies: Run 'hwm registry audit --fix' to update.",
+                  issueMessage = "Found " <> show (length dependencyAudits - errorCount) <> " outdated dependencies: Run 'hwm registry audit --fix --force' to update.",
                   issueTopic = "registry",
                   issueSeverity = SeverityWarning
                 }
