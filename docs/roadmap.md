@@ -271,6 +271,32 @@ By moving the complexity of workspace management into a declarative, automated t
 
 ---
 
+
+## 11 Resource-Oriented CLI
+
+### 📋 `hwm registry` (Alias: `reg`)
+
+**Purpose:** Manages the "Single Source of Truth" for dependencies. It handles version authority and global health.
+
+* **`add <pkg> [target]`**: Injects a dependency into the registry (with "Sandwich" discovery) and links it to workspace members.
+* **`audit [--fix]`**: Validates registry bounds against the build matrix and automatically repairs discrepancies.
+* **`ls [search]`**: Terminal-resident monitoring. Inspect the current state of all registry entries without opening an IDE.
+
+### 🌍 `hwm matrix` (Alias: `env`)
+
+**Purpose:** Manages build environments and GHC/resolver configurations.
+
+* **`add <name>`**: Interactively adds a new environment to the build matrix.
+* **`ls`**: Lists all available environments and identifies the currently active one.
+* **`run <script> --env=<env>`**: Executes commands across specific or all matrix environments in parallel.
+
+### 📦 `hwm workspace` (Alias: `pkg`)
+
+**Purpose:** Manages the physical structure of the monorepo and member metadata.
+
+* **`add <dir>`**: Scaffolds a new package and registers it as a workspace member.
+* **`ls`**: Displays the workspace tree, grouping members by their defined logical groups (e.g., `libs`, `apps`).
+
 ## Contributing
 
 

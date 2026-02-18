@@ -22,7 +22,19 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool for Haskell monorepos.
 - **Bounds Auditing:** Ensures safe dependency bounds (warn/error if out of matrix window)
 - **Scripts:** Template commands with `{TARGET}` substitution
 
-## Quick Reference & CLI Commands
+## Comparison
+
+| Feature         | HWM | Manual | Nix  |
+| --------------- | --- | ------ | ---- |
+| Single Config   | ✅  | ❌     | ❌   |
+| Multi-GHC       | ✅  | ⚠️     | ✅   |
+| Dependency Sync | ✅  | ❌     | ✅   |
+| IDE Support     | ✅  | ⚠️     | ✅   |
+| Publishing      | ✅  | ⚠️     | ❌   |
+| Learning Curve  | Low | N/A    | High |
+
+
+## Quick Reference
 
 | Command                    | Synopsis                                               | Key Behavior                                                                 |
 | -------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------- |
@@ -34,24 +46,18 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool for Haskell monorepos.
 | `hwm publish [GROUP]`      | Build & upload packages                               | For groups with `publish: true` or specified, runs sdist/upload              |
 | `hwm status`               | Show project/env/workspace overview                   | Displays project name, version, envs, workspace structure                    |
 
----
+**Global Flags:**  
+`--version` (show CLI version), `--quiet` (suppress logs), `--help` (show help)
 
-### Global Flags
-
-- `--version` - Display CLI app version
-- `--quiet` - Suppress non-essential logs
-- `--help` - Show help (per optparse-applicative)`
-
-### Configuration Structure
-
+**Configuration Structure:**
 ```yaml
-name: string # Project identifier
-version: string # SemVer (e.g., "0.1.0")
-bounds: string # Auto-generated (">= 0.1.0 && < 0.2.0")
+name: string         # Project identifier
+version: string      # SemVer (e.g., "0.1.0")
+bounds: string       # Auto-generated (">= 0.1.0 && < 0.2.0")
 workspace: [WorkspaceGroup] # Package groups
-matrix: Matrix # Build environments
-registry: [Dependency] # Version constraints
-scripts: { name: command } # Custom commands
+matrix: Matrix       # Build environments
+registry: [Dependency]      # Version constraints
+scripts: { name: command }  # Custom commands
 ```
 
 ---
@@ -131,6 +137,9 @@ By comparing your registry bounds to these two snapshots, HWM can:
 - Guarantee that every version you claim to support is actually tested in CI (no false sense of safety).
 - Prevent accidental breakage from untested versions (e.g., if you allow a version newer than Nightly, you risk breakage as soon as it is released).
 - Warn you if your bounds are too restrictive (excluding versions that are tested and available).
+
+
+### hwm outdated [--fix] [--force]
 
 **Behavior:**
 
@@ -754,21 +763,6 @@ scripts:
 - Returns: JSON list of available versions
 - Cached in state.json
 
----
-
-## Comparison
-
-| Feature         | HWM | Manual | Nix  |
-| --------------- | --- | ------ | ---- |
-| Single Config   | ✅  | ❌     | ❌   |
-| Multi-GHC       | ✅  | ⚠️     | ✅   |
-| Dependency Sync | ✅  | ❌     | ✅   |
-| IDE Support     | ✅  | ⚠️     | ✅   |
-| Publishing      | ✅  | ⚠️     | ❌   |
-| Learning Curve  | Low | N/A    | High |
-
----
-
 ## Glossary
 
 - **Workspace Group:** Logical collection of related packages
@@ -777,16 +771,3 @@ scripts:
 - **Target:** Package or group identifier (`group/member`)
 - **Bounds:** Cabal version constraint (e.g., `>= 1.0 && < 2.0`)
 - **Matrix:** Collection of build environments for testing
-
----
-
-**Document Version:** 1.0  
-**HWM Version:** 0.0.1  
-**Status:** Complete
-
----
-
-## Related Documentation
-
-For detailed architecture information, module structure, and codebase internals, see:
-- **[Architecture Documentation](architecture.md)** - Complete guide for maintainers and AI agents
