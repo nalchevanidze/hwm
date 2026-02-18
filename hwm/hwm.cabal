@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -32,6 +32,11 @@ library
   exposed-modules:
       HWM.CLI.App
       HWM.CLI.Command
+      HWM.CLI.Command.Environment
+      HWM.CLI.Command.Environment.Add
+      HWM.CLI.Command.Environment.Ls
+      HWM.CLI.Command.Environment.Remove
+      HWM.CLI.Command.Environment.SetDefault
       HWM.CLI.Command.Init
       HWM.CLI.Command.Publish
       HWM.CLI.Command.Registry
