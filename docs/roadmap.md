@@ -278,7 +278,7 @@ By moving the complexity of workspace management into a declarative, automated t
 
 **Purpose:** Manages the "Single Source of Truth" for dependencies. It handles version authority and global health.
 
-* **`add <pkg> [target]`**: Injects a dependency into the registry (with "Sandwich" discovery) and links it to workspace members.
+* **`add <pkg> -w=[target]`**: Injects a dependency into the registry (with "Sandwich" discovery) and links it to workspace members.
 * **`audit [--fix]`**: Validates registry bounds against the build matrix and automatically repairs discrepancies.
 * **`ls [search]`**: Terminal-resident monitoring. Inspect the current state of all registry entries without opening an IDE.
 

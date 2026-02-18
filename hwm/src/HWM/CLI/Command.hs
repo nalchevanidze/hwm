@@ -20,6 +20,7 @@ import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
 import HWM.CLI.Command.Sync (sync)
 import HWM.CLI.Command.Version (runVersion)
+import HWM.CLI.Command.Registry (RegistryOptions(..), runRegistry)
 import HWM.Core.Common (Name)
 import HWM.Core.Options (Options (..), defaultOptions)
 import HWM.Core.Version (Bump (..))
@@ -36,10 +37,12 @@ data Command
   | Status
   | Init {initOptions :: InitOptions}
   | Add AddOptions
+  | Registry RegistryOptions
   deriving (Show)
 
 currentVersion :: String
 currentVersion = showVersion CLI.version
+
 
 command :: Command -> ConfigT ()
 command Publish {groupName} = publish groupName
@@ -50,6 +53,7 @@ command Run {runOptions} = runScript runOptions
 command Status = showStatus
 command Init {} = pure ()
 command (Add options) = runAdd options
+command (Registry options) = runRegistry options
 
 runCommand :: Command -> Options -> IO ()
 runCommand Init {initOptions} ops = initWorkspace initOptions ops >> runConfigT showStatus ops

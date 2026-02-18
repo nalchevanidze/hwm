@@ -36,6 +36,7 @@ library
       HWM.CLI.Command.Init
       HWM.CLI.Command.Outdated
       HWM.CLI.Command.Publish
+      HWM.CLI.Command.Registry
       HWM.CLI.Command.Run
       HWM.CLI.Command.Status
       HWM.CLI.Command.Sync
