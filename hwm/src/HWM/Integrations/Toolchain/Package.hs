@@ -14,7 +14,7 @@ module HWM.Integrations.Toolchain.Package
     packageDiffs,
     validatePackage,
     updatePackage,
-    packageUpdateDependencies,
+    packageModifyDependencies,
   )
 where
 
@@ -87,16 +87,19 @@ mapPackage pkg Package {..} = do
         ..
       }
 
+withMaybe :: (Applicative m) => (a -> m [b]) -> Maybe a -> m [b]
+withMaybe = maybe (pure [])
+
 -- | Determine whether a package already matches the expected configuration.
 packageDiffs :: Pkg -> Package -> ConfigT [BoundsDiff]
 packageDiffs pkg Package {..} = do
   depsDiffs <- checkDependencies pkg "dependencies" dependencies
-  libraryDiffs <- traverseLibrary "library" library
-  testsDiffs <- traverseLibraries "tests" tests
-  executablesDiffs <- traverseLibraries "executables" executables
-  benchmarksDiffs <- traverseLibraries "benchmarks" benchmarks
-  internalDiffs <- traverseLibraries "internal" internalLibraries
-  foreignDiffs <- traverseLibraries "foreign" foreignLibraries
+  libraryDiffs <- withMaybe (checkLibrary pkg "library") library
+  testsDiffs <- withMaybe (checkLibraries pkg "tests") tests
+  executablesDiffs <- withMaybe (checkLibraries pkg "executables") executables
+  benchmarksDiffs <- withMaybe (checkLibraries pkg "benchmarks") benchmarks
+  internalDiffs <- withMaybe (checkLibraries pkg "internal") internalLibraries
+  foreignDiffs <- withMaybe (checkLibraries pkg "foreign") foreignLibraries
   pure
     ( depsDiffs
         <> libraryDiffs
@@ -106,14 +109,6 @@ packageDiffs pkg Package {..} = do
         <> internalDiffs
         <> foreignDiffs
     )
-  where
-    traverseLibrary :: Text -> Maybe Library -> ConfigT [BoundsDiff]
-    traverseLibrary _ Nothing = pure []
-    traverseLibrary scope (Just lib) = checkLibrary pkg scope lib
-
-    traverseLibraries :: Text -> Maybe Libraries -> ConfigT [BoundsDiff]
-    traverseLibraries _ Nothing = pure []
-    traverseLibraries scope (Just libs) = checkLibraries pkg scope libs
 
 syncPackages :: ConfigT ()
 syncPackages = sectionWorkspace $ do
@@ -125,9 +120,9 @@ syncPackages = sectionWorkspace $ do
     let maxLen = genMaxLen (map pkgMemberId dirs)
     for_ dirs $ \pkg -> updatePackage maxLen (mapPackage pkg) pkg
 
-packageUpdateDependencies :: Pkg -> Package -> ConfigT Package
-packageUpdateDependencies pkg Package {..} = do
-  newDependencies <- updateDependencies pkg "dependencies" dependencies
+packageModifyDependencies :: (Dependencies -> ConfigT Dependencies) -> Package -> ConfigT Package
+packageModifyDependencies f Package {..} = do
+  newDependencies <- f dependencies
   pure Package {dependencies = newDependencies, ..}
 
 updatePackage :: Int -> (Package -> ConfigT Package) -> Pkg -> ConfigT ()

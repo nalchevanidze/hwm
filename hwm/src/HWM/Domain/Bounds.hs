@@ -8,7 +8,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Bounds
-  ( Bounds,
+  ( Bounds(..),
     BoundsByName,
     versionBounds,
     updateDepBounds,

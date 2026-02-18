@@ -125,6 +125,7 @@ updateDependencies pkg scope deps = do
   -- Return updated dependencies using fromDependencyList
   pure $ fromDependencyList updated
 
+
 checkDependencies :: Pkg -> Text -> Dependencies -> ConfigT [BoundsDiff]
 checkDependencies pkg scope deps =
   processDependencies pkg scope deps $ \(Dependency depName depBounds) maybeExpected ->

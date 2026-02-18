@@ -16,6 +16,7 @@ module HWM.Domain.Dependencies
     DependencyGraph (..),
     sortByDependencyHierarchy,
     mapWithName,
+    singleDeps
   )
 where
 
@@ -61,6 +62,9 @@ instance Format Dependency where
 newtype Dependencies = Dependencies {unpackDeps :: Map PkgName Bounds}
   deriving (Show)
 
+instance Semigroup Dependencies where
+  (Dependencies a) <> (Dependencies b) = Dependencies (a <> b)
+
 getBounds :: (MonadError Issue m) => PkgName -> Dependencies -> m Bounds
 getBounds name = select "Package " name . unpackDeps
 
@@ -69,6 +73,9 @@ mapDeps f (Dependencies xs) = Dependencies $ Map.mapWithKey f xs
 
 mapWithName :: (PkgName -> Bounds -> b) -> Dependencies -> [b]
 mapWithName f (Dependencies xs) = Map.elems $ Map.mapWithKey f xs
+
+singleDeps :: Dependency -> Dependencies
+singleDeps (Dependency name bounds) = Dependencies (Map.singleton name bounds)
 
 initDependencies :: [Dependency] -> Dependencies
 initDependencies = Dependencies . Map.fromList . map toDuple
