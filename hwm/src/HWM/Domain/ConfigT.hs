@@ -188,4 +188,3 @@ askCache = asks cache
 
 askMatrix :: ConfigT Matrix
 askMatrix = asks (matrix . config)
-

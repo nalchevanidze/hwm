@@ -36,7 +36,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
     0
     "add dependency"
     [ ("package", pure $ chalk Magenta (format opsPkgName)),
-      ("target", pure $ chalk Cyan (if null opsWorkspace then "none (registry only)" else T.unwords opsWorkspace))
+      ("target", pure $ chalk Cyan (if null opsWorkspace then "none (registry only)" else T.intercalate ", " opsWorkspace))
     ]
 
   registered <- asks (lookupBounds opsPkgName . registry . config)
