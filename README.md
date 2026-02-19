@@ -15,7 +15,7 @@ But HWM is not just a static generator—it is an **active workspace maintainer*
 
 [![Status](https://img.shields.io/badge/Status-Alpha-orange)](https://github.com/nalchevanidze/hwm)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Morpheus GraphQL](https://img.shields.io/badge/Production%20Ready-Morpheus%20GraphQL-purple)](https://github.com/morpheusgraphql/morpheus-graphql)
+[![Powers](https://img.shields.io/badge/Powers-Morpheus%20GraphQL-purple)](https://github.com/morpheusgraphql/morpheus-graphql)
 
 ---
 
@@ -42,11 +42,25 @@ HWM sits one layer above your toolchain. It acts as the **Single Source of Truth
 
 ```mermaid
 graph TD
-    HWM[hwm.yaml] -->|Generates| Stack[stack.yaml]
-    HWM -->|Generates| HIE[hie.yaml]
-    HWM -->|Generates| Pkg[packages/*/package.yaml]
-    Pkg -->|Cabal Gen| Cabal[*.cabal]
+    HWM[hwm.yaml] ===>|Source of Truth| Core
+    
+    subgraph "Root Configs"
+    Core --> Stack[stack.yaml]
+    Core --> HIE[hie.yaml]
+    end
 
+    subgraph "Package Configs"
+    Core --> Pkg[packages/*/package.yaml]
+    Pkg -->|Cabal Gen| Cabal[*.cabal]
+    end
+
+    subgraph "Matrix Engines (Hidden)"
+    Core -.->|Generates| Matrix[".hwm/matrix/stack-*.yaml"]
+    Matrix -.->|Powers| Run["hwm run test --env=legacy"]
+    end
+
+    style HWM fill:#f9f,stroke:#333,stroke-width:4px
+    style Matrix stroke-dasharray: 5 5
 ```
 
 * **You write:** `hwm.yaml` (1 file).
@@ -97,7 +111,7 @@ Today, it powers the entire Morpheus monorepo, managing:
 * **Hybrid Matrix:** Simultaneously testing `stable` (GHC 9.6) and `legacy` (GHC 8.10) environments.
 * **Unified Registry:** A single source of truth for version bounds across the entire repository.
 
-> **Tip:** You can view the [live configuration here](https://github.com/morpheusgraphql/morpheus-graphql/blob/main/hwm.yaml) to see a full-scale example of HWM in production.
+> **Tip:** You can view the [live configuration here](https://github.com/morpheusgraphql/morpheus-graphql/blob/main/hwm.yaml) to see a full-scale example of HWM in action.
 
 ---
 
@@ -194,12 +208,12 @@ Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM prov
 
 ## 📚 Documentation
 
-* **[Feature Specification](https://www.google.com/search?q=docs/spec.md)** – Public API & `hwm.yaml` schema.
-* **[Architecture](https://www.google.com/search?q=docs/architecture.md)** – Internal design & data flow.
-* **[Roadmap](https://www.google.com/search?q=docs/roadmap.md)** – Future plans.
+* **[Feature Specification](docs/spec.md)** – Public API & `hwm.yaml` schema.
+* **[Architecture](docs/architecture.md)** – Internal design & data flow.
+* **[Roadmap](docs/roadmap.md)** – Future plans.
 
 ---
 
-## 🧬 Origin
+## 🧬 Status
 
 HWM is currently in **Alpha**. We value your feedback—please [open an issue](https://github.com/nalchevanidze/hwm/issues) if you encounter bugs or have feature suggestions.
