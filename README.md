@@ -10,8 +10,8 @@ It ensures the state of your project files matches your declared intent across a
 But HWM is not just a static generator—it is an **active workspace maintainer** that helps you:
 * **Manage & Validate:** Add, remove, and analyze files to ensure structural consistency.
 * **Derive & Verify:** Automatically calculate safe dependency bounds verified against your build matrix.
-* **Release & Publish:** Manage atomic releases and synchronized publishing with `relasy` integration.
-* **Prune & Optimize:** Detect unused dependencies and keep your project healthy.
+* **Release & Publish:** Fully automate releases (versioning & publishing) via simple workflow triggers.
+* **Test & Orchestrate:** Run complex matrix tests locally without configuring CI scripts.
 
 [![Status](https://img.shields.io/badge/Status-Alpha-orange)](https://github.com/nalchevanidze/hwm)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -54,13 +54,14 @@ graph TD
     Pkg -->|Cabal Gen| Cabal[*.cabal]
     end
 
-    subgraph "Matrix Engines (Hidden)"
+    subgraph "Matrix Engines (Internal)"
     Core -.->|Generates| Matrix[".hwm/matrix/stack-*.yaml"]
     Matrix -.->|Powers| Run["hwm run test --env=legacy"]
     end
 
     style HWM fill:#f9f,stroke:#333,stroke-width:4px
     style Matrix stroke-dasharray: 5 5
+
 ```
 
 * **You write:** `hwm.yaml` (1 file).
@@ -111,7 +112,7 @@ Today, it powers the entire Morpheus monorepo, managing:
 * **Hybrid Matrix:** Simultaneously testing `stable` (GHC 9.6) and `legacy` (GHC 8.10) environments.
 * **Unified Registry:** A single source of truth for version bounds across the entire repository.
 
-> **Tip:** You can view the [live configuration here](https://github.com/morpheusgraphql/morpheus-graphql/blob/main/hwm.yaml) to see a full-scale example of HWM in action.
+> **Tip:** You can view the [live configuration here](https://github.com/morpheusgraphql/morpheus-graphql/blob/main/hwm.yaml) to see a full-scale example of HWM in production.
 
 ---
 
@@ -162,7 +163,21 @@ hwm run test --env=all
 <img src="images/matrix.png" alt="HWM Matrix Build Output" width="700">
 </p>
 
-### 3. Environment Management
+### 3. Automated Release Workflows
+
+Eliminate manual release steps. By combining HWM with `relasy`, you can fully automate the release lifecycle with a single CI workflow trigger.
+
+* **Auto-Versioning:** Calculate the next semantic version based on changes.
+* **Auto-Publishing:** Upload synchronized packages to Hackage.
+
+```bash
+# Triggered by your CI pipeline:
+hwm version minor   # Bumps versions atomically
+hwm publish libs    # Uploads the entire workspace group
+
+```
+
+### 4. Environment Management
 
 Manage multiple GHC versions and resolvers effortlessly.
 
@@ -200,17 +215,18 @@ Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM prov
 | **Config Source** | Decentralized (30+ files) | Centralized (`flake.nix`) | **Centralized (`hwm.yaml`)** |
 | **Primary Role** | Build Tool | Build & Deployment | **Workspace Manager** |
 | **Smart Add** | ❌ Manual Search | ❌ Manual Edit | **✅ `hwm add` (Auto-Discovery)** |
-| **Atomic Versioning** | ❌ Manual (File by file) | ❌ Manual | **✅ One Command (`hwm version`)** |
+| **Release Automation** | ❌ Manual Upload | ❌ Custom Scripts | **✅ CI Workflow Trigger** |
 | **Bounds Auditing** | ❌ Manual (Error-prone) | ⚠️ Pinned (Lockfile) | **✅ Real-time Snapshot Audit** |
 | **IDE Support** | ⚠️ Often Broken | ⚠️ Requires Plugins | **✅ Auto-Generated (`hie.yaml`)** |
 
 ---
 
-## 📚 Documentation
+## 🔮 Roadmap
 
-* **[Feature Specification](docs/spec.md)** – Public API & `hwm.yaml` schema.
-* **[Architecture](docs/architecture.md)** – Internal design & data flow.
-* **[Roadmap](docs/roadmap.md)** – Future plans.
+HWM is actively evolving. While the **Workspace** and **Matrix** engines are stable (used in Morpheus), we are building the following "Day 2" operations:
+
+* [ ] **Dependency Pruning:** Analyzing unused imports to keep the project clean.
+* [ ] **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml`.
 
 ---
 
