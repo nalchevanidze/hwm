@@ -1,13 +1,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.CLI.Command.Workspace
-  ( WorkspaceCommand(..)
-  , runWorkspace
-  ) where
+  ( WorkspaceCommand (..),
+    runWorkspace,
+  )
+where
 
 import HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd)
 import HWM.CLI.Command.Workspace.Ls (WorkspaceLsOptions, runWorkspaceLs)
-import HWM.Core.Parsing (ParseCLI(..))
+import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.ConfigT (ConfigT)
 import Options.Applicative (command, info, progDesc, subparser)
 import Relude
@@ -27,7 +28,7 @@ instance ParseCLI WorkspaceCommand where
   parseCLI =
     subparser
       ( mconcat
-          [ command "add" (info (WorkspaceAdd <$> parseCLI) (progDesc "Add a new workspace."))
-          , command "ls" (info (WorkspaceLs <$> parseCLI) (progDesc "List all workspaces."))
+          [ command "add" (info (WorkspaceAdd <$> parseCLI) (progDesc "Add a new workspace.")),
+            command "ls" (info (WorkspaceLs <$> parseCLI) (progDesc "List all workspaces."))
           ]
       )
