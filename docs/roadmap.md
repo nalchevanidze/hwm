@@ -1,109 +1,44 @@
-# HWM: Feature Roadmap
 
-**Target Audience:** Contributors, Maintainers, Planning
+# HWM Feature Roadmap
 
+**Audience:** Contributors, Maintainers, Planners
 **Last Updated:** February 15, 2026
 
-This document outlines potential features and enhancements that could benefit HWM users. These are not committed features, but rather ideas for future consideration.
+This document outlines potential features and enhancements for HWM. These are suggestions for future consideration, not commitments.
 
 ---
 
-## Planned Enhancements
 
-### 1. New Project Command (`hwm init --new`)
+## 1. Version Command: Direct Set
 
-Add a command to bootstrap a fresh HWM project in a new directory, creating all necessary "glue" files for a hybrid workflow (Cabal + Stack + Nix).
+Allow `hwm version` to accept specific version numbers, not just bump types.
 
-#### Proposed Syntax
+**Syntax:**
+
 ```bash
-hwm init --new <project-name> [options]
+hwm version 2.0.0   # Set to specific version
+hwm version 1.5.2   # Jump to arbitrary version
 ```
 
-#### Features
-
-* **Directory Creation:** Creates `<project-name>/` directory.
-* **Scaffolding:** Generates `hwm.yaml`, `cabal.project`, `stack.yaml`, and `flake.nix`.
-* **Git Initialization:** Runs `git init` and generates a comprehensive `.gitignore`.
-* **Hybrid Setup:** Ensures the generated Stack resolver matches the Nix compiler version.
+- Extend `data Bump = Major | Minor | Patch | Set Version`
+- Parse version string as alternative to bump keyword
+- Validate SemVer format
+- Warn on non-monotonic version changes
 
 
-* `--template=NAME`: Use a specific starter template (lib, exe, servant, etc.)
-* `--interactive`: Prompt for details instead of using defaults.
+## 2. Init Enhancements
 
----
+**Options:**
 
-### 2. Init Command Options
+- `--name=NAME`
+- `--default-env=ENV`
+- `--no-scripts`
+- `--dry-run`
 
-Enhance `hwm init` (for existing directories) with additional configuration options.
+**Interactive mode:**
 
-#### Proposed Options
-
-
-**`--name=NAME`**
-* Override inferred project name.
-* Use case: When the directory name doesn't match the desired project name.
-* Example: `hwm init --name=my-awesome-project`
-
-
-* Override inferred project version.
-* Use case: Set a specific starting version instead of auto-detection.
-* Example: `hwm init --version=1.0.0`
-
-
-**`--default-env=ENV`**
-* Set which environment becomes the matrix default.
-* Use case: Control which resolver/GHC is used by default.
-* Example: `hwm init --default-env=stable`
-
-
-**`--no-scripts`**
-* Don't generate the default scripts section.
-* Use case: Clean, minimal config for a custom workflow.
-* Example: `hwm init --no-scripts`
-
-
-**`--dry-run`**
-* Preview generated configuration without writing files.
-* Use case: Validate inference before committing.
-* Example: `hwm init --dry-run`
-
----
-
-### 3. Version Command - Direct Set
-
-
-Allow `hwm version` to accept specific version numbers in addition to bump types.
-
-#### Proposed Syntax
 ```bash
-hwm version 2.0.0       # Set to specific version
-hwm version 1.5.2       # Jump to arbitrary version
-```
-
-#### Implementation Notes
-
-* Extend `data Bump = Major | Minor | Patch | Set Version`.
-* Parse version string as an alternative to bump keyword.
-* Validate SemVer format.
-* Warn on non-monotonic version changes.
-
-#### Benefits
-
-* Align with external version requirements.
-* Support version resets or corrections.
-* Better integration with release management tools.
-
----
-
-### 4. Interactive Init Mode
-
-
-Add interactive prompts when running `hwm init` to guide users through configuration.
-
-#### Proposed Flow
-
-```text
-> hwm init --interactive
+hwm init --interactive
 
 🚀 HWM Workspace Initialization
 
@@ -119,199 +54,43 @@ Preview:
   - 3 environments (legacy, stable, nightly)
   - 24 registry entries
 
-
-Write to hwm.yaml? (y/n):
-
+Write to hwm.yaml? (y/n)
 ```
 
----
 
-### 5. Init from Template
+## 3. Registry Management
 
+Automate tedious Haskell maintenance tasks:
 
-Support initialization from predefined templates (usable by both `new` and `init`).
+**Unused Dependency Detection:**
 
 ```bash
-hwm init --template=basic        # Minimal single-package
-hwm init --template=monorepo     # Multi-package with examples
-hwm init --template=library      # Public library defaults
-
+hwm registry prune --unused
 ```
 
-#### Templates Could Include
-* Workspace structure patterns
-* Common script definitions
-* Registry presets (e.g., popular packages)
-* CI/CD integration files
+- Import analysis/pruning: Cross-reference `build-depends` with actual `import` statements in `.hs` files (using `-ddump-minimal-imports`). Safely remove unused packages from `.cabal` and `stack.yaml`.
+- Extra-deps: Inject missing `extra-deps` into Stack configs if not in snapshot; derive fixed versions from Cabal plan analysis.
+- Circular dependencies: Detect cycles between internal workspace packages.
+- Unreachable packages: List packages present in directory but not included in any environment matrix.
+
+
+## 4. Workspace Management
+
+Manage monorepo structure and member metadata:
+
+- `ws add <dir>`: Scaffold a new package and register as workspace member.
+- `ws ls`: Display workspace tree, grouping members by logical groups (e.g., `libs`, `apps`).
+
 
 ---
-
-### 6. Environment Management Commands
-
-
-Add dedicated commands for environment manipulation without editing `hwm.yaml`.
-
-```bash
-hwm environment add nightly-2024-12-01 --ghc=9.8.1
-hwm environment remove legacy
-hwm environment copy stable testing --ghc=9.6.6
-hwm environment set-default stable
-
-```
-
-#### Benefits
-* Easier environment experimentation
-* Better CLI-first workflow
-* Reduced manual YAML editing
-
----
-
-### 7. Dependency Management Commands
-
-
-Enhanced registry management that automates the "tedious" parts of Haskell maintenance.
-
-```bash
-hwm deps add aeson --smart
-hwm deps check --matrix
-hwm deps prune --unused
-
-```
-
-
-#### Features
-
-**Smart Add (`--smart`)**
-
-
-* **Auto-Boundary Detection:** Fetches the latest Hackage version and suggests a PVP-compliant bound (e.g., `^>= 2.1.0`) based on your current GHC environment.
-* **Conflict Pre-check:** Validates if the new dependency version is compatible with all existing environments (Stable, Nightly) before modifying files.
-
-
-**Dependency Matrix Check (`--matrix`)**
-* **Multi-Environment Validation:** Checks if your `build-depends` are valid across the entire `hwm.yaml` environment matrix.
-* **Regression Warning:** Warns if a specific dependency version would break the build for an older GHC version you still support.
-
-
-**Unused Dependency Detection (`--unused`)**
-* **Import Analysis:** Cross-references `build-depends` with actual `import` statements in your `.hs` files (using `-ddump-minimal-imports`).
-* **Pruning:** Safely removes unused packages from `.cabal` stanzas and `stack.yaml` extra-deps.
-
----
-
-### 8. Workspace Validation
-
-
-Add a deep validation command to catch configuration issues early, specifically for complex monorepos.
-
-```bash
-hwm validate [--strict]
-
-```
-
-
-#### Checks for:
-* **PVP Compliance:** Flags dependencies with missing upper bounds or overly liberal ranges.
-* **Circular Dependencies:** Detects cycles between internal workspace packages.
-* **Version Drift:** Identifies when the same package has conflicting versions across different workspace groups.
-* **Unreachable Packages:** Lists packages that exist in the directory but aren't included in any environment matrix.
-
-
-### 9. Watch Mode
-
-Auto-sync on configuration changes.
-
-```bash
-hwm watch
-# Monitors hwm.yaml for changes, auto-runs sync
-```
-
-## 10. System Description: The HWM Philosophy
-
-
-**HWM** (Haskell Workspace Manager) is a meta-build orchestrator designed to eliminate the friction of maintaining complex Haskell ecosystems. It operates as a "single source of truth" layer that sits above **Cabal**, **Stack**, and **Nix**, ensuring that these tools work in harmony rather than in conflict.
-
-### Core Objectives
-
-#### 1. Hybrid Workflow Orchestration
-
-
-HWM recognizes that modern Haskell projects often require different tools for different tasks (e.g., Nix for reproducible builds, Stack for stable snapshots, and Cabal for flexible development). HWM synchronizes these by:
-
-* Generating consistent `stack.yaml`, `cabal.project`, and `flake.nix` files from a single `hwm.yaml`.
-* Aligning GHC versions and resolver snapshots across all backend tools.
-
-#### 2. Empirical Dependency Intelligence
-
-
-Unlike standard managers that rely on static metadata, HWM uses **Empirical Derivation**. It analyzes your actual build artifacts and test results to:
-
-* **Derive Bounds:** Detect the true minimum and maximum compatible versions of dependencies by testing them against your matrix.
-* **Fix Extra-Deps:** Automatically inject missing `extra-deps` into Stack configurations if they are not in the snapshot and derive fixed versions based on Cabal plan analysis.
-
-#### 3. Maintenance Automation (The "Staff Engineer" in a Box)
-
-
-HWM automates the high-level decision-making usually performed by senior maintainers:
-
-* **Drift Prevention:** Flags when your local development environment deviates from your CI environment.
-* **Smart Upgrades:** Doesn't just bump versions; it checks the "warning matrix" to ensure a bump doesn't introduce a flood of deprecation warnings across your workspace.
-
-### Technical Architecture
-
-
-HWM treats the workspace as a **Matrix of Environments**. Each package in your registry can be validated against multiple "Plan Sets" (e.g., `GHC-9.4-LTS` and `GHC-9.8-Nightly`). This allows a single developer to maintain a library that supports multiple years of Haskell evolution without manual context-switching.
-
-### Summary of Value
-
-
-By moving the complexity of workspace management into a declarative, automated tool, HWM allows developers to focus on writing Haskell code rather than fighting the Haskell toolchain. It transforms **"Cabal Hell"** into a **"Verified Matrix."**
-
----
-
-
-## 11 Resource-Oriented CLI
-
-
-✔️  📋 <code>hwm registry</code> (subcommands: <code>add, audit, ls</code>) [Done]
-✔️  📋 <code>hwm environment</code> (subcommands: <code>add, ls, set-default, remove</code>) [Done]
-
-### 📦 `hwm workspace` (Alias: `pkg`)
-
-**Purpose:** Manages the physical structure of the monorepo and member metadata.
-
-* **`add <dir>`**: Scaffolds a new package and registers it as a workspace member.
-* **`ls`**: Displays the workspace tree, grouping members by their defined logical groups (e.g., `libs`, `apps`).
 
 ## Contributing
 
-
-If you're interested in implementing any of these features:
-
+Interested in implementing a feature?
 
 1. Open an issue to discuss the approach.
-2. Check if the feature aligns with HWM's philosophy.
+2. Check alignment with HWM philosophy.
 3. Submit a PR with tests and documentation.
 4. Update this roadmap when features are completed.
 
-
 Features listed here are **suggestions**, not commitments. Prioritization depends on community needs and maintainer availability.
-
----
-
-## Completed Features
-
-
-As features are implemented, they should be:
-
-
-1. Removed from this roadmap.
-2. Documented in [spec.md](spec.md).
-3. Added to the changelog.
-
----
-
-
-**Document Status:** Living Document  
-**Next Review:** When a major version milestone is reached
-
