@@ -107,7 +107,7 @@ sectionWorkspace :: (MonadUI m) => m a -> m ()
 sectionWorkspace = sectionWithIcon "./" "workspace"
 
 sectionEnvironments :: (MonadUI m) => Maybe Text -> m a -> m ()
-sectionEnvironments title = section ("environments" <> maybe "" (\name -> chalk Green (" (default: " <> name <> ")")) title)
+sectionEnvironments title = section ("environments" <> maybe "" (\name -> chalk Dim " (default: " <> chalk Magenta name <> chalk Dim ")") title)
 
 tableM :: (MonadUI m) => Int -> [(Text, m Text)] -> m ()
 tableM minSize rows = traverse_ formatRow rows

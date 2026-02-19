@@ -12,10 +12,10 @@ import HWM.Core.Formatting (Format (..), padDots)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
-import HWM.Domain.Matrix (Matrix (..), newEnv)
+import HWM.Domain.Matrix (Matrix (..), newEnv, existsEnviroment)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Snapshots (SnapshotInfo (..), fetchLtsSuggestions, fetchStackageSnapshots)
-import HWM.Runtime.UI (putLine, section, sectionTableM)
+import HWM.Runtime.UI (putLine, section)
 import Options.Applicative (help, metavar, strArgument)
 import Relude
 
@@ -43,6 +43,8 @@ size = 16
 
 runEnvAdd :: EnvAddOptions -> ConfigT ()
 runEnvAdd EnvAddOptions {..} = section "new environment" $ do
+  exists <- existsEnviroment envName
+  when exists $ throwError $ fromString $ "Environment '" <> toString envName <> "' already exists."
   putLine $ padDots size "name" <> envName
   ltsMap <- fetchLtsSuggestions
   snapshots <- map snapshotName <$> fetchStackageSnapshots

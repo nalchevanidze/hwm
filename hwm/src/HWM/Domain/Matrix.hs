@@ -20,6 +20,7 @@ module HWM.Domain.Matrix
     getTestedRange,
     removeEnvironmentByName,
     newEnv,
+    existsEnviroment,
   )
 where
 
@@ -245,6 +246,11 @@ askAllPackages ::
 askAllPackages = do
   groups <- askGroups
   concat <$> traverse memberPkgs groups
+
+existsEnviroment :: (MonadReader env m, Has env Matrix) => Name -> m Bool
+existsEnviroment n = do
+  envs <- environments <$> askEnv
+  pure $ isJust $ find ((n ==) . name) envs
 
 printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env [WorkspaceGroup], Has env Matrix, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
 printEnvironments name = do
