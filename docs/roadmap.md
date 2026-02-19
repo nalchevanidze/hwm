@@ -59,7 +59,6 @@ Manage monorepo structure and member metadata:
 
 - `hwm ws add <group>`: Scaffold a new group in a workspace member.
 - `ws add <group/package>`: Scaffold a new package and register as workspace member.
-- `ws remove <group/package>`: Remove a package from the workspace.
 - `ws ls`: Display workspace tree, grouping members by logical groups (e.g., `libs`, `apps`).
 
 ## Release Orchestration & Native Archiving

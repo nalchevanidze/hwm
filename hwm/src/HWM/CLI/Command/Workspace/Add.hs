@@ -57,19 +57,29 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId),
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
   (ws, w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
-  scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
-  updateConfig (\cfg -> pure $ cfg {workspace = ws})
-    $ sectionWorkspace
-    $ do
-      putLine ""
-      putLine $ "• " <> chalk Bold groupId
-      putLine $ subPathSign <> padDots 16 memberId <> displayStatus [("added", Checked)]
-      sectionConfig
-        0
-        [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
-          ("hie.yaml", syncHie $> chalk Green "✓")
-        ]
-  pure ()
+  if memberId `elem` members w
+    then
+      throwError
+        Issue
+          { issueTopic = memberId,
+            issueMessage = "A member package with name \"" <> memberId <> "\" already exists in workspace group \"" <> groupId <> "\".",
+            issueSeverity = SeverityError,
+            issueDetails = Nothing
+          }
+    else do
+      scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
+      updateConfig (\cfg -> pure $ cfg {workspace = ws})
+        $ sectionWorkspace
+        $ do
+          putLine ""
+          putLine $ "• " <> chalk Bold groupId
+          putLine $ subPathSign <> padDots 16 memberId <> displayStatus [("added", Checked)]
+          sectionConfig
+            0
+            [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
+              ("hie.yaml", syncHie $> chalk Green "✓")
+            ]
+      pure ()
   where
     noEffect label =
       Issue
