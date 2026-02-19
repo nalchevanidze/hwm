@@ -13,6 +13,7 @@ module HWM.Core.Version
     nextVersion,
     dropPatch,
     parseGHCVersion,
+    VersionChange (..),
   )
 where
 
@@ -25,7 +26,7 @@ import qualified Data.Text as T
 import GHC.Show (Show (..))
 import HWM.Core.Formatting (Format (..), formatList)
 import HWM.Core.Has (Has (obtain))
-import HWM.Core.Parsing (Parse (..), fromToString, sepBy)
+import HWM.Core.Parsing (Parse (..), fromToString, isVersionLike, sepBy)
 import Relude hiding (show)
 
 data Version = Version
@@ -136,3 +137,10 @@ instance ToJSON Bump where
 
 parseGHCVersion :: (MonadFail m) => Text -> m Version
 parseGHCVersion text = parse (fromMaybe text (T.stripPrefix "ghc-" text))
+
+data VersionChange = FixedVersion Version | BumpVersion Bump deriving (Show)
+
+instance Parse VersionChange where
+  parse x
+    | isVersionLike x = FixedVersion <$> parse x
+    | otherwise = BumpVersion <$> parse x

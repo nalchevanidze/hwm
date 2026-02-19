@@ -8,7 +8,6 @@ This document outlines potential features and enhancements for HWM. These are su
 
 ---
 
-
 ## 1. Version Command: Direct Set
 
 Allow `hwm version` to accept specific version numbers, not just bump types.
