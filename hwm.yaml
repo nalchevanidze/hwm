@@ -1,4 +1,4 @@
-# hash: bd0c43432edd4bead2593c2de4459acf8ef844d2e992a97d2d7afcb4467de72a
+# hash: e7b77bc2760df12d8332ef151b6fe7570d382a3b26df1c3274bf1a53e0c1632f
 name: hwm
 version: 0.0.5
 bounds: '>= 0.0.0 && <  0.1.0'
@@ -30,9 +30,6 @@ matrix:
       fastsum: 0.1.1.1
       list-extras: 0.4.1.6
       type-aligned: 0.9.6
-  - name: nightly
-    ghc: 8.4.4
-    resolver: lts-12.26
 registry:
 - Cabal                 >=  3.8         &&  <=  3.16.1.0
 - Glob                  >=  0.10.1      &&  <=  0.10.2
