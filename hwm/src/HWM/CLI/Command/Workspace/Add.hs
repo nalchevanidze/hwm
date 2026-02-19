@@ -5,15 +5,17 @@
 module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) where
 
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (Bold), Status (Checked), chalk, displayStatus, padDots, subPathSign)
+import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatus, padDots, subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
-import HWM.Core.Pkg (mkPkgDirPath, resolvePrefix)
+import HWM.Core.Pkg (mkPkgDirPath, resolvePrefix, PkgName (..))
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
 import HWM.Domain.Workspace (WorkspaceGroup (..), editWorkgroup, parseWorkspaceId)
 import HWM.Integrations.Scaffold (scaffoldPackage)
-import HWM.Runtime.UI (putLine, sectionWorkspace)
+import HWM.Integrations.Toolchain.Hie (syncHie)
+import HWM.Integrations.Toolchain.Stack (syncStackYaml)
+import HWM.Runtime.UI (putLine, sectionConfig, sectionWorkspace)
 import Options.Applicative (help, long, metavar, strArgument, strOption, switch)
 import Relude
 
@@ -45,7 +47,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId),
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
 
   (ws, w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
-  scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (resolvePrefix (prefix w) memberId)
+  scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
 
   updateConfig (\cfg -> pure $ cfg {workspace = ws})
     $ sectionWorkspace
@@ -53,6 +55,11 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId),
       putLine ""
       putLine $ "• " <> chalk Bold groupId
       putLine $ subPathSign <> padDots 16 memberId <> displayStatus [("added", Checked)]
+      sectionConfig
+        0
+        [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
+          ("hie.yaml", syncHie $> chalk Green "✓")
+        ]
   pure ()
   where
     noEffect label =

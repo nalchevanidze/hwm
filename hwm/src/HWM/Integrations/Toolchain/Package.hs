@@ -15,6 +15,8 @@ module HWM.Integrations.Toolchain.Package
     validatePackage,
     updatePackage,
     packageModifyDependencies,
+    savePackage,
+    newPackage,
   )
 where
 
@@ -23,11 +25,12 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import HWM.Core.Formatting (Format (..), displayStatus)
-import HWM.Core.Pkg (Pkg (..), PkgName, pkgMemberId, pkgYamlPath)
+import HWM.Core.Pkg (Pkg (..), PkgName (PkgName), pkgMemberId, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version)
-import HWM.Domain.ConfigT (ConfigT, askVersion)
-import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), externalRegistry, normalizeDependencies, toDependencyList)
+import HWM.Domain.Config (getRule)
+import HWM.Domain.ConfigT (ConfigT, Env (config, pkgs), askVersion)
+import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), externalRegistry, normalizeDependencies, singleDeps, toDependencyList)
 import HWM.Domain.Workspace (forWorkspaceCore)
 import HWM.Integrations.Toolchain.Cabal (syncCabal)
 import HWM.Integrations.Toolchain.Lib
@@ -62,6 +65,26 @@ instance FromJSON Package where
 
 instance ToJSON Package where
   toJSON = genericToJSON aesonYAMLOptions
+
+newPackage :: PkgName -> ConfigT Package
+newPackage name = do
+  cfg <- asks config
+  ps <- asks pkgs
+  let basename = PkgName "base"
+  version <- askVersion
+  base <- getRule basename ps cfg
+  pure
+    $ Package
+      { name = name,
+        version = version,
+        library = Just Library {sourceDirs = "src", dependencies = Nothing, __unknownFields = Nothing},
+        dependencies = singleDeps (Dependency basename base),
+        tests = Nothing,
+        executables = Nothing,
+        benchmarks = Nothing,
+        internalLibraries = Nothing,
+        foreignLibraries = Nothing
+      }
 
 mapPackage :: Pkg -> Package -> ConfigT Package
 mapPackage pkg Package {..} = do
@@ -133,6 +156,9 @@ updatePackage f pkg = do
             issueDetails = Just GenericIssue {issueFile = pkgYamlPath pkg}
           }
     maybePackage (Just package) = f package
+
+savePackage :: FilePath -> Package -> ConfigT ()
+savePackage pkg package = rewrite_ pkg (const $ pure package)
 
 collectPackageDependencies :: Package -> [Dependency]
 collectPackageDependencies Package {..} =

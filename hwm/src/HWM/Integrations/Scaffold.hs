@@ -4,24 +4,15 @@
 module HWM.Integrations.Scaffold (scaffoldPackage) where
 
 import qualified Data.Text as T
+import HWM.Core.Pkg (PkgName)
+import HWM.Domain.ConfigT (ConfigT)
+import HWM.Integrations.Toolchain.Package (newPackage, savePackage)
 import Relude
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
 
--- A simple pure template function
-packageYamlTemplate :: Text -> Text
-packageYamlTemplate pkgName =
-  T.unlines
-    [ "name: " <> pkgName,
-      "version: 0.1.0.0",
-      "dependencies:",
-      "  - base >= 4.7 && < 5",
-      "library:",
-      "  source-dirs: src"
-    ]
-
-libHsTemplate :: Text -> Text
-libHsTemplate _ =
+libHsTemplate :: Text
+libHsTemplate =
   T.unlines
     [ "module Lib (someFunc) where",
       "",
@@ -29,12 +20,9 @@ libHsTemplate _ =
       "someFunc = putStrLn \"Scaffolded by HWM\""
     ]
 
--- The actual IO action HWM runs
-scaffoldPackage :: (MonadIO m) => FilePath -> Text -> m ()
+scaffoldPackage :: FilePath -> PkgName -> ConfigT ()
 scaffoldPackage targetDir pkgName = do
-  -- 1. Create the directories
   liftIO $ createDirectoryIfMissing True (targetDir </> "src")
-
-  -- 2. Write the files
-  liftIO $ writeFile (targetDir </> "package.yaml") (T.unpack $ packageYamlTemplate pkgName)
-  liftIO $ writeFile (targetDir </> "src/Lib.hs") (T.unpack $ libHsTemplate pkgName)
+  package <- newPackage pkgName
+  savePackage (targetDir </> "package.yaml") package
+  liftIO $ writeFile (targetDir </> "src/Lib.hs") (T.unpack libHsTemplate)
