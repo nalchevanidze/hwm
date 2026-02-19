@@ -1,164 +1,57 @@
 # HWM: Haskell Workspace Manager
 
-**HWM is not a build tool.** It is the missing link that orchestrates the tools you already use.
+> **Infrastructure-as-Code for your Haskell Monorepo.**
 
-Haskell has excellent build systems (`stack`, `cabal`, `nix`) and a powerful IDE (`hls`), but they don't talk to each other in a monorepo. HWM bridges this gap by acting as a **single source of truth**, automatically generating and synchronizing the configuration files those tools expect.
+**HWM is not a build tool.** It is the missing link that orchestrates the tools you already use (`stack`, `cabal`, `hls`).
 
-> [!IMPORTANT]
-> **Project Status: Alpha**
-> HWM is in early, active development. While it currently powers the [Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql) ecosystem, the API may evolve. We value your feedback—please [open an issue](https://github.com/nalchevanidze/hwm/issues) if you encounter bugs or have feature suggestions.
+**Think of HWM as Terraform for your local repository.**
+It ensures the state of your project files matches your declared intent across all packages and environments.
 
-**Stop fighting your configuration. Start building your project.**
+But HWM is not just a static generator—it is an **active workspace maintainer** that helps you:
+* **Manage & Validate:** Add, remove, and analyze files to ensure structural consistency.
+* **Derive & Verify:** Automatically calculate safe dependency bounds verified against your build matrix.
+* **Release & Publish:** Manage atomic releases and synchronized publishing with `relasy` integration.
+* **Prune & Optimize:** Detect unused dependencies and keep your project healthy.
+
+[![Status](https://img.shields.io/badge/Status-Alpha-orange)](https://github.com/nalchevanidze/hwm)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Morpheus GraphQL](https://img.shields.io/badge/Production%20Ready-Morpheus%20GraphQL-purple)](https://github.com/morpheusgraphql/morpheus-graphql)
+
+---
+
+### 🛑 The Problem
+In a typical Haskell monorepo, maintaining consistency is a full-time job:
+1.  **Dependency Drift:** "Why does `core` use `aeson-2.0` but `api` uses `aeson-1.5`?"
+2.  **Matrix Complexity:** Testing GHC 9.6 (Stable) and 8.10 (Legacy) requires maintaining multiple fragile `stack.yaml` files.
+3.  **Broken IDEs:** Adding a module often breaks HLS until you manually update a complex `hie.yaml`.
+4.  **CI Hell:** You only find out your bounds are wrong after waiting 15 minutes for GitHub Actions to fail.
+
+### ✅ The Solution
+You define the **"what"** (structure, bounds, matrix) in a single file: `hwm.yaml`.
+HWM handles the **"how"** by generating the 30+ config files your tools expect.
 
 <p align="center">
-<img src="images/status.png" alt="HWM Status Output" width="600">
+  <img src="images/status.png" alt="HWM Status Output" width="600">
 </p>
 
 ---
 
 ## 🧩 The "Missing Link" Architecture
 
-HWM sits one layer above your toolchain to ensure consistency without replacing standard workflows.
+HWM sits one layer above your toolchain. It acts as the **Single Source of Truth**.
 
-```text
-[hwm.yaml] ───┬──► [stack.yaml]
-              ├──► [hie.yaml]
-              └──► [packages/*/package.yaml] ──► [*.cabal]
-
+```mermaid
+graph TD
+    HWM[hwm.yaml] -->|Generates| Stack[stack.yaml]
+    HWM -->|Generates| HIE[hie.yaml]
+    HWM -->|Generates| Pkg[packages/*/package.yaml]
+    Pkg -->|Cabal Gen| Cabal[*.cabal]
 
 ```
 
-* **You write:** `hwm.yaml` (1 file) — *The source of truth.*
-* **HWM generates:** `stack.yaml`, `package.yaml`, `.cabal`, `hie.yaml` (30+ files) — *The noise you shouldn't have to manage.*
+* **You write:** `hwm.yaml` (1 file).
+* **HWM generates:** `stack.yaml`, `package.yaml`, `.cabal`, `hie.yaml` (The noise you shouldn't have to manage).
 * **You run:** Standard `stack` or `cabal` commands (or use `hwm run` wrappers).
-
----
-
-## 💥 The Problem
-
-In a typical Haskell monorepo (like `morpheus-graphql`), maintaining consistency is a full-time job:
-
-1. **Dependency Drift:** "Why does `core` use `aeson-2.0` but `api` uses `aeson-1.5`?"
-2. **Matrix Complexity:** Testing GHC 8.10, 9.6, and 9.10 requires maintaining three separate `stack.yaml` files.
-3. **Broken IDEs:** Adding a module often breaks HLS until you manually update a fragile `hie.yaml`.
-4. **Release Friction:** Releasing a monorepo requires manually bumping versions, checking bounds, and uploading packages in the correct order.
-
----
-
-## ✅ The Solution
-
-You define the "what" (structure, bounds, matrix) in `hwm.yaml`. HWM handles the "how."
-
-> HWM is not just a config generator—it also acts as an assistant for project maintenance and safety, auditing your dependency bounds against real, tested package sets and helping you keep your project healthy.
-
-### 1. Centralized Config (`hwm.yaml`)
-
-```yaml
-name: my-project
-version: 0.1.0
-
-workspace:
-  - name: libs
-    prefix: my-app
-    members: [core, api, client]
-
-# Global version bounds (Shared across all packages)
-registry:
-  - aeson >= 2.0 && < 3.0
-  - text  >= 2.0 && < 3.0
-
-# Build matrix (Generates .hwm/matrix/stack-*.yaml per environment)
-matrix:
-  default-environment: stable
-  environments:
-    - { name: stable, ghc: 9.6.3, resolver: lts-22.6 }
-    - { name: nightly, ghc: 9.10.1, resolver: nightly-2024-05-22 }
-
-```
-
-## 🌐 Environment Management
-
-HWM supports robust environment (matrix) management:
-
-- **Add:**
-  ```bash
-  hwm environment add <name> <resolver>
-  # e.g.
-  hwm environment add stable lts-24.25
-  hwm environment add nightly nightly-2026-02-18
-  ```
-  - Validates the resolver against Stackage and suggests close matches if not found (shows LTS suggestions and popular versions).
-  - Infers the GHC version from the resolver.
-  - Updates `hwm.yaml` and the build matrix.
-
-- **Remove:**
-  ```bash
-  hwm environment remove <name>
-  # e.g.
-  hwm environment remove nightly-2026-02-18
-  ```
-  - Removes the environment from the matrix and updates `hwm.yaml`.
-
-- **Set Default:**
-  ```bash
-  hwm environment set-default <name>
-  # e.g.
-  hwm environment set-default stable
-  ```
-  - Sets the default environment for builds and commands.
-
-- **List:**
-  ```bash
-  hwm environment ls
-  ```
-  - Lists all environments, their GHC versions, and resolvers. Marks the default environment.
-
-**Resolver Validation & Suggestions:**
-If you enter an invalid resolver, HWM will:
-- Suggest the closest matching snapshot(s) by prefix.
-- Show the first 12 non-nightly LTS snapshots and popular LTS versions from Stackage's snapshot index.
-
-This ensures you always have guidance to pick a valid resolver.
-    - { name: stable, ghc: 9.6.3, resolver: lts-22.6 }
-    # Note: Nightly resolvers must use the date-stamped format
-    - { name: nightly, ghc: 9.10.1, resolver: nightly-2024-05-22 } 
-
-
-### 2. Synchronization (`hwm sync`)
-
-One command regenerates the entire toolchain configuration, ensuring your IDE and build tools are always in sync with your manifest.
-
-> **💡 Health Checks:** Run `hwm status` at any time. It will flag generated files with a ⚠️ if they have drifted from your `hwm.yaml` configuration.
-
-<p align="center">
-<img src="images/sync.png" alt="HWM Matrix Build Output" width="700">
-</p>
-
----
-
-## ⚡️ Unified CI/CD: Stop Debugging CI in CI
-
-In most projects, the Build Matrix only exists in the cloud (`.github/workflows`). HWM brings that matrix down to your machine.
-
-**The HWM Way:** Run your entire matrix locally. Catch failures on "Legacy GHC" before you push.
-
-<p align="center">
-<img src="images/matrix.png" alt="HWM Matrix Build Output" width="700">
-</p>
-
-* **The Old Way:** Push → Wait 15m → ❌ Failure on GHC 8.10 → Fix → Push again.
-* **The New Way:** `hwm run test --env=all` → ❌ Legacy fails → Fix → ✅ Pass → Push once.
-
-Because HWM handles the matrix logic, your CI configuration becomes trivial. You no longer need complex YAML strategies or matrix definitions in GitHub Actions.
-
----
-
-## 🤖 Built for the AI Era
-
-HWM transforms your monorepo into a format LLMs can actually understand.
-
-* **Context Window Friendly:** Instead of pasting 20+ `.cabal` files to give an AI context, paste one `hwm.yaml`.
-* **Safe Refactoring:** Ask your AI agent to "Upgrade dependencies to GHC 9.10" by editing the `matrix` in `hwm.yaml`. HWM handles the dangerous work of propagating those changes to 50+ files deterministically.
 
 ---
 
@@ -176,42 +69,46 @@ cabal install hwm
 ### Zero-Config Onboarding
 
 Already have a Stack project? Transform it into an HWM workspace in seconds.
-HWM automatically detects your packages, infers dependencies, and generates the configuration.
-
-<p align="center">
-<img src="images/init.png" alt="HWM Init Auto-Discovery" width="600">
-</p>
 
 ```bash
 # 1. Generate hwm.yaml from your existing stack.yaml
+# HWM automatically discovers packages and infers dependencies
 hwm init
 
-# 2. Sync and build
+# 2. Sync configuration and build
 hwm sync
 hwm run build
 
 ```
 
-✨ **That's it!** HWM scans your existing configuration, discovers packages, infers dependencies, and creates `hwm.yaml`. Your project structure stays exactly the same.
+<p align="center">
+<img src="images/init.png" alt="HWM Init Auto-Discovery" width="600">
+</p>
 
-> **Already have `hwm.yaml`?** Use `hwm init --force` to regenerate from your current Stack config.
+---
+
+## 🧪 Born from Necessity
+
+HWM wasn't built in a vacuum. It was created to solve the massive orchestration headaches of the **[Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql)** ecosystem.
+
+Today, it powers the entire Morpheus monorepo, managing:
+
+* **15+ Packages:** Keeping `core`, `api`, and `client` in sync without version drift.
+* **Hybrid Matrix:** Simultaneously testing `stable` (GHC 9.6) and `legacy` (GHC 8.10) environments.
+* **Unified Registry:** A single source of truth for version bounds across the entire repository.
+
+> **Tip:** You can view the [live configuration here](https://github.com/morpheusgraphql/morpheus-graphql/blob/main/hwm.yaml) to see a full-scale example of HWM in production.
 
 ---
 
 ## 🛠️ Key Workflows
 
+### 1. Registry & Dependency Management
 
-## 📚 Registry Management
+Stop guessing version bounds. The `registry` in `hwm.yaml` is the central source of truth for all packages.
 
-The `registry` is the central source of dependency version bounds for all packages in your workspace. HWM provides a unified set of commands under `hwm registry` to manage, audit, and list dependencies:
-
-### ➕ Add Dependencies (`hwm registry add`)
-
-Stop manually searching for version bounds. `hwm registry add` injects dependencies into packages or groups and uses a "Sandwich" discovery logic to find the safest bounds.
-
-- **Registry Reuse:** If the package is in your `registry`, it uses existing bounds.
-- **Matrix Discovery:** If new, it audits your `legacy` (min) and `nightly` (max) snapshots to find the tested window.
-- **Hackage Fallback:** If not in snapshots, it pulls the latest preferred version from Hackage.
+**Smart Add:**
+`hwm registry add` uses a "Sandwich" discovery logic to find the safest bounds by auditing your `legacy` (min) and `nightly` (max) snapshots.
 
 ```bash
 # Add to a specific package
@@ -219,98 +116,90 @@ hwm registry add aeson libs/core
 
 # Add to an entire group (all packages in 'libs')
 hwm registry add servant libs
+
 ```
 
-<p align="center">
-<img src="images/add.png" alt="HWM Add Command" width="600">
-</p>
-
-### 📦 Audit & Fix Dependencies (`hwm registry audit`)
-
-HWM audits your dependency bounds against real, tested package sets from Stackage LTS and Nightly snapshots. This means:
-
-- You only claim support for versions you actually test in CI.
-- You avoid breakage from untested versions (e.g., new releases on Hackage that aren't in Stackage yet).
-- You get clear errors if your bounds are too narrow (missing tested versions) or warnings if they're too wide (including untested versions).
-
-**Automated Fixes:** With `hwm registry audit --fix` and `--force`, you can automatically update your bounds to match the tested window, keeping your project safe and future-proof with minimal effort.
-
-**No More Bounds Headaches:** HWM automates and audits your dependency bounds, so you never have to manually guess or maintain safe version ranges again. Your bounds always reflect what is actually tested, eliminating a major source of maintenance pain in Haskell projects.
+**Audit & Fix:**
+Audit your bounds against **real** Stackage snapshots. Ensure you only claim support for versions you actually test.
 
 ```bash
-# Audit registry and check for updates
-hwm registry audit
-
-# Auto-update bounds in hwm.yaml and sync all packages
+# Auto-update bounds in hwm.yaml to match tested snapshots
 hwm registry audit --fix
 
-# Auto-fix errors and warnings
-hwm registry audit --fix --force
 ```
 
 <p align="center">
-<img src="images/audit.png" alt="HWM Outdated Command" width="600">
+<img src="images/audit.png" alt="HWM Audit Command" width="600">
 </p>
 
-### 📋 List Registry (`hwm registry ls`)
+### 2. Local Matrix Strategy
 
-Lists all dependencies in the registry, showing their current bounds and status.
+In most projects, the Build Matrix only exists in the cloud (`.github/workflows`). HWM brings that matrix down to your machine.
 
-```bash
-hwm registry ls
-```
-
-**Output:**
-
-```
-registry:
-  - aeson >= 2.0 && < 3.0
-  - text  >= 2.0 && < 3.0
-  ...
-```
-
-### 🚀 Synchronized Releases
-
-Eliminate release anxiety. HWM ensures version numbers and bounds are consistent before uploading.
+**The HWM Way:** Run your entire matrix locally. Catch failures on "Legacy GHC" before you push.
 
 ```bash
-# Atomically bump version to 0.2.0 across all packages
-hwm version minor
-
-# Publish the 'libs' group to Hackage
-hwm publish libs
+# Test across all defined environments (Stable, Nightly, Legacy)
+hwm run test --env=all
 
 ```
+
+<p align="center">
+<img src="images/matrix.png" alt="HWM Matrix Build Output" width="700">
+</p>
+
+### 3. Environment Management
+
+Manage multiple GHC versions and resolvers effortlessly.
+
+```yaml
+# hwm.yaml
+matrix:
+  default-environment: stable
+  environments:
+    - { name: stable, ghc: 9.6.3, resolver: lts-22.6 }
+    - { name: nightly, ghc: 9.10.1, resolver: nightly-2024-05-22 }
+
+```
+
+* **Add:** `hwm environment add stable lts-24.25` (Validates against Stackage).
+* **Switch:** `hwm environment set-default stable`.
+* **List:** `hwm environment ls`.
+
+---
+
+## 🤖 Built for the AI Era
+
+HWM transforms your monorepo into a format LLMs can actually understand.
+
+* **Context Window Friendly:** Instead of pasting 20+ `.cabal` files to give an AI context, paste one `hwm.yaml`.
+* **Safe Refactoring:** Ask your AI agent to *"Upgrade dependencies to GHC 9.10"* by editing the `matrix` in `hwm.yaml`. HWM handles the dangerous work of propagating those changes to 50+ files deterministically.
 
 ---
 
 ## ⚖️ Comparison
 
-Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM provides a middle ground. Even if you use Nix for builds, HWM manages the source files that Nix reads.
+Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM provides a middle ground.
 
 | Feature | 🐢 Manual Config | ❄️ Nix / Bazel | 🚀 HWM |
 | --- | --- | --- | --- |
 | **Config Source** | Decentralized (30+ files) | Centralized (`flake.nix`) | **Centralized (`hwm.yaml`)** |
 | **Primary Role** | Build Tool | Build & Deployment | **Workspace Manager** |
 | **Smart Add** | ❌ Manual Search | ❌ Manual Edit | **✅ `hwm add` (Auto-Discovery)** |
-| **Atomic Versioning** | ❌ Manual (File by file) | ❌ Manual (Edit .cabal) | **✅ One Command (`hwm version`)** |
-| **Publishing** | ❌ Manual `cabal upload` | ❌ Custom CI Scripts | **✅ Atomic `hwm publish**` |
-| **Dependency Sync** | ❌ Manual (Error-prone) | ⚠️ Pinned (Lockfile) | **✅ Automatic Registry** |
-| **Matrix Scripts** | ❌ Manual Context Switch | ⚠️ Complex Shells | **✅ Parallel (`hwm run --env=all`)** |
+| **Atomic Versioning** | ❌ Manual (File by file) | ❌ Manual | **✅ One Command (`hwm version`)** |
+| **Bounds Auditing** | ❌ Manual (Error-prone) | ⚠️ Pinned (Lockfile) | **✅ Real-time Snapshot Audit** |
 | **IDE Support** | ⚠️ Often Broken | ⚠️ Requires Plugins | **✅ Auto-Generated (`hie.yaml`)** |
 
 ---
 
 ## 📚 Documentation
 
-Detailed specifications and internal guides can be found in `docs/`:
-
-* **[Feature Specification](docs/spec.md)** – The complete Public API, configuration schema (`hwm.yaml`), and CLI behavior.
-* **[Architecture](docs/architecture.md)** – Internal design principles, data flow, and module structure.
-* **[Roadmap](docs/roadmap.md)** – Future plans and upcoming features.
+* **[Feature Specification](https://www.google.com/search?q=docs/spec.md)** – Public API & `hwm.yaml` schema.
+* **[Architecture](https://www.google.com/search?q=docs/architecture.md)** – Internal design & data flow.
+* **[Roadmap](https://www.google.com/search?q=docs/roadmap.md)** – Future plans.
 
 ---
 
 ## 🧬 Origin
 
-HWM was born out of necessity to manage the [Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql) ecosystem with 15+ packages across multiple GHC versions.
+HWM is currently in **Alpha**. We value your feedback—please [open an issue](https://github.com/nalchevanidze/hwm/issues) if you encounter bugs or have feature suggestions.
