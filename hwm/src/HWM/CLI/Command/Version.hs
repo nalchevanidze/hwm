@@ -13,6 +13,7 @@ where
 
 import HWM.Core.Formatting (Color (..), Format (..), chalk)
 import HWM.Core.Parsing (Parse (..), ParseCLI (parseCLI))
+import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (..))
 import HWM.Core.Version (VersionChange (..), nextVersion)
 import HWM.Domain.Bounds (versionBounds)
 import HWM.Domain.Config (Config (..))
@@ -48,8 +49,18 @@ bumpVersion (FixedVersion version') Config {..} = do
     size
     "set version"
     [ ("from", pure $ format version),
-      ("to", pure $ chalk Cyan (format version'))
+      ("to", pure $ chalk Cyan (format version') <> if version' == version then " (no change)" else "")
     ]
+
+  when (version' < version)
+    $ injectIssue
+      ( Issue
+          { issueTopic = "version",
+            issueSeverity = SeverityWarning,
+            issueMessage = "The specified version is lower than the current version. This may cause issues with package managers and should be done with caution.",
+            issueDetails = Nothing
+          }
+      )
 
   let bounds' = versionBounds version'
   pure Config {version = version', bounds = bounds', ..}
