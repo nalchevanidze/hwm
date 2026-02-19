@@ -9,7 +9,7 @@ import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
-import HWM.Domain.Workspace (WorkspaceGroup (..), askWorkspaceGroups, editWorkgroup, forWorkspace, forWorkspaceTuple, parseWorkspaceId, selectGroup)
+import HWM.Domain.Workspace (WorkspaceGroup (..), editWorkgroup, forWorkspaceTuple, parseWorkspaceId)
 import HWM.Runtime.UI (putLine)
 import Options.Applicative (help, long, metavar, strArgument, strOption, switch)
 import Relude
