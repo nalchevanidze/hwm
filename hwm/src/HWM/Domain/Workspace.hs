@@ -176,8 +176,8 @@ forWorkspaceTuple ws f = sectionWorkspace $ do
       status <- f pkg
       putLine (subPathSign <> padDots maxLen (pkgMemberId pkg) <> status)
 
-editWorkgroup :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => Name -> (WorkspaceGroup -> WorkspaceGroup) -> m [WorkspaceGroup]
+editWorkgroup :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => Name -> (WorkspaceGroup -> WorkspaceGroup) -> m ([WorkspaceGroup], WorkspaceGroup)
 editWorkgroup name f = do
   ws <- askWorkspaceGroups
-  _ <- selectGroup name ws
-  pure $ map (\g -> if pkgGroupName g == name then f g else g) ws
+  c <- selectGroup name ws
+  pure (map (\g -> if pkgGroupName g == name then f g else g) ws, c)

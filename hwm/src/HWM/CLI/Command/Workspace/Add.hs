@@ -7,6 +7,7 @@ module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) wher
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (Bold), Status (Checked), chalk, displayStatus, padDots, subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
+import HWM.Core.Pkg(Pkg, pkgDirPath, mkPkgDirPath)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
@@ -14,6 +15,7 @@ import HWM.Domain.Workspace (WorkspaceGroup (..), editWorkgroup, parseWorkspaceI
 import HWM.Runtime.UI (putLine, sectionWorkspace)
 import Options.Applicative (help, long, metavar, strArgument, strOption, switch)
 import Relude
+import HWM.Integrations.Scaffold (scaffoldPackage)
 
 data WorkspaceAddOptions = WorkspaceAddOptions
   { workspaceId :: (Name, Maybe Name),
@@ -42,10 +44,13 @@ runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Just memberId), ..
   when (isJust prefix) $ injectIssue (noEffect "prefix")
   when (isJust workspaceDir) $ injectIssue (noEffect "dir")
 
+  
+
   updateConfig
     ( \cfg ->
         ( do
-            ws <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
+            (ws,w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
+            _ <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w)  memberId) ( prefix <> memberId)
             pure $ cfg {workspace = ws}
         )
     )

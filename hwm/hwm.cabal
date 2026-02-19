@@ -64,6 +64,7 @@ library
       HWM.Domain.Dependencies
       HWM.Domain.Matrix
       HWM.Domain.Workspace
+      HWM.Integrations.Scaffold
       HWM.Integrations.Toolchain.Cabal
       HWM.Integrations.Toolchain.Hie
       HWM.Integrations.Toolchain.Lib
