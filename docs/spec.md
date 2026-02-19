@@ -1,4 +1,3 @@
-
 # HWM: Feature Specification & Public API
 
 **Target Audience:** AI Agents, Developers, External Integrators  
@@ -12,7 +11,6 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool for Haskell monorepos.
 **Core Value:** Reduce 30+ config files to 1 declarative manifest.
 
 **Target Audience:** This specification is for end users and AI agents working with HWM. It focuses on user-facing behavior, configuration, and CLI commands.
-
 
 ## Core Concepts
 
@@ -32,29 +30,30 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool for Haskell monorepos.
 | Publishing      | ✅  | ⚠️     | ❌   |
 | Learning Curve  | Low | N/A    | High |
 
-
 ## Quick Reference
 
-| Command                    | Synopsis                                               | Key Behavior                                                                 |
-| -------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| `hwm init [OPTIONS]`       | Generate `hwm.yaml` from Stack project                 | Scans stack files, infers packages/groups, writes manifest                   |
-| `hwm sync [ENV]`           | Regenerate all config files for environment            | Updates stack.yaml, hie.yaml, package.yaml, cabal files                      |
-| `hwm run SCRIPT [OPTIONS]` | Run custom scripts across envs/targets                 | Supports `--target`/`--env`, `{TARGET}` required if using `--target`         |
-| `hwm registry add <pkg> <target>` | Add dependency to registry and inject into packages/groups | Discovers safe bounds, updates registry, syncs workspace |
-| `hwm registry audit [--fix] [--force]` | Audit/fix registry bounds | Compares to Stackage LTS/Nightly, `--fix` updates errors, `--force` warnings |
-| `hwm registry ls` | List all dependencies in the registry | Shows current bounds and status |
-| `hwm environment add <name> <resolver>` | Add a new environment to the build matrix           | Adds a new environment (GHC/resolver) to the matrix, inferring GHC from resolver. Validates resolver against Stackage and suggests close matches if not found. |
-| `hwm environment remove <name>`    | Remove an environment from the build matrix            | Removes the specified environment from the matrix. |
-| `hwm environment set-default <name>` | Set the default environment in the build matrix | Marks the given environment as the default for builds and commands. |
-| `hwm environment ls` | List all environments in the build matrix | Shows all configured environments, their GHC versions, and resolvers. |
-| `hwm version [BUMP]`       | Show or bump project version                          | `major`/`minor`/`patch`, updates bounds, propagates to all packages          |
-| `hwm publish [GROUP]`      | Build & upload packages                               | For groups with `publish: true` or specified, runs sdist/upload              |
-| `hwm status`               | Show project/env/workspace overview                   | Displays project name, version, envs, workspace structure                    |
+| Command                                 | Synopsis                                                   | Key Behavior                                                                                                                                                   |
+| --------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `hwm init [OPTIONS]`                    | Generate `hwm.yaml` from Stack project                     | Scans stack files, infers packages/groups, writes manifest                                                                                                     |
+| `hwm sync [ENV]`                        | Regenerate all config files for environment                | Updates stack.yaml, hie.yaml, package.yaml, cabal files                                                                                                        |
+| `hwm run SCRIPT [OPTIONS]`              | Run custom scripts across envs/targets                     | Supports `--target`/`--env`, `{TARGET}` required if using `--target`                                                                                           |
+| `hwm registry add <pkg> <target>`       | Add dependency to registry and inject into packages/groups | Discovers safe bounds, updates registry, syncs workspace                                                                                                       |
+| `hwm registry audit [--fix] [--force]`  | Audit/fix registry bounds                                  | Compares to Stackage LTS/Nightly, `--fix` updates errors, `--force` warnings                                                                                   |
+| `hwm registry ls`                       | List all dependencies in the registry                      | Shows current bounds and status                                                                                                                                |
+| `hwm environment add <name> <resolver>` | Add a new environment to the build matrix                  | Adds a new environment (GHC/resolver) to the matrix, inferring GHC from resolver. Validates resolver against Stackage and suggests close matches if not found. |
+| `hwm environment remove <name>`         | Remove an environment from the build matrix                | Removes the specified environment from the matrix.                                                                                                             |
+| `hwm environment set-default <name>`    | Set the default environment in the build matrix            | Marks the given environment as the default for builds and commands.                                                                                            |
+| `hwm environment ls`                    | List all environments in the build matrix                  | Shows all configured environments, their GHC versions, and resolvers.                                                                                          |
+| `hwm version [BUMP                      | VERSION]`                                                  | Show or bump project version                                                                                                                                   | `major`/`minor`/`patch`, updates bounds, propagates to all packages |
+| `hwm publish [GROUP]`                   | Build & upload packages                                    | For groups with `publish: true` or specified, runs sdist/upload                                                                                                |
+| `hwm status`                            | Show project/env/workspace overview                        | Displays project name, version, envs, workspace structure                                                                                                      |
+
 ### hwm environment add <name> <resolver>
 
 Adds a new environment to the build matrix. The GHC version is inferred from the resolver (e.g., lts-22.30). The new environment is appended to the matrix in `hwm.yaml`.
 
 **Validation & Suggestions:**
+
 - The resolver is validated against the live Stackage snapshot list.
 - If the resolver is not found, the CLI suggests the closest available snapshot(s) by prefix, and shows the first 12 non-nightly LTS snapshots and popular LTS versions from Stackage's snapshot index.
 - Suggestions are fetched from both the Stackage API and https://www.stackage.org/download/snapshots.json for maximum user guidance.
@@ -67,6 +66,7 @@ hwm environment add nightly nightly-2026-02-18
 ```
 
 **Behavior:**
+
 - Validates the resolver and suggests alternatives if not found
 - Fetches the GHC version for the given resolver
 - Adds the environment to the matrix
@@ -83,6 +83,7 @@ hwm environment remove nightly-2026-02-18
 ```
 
 **Behavior:**
+
 - Removes the environment from the matrix
 - Updates `hwm.yaml` and recalculates the file hash
 
@@ -97,6 +98,7 @@ hwm environment set-default stable
 ```
 
 **Behavior:**
+
 - Marks the given environment as the default in `hwm.yaml`
 - Updates the matrix and recalculates the file hash
 
@@ -111,13 +113,15 @@ hwm environment ls
 ```
 
 **Behavior:**
+
 - Displays all configured environments, their GHC versions, and resolvers
 - Marks the default environment
-**Global Flags:**  
-`--version` (show CLI version), `--quiet` (suppress logs), `--help` (show help)
+  **Global Flags:**  
+  `--version` (show CLI version), `--quiet` (suppress logs), `--help` (show help)
 
 **Configuration Structure:**
-```yaml
+
+````yaml
 name: string         # Project identifier
 
 ## Registry Management
@@ -144,15 +148,15 @@ hwm registry add aeson libs/core
 
 # Add to an entire group
 hwm registry add servant libs
-```
+````
 
 #### Visual Examples
 
-| Type | CLI Output Representation |
-| --- | --- |
-| **Existing** | `registry ....... >= 0.14.1 && <= 0.20.3.0 (already registered)` |
-| **New (Full Matrix)** | `legacy ......... 0.14.1 (min)`<br>`nightly ........ 0.20.3.0 (max)` |
-| **New (Hackage)** | `legacy ......... missing (min)`<br>`nightly ........ missing`<br>`hackage ........ 0.0.5 (max)` |
+| Type                  | CLI Output Representation                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| **Existing**          | `registry ....... >= 0.14.1 && <= 0.20.3.0 (already registered)`                                 |
+| **New (Full Matrix)** | `legacy ......... 0.14.1 (min)`<br>`nightly ........ 0.20.3.0 (max)`                             |
+| **New (Hackage)**     | `legacy ......... missing (min)`<br>`nightly ........ missing`<br>`hackage ........ 0.0.5 (max)` |
 
 ### hwm registry audit [--fix] [--force]
 
@@ -169,6 +173,7 @@ Audits all dependencies in the registry against the tested window defined by you
 7. Runs `hwm sync` to propagate changes.
 
 **Options:**
+
 - `-f, --fix`: Auto-update bounds and sync (errors only)
 - `--force`: With --fix, also fixes warnings
 
@@ -237,26 +242,30 @@ registry:
   - text  >= 2.0 && < 3.0
   ...
 ```
+
 hwm outdated --fix --force
+
 ```
 
 **Output (Check Mode):**
 
 
 ```
+
 • update dependencies
-  mode .. check
+mode .. check
 
 • audit
-  Glob                  >= 0.7.0     ->   0.10.1        &&    <  1.0.0       ->   0.10.2
-  aeson                 >= 1.4.4     ->   1.5.6.0       &&    <  3.0.0       ->   2.2.3.0
-  ...
+Glob >= 0.7.0 -> 0.10.1 && < 1.0.0 -> 0.10.2
+aeson >= 1.4.4 -> 1.5.6.0 && < 3.0.0 -> 2.2.3.0
+...
 
 • ▌ errors ▌
 
-  • registry
-  └─- • Found 11 outdated dependencies: Run 'hwm outdated --fix --force' to update.
-  └─- • Found 2 outdated dependencies: Run 'hwm outdated --fix' to update.
+• registry
+└─- • Found 11 outdated dependencies: Run 'hwm outdated --fix --force' to update.
+└─- • Found 2 outdated dependencies: Run 'hwm outdated --fix' to update.
+
 ```
 
 **Note:**
@@ -267,22 +276,24 @@ hwm outdated --fix --force
 
 
 ```
+
 • update dependencies (auto-fix)
 • registry ... megaparsec ↑ 9.7.0
 • config ... hwm.yaml ✓
 • workspace ... libs/core ⟳, libs/app ⟳, ...
-```
+
+````
 
 **Updated Registry:**
 
 ```yaml
 registry:
   - megaparsec  >= 7.0.0 && <= 9.7.0 # Updated from < 8.0.0
-```
+````
 
 ---
 
-### hwm version [BUMP]
+### hwm version [BUMP|VERSION]
 
 **Purpose:** Show or update project version
 
@@ -297,7 +308,7 @@ registry:
 
 **Arguments:**
 
-- `BUMP`: `major`, `minor`, or `patch`
+- `BUMP|VERSION`: `major`, `minor`, or `patch`, or a specific version string (e.g., `1.5.2`)
 
 **Version Bump Rules:**
 
@@ -320,6 +331,8 @@ Version 1.2.3  → Bounds ">= 1.2.0 && < 1.3.0"
 # Show current version
 hwm version
 # Output: 0.28.0
+
+hwm version 1.0.0 -> 1.0.0
 
 # Bump patch: 0.28.0 → 0.28.1
 hwm version patch
@@ -429,7 +442,7 @@ hwm status
 
 **Output:**
 
-```
+````
 • project
   name ..... morpheus-graphql
   version .. 0.29.0
@@ -488,13 +501,11 @@ ls libs/*/*.cabal
 
 # 4. Test build
 hwm run build
-```
+````
 
 ---
 
 This new feature, **Smart Dependency Injection**, transforms HWM from a configuration synchronizer into an active package manager. Below is the chapter description for the `hwm add` feature, designed to be integrated into your **Feature Specification & Public API** document.
-
-
 
 ### hwm add <pkg> <target>
 
@@ -508,29 +519,29 @@ HWM adapts its output based on how it resolves the package version. This ensures
 
 If the package is already defined in the global `registry`, HWM skips external lookups and reuses the existing source of truth.
 
-* **UI:** Displays the current registry bounds with an `(already registered)` tag.
+- **UI:** Displays the current registry bounds with an `(already registered)` tag.
 
 ##### Scenario 2: Matrix Discovery
 
 If the package is missing from the registry, HWM performs a lookup against the **Oldest (Legacy)** and **Newest (Nightly)** environments defined in your `matrix`.
 
-* **UI:** Shows the specific versions found in each snapshot (e.g., `0.14.1 (min)` and `0.20.3.0 (max)`).
-* **Missing in Legacy:** If a package is too new for the legacy environment, it marks it as `missing (min)`, prompting the user that the lower bound will be set by the next available environment.
+- **UI:** Shows the specific versions found in each snapshot (e.g., `0.14.1 (min)` and `0.20.3.0 (max)`).
+- **Missing in Legacy:** If a package is too new for the legacy environment, it marks it as `missing (min)`, prompting the user that the lower bound will be set by the next available environment.
 
 ##### Scenario 3: Hackage Fallback
 
 If the package is not found in the Stackage Nightly snapshot, HWM reaches out to the **Hackage API**.
 
-* **UI:** Adds a `hackage` line to the discovery section to show the latest preferred version used as the upper bound.
+- **UI:** Adds a `hackage` line to the discovery section to show the latest preferred version used as the upper bound.
 
 ---
 
 #### 🛠 Visual Examples
 
-| Type | CLI Output Representation |
-| --- | --- |
-| **Existing** | `registry ....... >= 0.14.1 && <= 0.20.3.0 (already registered)` |
-| **New (Full Matrix)** | `legacy ......... 0.14.1 (min)`<br>
+| Type                  | CLI Output Representation                                        |
+| --------------------- | ---------------------------------------------------------------- |
+| **Existing**          | `registry ....... >= 0.14.1 && <= 0.20.3.0 (already registered)` |
+| **New (Full Matrix)** | `legacy ......... 0.14.1 (min)`<br>                              |
 
 <br>`nightly ........ 0.20.3.0 (max)` |
 | **New (Hackage)** | `legacy ......... missing (min)`<br>
@@ -622,6 +633,7 @@ workspace:
 **Resolution:**
 
 For each member:
+
 - Directory: `{dir}/{prefix}-{member}` → `./libs/morpheus-graphql-core`
 - Package name: Read from `package.yaml` `name` field
 - Package ID: `{group}/{member}` → `libs/core`
@@ -664,14 +676,14 @@ hwm run test --env=legacy,stable    # Subset
 
 ### State & Files Generated
 
-| Path                           | Purpose                                                 |
-| ------------------------------ | ------------------------------------------------------- |
-| `.hwm/cache/state.json`        | Tracks current env + fetched versions                   |
-| `.hwm/matrix/stack-<env>.yaml` | Per-environment stack files                             |
-| `.hwm/logs/*.log`              | Captures async command output                           |
-| `stack.yaml`                   | Mirrors active environment resolver                     |
-| `hie.yaml`                     | Cradle referencing generated stack file                 |
-| `*/package.yaml` + `*.cabal`   | Version/bounds updated per registry                     |
+| Path                           | Purpose                                 |
+| ------------------------------ | --------------------------------------- |
+| `.hwm/cache/state.json`        | Tracks current env + fetched versions   |
+| `.hwm/matrix/stack-<env>.yaml` | Per-environment stack files             |
+| `.hwm/logs/*.log`              | Captures async command output           |
+| `stack.yaml`                   | Mirrors active environment resolver     |
+| `hie.yaml`                     | Cradle referencing generated stack file |
+| `*/package.yaml` + `*.cabal`   | Version/bounds updated per registry     |
 
 ### Cache State (.hwm/cache/state.json)
 
