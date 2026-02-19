@@ -76,7 +76,7 @@ runScript scriptName ScriptOptions {..} = do
           when multi $ do
             sectionWorkspace $ do
               putLine $ padDots 16 "targets" <> if null scriptTargets then chalk Yellow "None (Global Scope)" else chalk Cyan (T.unwords scriptTargets)
-            sectionEnvironments (for_ (map buildName envs) (run . Just))
+            sectionEnvironments Nothing (for_ (map buildName envs) (run . Just))
         else run Nothing
     Nothing -> throwError $ fromString $ toString $ "Script not found: " <> scriptName
 
@@ -104,7 +104,7 @@ runCommand padding multi scripts targets envName = do
     else do
       sectionWorkspace $ do
         putLine $ padDots 16 "targets" <> if null supported then chalk Yellow "None (Global Scope)" else chalk Cyan (T.unwords $ format . pkgName <$> supported)
-      sectionEnvironments $ putLine $ format benv
+      sectionEnvironments Nothing $ putLine $ format benv
       putLine ""
       putLine ("❯ " <> cmd)
       inheritRun yamlPath cmd

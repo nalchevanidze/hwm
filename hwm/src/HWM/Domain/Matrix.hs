@@ -246,9 +246,12 @@ askAllPackages = do
   groups <- askGroups
   concat <$> traverse memberPkgs groups
 
-printEnvironments :: (MonadUI m) => BuildEnvironment -> [BuildEnvironment] -> m ()
-printEnvironments active environments =
-  sectionEnvironments $ forTable 0 environments $ \env ->
+printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env [WorkspaceGroup], Has env Matrix, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
+printEnvironments name = do
+  active <- getBuildEnvironment name
+  def <- defaultEnvironment <$> askEnv
+  environments <- getBuildEnvironments
+  sectionEnvironments (Just $ format def) $ forTable 0 environments $ \env ->
     ( format env,
       if env == active
         then chalk Cyan (buildResolver env <> " (active)")
