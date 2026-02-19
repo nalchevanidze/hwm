@@ -21,6 +21,7 @@ module HWM.Domain.Workspace
     forWorkspace,
     forWorkspaceTuple,
     parseWorkspaceId,
+    forWorkspaceCore,
   )
 where
 
@@ -146,7 +147,12 @@ derivePublish names
     nonPublish = ["examples", "example", "bench", "benchmarks"]
 
 forWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => (Pkg -> m ()) -> m ()
-forWorkspace f = do
+forWorkspace f = forWorkspaceCore $ \pkg -> do
+  status <- monadStatus (f pkg)
+  pure $ statusIcon status
+
+forWorkspaceCore :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => (Pkg -> m Text) -> m ()
+forWorkspaceCore f = do
   gs <- askWorkspaceGroups
   sectionWorkspace
     $ for_ gs
@@ -156,8 +162,8 @@ forWorkspace f = do
       pkgs <- memberPkgs g
       let maxLen = genMaxLen (map pkgMemberId pkgs)
       for_ pkgs $ \pkg -> do
-        status <- monadStatus (f pkg)
-        putLine $ subPathSign <> padDots maxLen (pkgMemberId pkg) <> statusIcon status
+        status <- f pkg
+        putLine $ subPathSign <> padDots maxLen (pkgMemberId pkg) <> status
 
 forWorkspaceTuple :: (MonadUI m, Foldable t) => t (Text, [Pkg]) -> (Pkg -> m Text) -> m ()
 forWorkspaceTuple ws f = sectionWorkspace $ do

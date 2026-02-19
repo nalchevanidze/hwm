@@ -22,13 +22,13 @@ import Control.Monad.Except (MonadError (..))
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import HWM.Core.Formatting (Color (..), Format (..), chalk, displayStatus, genMaxLen, padDots, subPathSign)
+import HWM.Core.Formatting (Format (..), displayStatus)
 import HWM.Core.Pkg (Pkg (..), PkgName, pkgMemberId, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version)
 import HWM.Domain.ConfigT (ConfigT, askVersion)
 import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), externalRegistry, normalizeDependencies, toDependencyList)
-import HWM.Domain.Workspace (askWorkspaceGroups, forWorkspaceTuple, memberPkgs, pkgGroupName)
+import HWM.Domain.Workspace (forWorkspaceCore)
 import HWM.Integrations.Toolchain.Cabal (syncCabal)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
@@ -42,7 +42,6 @@ import HWM.Integrations.Toolchain.Lib
     updateLibrary,
   )
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_, statusM)
-import HWM.Runtime.UI (putLine, sectionWorkspace)
 import Relude
 
 data Package = Package
@@ -111,9 +110,7 @@ packageDiffs pkg Package {..} = do
     )
 
 syncPackages :: ConfigT ()
-syncPackages = do 
-  groups <- askWorkspaceGroups
-  forWorkspaceTuple groups $ \pkg -> updatePackage (mapPackage pkg) pkg
+syncPackages = forWorkspaceCore $ \pkg -> updatePackage (mapPackage pkg) pkg
 
 packageModifyDependencies :: (Dependencies -> ConfigT Dependencies) -> Package -> ConfigT Package
 packageModifyDependencies f Package {..} = do
