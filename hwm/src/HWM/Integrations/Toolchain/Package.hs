@@ -28,7 +28,7 @@ import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity
 import HWM.Core.Version (Version)
 import HWM.Domain.ConfigT (ConfigT, askVersion)
 import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), externalRegistry, normalizeDependencies, toDependencyList)
-import HWM.Domain.Workspace (askWorkspaceGroups, memberPkgs, pkgGroupName)
+import HWM.Domain.Workspace (askWorkspaceGroups, forWorkspaceTuple, memberPkgs, pkgGroupName)
 import HWM.Integrations.Toolchain.Cabal (syncCabal)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
@@ -111,14 +111,9 @@ packageDiffs pkg Package {..} = do
     )
 
 syncPackages :: ConfigT ()
-syncPackages = sectionWorkspace $ do
+syncPackages = do 
   groups <- askWorkspaceGroups
-  for_ groups $ \g -> do
-    putLine ""
-    putLine $ "• " <> chalk Bold (pkgGroupName g)
-    dirs <- memberPkgs g
-    let maxLen = genMaxLen (map pkgMemberId dirs)
-    for_ dirs $ \pkg -> updatePackage (mapPackage pkg) pkg
+  forWorkspaceTuple groups $ \pkg -> updatePackage (mapPackage pkg) pkg
 
 packageModifyDependencies :: (Dependencies -> ConfigT Dependencies) -> Package -> ConfigT Package
 packageModifyDependencies f Package {..} = do
