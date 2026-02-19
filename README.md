@@ -170,7 +170,7 @@ hwm ws add libs/core
 * Natively generates the package directory and `package.yaml` (using the modern object format).
 * Registers the new package under the correct group in `hwm.yaml`.
 * Automatically wires the package into `stack.yaml` so it builds immediately.
-* Automatically injects the package into `hie.yaml` so Haskell Language Server (HLS) works without restarting.
+* Automatically injects the package into `hie.yaml`.
 
 ### 3. Local Matrix Strategy
 
