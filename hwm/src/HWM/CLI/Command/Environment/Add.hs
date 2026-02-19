@@ -12,7 +12,7 @@ import HWM.Core.Formatting (Format (..), padDots)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
-import HWM.Domain.Matrix (Matrix (..), newEnv, existsEnviroment)
+import HWM.Domain.Matrix (Matrix (..), existsEnviroment, newEnv, printEnvironments)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Snapshots (SnapshotInfo (..), fetchLtsSuggestions, fetchStackageSnapshots)
 import HWM.Runtime.UI (putLine, section)
@@ -42,22 +42,26 @@ size :: Int
 size = 16
 
 runEnvAdd :: EnvAddOptions -> ConfigT ()
-runEnvAdd EnvAddOptions {..} = section "new environment" $ do
+runEnvAdd EnvAddOptions {..} = do
   exists <- existsEnviroment envName
-  when exists $ throwError $ fromString $ "Environment '" <> toString envName <> "' already exists."
-  putLine $ padDots size "name" <> envName
-  ltsMap <- fetchLtsSuggestions
-  snapshots <- map snapshotName <$> fetchStackageSnapshots
-  let suggestions = M.elems ltsMap <> take 12 (filter (not . isPrefixOf "nightly" . toString) snapshots)
-  let prefixMatches = filter (isPrefixOf (toString envResolver) . toString) snapshots
-  case M.lookup envResolver ltsMap <|> find (== envResolver) snapshots of
-    Nothing -> throwError $ fromString $ "Resolver '" <> toString envResolver <> "' is not a valid Stackage snapshot." <> toString (printSuggestions prefixMatches suggestions)
-    Just resolver -> do
-      putLine $ padDots size "resolver" <> envName
-      updateConfig
-        ( \cfg@Config {..} -> do
-            ghc <- getSnapshotGHC resolver
-            putLine $ padDots size "ghc" <> format ghc
-            pure cfg {matrix = matrix {environments = environments matrix <> [newEnv envName ghc resolver]}}
-        )
-        (pure ())
+  if exists
+    then do
+      printEnvironments Nothing
+      throwError $ fromString $ "Environment '" <> toString envName <> "' already exists."
+    else section "new environment" $ do
+      putLine $ padDots size "name" <> envName
+      ltsMap <- fetchLtsSuggestions
+      snapshots <- map snapshotName <$> fetchStackageSnapshots
+      let suggestions = M.elems ltsMap <> take 12 (filter (not . isPrefixOf "nightly" . toString) snapshots)
+      let prefixMatches = filter (isPrefixOf (toString envResolver) . toString) snapshots
+      case M.lookup envResolver ltsMap <|> find (== envResolver) snapshots of
+        Nothing -> throwError $ fromString $ "Resolver '" <> toString envResolver <> "' is not a valid Stackage snapshot." <> toString (printSuggestions prefixMatches suggestions)
+        Just resolver -> do
+          putLine $ padDots size "resolver" <> envName
+          updateConfig
+            ( \cfg@Config {..} -> do
+                ghc <- getSnapshotGHC resolver
+                putLine $ padDots size "ghc" <> format ghc
+                pure cfg {matrix = matrix {environments = environments matrix <> [newEnv envName ghc resolver]}}
+            )
+            (pure ())
