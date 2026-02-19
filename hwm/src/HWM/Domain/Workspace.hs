@@ -18,6 +18,7 @@ module HWM.Domain.Workspace
     buildWorkspaceGroups,
     askWorkspaceGroups,
     resolveWorkspaces,
+    printWorkspace,
   )
 where
 
@@ -36,12 +37,13 @@ import qualified Data.Map as Map
 import qualified Data.Set as S
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (availableOptions, commonPrefix, slugify)
+import HWM.Core.Formatting (Color (..), availableOptions, chalk, commonPrefix, genMaxLen, monadStatus, padDots, slugify, statusIcon, subPathSign)
 import HWM.Core.Has (Has (..))
 import HWM.Core.Pkg (Pkg (..), PkgName, makePkg)
 import HWM.Core.Result
 import HWM.Domain.Dependencies (DependencyGraph, sortByDependencyHierarchy)
 import HWM.Runtime.Files (cleanRelativePath)
+import HWM.Runtime.UI (MonadUI, putLine, sectionWorkspace)
 import Relude
 
 data WorkspaceGroup = WorkspaceGroup
@@ -140,3 +142,17 @@ derivePublish names
   where
     loweredNames = map T.toLower names
     nonPublish = ["examples", "example", "bench", "benchmarks"]
+
+printWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => (Pkg -> m ()) -> m ()
+printWorkspace f = do
+  gs <- askWorkspaceGroups
+  sectionWorkspace
+    $ for_ gs
+    $ \g -> do
+      putLine ""
+      putLine $ "• " <> chalk Bold (pkgGroupName g)
+      pkgs <- memberPkgs g
+      let maxLen = genMaxLen (map pkgMemberId pkgs)
+      for_ pkgs $ \pkg -> do
+        status <- monadStatus (f pkg)
+        putLine $ subPathSign <> padDots maxLen (pkgMemberId pkg) <> statusIcon status
