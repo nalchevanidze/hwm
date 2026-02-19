@@ -19,6 +19,7 @@ module HWM.Domain.Workspace
     askWorkspaceGroups,
     resolveWorkspaces,
     printWorkspace,
+    parseWorkspaceId,
   )
 where
 
@@ -92,14 +93,14 @@ groupByGroupName pkgs =
       grouped = groupBy (\a b -> pkgGroup a == pkgGroup b) sorted
    in [(maybe "" pkgGroup (viaNonEmpty head g), g) | g <- grouped, not (null g)]
 
-parseTarget :: Text -> (Text, Maybe Text)
-parseTarget input = case T.breakOn "/" input of
+parseWorkspaceId :: Text -> (Text, Maybe Text)
+parseWorkspaceId input = case T.breakOn "/" input of
   (pkg, "") -> (pkg, Nothing) -- No slash found
   (grp, rest) -> (grp, Just (T.drop 1 rest)) -- Drop the "/"
 
 resolveTarget :: (MonadIO m, MonadError Issue m) => [WorkspaceGroup] -> Text -> m [Pkg]
 resolveTarget ws target = do
-  let (g, n) = parseTarget target
+  let (g, n) = parseWorkspaceId target
   members <- selectGroup g ws >>= memberPkgs
   resolveT members n
 
