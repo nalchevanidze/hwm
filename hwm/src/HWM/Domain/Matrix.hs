@@ -19,6 +19,7 @@ module HWM.Domain.Matrix
     printEnvironments,
     getTestedRange,
     removeEnvironmentByName,
+    newEnv,
   )
 where
 
@@ -59,6 +60,17 @@ data Matrix = Matrix
     ( Generic,
       Show
     )
+
+newEnv :: Name -> Version -> Name -> BuildEnv
+newEnv name ghc resolver =
+  BuildEnv
+    { name = name,
+      ghc = ghc,
+      resolver = resolver,
+      extraDeps = Nothing,
+      exclude = Nothing,
+      allowNewer = Nothing
+    }
 
 instance FromJSON Matrix where
   parseJSON = genericParseJSON aesonYAMLOptions
