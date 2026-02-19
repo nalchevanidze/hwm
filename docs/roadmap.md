@@ -57,37 +57,46 @@ hwm registry prune --unused
 
 Manage monorepo structure and member metadata:
 
-- `ws add <dir>`: Scaffold a new package and register as workspace member.
+- `hwm ws add <group>`: Scaffold a new group in a workspace member.
+- `ws add <group/package>`: Scaffold a new package and register as workspace member.
+- `ws remove <group/package>`: Remove a package from the workspace.
 - `ws ls`: Display workspace tree, grouping members by logical groups (e.g., `libs`, `apps`).
 
-## Binary Generation & Releases
+## Release Orchestration & Native Archiving
 
-Replace fragile bash scripts with declarative release orchestration. HWM will use group metadata to automatically build, rename, and collect binaries across platforms.
+Replace fragile release scripts and external system dependencies (`7z`, `tar`) with a declarative, pure-Haskell archiving pipeline. HWM aims to be the "GoReleaser" of the Haskell ecosystem, natively orchestrating binary releases for any CI provider.
 
 **Configuration (`hwm.yaml`):**
-Use the `binaries` map to decouple your internal Cabal package name from the final shipped binary name.
+Decouple internal package names from shipped binaries and define cross-platform archive templates.
 
 ```yaml
 workspace:
   - name: cli-tools
     type: app
     binaries:
-      morpheus: morpheus-graphql-code-gen # <final-binary>: <cabal-package>
+      morpheus: morpheus-cli # <final-binary>: <cabal-package>
+    archive:
+      format: zip # Natively zips the compiled binary
+      name_template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
 ```
 
-**CLI Execution:**
+**CLI & Universal CI Integration:**
+Build, rename, and natively zip artifacts in one step. Use `--out` to export the resulting file paths (`.env` or `.json`) for zero-config handoff to any CI environment.
 
 ```bash
-# Builds targets, renames them, and extracts to ./dist
-hwm run build --release --artifacts-dir=./dist
-
+# Natively build, archive, and export asset paths
+hwm release morpheus-cli --out=release.env
 ```
+
+- **GitHub Actions:** `cat release.env >> $GITHUB_OUTPUT`
+- **GitLab / Custom CI:** `source release.env && echo "Uploading $ZIP_FILE"`
 
 **Key Capabilities:**
 
-- **Explicit Mapping:** Build `morpheus-graphql-code-gen` but output `morpheus` (or `morpheus.exe` on Windows).
-- **Cross-Platform Normalization:** Automatically handles OS-specific extensions during artifact extraction.
-- **Zero-Config CI:** Replaces complex GitHub Actions matrices with a single command to collect all release artifacts.
+- **Explicit Mapping & Normalization:** Build `morpheus-cli` but output the clean `morpheus` binary (auto-appending `.exe` on Windows).
+- **Smart Platform Detection:** Automatically populates `{{os}}` and `{{arch}}` (e.g., `linux-x64`, `macos-arm64`).
+- **Zero External Dependencies:** Archiving runs in pure Haskell. No system tools required on the runner.
+- **Universal Handoff:** CI-agnostic output seamlessly bridges HWM with GitHub, GitLab, Jenkins, or bare-metal servers.
 
 ## Deep Nix Integration
 
