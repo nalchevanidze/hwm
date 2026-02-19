@@ -78,8 +78,7 @@ Build, rename, zip, and hash artifacts in one step. Use `--out` to export the re
 
 ```bash
 # Natively build, archive, hash, and export asset paths
-hwm release morpheus-cli --out=release.env
-
+hwm release package morpheus-cli --out=release.env
 ```
 
 **Key Capabilities:**
