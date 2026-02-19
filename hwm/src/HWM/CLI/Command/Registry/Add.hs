@@ -4,20 +4,18 @@
 
 module HWM.CLI.Command.Registry.Add (runRegistryAdd, RegistryAddOptions (..)) where
 
--- removed accidental self-import
-
 import qualified Data.Text as T
-import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, padDots)
+import HWM.Core.Formatting (Color (..), Format (..), chalk, padDots)
 import HWM.Core.Parsing (ParseCLI (..), parse, parseOptions)
-import HWM.Core.Pkg (Pkg (..), PkgName (..))
+import HWM.Core.Pkg (PkgName (..))
 import HWM.Domain.Bounds (deriveBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
 import HWM.Domain.Dependencies (Dependency (Dependency), lookupBounds, singleDeps)
 import HWM.Domain.Matrix (getTestedRange)
-import HWM.Domain.Workspace (resolveWorkspaces)
+import HWM.Domain.Workspace (forWorkspaceTuple, resolveWorkspaces)
 import HWM.Integrations.Toolchain.Package
-import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM, sectionWorkspace)
+import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM)
 import Options.Applicative (argument, help, long, metavar, short, str)
 import Relude
 
@@ -58,9 +56,6 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
       addDepToPackage workspaces (Dependency opsPkgName bounds)
   where
     addDepToPackage ws dependency =
-      unless (null ws) $ sectionWorkspace $ do
-        let maxLen = genMaxLen (map pkgMemberId $ concatMap snd ws)
-        for_ ws $ \(name, pkgs) -> do
-          putLine ""
-          putLine $ "• " <> chalk Bold name
-          for_ pkgs $ \pkg -> updatePackage maxLen (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg
+      unless (null ws)
+        $ forWorkspaceTuple ws
+        $ \pkg -> updatePackage (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg

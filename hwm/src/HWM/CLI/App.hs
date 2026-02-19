@@ -93,6 +93,11 @@ parseCommand =
         Just "ev",
         "Manage build environments (add, remove, set-default, ls).",
         Env <$> parseCLI
+      ),
+      ( "workspace",
+        Just "ws",
+        "Manage workspaces (add, ls).",
+        Workspace <$> parseCLI
       )
     ]
     <|> (Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI)

@@ -15,6 +15,8 @@ module HWM.Integrations.Toolchain.Package
     validatePackage,
     updatePackage,
     packageModifyDependencies,
+    savePackage,
+    newPackage,
   )
 where
 
@@ -22,13 +24,14 @@ import Control.Monad.Except (MonadError (..))
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import HWM.Core.Formatting (Color (..), Format (..), chalk, displayStatus, genMaxLen, padDots, subPathSign)
-import HWM.Core.Pkg (Pkg (..), PkgName, pkgMemberId, pkgYamlPath)
+import HWM.Core.Formatting (Format (..), displayStatus)
+import HWM.Core.Pkg (Pkg (..), PkgName (PkgName), pkgMemberId, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version)
-import HWM.Domain.ConfigT (ConfigT, askVersion)
-import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), externalRegistry, normalizeDependencies, toDependencyList)
-import HWM.Domain.Workspace (askWorkspaceGroups, memberPkgs, pkgGroupName)
+import HWM.Domain.Config (getRule)
+import HWM.Domain.ConfigT (ConfigT, Env (config, pkgs), askVersion)
+import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), externalRegistry, normalizeDependencies, singleDeps, toDependencyList)
+import HWM.Domain.Workspace (forWorkspaceCore)
 import HWM.Integrations.Toolchain.Cabal (syncCabal)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
@@ -42,7 +45,6 @@ import HWM.Integrations.Toolchain.Lib
     updateLibrary,
   )
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_, statusM)
-import HWM.Runtime.UI (putLine, sectionWorkspace)
 import Relude
 
 data Package = Package
@@ -63,6 +65,26 @@ instance FromJSON Package where
 
 instance ToJSON Package where
   toJSON = genericToJSON aesonYAMLOptions
+
+newPackage :: PkgName -> ConfigT Package
+newPackage name = do
+  cfg <- asks config
+  ps <- asks pkgs
+  let basename = PkgName "base"
+  version <- askVersion
+  base <- getRule basename ps cfg
+  pure
+    $ Package
+      { name = name,
+        version = version,
+        library = Just Library {sourceDirs = "src", dependencies = Nothing, __unknownFields = Nothing},
+        dependencies = singleDeps (Dependency basename base),
+        tests = Nothing,
+        executables = Nothing,
+        benchmarks = Nothing,
+        internalLibraries = Nothing,
+        foreignLibraries = Nothing
+      }
 
 mapPackage :: Pkg -> Package -> ConfigT Package
 mapPackage pkg Package {..} = do
@@ -111,30 +133,19 @@ packageDiffs pkg Package {..} = do
     )
 
 syncPackages :: ConfigT ()
-syncPackages = sectionWorkspace $ do
-  groups <- askWorkspaceGroups
-  for_ groups $ \g -> do
-    putLine ""
-    putLine $ "• " <> chalk Bold (pkgGroupName g)
-    dirs <- memberPkgs g
-    let maxLen = genMaxLen (map pkgMemberId dirs)
-    for_ dirs $ \pkg -> updatePackage maxLen (mapPackage pkg) pkg
+syncPackages = forWorkspaceCore $ \pkg -> updatePackage (mapPackage pkg) pkg
 
 packageModifyDependencies :: (Dependencies -> ConfigT Dependencies) -> Package -> ConfigT Package
 packageModifyDependencies f Package {..} = do
   newDependencies <- f dependencies
   pure Package {dependencies = newDependencies, ..}
 
-updatePackage :: Int -> (Package -> ConfigT Package) -> Pkg -> ConfigT ()
-updatePackage maxLen f pkg = do
+updatePackage :: (Package -> ConfigT Package) -> Pkg -> ConfigT Text
+updatePackage f pkg = do
   let path = pkgYamlPath pkg
   package <- statusM path (rewrite_ path maybePackage)
   cabal <- syncCabal pkg
-  putLine
-    ( subPathSign
-        <> padDots maxLen (pkgMemberId pkg)
-        <> displayStatus [("pkg", package), ("cabal", cabal)]
-    )
+  pure $ displayStatus [("pkg", package), ("cabal", cabal)]
   where
     maybePackage Nothing =
       throwError
@@ -145,6 +156,9 @@ updatePackage maxLen f pkg = do
             issueDetails = Just GenericIssue {issueFile = pkgYamlPath pkg}
           }
     maybePackage (Just package) = f package
+
+savePackage :: FilePath -> Package -> ConfigT ()
+savePackage pkg package = rewrite_ pkg (const $ pure package)
 
 collectPackageDependencies :: Package -> [Dependency]
 collectPackageDependencies Package {..} =

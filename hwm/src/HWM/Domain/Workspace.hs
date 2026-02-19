@@ -18,6 +18,12 @@ module HWM.Domain.Workspace
     buildWorkspaceGroups,
     askWorkspaceGroups,
     resolveWorkspaces,
+    forWorkspace,
+    forWorkspaceTuple,
+    parseWorkspaceId,
+    forWorkspaceCore,
+    editWorkgroup,
+    existsWokspaceGroup,
   )
 where
 
@@ -36,12 +42,13 @@ import qualified Data.Map as Map
 import qualified Data.Set as S
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (availableOptions, commonPrefix, slugify)
+import HWM.Core.Formatting (Color (..), availableOptions, chalk, commonPrefix, genMaxLen, monadStatus, padDots, slugify, statusIcon, subPathSign)
 import HWM.Core.Has (Has (..))
 import HWM.Core.Pkg (Pkg (..), PkgName, makePkg)
 import HWM.Core.Result
 import HWM.Domain.Dependencies (DependencyGraph, sortByDependencyHierarchy)
 import HWM.Runtime.Files (cleanRelativePath)
+import HWM.Runtime.UI (MonadUI, putLine, sectionWorkspace)
 import Relude
 
 data WorkspaceGroup = WorkspaceGroup
@@ -90,14 +97,14 @@ groupByGroupName pkgs =
       grouped = groupBy (\a b -> pkgGroup a == pkgGroup b) sorted
    in [(maybe "" pkgGroup (viaNonEmpty head g), g) | g <- grouped, not (null g)]
 
-parseTarget :: Text -> (Text, Maybe Text)
-parseTarget input = case T.breakOn "/" input of
+parseWorkspaceId :: Text -> (Text, Maybe Text)
+parseWorkspaceId input = case T.breakOn "/" input of
   (pkg, "") -> (pkg, Nothing) -- No slash found
   (grp, rest) -> (grp, Just (T.drop 1 rest)) -- Drop the "/"
 
 resolveTarget :: (MonadIO m, MonadError Issue m) => [WorkspaceGroup] -> Text -> m [Pkg]
 resolveTarget ws target = do
-  let (g, n) = parseTarget target
+  let (g, n) = parseWorkspaceId target
   members <- selectGroup g ws >>= memberPkgs
   resolveT members n
 
@@ -107,6 +114,9 @@ resolveT pkgs (Just target) =
   case find (\p -> target == pkgMemberId p) pkgs of
     Just p -> pure [p]
     Nothing -> throwError $ fromString $ toString $ "Target not found: " <> target
+
+existsWokspaceGroup :: Name -> [WorkspaceGroup] -> Bool
+existsWokspaceGroup name = any ((== name) . pkgGroupName)
 
 selectGroup :: (MonadError Issue m) => Name -> [WorkspaceGroup] -> m WorkspaceGroup
 selectGroup name groups =
@@ -140,3 +150,38 @@ derivePublish names
   where
     loweredNames = map T.toLower names
     nonPublish = ["examples", "example", "bench", "benchmarks"]
+
+forWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => (Pkg -> m ()) -> m ()
+forWorkspace f = forWorkspaceCore $ \pkg -> do
+  status <- monadStatus (f pkg)
+  pure $ statusIcon status
+
+forWorkspaceCore :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => (Pkg -> m Text) -> m ()
+forWorkspaceCore f = do
+  gs <- askWorkspaceGroups
+  sectionWorkspace
+    $ for_ gs
+    $ \g -> do
+      putLine ""
+      putLine $ "• " <> chalk Bold (pkgGroupName g)
+      pkgs <- memberPkgs g
+      let maxLen = genMaxLen (map pkgMemberId pkgs)
+      for_ pkgs $ \pkg -> do
+        status <- f pkg
+        putLine $ subPathSign <> padDots maxLen (pkgMemberId pkg) <> status
+
+forWorkspaceTuple :: (MonadUI m) => [(Text, [Pkg])] -> (Pkg -> m Text) -> m ()
+forWorkspaceTuple ws f = sectionWorkspace $ do
+  let maxLen = genMaxLen (map pkgMemberId $ concatMap snd ws)
+  for_ ws $ \(name, pkgs) -> do
+    putLine ""
+    putLine $ "• " <> chalk Bold name
+    for_ pkgs $ \pkg -> do
+      status <- f pkg
+      putLine (subPathSign <> padDots maxLen (pkgMemberId pkg) <> status)
+
+editWorkgroup :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => Name -> (WorkspaceGroup -> WorkspaceGroup) -> m ([WorkspaceGroup], WorkspaceGroup)
+editWorkgroup name f = do
+  ws <- askWorkspaceGroups
+  c <- selectGroup name ws
+  pure (map (\g -> if pkgGroupName g == name then f g else g) ws, c)

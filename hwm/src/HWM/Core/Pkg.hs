@@ -17,6 +17,8 @@ module HWM.Core.Pkg
     pkgId,
     scanPkgs,
     cabalFilePath,
+    mkPkgDirPath,
+    resolvePrefix,
   )
 where
 
@@ -84,9 +86,12 @@ toPkg PkgInfo {name, version} groupName memberName dir =
       pkgDirPath = dir
     }
 
+mkPkgDirPath :: Maybe String -> Maybe Text -> Text -> FilePath
+mkPkgDirPath root prefix memberName = resolvePath root (resolvePrefix prefix memberName)
+
 makePkg :: (MonadIO m, MonadError Issue m) => Text -> Maybe FilePath -> Maybe Name -> Name -> m Pkg
 makePkg groupName root prefix memberName = do
-  let pkgDirPath = resolvePath root (resolvePrefix prefix memberName)
+  let pkgDirPath = mkPkgDirPath root prefix memberName
   json <- getPkgInfo pkgDirPath
   pure $ toPkg json groupName memberName pkgDirPath
 

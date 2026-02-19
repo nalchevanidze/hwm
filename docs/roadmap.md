@@ -53,15 +53,6 @@ hwm registry prune --unused
 - Circular dependencies: Detect cycles between internal workspace packages.
 - Unreachable packages: List packages present in directory but not included in any environment matrix.
 
-## Workspace Management
-
-Manage monorepo structure and member metadata:
-
-- `hwm ws add <group>`: Scaffold a new group in a workspace member.
-- `ws add <group/package>`: Scaffold a new package and register as workspace member.
-- `ws remove <group/package>`: Remove a package from the workspace.
-- `ws ls`: Display workspace tree, grouping members by logical groups (e.g., `libs`, `apps`).
-
 ## Release Orchestration & Native Archiving
 
 Replace fragile release scripts and external system dependencies (`7z`, `tar`, `shasum`) with a declarative, pure-Haskell archiving pipeline. HWM natively orchestrates binary releases, zipping, and cryptographic hashing for any CI provider.

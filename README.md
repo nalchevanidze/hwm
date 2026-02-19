@@ -62,6 +62,7 @@ graph TD
     style HWM fill:#f9f,stroke:#333,stroke-width:4px
     style Matrix stroke-dasharray: 5 5
 
+
 ```
 
 * **You write:** `hwm.yaml` (1 file).
@@ -79,6 +80,7 @@ stack install hwm
 # or
 cabal install hwm
 
+
 ```
 
 ### Zero-Config Onboarding
@@ -93,6 +95,7 @@ hwm init
 # 2. Sync configuration and build
 hwm sync
 hwm run build
+
 
 ```
 
@@ -132,6 +135,7 @@ hwm registry add aeson libs/core
 # Add to an entire group (all packages in 'libs')
 hwm registry add servant libs
 
+
 ```
 
 **Audit & Fix:**
@@ -141,13 +145,34 @@ Audit your bounds against **real** Stackage snapshots. Ensure you only claim sup
 # Auto-update bounds in hwm.yaml to match tested snapshots
 hwm registry audit --fix
 
+
 ```
 
 <p align="center">
 <img src="images/audit.png" alt="HWM Audit Command" width="600">
 </p>
 
-### 2. Local Matrix Strategy
+### 2. Workspace Scaffolding
+
+Stop manually creating folders, copying `package.yaml` files, and breaking your LSP. HWM scaffolds new packages natively and instantly wires them into your global monorepo configuration.
+
+```bash
+# Interactively or directly scaffold a new package in a specific group
+hwm ws add libs/core
+```
+
+<p align="center">
+<img src="images/ws-add.png" alt="HWM Workspace Add Command" width="600">
+</p>
+
+**What HWM does instantly:**
+
+* Natively generates the package directory and `package.yaml` (using the modern object format).
+* Registers the new package under the correct group in `hwm.yaml`.
+* Automatically wires the package into `stack.yaml` so it builds immediately.
+* Automatically injects the package into `hie.yaml` so Haskell Language Server (HLS) works without restarting.
+
+### 3. Local Matrix Strategy
 
 In most projects, the Build Matrix only exists in the cloud (`.github/workflows`). HWM brings that matrix down to your machine.
 
@@ -157,13 +182,14 @@ In most projects, the Build Matrix only exists in the cloud (`.github/workflows`
 # Test across all defined environments (Stable, Nightly, Legacy)
 hwm run test --env=all
 
+
 ```
 
 <p align="center">
 <img src="images/matrix.png" alt="HWM Matrix Build Output" width="700">
 </p>
 
-### 3. Automated Release Workflows
+### 4. Automated Release Workflows
 
 Eliminate manual release steps. By combining HWM with `relasy`, you can fully automate the release lifecycle with a single CI workflow trigger.
 
@@ -175,9 +201,10 @@ Eliminate manual release steps. By combining HWM with `relasy`, you can fully au
 hwm version minor   # Bumps versions atomically
 hwm publish libs    # Uploads the entire workspace group
 
+
 ```
 
-### 4. Environment Management
+### 5. Environment Management
 
 Manage multiple GHC versions and resolvers effortlessly.
 
@@ -188,6 +215,7 @@ matrix:
   environments:
     - { name: stable, ghc: 9.6.3, resolver: lts-22.6 }
     - { name: nightly, ghc: 9.10.1, resolver: nightly-2024-05-22 }
+
 
 ```
 
@@ -225,13 +253,12 @@ Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM prov
 
 HWM is actively evolving. While the core Workspace and Matrix engines are stable, we are actively building the following "Day 2" operations:
 
-* **Workspace Scaffolding:** Smart `hwm ws add` commands to instantly generate and register new packages.
 * **Interactive Onboarding:** A guided `hwm init --interactive` mode to safely import existing monorepos with dry-runs.
 * **Smart Registry Pruning:** Automated detection of unused imports and auto-injection of missing `extra-deps`.
 * **Binary Generation & Releases:** Automated building of `type: app` executables and zero-config CI/CD release orchestration.
 * **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml` for seamless Nix coexistence.
 
-> 📄 **See the [Full Feature Roadmap](docs/roadmap.md)** for detailed plans and upcoming CLI designs.
+> 📄 **See the [Full Feature Roadmap**](docs/roadmap.md) for detailed plans and upcoming CLI designs.
 
 ## 🧬 Status
 
