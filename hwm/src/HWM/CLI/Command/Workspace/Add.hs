@@ -7,7 +7,7 @@ module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) wher
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatus, padDots, subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
-import HWM.Core.Pkg (mkPkgDirPath, resolvePrefix, PkgName (..))
+import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
@@ -45,10 +45,8 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId),
   when opsPublish $ injectIssue (noEffect "publish")
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
-
   (ws, w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
   scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
-
   updateConfig (\cfg -> pure $ cfg {workspace = ws})
     $ sectionWorkspace
     $ do
