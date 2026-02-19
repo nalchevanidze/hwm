@@ -225,10 +225,11 @@ Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM prov
 
 HWM is actively evolving. While the core Workspace and Matrix engines are stable, we are actively building the following "Day 2" operations:
 
-* **Scaffolding (`v0.2.0`):** Smart `hwm ws add` commands to instantly generate new packages with correct boilerplate and prefixes.
-* **Release Orchestration:** Fully automated binary building and Hackage publishing pipelines.
+* **Workspace Scaffolding:** Smart `hwm ws add` commands to instantly generate and register new packages.
+* **Interactive Onboarding:** A guided `hwm init --interactive` mode to safely import existing monorepos with dry-runs.
+* **Smart Registry Pruning:** Automated detection of unused imports and auto-injection of missing `extra-deps`.
+* **Binary Generation & Releases:** Automated building of `type: app` executables and zero-config CI/CD release orchestration.
 * **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml` for seamless Nix coexistence.
-* **Dependency Pruning:** Automated detection of unused imports to keep your monorepo clean.
 
 > 📄 **See the [Full Feature Roadmap](docs/roadmap.md)** for detailed plans and upcoming CLI designs.
 

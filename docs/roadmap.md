@@ -60,7 +60,53 @@ Manage monorepo structure and member metadata:
 - `ws add <dir>`: Scaffold a new package and register as workspace member.
 - `ws ls`: Display workspace tree, grouping members by logical groups (e.g., `libs`, `apps`).
 
----
+## Binary Generation & Releases
+
+Replace fragile bash scripts with declarative release orchestration. HWM will use group metadata to automatically build, rename, and collect binaries across platforms.
+
+**Configuration (`hwm.yaml`):**
+Use the `binaries` map to decouple your internal Cabal package name from the final shipped binary name.
+
+```yaml
+workspace:
+  - name: cli-tools
+    type: app
+    binaries:
+      morpheus: morpheus-graphql-code-gen # <final-binary>: <cabal-package>
+```
+
+**CLI Execution:**
+
+```bash
+# Builds targets, renames them, and extracts to ./dist
+hwm run build --release --artifacts-dir=./dist
+
+```
+
+**Key Capabilities:**
+
+- **Explicit Mapping:** Build `morpheus-graphql-code-gen` but output `morpheus` (or `morpheus.exe` on Windows).
+- **Cross-Platform Normalization:** Automatically handles OS-specific extensions during artifact extraction.
+- **Zero-Config CI:** Replaces complex GitHub Actions matrices with a single command to collect all release artifacts.
+
+## Deep Nix Integration
+
+Maintaining a `flake.nix` for a multi-package, multi-GHC monorepo is notoriously painful. HWM will act as the ultimate bridge, generating idiomatic Nix configurations directly from `hwm.yaml` with zero boilerplate.
+
+**Planned Capabilities:**
+
+- **Matrix to DevShells:** HWM environments map directly to Nix. Run `nix develop .#stable` (GHC 9.6) or `nix develop .#legacy` (GHC 8.10) without writing custom overlays.
+- **Auto-Exported Packages:** Every workspace member (`lib` or `app`) is automatically exposed as a buildable Nix derivation.
+- **Snapshot Translation:** HWM registry bounds and Stackage snapshots translate to pinned Nixpkgs inputs, guaranteeing `nix build` matches `stack build`.
+
+**CLI Usage:**
+
+```bash
+hwm init --nix  # Scaffold workspace with flake.nix
+hwm sync --nix  # Synchronize flake alongside cabal/stack
+```
+
+**The Value:** True hybrid workflows. Nix power-users get full reproducibility, while the rest of the team continues using standard Cabal/Stack. Both use the exact same single source of truth.
 
 ## Contributing
 
