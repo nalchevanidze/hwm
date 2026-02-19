@@ -7,21 +7,21 @@ module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) wher
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (Bold), Status (Checked), chalk, displayStatus, padDots, subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
-import HWM.Core.Pkg(Pkg, pkgDirPath, mkPkgDirPath)
+import HWM.Core.Pkg (mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
 import HWM.Domain.Workspace (WorkspaceGroup (..), editWorkgroup, parseWorkspaceId)
+import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Runtime.UI (putLine, sectionWorkspace)
 import Options.Applicative (help, long, metavar, strArgument, strOption, switch)
 import Relude
-import HWM.Integrations.Scaffold (scaffoldPackage)
 
 data WorkspaceAddOptions = WorkspaceAddOptions
-  { workspaceId :: (Name, Maybe Name),
-    workspaceDir :: Maybe FilePath,
-    prefix :: Maybe Text,
-    publish :: Bool
+  { opsWorkspaceId :: (Name, Maybe Name),
+    opsWorkspaceDir :: Maybe FilePath,
+    opsPrefix :: Maybe Text,
+    opsPublish :: Bool
   }
   deriving (Show)
 
@@ -33,24 +33,22 @@ instance ParseCLI WorkspaceAddOptions where
       <*> switch (long "publish" <> help "Set if packages in this workspace should be published (use --publish for True, omit for False)")
 
 runWorkspaceAdd :: WorkspaceAddOptions -> ConfigT ()
-runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Nothing), ..}) = do
-  updateConfig (\cfg -> pure $ cfg {workspace = workspace cfg ++ [WorkspaceGroup groupId workspaceDir [] prefix (Just publish)]})
+runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Nothing), ..}) = do
+  updateConfig (\cfg -> pure $ cfg {workspace = workspace cfg ++ [WorkspaceGroup groupId opsWorkspaceDir [] opsPrefix (Just opsPublish)]})
     $ sectionWorkspace
     $ do
       putLine ""
       putLine $ "• " <> chalk Bold groupId <> " " <> displayStatus [("added", Checked)]
-runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Just memberId), ..}) = do
-  when publish $ injectIssue (noEffect "publish")
-  when (isJust prefix) $ injectIssue (noEffect "prefix")
-  when (isJust workspaceDir) $ injectIssue (noEffect "dir")
-
-  
+runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId), ..}) = do
+  when opsPublish $ injectIssue (noEffect "publish")
+  when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
+  when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
 
   updateConfig
     ( \cfg ->
         ( do
-            (ws,w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
-            _ <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w)  memberId) ( prefix <> memberId)
+            (ws, w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
+            _ <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (resolvePrefix (prefix w) memberId)
             pure $ cfg {workspace = ws}
         )
     )

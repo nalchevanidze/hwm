@@ -18,6 +18,7 @@ module HWM.Core.Pkg
     scanPkgs,
     cabalFilePath,
     mkPkgDirPath,
+    resolvePrefix,
   )
 where
 
