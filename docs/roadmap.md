@@ -64,7 +64,7 @@ Manage monorepo structure and member metadata:
 
 ## Release Orchestration & Native Archiving
 
-Replace fragile release scripts and external system dependencies (`7z`, `tar`) with a declarative, pure-Haskell archiving pipeline. HWM aims to be the "GoReleaser" of the Haskell ecosystem, natively orchestrating binary releases for any CI provider.
+Replace fragile release scripts and external system dependencies (`7z`, `tar`, `shasum`) with a declarative, pure-Haskell archiving pipeline. HWM natively orchestrates binary releases, zipping, and cryptographic hashing for any CI provider.
 
 **Configuration (`hwm.yaml`):**
 Decouple internal package names from shipped binaries and define cross-platform archive templates.
@@ -74,29 +74,30 @@ workspace:
   - name: cli-tools
     type: app
     binaries:
-      morpheus: morpheus-cli # <final-binary>: <cabal-package>
+      morpheus: morpheus-cli  # <final-binary>: <cabal-package>
     archive:
-      format: zip # Natively zips the compiled binary
+      format: zip             # Natively zips the compiled binary
       name_template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
+      checksum: sha256        # Automatically generates checksums.txt
+
 ```
 
 **CLI & Universal CI Integration:**
-Build, rename, and natively zip artifacts in one step. Use `--out` to export the resulting file paths (`.env` or `.json`) for zero-config handoff to any CI environment.
+Build, rename, zip, and hash artifacts in one step. Use `--out` to export the resulting file paths for zero-config handoff to any CI environment.
 
 ```bash
-# Natively build, archive, and export asset paths
+# Natively build, archive, hash, and export asset paths
 hwm release morpheus-cli --out=release.env
-```
 
-- **GitHub Actions:** `cat release.env >> $GITHUB_OUTPUT`
-- **GitLab / Custom CI:** `source release.env && echo "Uploading $ZIP_FILE"`
+```
 
 **Key Capabilities:**
 
-- **Explicit Mapping & Normalization:** Build `morpheus-cli` but output the clean `morpheus` binary (auto-appending `.exe` on Windows).
-- **Smart Platform Detection:** Automatically populates `{{os}}` and `{{arch}}` (e.g., `linux-x64`, `macos-arm64`).
-- **Zero External Dependencies:** Archiving runs in pure Haskell. No system tools required on the runner.
-- **Universal Handoff:** CI-agnostic output seamlessly bridges HWM with GitHub, GitLab, Jenkins, or bare-metal servers.
+* **Explicit Mapping & Normalization:** Build `morpheus-cli` but output the clean `morpheus` binary (auto-appending `.exe` on Windows).
+* **Smart Platform Detection:** Automatically populates `{{os}}` and `{{arch}}` (e.g., `linux-x64`, `macos-arm64`).
+* **Cryptographic Checksums:** Natively generates `checksums.txt` to enable immediate distribution via Homebrew, Nix, and AUR.
+* **Zero External Dependencies:** Archiving and hashing run in pure Haskell. No system tools required on the runner.
+* **Universal Handoff:** CI-agnostic output seamlessly bridges HWM with GitHub, GitLab, Jenkins, or bare-metal servers.
 
 ## Deep Nix Integration
 
