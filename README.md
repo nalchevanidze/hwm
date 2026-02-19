@@ -72,6 +72,52 @@ matrix:
   default-environment: stable
   environments:
     - { name: stable, ghc: 9.6.3, resolver: lts-22.6 }
+    - { name: nightly, ghc: 9.10.1, resolver: nightly-2024-05-22 }
+
+## 🌐 Environment Management
+
+HWM supports robust environment (matrix) management:
+
+- **Add:**
+  ```bash
+  hwm environment add <name> <resolver>
+  # e.g.
+  hwm environment add stable lts-24.25
+  hwm environment add nightly nightly-2026-02-18
+  ```
+  - Validates the resolver against Stackage and suggests close matches if not found (shows LTS suggestions and popular versions).
+  - Infers the GHC version from the resolver.
+  - Updates `hwm.yaml` and the build matrix.
+
+- **Remove:**
+  ```bash
+  hwm environment remove <name>
+  # e.g.
+  hwm environment remove nightly-2026-02-18
+  ```
+  - Removes the environment from the matrix and updates `hwm.yaml`.
+
+- **Set Default:**
+  ```bash
+  hwm environment set-default <name>
+  # e.g.
+  hwm environment set-default stable
+  ```
+  - Sets the default environment for builds and commands.
+
+- **List:**
+  ```bash
+  hwm environment ls
+  ```
+  - Lists all environments, their GHC versions, and resolvers. Marks the default environment.
+
+**Resolver Validation & Suggestions:**
+If you enter an invalid resolver, HWM will:
+- Suggest the closest matching snapshot(s) by prefix.
+- Show the first 12 non-nightly LTS snapshots and popular LTS versions from Stackage's snapshot index.
+
+This ensures you always have guidance to pick a valid resolver.
+    - { name: stable, ghc: 9.6.3, resolver: lts-22.6 }
     # Note: Nightly resolvers must use the date-stamped format
     - { name: nightly, ghc: 9.10.1, resolver: nightly-2024-05-22 } 
 

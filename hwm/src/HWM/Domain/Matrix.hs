@@ -13,11 +13,14 @@ module HWM.Domain.Matrix
   ( BuildEnv (..),
     Matrix (..),
     BuildEnvironment (..),
-    getBuildEnvroments,
+    getBuildEnvironments,
     getBuildEnvironment,
     hkgRefs,
     printEnvironments,
     getTestedRange,
+    removeEnvironmentByName,
+    newEnv,
+    existsEnviroment,
   )
 where
 
@@ -43,7 +46,7 @@ import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (TestedRange (..))
 import HWM.Domain.Workspace (WorkspaceGroup, memberPkgs)
-import HWM.Runtime.Cache (Cache, Registry (currentEnv), Snapshot, VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
+import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
 import HWM.Runtime.Files (aesonYAMLOptions)
 import HWM.Runtime.UI (MonadUI, forTable, sectionEnvironments)
 import Relude
@@ -58,6 +61,17 @@ data Matrix = Matrix
     ( Generic,
       Show
     )
+
+newEnv :: Name -> Version -> Name -> BuildEnv
+newEnv name ghc resolver =
+  BuildEnv
+    { name = name,
+      ghc = ghc,
+      resolver = resolver,
+      extraDeps = Nothing,
+      exclude = Nothing,
+      allowNewer = Nothing
+    }
 
 instance FromJSON Matrix where
   parseJSON = genericParseJSON aesonYAMLOptions
@@ -143,7 +157,7 @@ data BuildEnvironment = BuildEnvironment
 instance Format BuildEnvironment where
   format BuildEnvironment {..} = buildName <> " (" <> format (ghc buildEnv) <> ")"
 
-getBuildEnvroments ::
+getBuildEnvironments ::
   ( MonadReader env m,
     Has env Matrix,
     Has env [WorkspaceGroup],
@@ -151,7 +165,7 @@ getBuildEnvroments ::
     MonadError Issue m
   ) =>
   m [BuildEnvironment]
-getBuildEnvroments = do
+getBuildEnvironments = do
   envs <- environments <$> askEnv
   for envs $ \env -> do
     pkgs <- askAllPackages
@@ -177,7 +191,7 @@ getBuildEnvironment ::
   Maybe Name ->
   m BuildEnvironment
 getBuildEnvironment inputName = do
-  envs <- getBuildEnvroments
+  envs <- getBuildEnvironments
   defaultname <- defaultEnvironment <$> askEnv
   case inputName of
     Just name -> matchEnv envs name (select envs name)
@@ -233,9 +247,17 @@ askAllPackages = do
   groups <- askGroups
   concat <$> traverse memberPkgs groups
 
-printEnvironments :: (MonadUI m) => BuildEnvironment -> [BuildEnvironment] -> m ()
-printEnvironments active environments =
-  sectionEnvironments $ forTable 0 environments $ \env ->
+existsEnviroment :: (MonadReader env m, Has env Matrix) => Name -> m Bool
+existsEnviroment n = do
+  envs <- environments <$> askEnv
+  pure $ isJust $ find ((n ==) . name) envs
+
+printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env [WorkspaceGroup], Has env Matrix, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
+printEnvironments name = do
+  active <- getBuildEnvironment name
+  def <- defaultEnvironment <$> askEnv
+  environments <- getBuildEnvironments
+  sectionEnvironments (Just $ format def) $ forTable 0 environments $ \env ->
     ( format env,
       if env == active
         then chalk Cyan (buildResolver env <> " (active)")
@@ -244,7 +266,12 @@ printEnvironments active environments =
 
 getTestedRange :: (Monad m, MonadReader env m, Has env [WorkspaceGroup], Has env Matrix, MonadIO m, MonadError Issue m) => m TestedRange
 getTestedRange = do
-  env <- getBuildEnvroments
+  env <- getBuildEnvironments
   legacy <- getSnapshot (minimum $ map buildResolver env)
   nightly <- getLatestNightlySnapshot
   pure TestedRange {legacy = legacy, nightly = nightly}
+
+-- | Remove an environment from the matrix by name
+removeEnvironmentByName :: Name -> Matrix -> Matrix
+removeEnvironmentByName envName matrix =
+  matrix {environments = filter ((envName /=) . name) (environments matrix)}

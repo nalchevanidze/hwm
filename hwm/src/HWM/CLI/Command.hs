@@ -12,6 +12,7 @@ module HWM.CLI.Command
 where
 
 import Data.Version (showVersion)
+import HWM.CLI.Command.Environment (EnvCommand, runEnv)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
 import HWM.CLI.Command.Publish (publish)
 import HWM.CLI.Command.Registry (RegistryCommand, runRegistry)
@@ -34,11 +35,13 @@ data Command
   | Status
   | Init {initOptions :: InitOptions}
   | Registry RegistryCommand
+  | Env EnvCommand
   deriving (Show)
 
 currentVersion :: String
 currentVersion = showVersion CLI.version
 
+-- | Run the top-level command
 command :: Command -> ConfigT ()
 command Publish {groupName} = publish groupName
 command Version {bump} = runVersion bump
@@ -47,6 +50,9 @@ command Run {scriptName, runOptions} = runScript scriptName runOptions
 command Status = showStatus
 command Init {} = pure ()
 command (Registry options) = runRegistry options
+command (Env options) = runEnv options
+
+-- EnvCommand and runEnv are now defined in Command.Environment
 
 runCommand :: Command -> Options -> IO ()
 runCommand Init {initOptions} ops = initWorkspace initOptions ops >> runConfigT showStatus ops

@@ -43,10 +43,76 @@ HWM (Haskell Workspace Manager) is a declarative CLI tool for Haskell monorepos.
 | `hwm registry add <pkg> <target>` | Add dependency to registry and inject into packages/groups | Discovers safe bounds, updates registry, syncs workspace |
 | `hwm registry audit [--fix] [--force]` | Audit/fix registry bounds | Compares to Stackage LTS/Nightly, `--fix` updates errors, `--force` warnings |
 | `hwm registry ls` | List all dependencies in the registry | Shows current bounds and status |
+| `hwm environment add <name> <resolver>` | Add a new environment to the build matrix           | Adds a new environment (GHC/resolver) to the matrix, inferring GHC from resolver. Validates resolver against Stackage and suggests close matches if not found. |
+| `hwm environment remove <name>`    | Remove an environment from the build matrix            | Removes the specified environment from the matrix. |
+| `hwm environment set-default <name>` | Set the default environment in the build matrix | Marks the given environment as the default for builds and commands. |
+| `hwm environment ls` | List all environments in the build matrix | Shows all configured environments, their GHC versions, and resolvers. |
 | `hwm version [BUMP]`       | Show or bump project version                          | `major`/`minor`/`patch`, updates bounds, propagates to all packages          |
 | `hwm publish [GROUP]`      | Build & upload packages                               | For groups with `publish: true` or specified, runs sdist/upload              |
 | `hwm status`               | Show project/env/workspace overview                   | Displays project name, version, envs, workspace structure                    |
+### hwm environment add <name> <resolver>
 
+Adds a new environment to the build matrix. The GHC version is inferred from the resolver (e.g., lts-22.30). The new environment is appended to the matrix in `hwm.yaml`.
+
+**Validation & Suggestions:**
+- The resolver is validated against the live Stackage snapshot list.
+- If the resolver is not found, the CLI suggests the closest available snapshot(s) by prefix, and shows the first 12 non-nightly LTS snapshots and popular LTS versions from Stackage's snapshot index.
+- Suggestions are fetched from both the Stackage API and https://www.stackage.org/download/snapshots.json for maximum user guidance.
+
+**Example:**
+
+```bash
+hwm environment add stable lts-24.25
+hwm environment add nightly nightly-2026-02-18
+```
+
+**Behavior:**
+- Validates the resolver and suggests alternatives if not found
+- Fetches the GHC version for the given resolver
+- Adds the environment to the matrix
+- Updates `hwm.yaml` and recalculates the file hash
+
+### hwm environment remove <name>
+
+Removes an environment from the build matrix by name.
+
+**Example:**
+
+```bash
+hwm environment remove nightly-2026-02-18
+```
+
+**Behavior:**
+- Removes the environment from the matrix
+- Updates `hwm.yaml` and recalculates the file hash
+
+### hwm environment set-default <name>
+
+Sets the default environment for the build matrix. This environment will be used as the default for commands and builds.
+
+**Example:**
+
+```bash
+hwm environment set-default stable
+```
+
+**Behavior:**
+- Marks the given environment as the default in `hwm.yaml`
+- Updates the matrix and recalculates the file hash
+
+### hwm environment ls
+
+Lists all environments in the build matrix, showing their names, GHC versions, and resolvers.
+
+**Example:**
+
+```bash
+hwm environment ls
+```
+
+**Behavior:**
+- Displays all configured environments, their GHC versions, and resolvers
+- Marks the default environment
 **Global Flags:**  
 `--version` (show CLI version), `--quiet` (suppress logs), `--help` (show help)
 

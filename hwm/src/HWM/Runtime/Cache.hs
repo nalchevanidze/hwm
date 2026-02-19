@@ -24,6 +24,7 @@ module HWM.Runtime.Cache
     getSnapshot,
     getVersion,
     getLatestNightlySnapshot,
+    http,
   )
 where
 

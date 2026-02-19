@@ -24,7 +24,6 @@ import Options.Applicative
     metavar,
     prefs,
     progDesc,
-    short,
     showHelpOnError,
     str,
     subparser,
@@ -89,6 +88,11 @@ parseCommand =
         Just "rg",
         "Manage the dependency registry (add, audit, ls).",
         Registry <$> parseCLI
+      ),
+      ( "environment",
+        Just "ev",
+        "Manage build environments (add, remove, set-default, ls).",
+        Env <$> parseCLI
       )
     ]
     <|> (Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI)

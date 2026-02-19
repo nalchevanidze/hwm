@@ -26,7 +26,6 @@ hwm init --new <project-name> [options]
 * **Git Initialization:** Runs `git init` and generates a comprehensive `.gitignore`.
 * **Hybrid Setup:** Ensures the generated Stack resolver matches the Nix compiler version.
 
-#### Options
 
 * `--template=NAME`: Use a specific starter template (lib, exe, servant, etc.)
 * `--interactive`: Prompt for details instead of using defaults.
@@ -46,7 +45,6 @@ Enhance `hwm init` (for existing directories) with additional configuration opti
 * Example: `hwm init --name=my-awesome-project`
 
 
-**`--version=VERSION`**
 * Override inferred project version.
 * Use case: Set a specific starting version instead of auto-detection.
 * Example: `hwm init --version=1.0.0`
@@ -154,10 +152,10 @@ hwm init --template=library      # Public library defaults
 Add dedicated commands for environment manipulation without editing `hwm.yaml`.
 
 ```bash
-hwm env add nightly-2024-12-01 --ghc=9.8.1
-hwm env remove legacy
-hwm env copy stable testing --ghc=9.6.6
-hwm env set-default stable
+hwm environment add nightly-2024-12-01 --ghc=9.8.1
+hwm environment remove legacy
+hwm environment copy stable testing --ghc=9.6.6
+hwm environment set-default stable
 
 ```
 
@@ -276,14 +274,7 @@ By moving the complexity of workspace management into a declarative, automated t
 
 
 ✔️  📋 <code>hwm registry</code> (subcommands: <code>add, audit, ls</code>) [Done]
-
-### 🌍 `hwm matrix` (Alias: `env`)
-
-**Purpose:** Manages build environments and GHC/resolver configurations.
-
-* **`add <name>`**: Interactively adds a new environment to the build matrix.
-* **`ls`**: Lists all available environments and identifies the currently active one.
-* **`run <script> --env=<env>`**: Executes commands across specific or all matrix environments in parallel.
+✔️  📋 <code>hwm environment</code> (subcommands: <code>add, ls, set-default, remove</code>) [Done]
 
 ### 📦 `hwm workspace` (Alias: `pkg`)
 
