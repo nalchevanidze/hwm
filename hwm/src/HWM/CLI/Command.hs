@@ -12,10 +12,10 @@ module HWM.CLI.Command
 where
 
 import Data.Version (showVersion)
+import HWM.CLI.Command.Environment (EnvCommand, runEnv)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
 import HWM.CLI.Command.Publish (publish)
 import HWM.CLI.Command.Registry (RegistryCommand, runRegistry)
-import HWM.CLI.Command.Environment (EnvCommand, runEnv)
 import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
 import HWM.CLI.Command.Sync (sync)
@@ -40,7 +40,6 @@ data Command
 
 currentVersion :: String
 currentVersion = showVersion CLI.version
-
 
 -- | Run the top-level command
 command :: Command -> ConfigT ()
