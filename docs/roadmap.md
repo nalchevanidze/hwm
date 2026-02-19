@@ -1,4 +1,3 @@
-
 # HWM Feature Roadmap
 
 **Audience:** Contributors, Maintainers, Planners
@@ -8,25 +7,7 @@ This document outlines potential features and enhancements for HWM. These are su
 
 ---
 
-
-## 1. Version Command: Direct Set
-
-Allow `hwm version` to accept specific version numbers, not just bump types.
-
-**Syntax:**
-
-```bash
-hwm version 2.0.0   # Set to specific version
-hwm version 1.5.2   # Jump to arbitrary version
-```
-
-- Extend `data Bump = Major | Minor | Patch | Set Version`
-- Parse version string as alternative to bump keyword
-- Validate SemVer format
-- Warn on non-monotonic version changes
-
-
-## 2. Init Enhancements
+## Init Enhancements
 
 **Options:**
 
@@ -57,8 +38,7 @@ Preview:
 Write to hwm.yaml? (y/n)
 ```
 
-
-## 3. Registry Management
+## Registry Management
 
 Automate tedious Haskell maintenance tasks:
 
@@ -73,14 +53,12 @@ hwm registry prune --unused
 - Circular dependencies: Detect cycles between internal workspace packages.
 - Unreachable packages: List packages present in directory but not included in any environment matrix.
 
-
-## 4. Workspace Management
+## Workspace Management
 
 Manage monorepo structure and member metadata:
 
 - `ws add <dir>`: Scaffold a new package and register as workspace member.
 - `ws ls`: Display workspace tree, grouping members by logical groups (e.g., `libs`, `apps`).
-
 
 ---
 

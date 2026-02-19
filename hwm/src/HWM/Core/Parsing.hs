@@ -16,11 +16,14 @@ module HWM.Core.Parsing
     parsePkgString,
     ParseCLI (..),
     flag,
+    ignoreSpaces,
+    isVersionLike,
   )
 where
 
 import Data.ByteString.Char8 (unpack)
 import Data.Char (isSeparator)
+import Data.Foldable (null)
 import Data.Text
   ( break,
     drop,
@@ -70,6 +73,9 @@ breakAt f = bimap strip strip . break f . strip
 
 sepBy :: (MonadFail m, Parse a) => SourceText -> SourceText -> m [a]
 sepBy sep = traverse parse . splitOn sep . ignoreSpaces
+
+isVersionLike :: Text -> Bool
+isVersionLike = not . null . splitOn "." . ignoreSpaces
 
 removeHead :: Char -> SourceText -> (Bool, SourceText)
 removeHead should txt = maybe (False, txt) has (uncons txt)

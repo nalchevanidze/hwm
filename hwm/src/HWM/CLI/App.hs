@@ -11,7 +11,7 @@ where
 
 import qualified Data.Text as T
 import HWM.CLI.Command (Command (..), Options (..), currentVersion, defaultOptions, runCommand)
-import HWM.Core.Parsing (Parse (..), ParseCLI (..), flag)
+import HWM.Core.Parsing (ParseCLI (..), flag)
 import Options.Applicative
   ( Parser,
     argument,
@@ -62,7 +62,7 @@ parseCommand =
       ( "version",
         Nothing,
         "Show version or bump it (patch | minor | major).",
-        Version <$> optional (argument (str >>= parse) (metavar "BUMP" <> help "Version bump type or specific version number"))
+        Version <$> parseCLI
       ),
       ( "publish",
         Nothing,
