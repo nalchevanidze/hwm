@@ -23,6 +23,7 @@ module HWM.Domain.Workspace
     parseWorkspaceId,
     forWorkspaceCore,
     editWorkgroup,
+    existsWokspaceGroup,
   )
 where
 
@@ -113,6 +114,9 @@ resolveT pkgs (Just target) =
   case find (\p -> target == pkgMemberId p) pkgs of
     Just p -> pure [p]
     Nothing -> throwError $ fromString $ toString $ "Target not found: " <> target
+
+existsWokspaceGroup :: Name -> [WorkspaceGroup] -> Bool
+existsWokspaceGroup name groups = not $ any ((== name) . pkgGroupName) groups
 
 selectGroup :: (MonadError Issue m) => Name -> [WorkspaceGroup] -> m WorkspaceGroup
 selectGroup name groups =
