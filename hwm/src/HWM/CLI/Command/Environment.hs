@@ -16,7 +16,7 @@ import HWM.CLI.Command.Environment.Ls (EnvLsOptions, runEnvLs)
 import HWM.Domain.ConfigT (ConfigT)
 import Relude
 
--- | Subcommands for `hwm env`
+-- | Subcommands for `hwm environment`
 data EnvCommand
   = EnvAdd EnvAddOptions
   | EnvRemove EnvRemoveOptions

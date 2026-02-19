@@ -80,10 +80,10 @@ HWM supports robust environment (matrix) management:
 
 - **Add:**
   ```bash
-  hwm env add <name> <resolver>
+  hwm environment add <name> <resolver>
   # e.g.
-  hwm env add stable lts-24.25
-  hwm env add nightly nightly-2026-02-18
+  hwm environment add stable lts-24.25
+  hwm environment add nightly nightly-2026-02-18
   ```
   - Validates the resolver against Stackage and suggests close matches if not found (shows LTS suggestions and popular versions).
   - Infers the GHC version from the resolver.
@@ -91,23 +91,23 @@ HWM supports robust environment (matrix) management:
 
 - **Remove:**
   ```bash
-  hwm env remove <name>
+  hwm environment remove <name>
   # e.g.
-  hwm env remove nightly-2026-02-18
+  hwm environment remove nightly-2026-02-18
   ```
   - Removes the environment from the matrix and updates `hwm.yaml`.
 
 - **Set Default:**
   ```bash
-  hwm env set-default <name>
+  hwm environment set-default <name>
   # e.g.
-  hwm env set-default stable
+  hwm environment set-default stable
   ```
   - Sets the default environment for builds and commands.
 
 - **List:**
   ```bash
-  hwm env ls
+  hwm environment ls
   ```
   - Lists all environments, their GHC versions, and resolvers. Marks the default environment.
 

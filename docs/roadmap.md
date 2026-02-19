@@ -152,10 +152,10 @@ hwm init --template=library      # Public library defaults
 Add dedicated commands for environment manipulation without editing `hwm.yaml`.
 
 ```bash
-hwm env add nightly-2024-12-01 --ghc=9.8.1
-hwm env remove legacy
-hwm env copy stable testing --ghc=9.6.6
-hwm env set-default stable
+hwm environment add nightly-2024-12-01 --ghc=9.8.1
+hwm environment remove legacy
+hwm environment copy stable testing --ghc=9.6.6
+hwm environment set-default stable
 
 ```
 
