@@ -8,12 +8,14 @@ import Control.Monad.Except (throwError)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
+import HWM.Core.Formatting (Format (..), padDots)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
 import HWM.Domain.Matrix (Matrix (..), newEnv)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Snapshots (SnapshotInfo (..), fetchLtsSuggestions, fetchStackageSnapshots)
+import HWM.Runtime.UI (putLine, section, sectionTableM)
 import Options.Applicative (help, metavar, strArgument)
 import Relude
 
@@ -36,18 +38,24 @@ printSuggestions [] alt
 printSuggestions [s] _ = " Did you mean '" <> s <> "'?"
 printSuggestions suggestions _ = " Did you mean one of: " <> T.intercalate ", " suggestions <> "?"
 
+size :: Int
+size = 16
+
 runEnvAdd :: EnvAddOptions -> ConfigT ()
-runEnvAdd EnvAddOptions {..} = do
-  shortLtsMap <- fetchLtsSuggestions
+runEnvAdd EnvAddOptions {..} = section "new environment" $ do
+  putLine $ padDots size "name" <> envName
+  ltsMap <- fetchLtsSuggestions
   snapshots <- map snapshotName <$> fetchStackageSnapshots
-  let suggestions = M.elems shortLtsMap <> take 12 (filter (not . isPrefixOf "nightly" . toString) snapshots)
+  let suggestions = M.elems ltsMap <> take 12 (filter (not . isPrefixOf "nightly" . toString) snapshots)
   let prefixMatches = filter (isPrefixOf (toString envResolver) . toString) snapshots
-  case M.lookup envResolver shortLtsMap <|> find (== envResolver) snapshots of
+  case M.lookup envResolver ltsMap <|> find (== envResolver) snapshots of
     Nothing -> throwError $ fromString $ "Resolver '" <> toString envResolver <> "' is not a valid Stackage snapshot." <> toString (printSuggestions prefixMatches suggestions)
-    Just snapshot -> do
+    Just resolver -> do
+      putLine $ padDots size "resolver" <> envName
       updateConfig
         ( \cfg@Config {..} -> do
-            ghc <- getSnapshotGHC snapshot
-            pure cfg {matrix = matrix {environments = environments matrix <> [newEnv envName ghc snapshot]}}
+            ghc <- getSnapshotGHC resolver
+            putLine $ padDots size "ghc" <> format ghc
+            pure cfg {matrix = matrix {environments = environments matrix <> [newEnv envName ghc resolver]}}
         )
         (pure ())
