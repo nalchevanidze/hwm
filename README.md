@@ -223,12 +223,14 @@ Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM prov
 
 ## 🔮 Roadmap
 
-HWM is actively evolving. While the **Workspace** and **Matrix** engines are stable (used in Morpheus), we are building the following "Day 2" operations:
+HWM is actively evolving. While the core Workspace and Matrix engines are stable, we are actively building the following "Day 2" operations:
 
-* [ ] **Dependency Pruning:** Analyzing unused imports to keep the project clean.
-* [ ] **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml`.
+* **Scaffolding (`v0.2.0`):** Smart `hwm ws add` commands to instantly generate new packages with correct boilerplate and prefixes.
+* **Release Orchestration:** Fully automated binary building and Hackage publishing pipelines.
+* **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml` for seamless Nix coexistence.
+* **Dependency Pruning:** Automated detection of unused imports to keep your monorepo clean.
 
----
+> 📄 **See the [Full Feature Roadmap](docs/roadmap.md)** for detailed plans and upcoming CLI designs.
 
 ## 🧬 Status
 
