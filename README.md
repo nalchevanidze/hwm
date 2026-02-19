@@ -74,6 +74,8 @@ matrix:
     - { name: stable, ghc: 9.6.3, resolver: lts-22.6 }
     - { name: nightly, ghc: 9.10.1, resolver: nightly-2024-05-22 }
 
+```
+
 ## 🌐 Environment Management
 
 HWM supports robust environment (matrix) management:
@@ -121,7 +123,6 @@ This ensures you always have guidance to pick a valid resolver.
     # Note: Nightly resolvers must use the date-stamped format
     - { name: nightly, ghc: 9.10.1, resolver: nightly-2024-05-22 } 
 
-```
 
 ### 2. Synchronization (`hwm sync`)
 
