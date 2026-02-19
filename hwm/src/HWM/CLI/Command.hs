@@ -16,6 +16,7 @@ import HWM.CLI.Command.Environment (EnvCommand, runEnv)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
 import HWM.CLI.Command.Publish (publish)
 import HWM.CLI.Command.Registry (RegistryCommand, runRegistry)
+import HWM.CLI.Command.Workspace (WorkspaceCommand, runWorkspace)
 import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
 import HWM.CLI.Command.Sync (sync)
@@ -36,6 +37,7 @@ data Command
   | Init {initOptions :: InitOptions}
   | Registry RegistryCommand
   | Env EnvCommand
+  | Workspace WorkspaceCommand
   deriving (Show)
 
 currentVersion :: String
@@ -51,6 +53,7 @@ command Status = showStatus
 command Init {} = pure ()
 command (Registry options) = runRegistry options
 command (Env options) = runEnv options
+command (Workspace options) = runWorkspace options
 
 -- EnvCommand and runEnv are now defined in Command.Environment
 

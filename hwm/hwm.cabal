@@ -47,6 +47,9 @@ library
       HWM.CLI.Command.Status
       HWM.CLI.Command.Sync
       HWM.CLI.Command.Version
+      HWM.CLI.Command.Workspace
+      HWM.CLI.Command.Workspace.Add
+      HWM.CLI.Command.Workspace.Ls
       HWM.Core.Common
       HWM.Core.Formatting
       HWM.Core.Has
