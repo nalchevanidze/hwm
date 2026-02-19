@@ -9,7 +9,7 @@ import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
-import HWM.Domain.Workspace (WorkspaceGroup (..), askWorkspaceGroups, forWorkspace, parseWorkspaceId, selectGroup)
+import HWM.Domain.Workspace (WorkspaceGroup (..), askWorkspaceGroups, editWorkgroup, forWorkspace, forWorkspaceTuple, parseWorkspaceId, selectGroup)
 import HWM.Runtime.UI (putLine)
 import Options.Applicative (help, long, metavar, strArgument, strOption, switch)
 import Relude
@@ -38,10 +38,15 @@ runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Just memberId), ..
   when publish $ injectIssue (noEffect "publish")
   when (isJust prefix) $ injectIssue (noEffect "prefix")
   when (isJust workspaceDir) $ injectIssue (noEffect "dir")
-  wsGroup <- selectGroup groupId =<< askWorkspaceGroups
-  -- TODO: implement package addition
-  putLine $ "Adding package: " <> memberId <> " to workspace group: " <> show wsGroup
-  forWorkspace (const $ pure ())
+
+  updateConfig
+    ( \cfg ->
+        ( do
+            ws <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
+            pure $ cfg {workspace = ws}
+        )
+    )
+    $ forWorkspaceTuple [] (const $ pure "")
   pure ()
   where
     noEffect label =

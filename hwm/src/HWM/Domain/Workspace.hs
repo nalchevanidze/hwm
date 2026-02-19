@@ -22,6 +22,7 @@ module HWM.Domain.Workspace
     forWorkspaceTuple,
     parseWorkspaceId,
     forWorkspaceCore,
+    editWorkgroup,
   )
 where
 
@@ -165,7 +166,7 @@ forWorkspaceCore f = do
         status <- f pkg
         putLine $ subPathSign <> padDots maxLen (pkgMemberId pkg) <> status
 
-forWorkspaceTuple :: (MonadUI m, Foldable t) => t (Text, [Pkg]) -> (Pkg -> m Text) -> m ()
+forWorkspaceTuple :: (MonadUI m) => [(Text, [Pkg])] -> (Pkg -> m Text) -> m ()
 forWorkspaceTuple ws f = sectionWorkspace $ do
   let maxLen = genMaxLen (map pkgMemberId $ concatMap snd ws)
   for_ ws $ \(name, pkgs) -> do
@@ -174,3 +175,9 @@ forWorkspaceTuple ws f = sectionWorkspace $ do
     for_ pkgs $ \pkg -> do
       status <- f pkg
       putLine (subPathSign <> padDots maxLen (pkgMemberId pkg) <> status)
+
+editWorkgroup :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => Name -> (WorkspaceGroup -> WorkspaceGroup) -> m [WorkspaceGroup]
+editWorkgroup name f = do
+  ws <- askWorkspaceGroups
+  _ <- selectGroup name ws
+  pure $ map (\g -> if pkgGroupName g == name then f g else g) ws
