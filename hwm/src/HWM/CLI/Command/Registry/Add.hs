@@ -15,7 +15,7 @@ import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
 import HWM.Domain.Dependencies (Dependency (Dependency), lookupBounds, singleDeps)
 import HWM.Domain.Matrix (getTestedRange)
-import HWM.Domain.Workspace (resolveWorkspaces)
+import HWM.Domain.Workspace (forWorkspaceTuple, resolveWorkspaces)
 import HWM.Integrations.Toolchain.Package
 import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM, sectionWorkspace)
 import Options.Applicative (argument, help, long, metavar, short, str)
@@ -58,9 +58,6 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
       addDepToPackage workspaces (Dependency opsPkgName bounds)
   where
     addDepToPackage ws dependency =
-      unless (null ws) $ sectionWorkspace $ do
-        let maxLen = genMaxLen (map pkgMemberId $ concatMap snd ws)
-        for_ ws $ \(name, pkgs) -> do
-          putLine ""
-          putLine $ "• " <> chalk Bold name
-          for_ pkgs $ \pkg -> updatePackage maxLen (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg
+      unless (null ws)
+        $ forWorkspaceTuple ws
+        $ \pkg -> updatePackage (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg

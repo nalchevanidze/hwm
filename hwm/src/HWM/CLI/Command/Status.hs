@@ -7,7 +7,7 @@ import HWM.Core.Formatting (Color (..), Format (..), chalk)
 import qualified HWM.Domain.Config as C
 import HWM.Domain.ConfigT (ConfigT, config)
 import HWM.Domain.Matrix (printEnvironments)
-import HWM.Domain.Workspace (printWorkspace)
+import HWM.Domain.Workspace (forWorkspace)
 import HWM.Integrations.Toolchain.Package (validatePackage)
 import HWM.Runtime.UI (sectionTableM)
 import Relude
@@ -23,4 +23,4 @@ showStatus = do
       ("version", pure $ chalk Green (format $ C.version cfg))
     ]
   printEnvironments Nothing
-  printWorkspace validatePackage
+  forWorkspace validatePackage

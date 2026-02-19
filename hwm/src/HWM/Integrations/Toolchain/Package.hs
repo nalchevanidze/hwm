@@ -118,23 +118,19 @@ syncPackages = sectionWorkspace $ do
     putLine $ "• " <> chalk Bold (pkgGroupName g)
     dirs <- memberPkgs g
     let maxLen = genMaxLen (map pkgMemberId dirs)
-    for_ dirs $ \pkg -> updatePackage maxLen (mapPackage pkg) pkg
+    for_ dirs $ \pkg -> updatePackage (mapPackage pkg) pkg
 
 packageModifyDependencies :: (Dependencies -> ConfigT Dependencies) -> Package -> ConfigT Package
 packageModifyDependencies f Package {..} = do
   newDependencies <- f dependencies
   pure Package {dependencies = newDependencies, ..}
 
-updatePackage :: Int -> (Package -> ConfigT Package) -> Pkg -> ConfigT ()
-updatePackage maxLen f pkg = do
+updatePackage :: (Package -> ConfigT Package) -> Pkg -> ConfigT Text
+updatePackage f pkg = do
   let path = pkgYamlPath pkg
   package <- statusM path (rewrite_ path maybePackage)
   cabal <- syncCabal pkg
-  putLine
-    ( subPathSign
-        <> padDots maxLen (pkgMemberId pkg)
-        <> displayStatus [("pkg", package), ("cabal", cabal)]
-    )
+  pure $ displayStatus [("pkg", package), ("cabal", cabal)]
   where
     maybePackage Nothing =
       throwError

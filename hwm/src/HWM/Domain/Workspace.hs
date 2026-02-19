@@ -18,7 +18,8 @@ module HWM.Domain.Workspace
     buildWorkspaceGroups,
     askWorkspaceGroups,
     resolveWorkspaces,
-    printWorkspace,
+    forWorkspace,
+    forWorkspaceTuple,
     parseWorkspaceId,
   )
 where
@@ -144,8 +145,8 @@ derivePublish names
     loweredNames = map T.toLower names
     nonPublish = ["examples", "example", "bench", "benchmarks"]
 
-printWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => (Pkg -> m ()) -> m ()
-printWorkspace f = do
+forWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkspaceGroup]) => (Pkg -> m ()) -> m ()
+forWorkspace f = do
   gs <- askWorkspaceGroups
   sectionWorkspace
     $ for_ gs
@@ -157,3 +158,13 @@ printWorkspace f = do
       for_ pkgs $ \pkg -> do
         status <- monadStatus (f pkg)
         putLine $ subPathSign <> padDots maxLen (pkgMemberId pkg) <> statusIcon status
+
+forWorkspaceTuple :: (MonadUI m, Foldable t) => t (Text, [Pkg]) -> (Pkg -> m Text) -> m ()
+forWorkspaceTuple ws f = sectionWorkspace $ do
+  let maxLen = genMaxLen (map pkgMemberId $ concatMap snd ws)
+  for_ ws $ \(name, pkgs) -> do
+    putLine ""
+    putLine $ "• " <> chalk Bold name
+    for_ pkgs $ \pkg -> do
+      status <- f pkg
+      putLine (subPathSign <> padDots maxLen (pkgMemberId pkg) <> status)
