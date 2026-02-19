@@ -6,6 +6,7 @@ module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) wher
 
 import HWM.Core.Common (Name)
 import HWM.Core.Parsing (ParseCLI (..))
+import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
 import HWM.Domain.Workspace (WorkspaceGroup (..), askWorkspaceGroups, parseWorkspaceId, selectGroup)
@@ -26,7 +27,7 @@ instance ParseCLI WorkspaceAddOptions where
     (WorkspaceAddOptions . parseWorkspaceId <$> strArgument (metavar "NAME" <> help "Name of the workspace to add"))
       <*> optional (strOption (long "dir" <> help "Directory for the workspace (defaults to group name)"))
       <*> optional (strOption (long "prefix" <> help "Prefix to add to all member package names"))
-      <*> switch (long "publish" <> help "Whether packages in this workspace should be published (true/false)")
+      <*> switch (long "publish" <> help "Set if packages in this workspace should be published (use --publish for True, omit for False)")
 
 runWorkspaceAdd :: WorkspaceAddOptions -> ConfigT ()
 runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Nothing), ..}) = do
@@ -34,7 +35,18 @@ runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Nothing), ..}) = d
   putLine $ "Adding workspace group: " <> groupId
   updateConfig (\cfg -> pure $ cfg {workspace = workspace cfg ++ [WorkspaceGroup groupId workspaceDir [] prefix (Just publish)]}) $ pure ()
 runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Just memberId), ..}) = do
+  when publish $ injectIssue (noEffect "publish")
+  when (isJust prefix) $ injectIssue (noEffect "prefix")
+  when (isJust workspaceDir) $ injectIssue (noEffect "dir")
   wsGroup <- selectGroup groupId =<< askWorkspaceGroups
   -- TODO: implement package addition
   putLine $ "Adding package: " <> memberId <> " to workspace group: " <> show wsGroup
   pure ()
+  where
+    noEffect label =
+      Issue
+        { issueTopic = memberId,
+          issueMessage = "option \"--" <> label <> "\" is only relevant when adding a workspace group. They have no effect when adding a member package.",
+          issueSeverity = SeverityWarning,
+          issueDetails = Nothing
+        }
