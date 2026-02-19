@@ -116,7 +116,7 @@ resolveT pkgs (Just target) =
     Nothing -> throwError $ fromString $ toString $ "Target not found: " <> target
 
 existsWokspaceGroup :: Name -> [WorkspaceGroup] -> Bool
-existsWokspaceGroup name groups = not $ any ((== name) . pkgGroupName) groups
+existsWokspaceGroup name = any ((== name) . pkgGroupName)
 
 selectGroup :: (MonadError Issue m) => Name -> [WorkspaceGroup] -> m WorkspaceGroup
 selectGroup name groups =

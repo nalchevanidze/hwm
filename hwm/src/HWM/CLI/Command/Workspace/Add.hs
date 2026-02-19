@@ -9,7 +9,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatus, padDots, subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
-import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityWarning))
+import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityError, SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
 import HWM.Domain.Workspace (WorkspaceGroup (..), editWorkgroup, existsWokspaceGroup, parseWorkspaceId)
@@ -38,21 +38,20 @@ instance ParseCLI WorkspaceAddOptions where
 runWorkspaceAdd :: WorkspaceAddOptions -> ConfigT ()
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Nothing), ..}) = do
   wss <- asks (workspace . config)
-  when (existsWokspaceGroup groupId wss)
-    $ throwError
-      Issue
-        { issueTopic = groupId,
-          issueMessage = "A workspace group with this name already exists.",
-          issueSeverity = SeverityWarning,
-          issueDetails = Nothing
-        }
-
-  let ws = wss ++ [WorkspaceGroup groupId opsWorkspaceDir [] opsPrefix (Just opsPublish)]
-  updateConfig (\cfg -> pure $ cfg {workspace = ws})
-    $ sectionWorkspace
-    $ do
-      putLine ""
-      putLine $ "• " <> chalk Bold groupId <> " " <> displayStatus [("added", Checked)]
+  if existsWokspaceGroup groupId wss
+    then
+      throwError
+        Issue
+          { issueTopic = groupId,
+            issueMessage = "A workspace group \"" <> groupId <> "\" already exists.",
+            issueSeverity = SeverityError,
+            issueDetails = Nothing
+          }
+    else do
+      let ws = wss ++ [WorkspaceGroup groupId opsWorkspaceDir [] opsPrefix (Just opsPublish)]
+      updateConfig (\cfg -> pure $ cfg {workspace = ws}) $ sectionWorkspace $ do
+        putLine ""
+        putLine $ "• " <> chalk Bold groupId <> " " <> displayStatus [("added", Checked)]
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId), ..}) = do
   when opsPublish $ injectIssue (noEffect "publish")
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
