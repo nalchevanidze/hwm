@@ -5,12 +5,13 @@
 module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) where
 
 import HWM.Core.Common (Name)
+import HWM.Core.Formatting (Color (Bold), Status (Checked), chalk, displayStatus, padDots, subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
-import HWM.Domain.Workspace (WorkspaceGroup (..), editWorkgroup, forWorkspaceTuple, parseWorkspaceId)
-import HWM.Runtime.UI (putLine)
+import HWM.Domain.Workspace (WorkspaceGroup (..), editWorkgroup, parseWorkspaceId)
+import HWM.Runtime.UI (putLine, sectionWorkspace)
 import Options.Applicative (help, long, metavar, strArgument, strOption, switch)
 import Relude
 
@@ -31,9 +32,11 @@ instance ParseCLI WorkspaceAddOptions where
 
 runWorkspaceAdd :: WorkspaceAddOptions -> ConfigT ()
 runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Nothing), ..}) = do
-  -- TODO: implement group addition
-  putLine $ "Adding workspace group: " <> groupId
-  updateConfig (\cfg -> pure $ cfg {workspace = workspace cfg ++ [WorkspaceGroup groupId workspaceDir [] prefix (Just publish)]}) $ pure ()
+  updateConfig (\cfg -> pure $ cfg {workspace = workspace cfg ++ [WorkspaceGroup groupId workspaceDir [] prefix (Just publish)]})
+    $ sectionWorkspace
+    $ do
+      putLine ""
+      putLine $ "• " <> chalk Bold groupId <> " " <> displayStatus [("added", Checked)]
 runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Just memberId), ..}) = do
   when publish $ injectIssue (noEffect "publish")
   when (isJust prefix) $ injectIssue (noEffect "prefix")
@@ -46,7 +49,11 @@ runWorkspaceAdd (WorkspaceAddOptions {workspaceId = (groupId, Just memberId), ..
             pure $ cfg {workspace = ws}
         )
     )
-    $ forWorkspaceTuple [] (const $ pure "")
+    $ sectionWorkspace
+    $ do
+      putLine ""
+      putLine $ "• " <> chalk Bold groupId
+      putLine $ subPathSign <> padDots 16 memberId <> displayStatus [("added", Checked)]
   pure ()
   where
     noEffect label =
