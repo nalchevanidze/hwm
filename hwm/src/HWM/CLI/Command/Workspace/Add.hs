@@ -44,14 +44,10 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId),
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
 
-  updateConfig
-    ( \cfg ->
-        ( do
-            (ws, w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
-            _ <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (resolvePrefix (prefix w) memberId)
-            pure $ cfg {workspace = ws}
-        )
-    )
+  (ws, w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
+  scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (resolvePrefix (prefix w) memberId)
+
+  updateConfig (\cfg -> pure $ cfg {workspace = ws})
     $ sectionWorkspace
     $ do
       putLine ""
