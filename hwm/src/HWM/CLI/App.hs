@@ -64,16 +64,6 @@ parseCommand =
         "Show version or bump it (patch | minor | major).",
         Version <$> parseCLI
       ),
-      ( "publish",
-        Nothing,
-        "Release related commands, including package release and publishing to Hackage.",
-        Release <$> parseCLI
-      ),
-      ( "release",
-        Nothing,
-        "Release orchestration and native archiving.",
-        Release <$> parseCLI
-      ),
       ( "run",
         Nothing,
         "Run a script defined in hwm.yaml",
@@ -103,6 +93,11 @@ parseCommand =
         Just "ws",
         "Manage workspaces (add, ls).",
         Workspace <$> parseCLI
+      ),
+      ( "release",
+        Nothing,
+        "Release related commands, including package release and publishing to Hackage.",
+        Release <$> parseCLI
       )
     ]
     <|> (Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI)

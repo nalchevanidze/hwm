@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Release.Publish (publish) where
+module HWM.CLI.Command.Release.Publish (PublishOptions (..), runPublish) where
 
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Text as T
@@ -36,6 +36,7 @@ failIssues issues = do
 newtype PublishOptions = PublishOptions
   { publishGroup :: Maybe Name
   }
+  deriving (Show)
 
 instance ParseCLI PublishOptions where
   parseCLI =
@@ -51,8 +52,8 @@ collectGroups (Just target) ws = do
     throwError $ fromString $ toString $ "Target group \"" <> pkgGroupName g <> "\" cannot be published. Check workspace group configuration."
   pure groups
 
-publish :: PublishOptions -> ConfigT ()
-publish PublishOptions {..} = do
+runPublish :: PublishOptions -> ConfigT ()
+runPublish PublishOptions {..} = do
   ws <- askWorkspaceGroups
   groups <- collectGroups publishGroup ws
   version <- askVersion
