@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Release.Archive (ReleasePackageOptions (..), parseCLI, runReleasePackage) where
+module HWM.CLI.Command.Release.Archive (ReleaseArchiveOptions (..), parseCLI, runReleaseArchive) where
 
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
@@ -16,24 +16,24 @@ import Options.Applicative (help, long, metavar, strOption)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
 
--- | Options for 'hwm release package'
-data ReleasePackageOptions = ReleasePackageOptions
+-- | Options for 'hwm release archive'
+data ReleaseArchiveOptions = ReleaseArchiveOptions
   { packageName :: Name,
     outFile :: Maybe FilePath
   }
   deriving (Show)
 
-instance ParseCLI ReleasePackageOptions where
+instance ParseCLI ReleaseArchiveOptions where
   parseCLI =
-    ReleasePackageOptions
+    ReleaseArchiveOptions
       <$> strOption (long "package" <> metavar "PACKAGE" <> help "Name of the package to release")
       <*> optional (strOption (long "out" <> metavar "FILE" <> help "Export resulting file paths to FILE"))
 
 releaseDir :: FilePath
 releaseDir = ".hwm/release"
 
-runReleasePackage :: ReleasePackageOptions -> ConfigT ()
-runReleasePackage opts = do
+runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
+runReleaseArchive opts = do
   let pkgName = packageName opts
       outPath = outFile opts
 
