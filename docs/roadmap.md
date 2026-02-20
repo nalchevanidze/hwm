@@ -88,7 +88,6 @@ workspace:
       checksum: sha256          
       include:                  
         - custom-config.yaml
-
 ```
 
 **CLI & Universal CI Integration:**
@@ -97,7 +96,6 @@ Build, rename, optimize, bundle, zip, and hash artifacts in one step. Use `--out
 ```bash
 # Natively build, archive, hash, and export asset paths
 hwm release archive cli-tools --out=release.env
-
 ```
 
 **Key Capabilities:**
