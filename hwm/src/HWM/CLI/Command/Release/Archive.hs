@@ -2,7 +2,12 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Release.Archive (ReleaseArchiveOptions (..), parseCLI, runReleaseArchive) where
+module HWM.CLI.Command.Release.Archive
+  ( ReleaseArchiveOptions (..),
+    parseCLI,
+    runReleaseArchive,
+  )
+where
 
 import qualified Data.Text as T
 import HWM.Core.Common (Name)

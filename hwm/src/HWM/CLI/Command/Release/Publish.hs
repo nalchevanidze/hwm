@@ -4,7 +4,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Release.Publish (PublishOptions (..), runPublish) where
+module HWM.CLI.Command.Release.Publish
+  ( PublishOptions (..),
+    runPublish,
+  )
+where
 
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Text as T

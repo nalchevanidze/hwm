@@ -1,7 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Release.Root (ReleaseCommand (..), runRelease) where
+module HWM.CLI.Command.Release.Root
+  ( ReleaseCommand (..),
+    runRelease,
+  )
+where
 
 import HWM.CLI.Command.Release.Archive (ReleaseArchiveOptions, runReleaseArchive)
 import HWM.CLI.Command.Release.Publish (PublishOptions, runPublish)
