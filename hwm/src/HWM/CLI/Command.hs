@@ -14,14 +14,13 @@ where
 import Data.Version (showVersion)
 import HWM.CLI.Command.Environment (EnvCommand, runEnv)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
-import HWM.CLI.Command.Publish (publish)
 import HWM.CLI.Command.Registry (RegistryCommand, runRegistry)
+import HWM.CLI.Command.Release.Root (ReleaseCommand (..), runRelease)
 import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
 import HWM.CLI.Command.Sync (sync)
 import HWM.CLI.Command.Version (VersionOptions, runVersion)
 import HWM.CLI.Command.Workspace (WorkspaceCommand, runWorkspace)
-import HWM.CLI.Command.Release.Root (ReleaseCommand, runRelease)
 import HWM.Core.Common (Name)
 import HWM.Core.Options (Options (..), defaultOptions)
 import HWM.Core.Version (Bump (..))
@@ -31,11 +30,11 @@ import Relude hiding (fix)
 
 data Command
   = Sync {tag :: Maybe Name}
-  | Publish {groupName :: Maybe Name}
   | Version VersionOptions
   | Run {scriptName :: Name, runOptions :: ScriptOptions}
   | Status
   | Init {initOptions :: InitOptions}
+  -- Domain-specific commands
   | Registry RegistryCommand
   | Env EnvCommand
   | Workspace WorkspaceCommand
@@ -47,7 +46,7 @@ currentVersion = showVersion CLI.version
 
 -- | Run the top-level command
 command :: Command -> ConfigT ()
-command Publish {groupName} = publish groupName
+command (Release cmd) = runRelease cmd
 command (Version options) = runVersion options
 command Sync {tag} = sync tag
 command Run {scriptName, runOptions} = runScript scriptName runOptions
@@ -56,7 +55,6 @@ command Init {} = pure ()
 command (Registry options) = runRegistry options
 command (Env options) = runEnv options
 command (Workspace options) = runWorkspace options
-command (Release options) = runRelease options
 
 -- EnvCommand and runEnv are now defined in Command.Environment
 

@@ -66,8 +66,8 @@ parseCommand =
       ),
       ( "publish",
         Nothing,
-        "Upload packages to Hackage/Registry.",
-        Publish <$> optional (argument str (metavar "GROUP" <> help "Name of the workspace group to publish (default: all)"))
+        "Release related commands, including package release and publishing to Hackage.",
+        Release <$> parseCLI
       ),
       ( "release",
         Nothing,

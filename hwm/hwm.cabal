@@ -38,12 +38,12 @@ library
       HWM.CLI.Command.Environment.Remove
       HWM.CLI.Command.Environment.SetDefault
       HWM.CLI.Command.Init
-      HWM.CLI.Command.Publish
       HWM.CLI.Command.Registry
       HWM.CLI.Command.Registry.Add
       HWM.CLI.Command.Registry.Audit
       HWM.CLI.Command.Registry.Ls
       HWM.CLI.Command.Release.Package
+      HWM.CLI.Command.Release.Publish
       HWM.CLI.Command.Release.Root
       HWM.CLI.Command.Run
       HWM.CLI.Command.Status

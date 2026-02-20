@@ -10,8 +10,10 @@ import Options.Applicative (command, hsubparser, info, progDesc)
 import Relude
 
 -- | Top-level parser for 'release' command
-data ReleaseCommand 
-    = ReleasePackage ReleasePackageOptions deriving (Show)
+data ReleaseCommand
+  = ReleasePackage ReleasePackageOptions
+  | Publish
+  deriving (Show)
 
 instance ParseCLI ReleaseCommand where
   parseCLI =
