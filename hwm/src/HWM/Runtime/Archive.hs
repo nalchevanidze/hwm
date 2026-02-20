@@ -9,6 +9,11 @@ import qualified Codec.Archive.Zip as Zip
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (throwError)
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString as BS
+import qualified Crypto.Hash.SHA256 as SHA256
+import qualified Data.ByteString.Base16 as Base16
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Result (Issue)
@@ -17,7 +22,7 @@ import Relude
 import System.Directory (doesFileExist)
 import System.FilePath.Posix (joinPath, normalise, (</>))
 
-data ArchiveInfo = ArchiveInfo {zipPath :: FilePath, binName :: Name}
+data ArchiveInfo = ArchiveInfo {zipPath :: FilePath, binName :: Name, sha256 :: T.Text}
 
 createZipArchive ::
   (MonadIO m, MonadError Issue m) =>
@@ -43,4 +48,9 @@ createZipArchive sourceDir name outDIr = do
   -- Add the entry to an empty archive and write to disk
   let archive = Zip.addEntryToArchive rootEntry Zip.emptyArchive
   liftIO $ BSL.writeFile zipPath (Zip.fromArchive archive)
+
+  -- Compute SHA256 hash of the archive
+  hashBS <- liftIO $ BS.readFile zipPath
+  let sha256 = T.decodeUtf8 (Base16.encode (SHA256.hash hashBS))
+
   pure ArchiveInfo {..}

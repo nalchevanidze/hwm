@@ -54,10 +54,8 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
   stackGenBinary pkgName releaseDir
 
   putLine "Compressing artifact..."
-  ArchiveInfo {..} <- createZipArchive releaseDir (fromMaybe (format pkgName) execName) "./"
 
-  -- TODO: Generate the real Hash (Placeholder for now, see next step)
-  let hash = "sha256-placeholder"
+  ArchiveInfo {..} <- createZipArchive releaseDir (fromMaybe (format pkgName) execName) "./"
 
   case outFile of
     Just file ->
@@ -67,9 +65,9 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
         $ T.unlines
           [ "HWM_ASSET_NAME=" <> format zipPath,
             "HWM_BIN_NAME=" <> binName,
-            "HWM_ASSET_HASH=" <> hash
+            "HWM_ASSET_HASH=" <> sha256
           ]
     Nothing -> pure ()
 
-  putLine $ "✅ Produced: " <> format zipPath <> "\nHash: " <> format hash
+  putLine $ "✅ Produced: " <> format zipPath <> "\nHash: " <> format sha256
   pure ()
