@@ -60,11 +60,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
-      - name: Install New HWM
+      - name: Test Archiving
+        shell: bash
         run: |
+          set -euo pipefail
           stack install --fast
           hwm release archive --pkg libs/hwm --out ./.env
           cat ./.env
+
+          source ./.env
+
+          # Cross-platform SHA256 verification
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            echo "$HWM_ASSET_HASH  $HWM_ASSET_NAME" | sha256sum -c -
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "$HWM_ASSET_HASH  $HWM_ASSET_NAME" | shasum -a 256 -c -
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            certutil -hashfile "$HWM_ASSET_NAME" SHA256 | findstr /I "$HWM_ASSET_HASH" > nul
+          else
+            echo "Unknown OS for hash verification" && exit 1
+          fi
+
+          unzip -o "$HWM_ASSET_NAME" -d ./hwm-release
+          chmod +x ./hwm-release/"$HWM_BIN_NAME" || true
+          ./hwm-release/"$HWM_BIN_NAME" -v
 
 concurrency:
   group: ${{ github.ref }}
