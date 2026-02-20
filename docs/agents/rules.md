@@ -12,11 +12,11 @@
 
 ## 🏗️ 1. Domain-Based Architecture
 
-- **Namespace Discipline:** All features must live in their resource namespace: `reg` (Registry), `env` (Matrix/Environment), or `pkg` (Workspace).
+- **Namespace Discipline:** All features must live in their resource namespace: `registry` (Registry), `environment` (Matrix/Environment), or `workspace` (Workspace).
 - **Directory Mapping:** Strict 1-to-1 mapping between CLI command and directory.
-- Command `hwm rg add` ➔ `cli/command/reg/add.hs`
-- Command `hwm environment ls` ➔ `cli/command/env/ls.hs`
-- **FORBIDDEN:** Flattened paths like `cli/command/reg_add.hs`.
+- Command `hwm registry add` ➔ `cli/command/registry/add.hs`
+- Command `hwm environment ls` ➔ `cli/command/environment/ls.hs`
+- **FORBIDDEN:** Flattened paths like `cli/command/registry_add.hs`.
 - each cli command or options should be defined its own module e.g `RegistryAuditOptions` should be defined in `cli/command/registry/audit.hs` and not in `cli/command/registry` same goes for anothe arguments or subcommands of registry command, each of them should be defined in its own module. every comand should be self contained in its own module. and its should have its own `ParseCLI` instance for parsing its options. where main App.hs should only be responsible for parsing the top level command and delegating to the correct module for parsing its options and executing its logic.
 ---
 
