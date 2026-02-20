@@ -3,18 +3,18 @@
 
 module HWM.CLI.Command.Release.Package (ReleasePackageOptions (..), parseCLI, runReleasePackage) where
 
+import qualified Data.Text as T
 import HWM.Core.Common (Name)
+import HWM.Core.Formatting (Format (format))
 import HWM.Core.Parsing (ParseCLI (..))
+import HWM.Core.Result (MonadIssue (..))
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Core.Result (MonadIssue(..))
-import HWM.Runtime.UI (MonadUI(..))
+import HWM.Runtime.Platform (detectPlatform, platformExt)
+import HWM.Runtime.UI (MonadUI (..))
 import Options.Applicative (help, long, metavar, strOption)
 import Relude
-import HWM.Runtime.Platform (Platform(..), detectPlatform, platformId, platformExt)
-import qualified System.Process as Proc
 import qualified System.Exit as Exit
-import qualified Data.Text as T
-import qualified Data.ByteString.Lazy as BL
+import qualified System.Process as Proc
 
 -- | Options for 'hwm release package'
 data ReleasePackageOptions = ReleasePackageOptions
@@ -37,7 +37,7 @@ runReleasePackage opts = do
   let binBase = toString pkgName
       ext = toString (platformExt platform)
       binName = binBase <> ext
-      zipName = binBase <> "-" <> toString (platformId platform) <> ".zip"
+      zipName = binBase <> "-" <> toString (format platform) <> ".zip"
   -- Build
   (success, buildOut) <- runStackLocal ["build", binBase]
   unless success $ injectIssue (fromString ("Build failed: " <> buildOut))
