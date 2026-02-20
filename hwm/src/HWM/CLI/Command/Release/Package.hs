@@ -57,13 +57,8 @@ runReleasePackage opts = do
   binExists <- liftIO $ doesFileExist exactBinPath
   unless binExists $ throwError (fromString $ "Binary not found at expected path: " <> exactBinPath)
 
-  -- TODO: For a truly cross-platform local tool, consider the 'zip-archive' Haskell package.
   putLine "Compressing artifact..."
-  zipResult <- liftIO $ do
-    (code, _out, _err) <- Proc.readProcessWithExitCode "7z" ["a", zipName, exactBinPath] ""
-    pure (code == Exit.ExitSuccess)
-
-  unless zipResult $ throwError (fromString $ "Zip failed: " <> zipName)
+  liftIO $ createZipArchive exactBinPath binName zipName
 
   -- TODO: Generate the real Hash (Placeholder for now, see next step)
   let hash = "sha256-placeholder"

@@ -1,0 +1,6 @@
+
+extra-include-dirs:
+- /opt/homebrew/opt/zlib/include
+
+extra-lib-dirs:
+- /opt/homebrew/opt/zlib/lib
