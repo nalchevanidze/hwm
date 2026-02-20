@@ -3,17 +3,20 @@
 
 module HWM.CLI.Command.Release.Package (ReleasePackageOptions (..), parseCLI, runReleasePackage) where
 
+import Control.Monad.Error.Class (MonadError (throwError))
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format))
 import HWM.Core.Parsing (ParseCLI (..))
-import HWM.Core.Result (MonadIssue (..))
 import HWM.Domain.ConfigT (ConfigT)
+import HWM.Integrations.Toolchain.Stack (runStack)
 import HWM.Runtime.Platform (detectPlatform, platformExt)
-import HWM.Runtime.UI (MonadUI (..))
+import HWM.Runtime.UI (putLine)
 import Options.Applicative (help, long, metavar, strOption)
 import Relude
+import System.Directory (createDirectoryIfMissing, doesFileExist, removePathForcibly)
 import qualified System.Exit as Exit
+import System.FilePath ((</>))
 import qualified System.Process as Proc
 
 -- | Options for 'hwm release package'
@@ -29,38 +32,53 @@ instance ParseCLI ReleasePackageOptions where
       <$> strOption (long "package" <> metavar "PACKAGE" <> help "Name of the package to release")
       <*> optional (strOption (long "out" <> metavar "FILE" <> help "Export resulting file paths to FILE"))
 
+releaseDir :: FilePath
+releaseDir = ".hwm/release"
+
 runReleasePackage :: ReleasePackageOptions -> ConfigT ()
 runReleasePackage opts = do
   let pkgName = packageName opts
       outPath = outFile opts
+
   platform <- liftIO detectPlatform
   let binBase = toString pkgName
       ext = toString (platformExt platform)
       binName = binBase <> ext
       zipName = binBase <> "-" <> toString (format platform) <> ".zip"
-  -- Build
-  (success, buildOut) <- runStackLocal ["build", binBase]
-  unless success $ injectIssue (fromString ("Build failed: " <> buildOut))
-  -- Find built binary path
-  binPath <- liftIO $ do
-    (code, out, _) <- Proc.readProcessWithExitCode "stack" ["exec", "--", "which", binName] ""
-    pure $ if code == Exit.ExitSuccess then T.strip (T.pack out) else ""
-  -- Zip the binary using 7z
+      exactBinPath = releaseDir </> binName
+
+  liftIO $ removePathForcibly releaseDir
+  liftIO $ createDirectoryIfMissing True releaseDir
+
+  putLine $ "Building and extracting " <> pkgName <> "..."
+
+  (success, buildOut) <- runStack ["install", binBase, "--local-bin-path", releaseDir]
+  unless success $ throwError (fromString $ "Build failed: " <> buildOut)
+  binExists <- liftIO $ doesFileExist exactBinPath
+  unless binExists $ throwError (fromString $ "Binary not found at expected path: " <> exactBinPath)
+
+  -- TODO: For a truly cross-platform local tool, consider the 'zip-archive' Haskell package.
+  putLine "Compressing artifact..."
   zipResult <- liftIO $ do
-    if T.null binPath
-      then pure False
-      else do
-        (code, _out, _err) <- Proc.readProcessWithExitCode "7z" ["a", zipName, T.unpack binPath] ""
-        pure (code == Exit.ExitSuccess)
-  unless zipResult $ injectIssue (fromString ("Zip failed: " <> zipName))
-  hash <- liftIO $ pure "sha256-placeholder" -- placeholder
+    (code, _out, _err) <- Proc.readProcessWithExitCode "7z" ["a", zipName, exactBinPath] ""
+    pure (code == Exit.ExitSuccess)
+
+  unless zipResult $ throwError (fromString $ "Zip failed: " <> zipName)
+
+  -- TODO: Generate the real Hash (Placeholder for now, see next step)
+  let hash = "sha256-placeholder"
+
   case outPath of
-    Just file -> liftIO $ writeFile file (zipName <> "\n" <> binName <> "\n" <> hash <> "\n")
+    Just file ->
+      liftIO
+        $ writeFile file
+        $ toString
+        $ T.unlines
+          [ "HWM_ASSET_NAME=" <> format zipName,
+            "HWM_BIN_PATH=" <> format exactBinPath,
+            "HWM_ASSET_HASH=" <> hash
+          ]
     Nothing -> pure ()
-  _ <- uiWrite (T.pack ("Produced: " <> zipName <> "\nHash: " <> hash <> "\n"))
+
+  putLine $ "✅ Produced: " <> format zipName <> "\nHash: " <> format hash
   pure ()
-  where
-    runStackLocal args = liftIO $ do
-      (code, _out, err) <- Proc.readProcessWithExitCode "stack" args ""
-      let success = code == Exit.ExitSuccess
-      pure (success, err)

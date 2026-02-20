@@ -17,6 +17,7 @@ module HWM.Integrations.Toolchain.Stack
     parseExtraDeps,
     scanStackFiles,
     buildMatrix,
+    runStack,
   )
 where
 

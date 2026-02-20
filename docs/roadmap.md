@@ -53,43 +53,55 @@ hwm registry prune --unused
 - Circular dependencies: Detect cycles between internal workspace packages.
 - Unreachable packages: List packages present in directory but not included in any environment matrix.
 
-## Release Orchestration & Native Archiving
+### 🚀 Release Orchestration & Native Cross-Platform Pipelines
 
-move command publish under `hwm release` namespace and implement a native, cross-platform release pipeline.
+**Goal:** Move the `publish` command under the `hwm release` namespace and implement a native, zero-dependency release pipeline.
 
-Replace fragile release scripts and external system dependencies (`7z`, `tar`, `shasum`) with a declarative, pure-Haskell archiving pipeline. HWM natively orchestrates binary releases, zipping, and cryptographic hashing for any CI provider.
+Replace fragile release scripts and external system dependencies (`7z`, `tar`, `shasum`, `strip`) with a declarative, pure-Haskell archiving pipeline. HWM natively orchestrates binary releases, optimization, zipping, and cryptographic hashing for seamless handoff to any CI provider.
 
 **Configuration (`hwm.yaml`):**
-Decouple internal package names from shipped binaries and define cross-platform archive templates.
+Decouple internal package names from shipped binaries, enforce production-grade compiler optimizations, and define cross-platform archive templates.
 
 ```yaml
 workspace:
   - name: cli-tools
     type: app
     binaries:
-      morpheus: morpheus-cli  # <final-binary>: <cabal-package>
+      morpheus: morpheus-cli  # <final-binary-name>: <cabal-package>
+      
+    build:
+      strip: true             # Automatically strips DWARF debug symbols (reduces size by ~80%)
+      static: true            # Orchestrates GHC flags for portable, statically linked binaries
+      
     archive:
-      format: zip             # Natively zips the compiled binary
+      format: zip             # Natively zips the compiled binary (no system '7z' required)
       name_template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
       checksum: sha256        # Automatically generates checksums.txt
+      include:                # Bundles essential metadata into the final archive
+        - LICENSE
+        - README.md
 
 ```
 
 **CLI & Universal CI Integration:**
-Build, rename, zip, and hash artifacts in one step. Use `--out` to export the resulting file paths for zero-config handoff to any CI environment.
+Build, rename, optimize, bundle, zip, and hash artifacts in one step. Use `--out` to export the resulting file paths for zero-config handoff to any CI environment.
 
 ```bash
 # Natively build, archive, hash, and export asset paths
 hwm release package morpheus-cli --out=release.env
+
 ```
 
 **Key Capabilities:**
 
-* **Explicit Mapping & Normalization:** Build `morpheus-cli` but output the clean `morpheus` binary (auto-appending `.exe` on Windows).
-* **Smart Platform Detection:** Automatically populates `{{os}}` and `{{arch}}` (e.g., `linux-x64`, `macos-arm64`).
-* **Cryptographic Checksums:** Natively generates `checksums.txt` to enable immediate distribution via Homebrew, Nix, and AUR.
-* **Zero External Dependencies:** Archiving and hashing run in pure Haskell. No system tools required on the runner.
-* **Universal Handoff:** CI-agnostic output seamlessly bridges HWM with GitHub, GitLab, Jenkins, or bare-metal servers.
+* **Explicit Mapping & Normalization:** Build `morpheus-cli` but output the clean `morpheus` binary (automatically appending `.exe` on Windows).
+* **Smart Platform Detection:** Automatically populates `{{os}}` and `{{arch}}` for standard asset naming (e.g., `linux-x64`, `macos-arm64`).
+* **Production Optimization:** Native binary stripping and static-linking support to guarantee small, portable executables without writing complex bash scripts.
+* **Asset Bundling:** Automatically includes licenses, readmes, and default configs inside the final release archive.
+* **Cryptographic Checksums:** Natively generates `checksums.txt` to enable immediate, secure distribution via Homebrew, Nix, and AUR.
+* **Zero External Dependencies:** Archiving and hashing run entirely in pure Haskell. No system tools required on the runner.
+* **Universal Handoff:** CI-agnostic output seamlessly bridges HWM with GitHub Actions, GitLab CI, Jenkins, or bare-metal servers.
+
 
 ## Deep Nix Integration
 
