@@ -61,10 +61,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
       - name: Install New HWM
-        run: stack install --fast
-
-      - run: hwm release archive --pkg libs/hwm  --out ./.env
-      - run: cat ./.env
+        run: |
+          stack install --fast
+          hwm release archive --pkg libs/hwm --out ./.env
+          cat ./.env
 
 concurrency:
   group: ${{ github.ref }}
