@@ -9,11 +9,14 @@ module HWM.CLI.Command.Release.Archive
   )
 where
 
+import Control.Monad.Except (MonadError (..))
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format))
 import HWM.Core.Parsing (ParseCLI (..))
+import HWM.Core.Pkg (Pkg (..))
 import HWM.Domain.ConfigT (ConfigT)
+import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), createZipArchive)
 import HWM.Runtime.UI (putLine)
@@ -23,7 +26,8 @@ import System.Directory (createDirectoryIfMissing, removePathForcibly)
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions
-  { pkgName :: Name,
+  { opsPkgName :: Name,
+    execName :: Maybe Name,
     outFile :: Maybe FilePath
   }
   deriving (Show)
@@ -31,7 +35,8 @@ data ReleaseArchiveOptions = ReleaseArchiveOptions
 instance ParseCLI ReleaseArchiveOptions where
   parseCLI =
     ReleaseArchiveOptions
-      <$> strOption (long "package" <> metavar "PACKAGE" <> help "Name of the package to release")
+      <$> strOption (long "pkg" <> metavar "PACKAGE" <> help "Name of the package to release")
+      <*> optional (strOption (long "exec" <> metavar "EXECUTABLE" <> help "Name of the executable to release"))
       <*> optional (strOption (long "out" <> metavar "FILE" <> help "Export resulting file paths to FILE"))
 
 releaseDir :: FilePath
@@ -39,14 +44,17 @@ releaseDir = ".hwm/release"
 
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
 runReleaseArchive ReleaseArchiveOptions {..} = do
+  targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [opsPkgName]
+  Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> opsPkgName <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
+
   liftIO $ removePathForcibly releaseDir
   liftIO $ createDirectoryIfMissing True releaseDir
 
-  putLine $ "Building and extracting " <> pkgName <> "..."
+  putLine $ "Building and extracting " <> format pkgName <> "..."
   stackGenBinary pkgName releaseDir
 
   putLine "Compressing artifact..."
-  ArchiveInfo {..} <- createZipArchive releaseDir pkgName "./"
+  ArchiveInfo {..} <- createZipArchive releaseDir (fromMaybe (format pkgName) execName) "./"
 
   -- TODO: Generate the real Hash (Placeholder for now, see next step)
   let hash = "sha256-placeholder"
