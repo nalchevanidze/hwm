@@ -55,6 +55,8 @@ hwm registry prune --unused
 
 ## Release Orchestration & Native Archiving
 
+move command publish under `hwm release` namespace and implement a native, cross-platform release pipeline.
+
 Replace fragile release scripts and external system dependencies (`7z`, `tar`, `shasum`) with a declarative, pure-Haskell archiving pipeline. HWM natively orchestrates binary releases, zipping, and cryptographic hashing for any CI provider.
 
 **Configuration (`hwm.yaml`):**
