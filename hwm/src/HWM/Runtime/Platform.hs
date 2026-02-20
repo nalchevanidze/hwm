@@ -42,8 +42,8 @@ platformExt :: Platform -> Text
 platformExt (Platform Windows _) = ".exe"
 platformExt _ = ""
 
-detectPlatform :: IO Platform
-detectPlatform = do
+detectPlatform :: (MonadIO m) => m Platform
+detectPlatform = liftIO $ do
   envOS <- Env.lookupEnv "RUNNER_OS"
   envArch <- Env.lookupEnv "RUNNER_ARCH"
 

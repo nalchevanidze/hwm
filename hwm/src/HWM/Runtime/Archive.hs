@@ -1,26 +1,46 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Runtime.Archive (createZipArchive) where
+module HWM.Runtime.Archive (createZipArchive, ArchiveInfo (..)) where
 
 import qualified Codec.Archive.Zip as Zip
+import Control.Monad.Error.Class (MonadError)
+import Control.Monad.Except (throwError)
 import qualified Data.ByteString.Lazy as BSL
+import HWM.Core.Common (Name)
+import HWM.Core.Formatting (Format (..))
+import HWM.Core.Result (Issue)
+import HWM.Runtime.Platform (detectPlatform, platformExt)
 import Relude
+import System.Directory (doesFileExist)
+import System.FilePath.Posix (joinPath, normalise, (</>))
 
--- | Creates a zip archive containing a single executable at the root level.
--- Later, we will expand this to accept a list of 'include' files (like LICENSE).
-createZipArchive :: 
-     FilePath -- ^ The path to the source binary on disk (e.g., ".hwm/release/morpheus.exe")
-  -> FilePath -- ^ The internal name it should have inside the zip (e.g., "morpheus.exe")
-  -> FilePath -- ^ The final output path of the .zip file (e.g., "morpheus-v1-linux.zip")
-  -> IO ()
-createZipArchive sourcePath internalName outputPath = do
+data ArchiveInfo = ArchiveInfo {zipPath :: FilePath, binName :: Name}
+
+createZipArchive ::
+  (MonadIO m, MonadError Issue m) =>
+  FilePath ->
+  Name ->
+  FilePath ->
+  m ArchiveInfo
+createZipArchive sourceDir name outDIr = do
+  let binPath = sourceDir </> toString name
+  binExists <- liftIO $ doesFileExist binPath
+  unless binExists $ throwError (fromString $ "Binary not found at expected path: " <> binPath)
+
+  platform <- detectPlatform
+  let binName = name <> platformExt platform -- e.g., "morpheus.exe"
+  let zipPath = normalise $ joinPath [outDIr, toString (name <> "-" <> format platform <> ".zip")]
+
   -- Read the binary from the disk into a Zip Entry
-  entry <- Zip.readEntry [] sourcePath
-  
+  entry <- liftIO $ Zip.readEntry [] binPath
+
   -- Rename the internal path so it sits at the root of the .zip file
-  let rootEntry = entry { Zip.eRelativePath = internalName }
-  
+  let rootEntry = entry {Zip.eRelativePath = toString binName}
+
   -- Add the entry to an empty archive and write to disk
   let archive = Zip.addEntryToArchive rootEntry Zip.emptyArchive
-  BSL.writeFile outputPath (Zip.fromArchive archive)
+  liftIO $ BSL.writeFile zipPath (Zip.fromArchive archive)
+  pure ArchiveInfo {..}
