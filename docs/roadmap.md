@@ -66,21 +66,18 @@ Decouple internal package names from shipped binaries, enforce production-grade 
 workspace:
   - name: cli-tools
     type: app
-    binaries:
-      morpheus: morpheus-cli  # <final-binary-name>: <cabal-package>
-      
-    build:
-      strip: true             # Automatically strips DWARF debug symbols (reduces size by ~80%)
-      static: true            # Orchestrates GHC flags for portable, statically linked binaries
-      
     archive:
-      format: zip             # Natively zips the compiled binary (no system '7z' required)
+      executables:
+        morpheus: morpheus-cli  # <final-binary-name>: <cabal-target>
+      build:
+        strip: true             # Automatically strips DWARF debug symbols
+        static: true            # Orchestrates GHC flags for static linking
+      format: zip               # Natively zips the compiled binary
       name_template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
-      checksum: sha256        # Automatically generates checksums.txt
-      include:                # Bundles essential metadata into the final archive
+      checksum: sha256          # Automatically generates checksums.txt
+      include:                  # Static files to bundle alongside the binary
         - LICENSE
         - README.md
-
 ```
 
 **CLI & Universal CI Integration:**
