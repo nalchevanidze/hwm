@@ -23,7 +23,7 @@ import System.Directory (createDirectoryIfMissing, removePathForcibly)
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions
-  { packageName :: Name,
+  { pkgName :: Name,
     outFile :: Maybe FilePath
   }
   deriving (Show)
@@ -38,10 +38,7 @@ releaseDir :: FilePath
 releaseDir = ".hwm/release"
 
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
-runReleaseArchive opts = do
-  let pkgName = packageName opts
-      outPath = outFile opts
-
+runReleaseArchive ReleaseArchiveOptions {..} = do
   liftIO $ removePathForcibly releaseDir
   liftIO $ createDirectoryIfMissing True releaseDir
 
@@ -54,7 +51,7 @@ runReleaseArchive opts = do
   -- TODO: Generate the real Hash (Placeholder for now, see next step)
   let hash = "sha256-placeholder"
 
-  case outPath of
+  case outFile of
     Just file ->
       liftIO
         $ writeFile file
