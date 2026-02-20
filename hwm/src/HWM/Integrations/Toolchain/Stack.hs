@@ -18,6 +18,7 @@ module HWM.Integrations.Toolchain.Stack
     scanStackFiles,
     buildMatrix,
     runStack,
+    stackGenBinary,
   )
 where
 
@@ -120,6 +121,11 @@ createEnvYaml target = do
           compiler = Nothing,
           ..
         }
+
+stackGenBinary :: Name -> FilePath -> ConfigT ()
+stackGenBinary pkgName dirPath = do
+  (success, buildOut) <- runStack ["install", toString pkgName, "--local-bin-path", dirPath]
+  unless success $ throwError (fromString $ "Build failed: " <> buildOut)
 
 runStack :: [String] -> ConfigT (Bool, String)
 runStack args = do

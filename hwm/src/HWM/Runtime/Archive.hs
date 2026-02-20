@@ -16,7 +16,7 @@ createZipArchive ::
   -> IO ()
 createZipArchive sourcePath internalName outputPath = do
   -- Read the binary from the disk into a Zip Entry
-  entry <- Zip.readEntry [Zip.OptDeflate] sourcePath
+  entry <- Zip.readEntry [] sourcePath
   
   -- Rename the internal path so it sits at the root of the .zip file
   let rootEntry = entry { Zip.eRelativePath = internalName }

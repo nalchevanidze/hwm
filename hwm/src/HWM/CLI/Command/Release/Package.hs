@@ -9,15 +9,14 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format))
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Integrations.Toolchain.Stack (runStack)
+import HWM.Integrations.Toolchain.Stack (stackGenBinary)
+import HWM.Runtime.Archive (createZipArchive)
 import HWM.Runtime.Platform (detectPlatform, platformExt)
 import HWM.Runtime.UI (putLine)
 import Options.Applicative (help, long, metavar, strOption)
 import Relude
 import System.Directory (createDirectoryIfMissing, doesFileExist, removePathForcibly)
-import qualified System.Exit as Exit
 import System.FilePath ((</>))
-import qualified System.Process as Proc
 
 -- | Options for 'hwm release package'
 data ReleasePackageOptions = ReleasePackageOptions
@@ -44,20 +43,18 @@ runReleasePackage opts = do
   let binBase = toString pkgName
       ext = toString (platformExt platform)
       binName = binBase <> ext
-      zipName = binBase <> "-" <> toString (format platform) <> ".zip"
-      exactBinPath = releaseDir </> binName
 
   liftIO $ removePathForcibly releaseDir
   liftIO $ createDirectoryIfMissing True releaseDir
 
   putLine $ "Building and extracting " <> pkgName <> "..."
-
-  (success, buildOut) <- runStack ["install", binBase, "--local-bin-path", releaseDir]
-  unless success $ throwError (fromString $ "Build failed: " <> buildOut)
+  stackGenBinary pkgName releaseDir
+  let exactBinPath = releaseDir </> binName
   binExists <- liftIO $ doesFileExist exactBinPath
   unless binExists $ throwError (fromString $ "Binary not found at expected path: " <> exactBinPath)
 
   putLine "Compressing artifact..."
+  let zipName = binBase <> "-" <> toString (format platform) <> ".zip"
   liftIO $ createZipArchive exactBinPath binName zipName
 
   -- TODO: Generate the real Hash (Placeholder for now, see next step)
