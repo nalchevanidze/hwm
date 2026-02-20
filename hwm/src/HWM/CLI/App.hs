@@ -88,7 +88,7 @@ parseCommand =
         Release <$> parseCLI
       )
     ]
-    <|> (Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI)
+    <|> (Run <$> argument (T.pack <$> str) mempty <*> parseCLI)
 
 data Input = Input
   { v :: Bool,

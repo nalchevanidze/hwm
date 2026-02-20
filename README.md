@@ -158,7 +158,7 @@ Stop manually creating folders, copying `package.yaml` files, and breaking your 
 
 ```bash
 # Interactively or directly scaffold a new package in a specific group
-hwm ws add libs/core
+hwm workspace add libs/core
 ```
 
 <p align="center">
