@@ -10,7 +10,7 @@ import HWM.Core.Result (MonadIssue(..))
 import HWM.Runtime.UI (MonadUI(..))
 import Options.Applicative (help, long, metavar, strOption)
 import Relude
-import qualified System.Info as Info
+import HWM.Runtime.Platform (Platform(..), detectPlatform, platformId, platformExt)
 import qualified System.Process as Proc
 import qualified System.Exit as Exit
 import qualified Data.Text as T
@@ -33,22 +33,11 @@ runReleasePackage :: ReleasePackageOptions -> ConfigT ()
 runReleasePackage opts = do
   let pkgName = packageName opts
       outPath = outFile opts
-  -- Platform detection
-  let os = case Info.os of
-        "darwin" -> "macos"
-        "linux" -> "linux"
-        "windows" -> "windows"
-        _ -> "unknown"
-      arch = case Info.arch of
-        "x86_64" -> "x64"
-        "amd64" -> "x64"
-        "arm64" -> "arm64"
-        _ -> "unknown"
-      platformId = os <> "-" <> arch
-      binBase = toString pkgName
-      ext = if os == "windows" then ".exe" else ""
+  platform <- liftIO detectPlatform
+  let binBase = toString pkgName
+      ext = toString (platformExt platform)
       binName = binBase <> ext
-      zipName = binBase <> "-" <> platformId <> ".zip"
+      zipName = binBase <> "-" <> toString (platformId platform) <> ".zip"
   -- Build
   (success, buildOut) <- runStackLocal ["build", binBase]
   unless success $ injectIssue (fromString ("Build failed: " <> buildOut))

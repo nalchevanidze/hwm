@@ -75,6 +75,7 @@ library
       HWM.Runtime.Cache
       HWM.Runtime.Files
       HWM.Runtime.Logging
+      HWM.Runtime.Platform
       HWM.Runtime.Process
       HWM.Runtime.Snapshots
       HWM.Runtime.UI
