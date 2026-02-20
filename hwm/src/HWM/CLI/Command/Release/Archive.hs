@@ -57,17 +57,15 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
 
   ArchiveInfo {..} <- createZipArchive releaseDir (fromMaybe (format pkgName) execName) "./"
 
-  case outFile of
-    Just file ->
-      liftIO
-        $ writeFile file
-        $ toString
-        $ T.unlines
-          [ "HWM_ASSET_NAME=" <> format zipPath,
-            "HWM_BIN_NAME=" <> binName,
-            "HWM_ASSET_HASH=" <> sha256
-          ]
-    Nothing -> pure ()
+  for_ outFile $ \file ->
+    liftIO
+      $ writeFile file
+      $ toString
+      $ T.unlines
+        [ "HWM_ASSET_NAME=" <> format zipPath,
+          "HWM_BIN_NAME=" <> binName,
+          "HWM_ASSET_HASH=" <> sha256
+        ]
 
   putLine $ "✅ Produced: " <> format zipPath <> "\nHash: " <> format sha256
   pure ()
