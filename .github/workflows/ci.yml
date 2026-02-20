@@ -24,7 +24,7 @@ jobs:
       - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
         with:
           ghc: ${{ matrix.ghc }}
-      
+
       - name: Sync environment
         run: hwm sync ${{ matrix.env }}
 
@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s
 
-  artifacts:
+  archive:
     strategy:
       fail-fast: false
       matrix:
@@ -60,13 +60,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - name: Install New HWM
+        run: stack install --fast
 
-      - name: Binary
-        uses: nalchevanidze/hwm/actions/pkg@v0.0.5
-        with:
-          package: hwm
-          executable: hwm
-          smoke_test: version
+      - run: hwm release archive --pkg libs/hwm  --out ./.env
+      - run: cat ./.env
 
 concurrency:
   group: ${{ github.ref }}
