@@ -69,6 +69,11 @@ parseCommand =
         "Upload packages to Hackage/Registry.",
         Publish <$> optional (argument str (metavar "GROUP" <> help "Name of the workspace group to publish (default: all)"))
       ),
+      ( "release",
+        Nothing,
+        "Release orchestration and native archiving.",
+        Release <$> parseCLI
+      ),
       ( "run",
         Nothing,
         "Run a script defined in hwm.yaml",
