@@ -103,7 +103,7 @@ hwm release archive cli-tools --out=release.env
 * **Explicit Target Mapping:** Decouple internal package names from shipped binaries (e.g., compile `morpheus-cli` but output `morpheus.exe`).
 * **Smart Platform Detection:** Automatically populates `{{os}}` and `{{arch}}` for standard asset naming (e.g., `linux-x64`, `macos-arm64`).
 * **Production Optimization:** Native binary stripping and static-linking support to guarantee small, portable executables without complex bash scripts.
-* **Asset Bundling:** Automatically looks for and includes `LICENSE` and `README.md` inside the final release archive.
+* **Asset Bundling:** Automatically looks for and includes `LICENSE` and `README.md` inside the final release archive (if provided).
 * **Cryptographic Checksums:** Natively generates `checksums.txt` to enable immediate, secure distribution via Homebrew, Nix, and AUR.
 * **Zero External Dependencies:** Archiving and hashing run entirely in pure Haskell. No system tools required on the runner.
 * **Universal CI Handoff:** CI-agnostic output seamlessly bridges HWM with GitHub Actions, GitLab CI, Jenkins, or bare-metal servers.
