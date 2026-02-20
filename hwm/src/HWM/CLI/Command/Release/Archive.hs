@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Release.Package (ReleasePackageOptions (..), parseCLI, runReleasePackage) where
+module HWM.CLI.Command.Release.Archive (ReleasePackageOptions (..), parseCLI, runReleasePackage) where
 
 import qualified Data.Text as T
 import HWM.Core.Common (Name)

@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -42,7 +42,7 @@ library
       HWM.CLI.Command.Registry.Add
       HWM.CLI.Command.Registry.Audit
       HWM.CLI.Command.Registry.Ls
-      HWM.CLI.Command.Release.Package
+      HWM.CLI.Command.Release.Archive
       HWM.CLI.Command.Release.Publish
       HWM.CLI.Command.Release.Root
       HWM.CLI.Command.Run

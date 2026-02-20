@@ -3,7 +3,7 @@
 
 module HWM.CLI.Command.Release.Root (ReleaseCommand (..), runRelease) where
 
-import HWM.CLI.Command.Release.Package (ReleasePackageOptions, runReleasePackage)
+import HWM.CLI.Command.Release.Archive (ReleasePackageOptions, runReleasePackage)
 import HWM.CLI.Command.Release.Publish (PublishOptions, runPublish)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.ConfigT (ConfigT)
