@@ -67,6 +67,42 @@ hwm sync --nix  # Synchronize flake alongside cabal/stack
 
 **The Value:** True hybrid workflows. Nix power-users get full reproducibility, while the rest of the team continues using standard Cabal/Stack. Both use the exact same single source of truth.
 
+
+## 🗺️ Roadmap: Professional Distribution (v0.1.0)
+
+### **The Goal**
+
+Transition from manual "side-loading" via `install.sh` to a standard, versioned distribution model using **Homebrew** for macOS and Linux.
+---
+
+### **1. Artifact Maturity (Current Work)**
+
+* **Standardized Pipeline:** Finalize `hwm release artifacts` to produce consistent, versioned `.tar.gz` and `.sha256` pairs.
+* **Release Automation:** Integrate `--gh-publish` to ensure the cloud binaries are always the source of truth.
+
+### **2. The Homebrew Integration**
+
+* **Create `homebrew-hwm`:** Establish a dedicated GitHub repository (e.g., `nalchevanidze/homebrew-hwm`) to act as your personal "Tap."
+* **Formula Automation:** Add a post-build hook in HWM that:
+1. Calculates the SHA-256 of the new release.
+2. Updates the Ruby formula (`hwm.rb`) with the new URL and checksum.
+3. Pushes the change to the Tap repository automatically.
+
+
+* **Deprecate `install.sh`:** Replace the manual script with a simple one-liner for users:
+```bash
+brew tap nalchevanidze/hwm && brew install hwm
+
+```
+
+
+
+### **3. Strategic Benefits**
+
+* **Automatic Updates:** Users gain `brew upgrade hwm`, removing the need for them to manually re-run an installation script.
+* **Environment Safety:** Homebrew handles `$PATH` conflicts and ensures the binary is placed in `/usr/local/bin` or `/opt/homebrew/bin` correctly.
+* **Security:** Cryptographic signing (via the `.sha256` seal) becomes a first-class citizen of the installation process.
+
 ## Contributing
 
 Interested in implementing a feature?
