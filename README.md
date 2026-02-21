@@ -105,7 +105,6 @@ hwm run build
 <img src="images/init.png" alt="HWM Init Auto-Discovery" width="600">
 </p>
 
-
 ## 🧪 Born from Necessity
 
 HWM was not built in a vacuum. It was created to solve the massive orchestration headaches of the **[Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql)** ecosystem.
@@ -168,7 +167,6 @@ hwm workspace add libs/core
 
 **What HWM does instantly:**
 
-
 - Natively generates the package directory and `package.yaml` (using the modern object format).
 - Registers the new package under the correct group in `hwm.yaml`.
 - Automatically wires the package into `stack.yaml` so it builds immediately.
@@ -222,12 +220,10 @@ version: 0.1.2
 
 release:
   artifacts:
-  
-    morpheus: libs/hwm-cli:morpheus
-
-    hwm-daemon: apps/daemon:hwm-daemon
-    formats: [zip, tar.gz]
-    name-template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
+    morpheus: libs/cli:morpheus
+    daemon: apps/daemon:hwm-daemon
+      formats: [zip, tar.gz]
+      name-template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
 ```
 
 #### Usage
@@ -237,8 +233,7 @@ release:
 hwm release artifacts
 
 # Publish to GitHub Releases with a masked upload URL
-hwm release artifacts --gh-publish <upload_url> --tag v0.1.2
-
+hwm release artifacts --gh-publish <upload_url>
 ```
 
 ### 5. Environment Management
@@ -264,7 +259,8 @@ matrix:
 
 HWM transforms your monorepo into a format LLMs can actually understand.
 
- - **Context Window Friendly:** Instead of pasting 20+ `.cabal` files to provide AI context, paste one `hwm.yaml`.
+- **Context Window Friendly:** Instead of pasting 20+ `.cabal` files to provide AI context, paste one `hwm.yaml`.
+
 ---
 
 ## ⚖️ Comparison
