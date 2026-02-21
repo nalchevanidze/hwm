@@ -116,15 +116,16 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
         ("output directory", pure $ T.pack outputDir),
         ("targets", pure $ formatList "," (map fst cfgs))
       ]
-  putLine ""
 
+  section "build" $ pure ()
   for_ cfgs $ \(name, ArtifactConfig {..}) -> do
     binaryDir <- genBindaryDir name
 
     let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
-    targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
-    Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
+    optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
+    Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
     stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
+    
     indent 1 $ putLine "Compressing artifact..."
     archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats}
 
