@@ -53,7 +53,8 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
 
   for_ cfgs $ \(name, ArchiveConfig {..}) -> do
     putLine $ "Building and extracting \"" <> name <> "\" ..."
-    let (workspaceId, executableName) = T.breakOn ":" arcSource
+    let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
+    putLine $ "find \"" <> workspaceId <> "\" with \"" <> executableName <> "\" ..."
     targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
 
