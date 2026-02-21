@@ -67,7 +67,7 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
     stackGenBinary pkgName localDir (ghcOptions arcGhcOptions)
     putLine "Compressing artifact..."
-    archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = "./", sourceDir = localDir, name = executableName, archiveFormats = arcFormat}
+    archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = "./", sourceDir = localDir, name = executableName, archiveFormats = arcFormats}
 
     for_ ghPublishUrl $ \uploadUrl -> do
       for_ archives $ \ArchiveInfo {..} -> do
