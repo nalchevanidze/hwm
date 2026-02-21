@@ -28,7 +28,7 @@ runEnvRemove EnvRemoveOptions {..} = do
   unless exists $ throwError $ fromString $ "Environment '" <> toString envName <> "' does not exist."
   updateConfig
     ( \cfg@Config {..} ->
-        let mtx' = removeEnvironmentByName envName matrix
-         in pure cfg {matrix = mtx'}
+        let evs' = removeEnvironmentByName envName enviroments
+         in pure cfg {enviroments = evs'}
     )
     (printEnvironments Nothing)
