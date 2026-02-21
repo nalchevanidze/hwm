@@ -4,11 +4,29 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
+  setup:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+        ghc: [9.6.3]
+    runs-on: ${{ matrix.os }}
+    name: Setup ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+        with:
+          ghc: ${{ matrix.ghc }}
+
+      # Build ONLY dependencies. If this succeeds, the cache is SAVED.
+      - name: Install dependencies
+        shell: bash
+        run: stack build --fast --test --only-dependencies
+
   build:
+    needs: setup
     strategy:
       matrix:
         include:
@@ -23,29 +41,14 @@ jobs:
         with:
           ghc: ${{ matrix.ghc }}
 
-      - name: Install dependencies
-        run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
-
       - name: Build
         run: stack build --fast
 
       - name: Test
         run: stack test --fast
 
-  hlint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: lint
-        run: curl -sSL https://raw.githubusercontent.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
-
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s
-
   archive:
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
@@ -65,10 +68,22 @@ jobs:
       - name: Test Archiving
         shell: bash
         run: |
-          # Ensure the shell session refreshes its binary lookup
           hash -r || true
           hwm --version
           hwm release artifacts
+
+  hlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: lint
+        run: curl -sSL https://raw.githubusercontent.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s
 
 concurrency:
   group: ${{ github.ref }}
