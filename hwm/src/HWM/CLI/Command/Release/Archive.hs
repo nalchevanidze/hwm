@@ -15,7 +15,8 @@ import qualified Data.Text as T
 import HWM.Core.Formatting (Format (format))
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Domain.ConfigT (ConfigT, getArchiveConfigs)
+import HWM.Domain.Config (Config (..))
+import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Release (ArchiveConfig (..))
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
@@ -50,6 +51,7 @@ releaseDir = ".hwm/release"
 
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
 runReleaseArchive ReleaseArchiveOptions {..} = do
+  version <- asks (cfgVersion . config)
   cfgs <- Map.toList <$> getArchiveConfigs
   for_ cfgs $ \(name, ArchiveConfig {..}) -> do
     let localDir = joinPath [releaseDir, toString name]
@@ -61,7 +63,7 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
     stackGenBinary pkgName localDir
     putLine "Compressing artifact..."
-    ArchiveInfo {..} <- createZipArchive ArchiveOptions {zipNameTemplate = arcNameTemplate, outDir = "./", sourceDir = localDir, name = executableName}
+    ArchiveInfo {..} <- createZipArchive version ArchiveOptions {zipNameTemplate = arcNameTemplate, outDir = "./", sourceDir = localDir, name = executableName}
     for_ ghPublishUrl $ \uploadUrl -> do
       uploadToGitHub uploadUrl zipPath
       putLine "gh published"

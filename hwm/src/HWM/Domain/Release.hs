@@ -6,6 +6,7 @@ module HWM.Domain.Release
   ( Release (..),
     ArchiveConfig (..),
     ArchiveFormat (..),
+    formatArchiveTemplate,
   )
 where
 
@@ -18,7 +19,10 @@ import Data.Aeson
   )
 import Data.Yaml (Value (..))
 import HWM.Core.Common (Name)
+import HWM.Core.Formatting (Format (..), formatTemplate)
+import HWM.Core.Version (Version)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
+import HWM.Runtime.Platform (Platform (..))
 import Relude
 
 data Release = Release
@@ -64,13 +68,25 @@ instance ToJSON ArchiveFormat where
   toJSON Zip = String "zip"
   toJSON TarGz = String "tar.gz"
 
+defaultFormat :: Text
+defaultFormat = "{{binary}}-v{{version}}-{{os}}-{{arch}}"
+
+formatArchiveTemplate :: Name -> Version -> Platform -> Text -> Text
+formatArchiveTemplate name version platform =
+  formatTemplate
+    [ ("binary", name),
+      ("version", format version),
+      ("os", format $ os platform),
+      ("arch", format $ arch platform)
+    ]
+
 defaultArchiveConfig :: Text -> ArchiveConfig
 defaultArchiveConfig src =
   ArchiveConfig
     { arcSource = src,
       arcFormat = Zip,
       arcStrip = True,
-      arcNameTemplate = "{{binary}}-v{{version}}-{{os}}-{{arch}}"
+      arcNameTemplate = defaultFormat
     }
 
 isDefaultArchiveConfig :: ArchiveConfig -> Bool
