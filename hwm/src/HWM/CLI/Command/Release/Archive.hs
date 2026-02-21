@@ -14,7 +14,7 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), subPathSign)
-import HWM.Core.Parsing (ParseCLI (..))
+import HWM.Core.Parsing (Parse (..), ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
@@ -34,17 +34,23 @@ data ReleaseArchiveOptions = ReleaseArchiveOptions
   { targetName :: Maybe Text,
     ghPublishUrl :: Maybe Text,
     outputDir :: FilePath,
-    overrides :: Maybe ArchiveOverrides
+    overrides :: ArchiveOverrides
   }
   deriving (Show)
 
 data ArchiveOverrides = ArchiveOverrides
-  { ovTarget :: Maybe Name,
-    ovFormat :: ArchiveFormat,
-    ovGhcOptions :: [Text],
-    ovNameTemplate :: Text
+  { ovFormat :: Maybe ArchiveFormat,
+    ovGhcOptions :: Maybe [Text],
+    ovNameTemplate :: Maybe Text
   }
   deriving (Show)
+
+instance ParseCLI ArchiveOverrides where
+  parseCLI =
+    ArchiveOverrides
+      <$> optional (strOption (long "override-format" <> short 'f' <> metavar "FORMAT" <> help "Override the archive format for the release target."))
+      <*> optional (some (strOption (long "override-ghc-option" <> short 'g' <> metavar "GHC_OPTION" <> help "Override GHC options for the release target. Can be specified multiple times.")))
+      <*> optional (strOption (long "override-name-template" <> short 'n' <> metavar "NAME_TEMPLATE" <> help "Override the name template for the release target. Use {name} and {version} as placeholders."))
 
 instance ParseCLI ReleaseArchiveOptions where
   parseCLI =
@@ -59,7 +65,7 @@ instance ParseCLI ReleaseArchiveOptions where
             <> value ".hwm/dist"
             <> showDefault
         )
-      <*> pure Nothing
+      <*> parseCLI
 
 genBindaryDir :: (MonadIO m, ToString a) => a -> m FilePath
 genBindaryDir name = do
@@ -76,9 +82,8 @@ prepeareDir dir = liftIO $ do
   removePathForcibly dir
   createDirectoryIfMissing True dir
 
-applyOverrieds :: Maybe ArchiveOverrides -> ArchiveConfig -> ArchiveConfig
-applyOverrieds Nothing cfg = cfg
-applyOverrieds (Just _) cfg = cfg
+applyOverrieds :: ArchiveOverrides -> ArchiveConfig -> ArchiveConfig
+applyOverrieds _ cfg = cfg
 
 withOverrides :: ReleaseArchiveOptions -> Map Name ArchiveConfig -> ConfigT [(Name, ArchiveConfig)]
 withOverrides ReleaseArchiveOptions {..} cfgs = do
