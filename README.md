@@ -168,6 +168,7 @@ hwm workspace add libs/core
 
 **What HWM does instantly:**
 
+
 - Natively generates the package directory and `package.yaml` (using the modern object format).
 - Registers the new package under the correct group in `hwm.yaml`.
 - Automatically wires the package into `stack.yaml` so it builds immediately.
