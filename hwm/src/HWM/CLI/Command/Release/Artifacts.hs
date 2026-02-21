@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Redundant $" #-}
 
 module HWM.CLI.Command.Release.Artifacts
   ( ReleaseArchiveOptions (..),
@@ -13,18 +16,18 @@ import Control.Monad.Except (MonadError (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Format (format), subPathSign)
+import HWM.Core.Formatting (Format (format), formatList, subPathSign)
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (fromEither)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
-import HWM.Domain.Release (ArtifactConfig (..), ArchiveFormat)
+import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..))
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchiveOptions (..), createArchive)
 import HWM.Runtime.Network (uploadToGitHub)
-import HWM.Runtime.UI (putLine, section, indent)
+import HWM.Runtime.UI (indent, putLine, section, sectionTableM)
 import Options.Applicative (help, long, metavar, option, showDefault, str, strOption, value)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
@@ -107,17 +110,29 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   prepeareDir outputDir
   version <- asks (cfgVersion . config)
   cfgs <- getArchiveConfigs >>= withOverrides ops
+
+  sectionTableM 0 "artifacts"
+    $ [ ("mode", pure $ if isNothing ghPublishUrl then "local" else "publish to GitHub"),
+        ("output directory", pure $ T.pack outputDir),
+        ("targets", pure $ formatList "," (map fst cfgs))
+      ]
+  putLine ""
+
   for_ cfgs $ \(name, ArtifactConfig {..}) -> do
-    
     binaryDir <- genBindaryDir name
-    section "artifacts" $
-      putLine $ "Building and extracting \"" <> name <> "\" ..."
+
     let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
     targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
     stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
     indent 1 $ putLine "Compressing artifact..."
     archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats}
+
+    section "archives"
+      $ for_ archives
+      $ \ArchiveInfo {..} -> do
+        putLine $ subPathSign <> format archivePath
+        putLine $ subPathSign <> format sha256Path
 
     putLine ""
     section name
