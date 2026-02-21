@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Runtime.Archive (createZipArchive, ArchiveInfo (..)) where
+module HWM.Runtime.Archive (createZipArchive, ArchiveOptions (..), ArchiveInfo (..)) where
 
 import qualified Codec.Archive.Zip as Zip
 import Control.Monad.Error.Class (MonadError)
@@ -22,26 +22,30 @@ import Relude
 import System.Directory (doesFileExist)
 import System.FilePath.Posix (joinPath, normalise, (</>))
 
-data ArchiveInfo = ArchiveInfo {
-  zipPath :: FilePath, 
-  binName :: Name, 
-  sha256Path :: FilePath
+data ArchiveInfo = ArchiveInfo
+  { zipPath :: FilePath,
+    binName :: Name,
+    sha256Path :: FilePath
+  }
+
+data ArchiveOptions = ArchiveOptions
+  { sourceDir :: FilePath,
+    name :: Name,
+    outDir :: FilePath
   }
 
 createZipArchive ::
   (MonadIO m, MonadError Issue m) =>
-  FilePath ->
-  Name ->
-  FilePath ->
+  ArchiveOptions ->
   m ArchiveInfo
-createZipArchive sourceDir name outDIr = do
+createZipArchive ArchiveOptions {..} = do
   let binPath = sourceDir </> toString name
   binExists <- liftIO $ doesFileExist binPath
   unless binExists $ throwError (fromString $ "Binary not found at expected path: " <> binPath)
 
   platform <- detectPlatform
   let binName = name <> platformExt platform -- e.g., "morpheus.exe"
-  let zipPath = normalise $ joinPath [outDIr, toString (name <> "-" <> format platform <> ".zip")]
+  let zipPath = normalise $ joinPath [outDir, toString (name <> "-" <> format platform <> ".zip")]
 
   -- Read the binary from the disk into a Zip Entry
   entry <- liftIO $ Zip.readEntry [] binPath

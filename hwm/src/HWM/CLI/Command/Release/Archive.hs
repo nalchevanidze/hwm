@@ -19,7 +19,7 @@ import HWM.Domain.ConfigT (ConfigT, getArchiveConfigs)
 import HWM.Domain.Release (ArchiveConfig (..))
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
-import HWM.Runtime.Archive (ArchiveInfo (..), createZipArchive)
+import HWM.Runtime.Archive (ArchiveInfo (..), ArchiveOptions (..), createZipArchive)
 import HWM.Runtime.Network (uploadToGitHub)
 import HWM.Runtime.UI (putLine)
 import Options.Applicative (help, long, metavar, short, strOption)
@@ -61,7 +61,7 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
     stackGenBinary pkgName localDir
     putLine "Compressing artifact..."
-    ArchiveInfo {..} <- createZipArchive localDir executableName "./"
+    ArchiveInfo {..} <- createZipArchive ArchiveOptions {outDir = "./", sourceDir = localDir, name = executableName}
     for_ ghPublishUrl $ \uploadUrl -> do
       uploadToGitHub uploadUrl zipPath
       putLine "gh published"
