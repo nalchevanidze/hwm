@@ -105,44 +105,6 @@ hwm run build
 <img src="images/init.png" alt="HWM Init Auto-Discovery" width="600">
 </p>
 
----
-
-## 📦 Artifact Pipeline
-
-The `artifacts` pipeline is HWM's **End-User Distribution Engine**. It transforms raw binaries into optimized, compressed, and hashed distribution units. All logic is implemented natively in Haskell for maximum portability.
-
-### Configuration
-
-HWM uses a **Hybrid-Flat** structure where targets and settings share the same namespace for clarity and simplicity.
-
-```yaml
-# hwm.yaml
-project: morpheus
-version: 0.1.2
-
-release:
-  artifacts:
-    # Binary Targets (Internal Path)
-    morpheus: libs/hwm-cli:morpheus
-    hwm-daemon: apps/daemon:hwm-daemon
-
-    # Pipeline Settings
-    formats: [Zip, TarGz]
-    name_template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
-```
-
-### Usage
-
-```bash
-# Local staging (wipes and fills .hwm/dist)
-hwm release artifacts
-
-# Publish to GitHub Releases with a masked upload URL
-hwm release artifacts --gh-publish <upload_url> --tag v0.1.2
-
-```
-
----
 
 ## 🧪 Born from Necessity
 
@@ -239,6 +201,43 @@ Eliminate manual release steps. By combining HWM with `relasy`, you can fully au
 hwm version minor   # Bumps versions atomically
 hwm publish libs    # Uploads the entire workspace group
 
+
+```
+
+---
+
+### 📦 Artifact Pipeline
+
+The `artifacts` pipeline is HWM's **End-User Distribution Engine**. It transforms raw binaries into optimized, compressed, and hashed distribution units. All logic is implemented natively in Haskell for maximum portability.
+
+#### Configuration
+
+HWM uses a **Hybrid-Flat** structure where targets and settings share the same namespace for clarity and simplicity.
+
+```yaml
+# hwm.yaml
+project: morpheus
+version: 0.1.2
+
+release:
+  artifacts:
+    # Binary Targets (Internal Path)
+    morpheus: libs/hwm-cli:morpheus
+    hwm-daemon: apps/daemon:hwm-daemon
+
+    # Pipeline Settings
+    formats: [Zip, TarGz]
+    name_template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
+```
+
+#### Usage
+
+```bash
+# Local staging (wipes and fills .hwm/dist)
+hwm release artifacts
+
+# Publish to GitHub Releases with a masked upload URL
+hwm release artifacts --gh-publish <upload_url> --tag v0.1.2
 
 ```
 
