@@ -56,14 +56,17 @@ instance ParseCLI ReleaseArchiveOptions where
             <> showDefault
         )
 
-releaseDir :: FilePath
-releaseDir = ".hwm/release"
+genBindaryDir :: (MonadIO m, ToString a) => a -> m FilePath
+genBindaryDir name = do
+  let path = joinPath [".hwm/release/binaries", toString name]
+  prepeareDir path
+  pure path
 
 ghcOptions :: [Text] -> [Text]
 ghcOptions [] = []
 ghcOptions xs = ["--ghc-options=" <> T.unwords xs]
 
-prepeareDir :: MonadIO m => FilePath -> m ()
+prepeareDir :: (MonadIO m) => FilePath -> m ()
 prepeareDir dir = liftIO $ do
   removePathForcibly dir
   createDirectoryIfMissing True dir
@@ -74,15 +77,14 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
   version <- asks (cfgVersion . config)
   cfgs <- Map.toList <$> getArchiveConfigs
   for_ cfgs $ \(name, ArchiveConfig {..}) -> do
-    let localReleaseDir = joinPath [releaseDir, toString name]
-    prepeareDir localReleaseDir
+    binaryDir <- genBindaryDir name
     putLine $ "Building and extracting \"" <> name <> "\" ..."
     let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
     targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
-    stackGenBinary pkgName localReleaseDir (ghcOptions arcGhcOptions)
+    stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
     putLine "Compressing artifact..."
-    archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = localReleaseDir, name = executableName, archiveFormats = arcFormats}
+    archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats}
 
     for_ ghPublishUrl $ \uploadUrl -> do
       for_ archives $ \ArchiveInfo {..} -> do
