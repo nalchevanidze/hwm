@@ -61,7 +61,7 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
     when (null pkgs) $ throwError "No packages listed in stack.yaml. Add at least one package before running 'hwm init'"
     (registry, graph) <- deriveRegistry pkgs
     version <- deriveVersion (map pkgVersion pkgs)
-    enviroments <- buildMatrix pkgs stacks
+    environments <- buildMatrix pkgs stacks
     workspace <- buildWorkspaceGroups graph pkgs
     saveConfig
       Config

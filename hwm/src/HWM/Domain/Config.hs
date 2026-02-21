@@ -36,7 +36,7 @@ data Config = Config
     version :: Version,
     bounds :: Bounds,
     workspace :: [WorkspaceGroup],
-    enviroments :: Environments,
+    environments :: Environments,
     registry :: Dependencies,
     scripts :: Map Name Text
   }
@@ -66,7 +66,7 @@ instance
   ) =>
   Check m Config
   where
-  check Config {..} = check enviroments
+  check Config {..} = check environments
 
 defaultScripts :: Map Name Text
 defaultScripts =

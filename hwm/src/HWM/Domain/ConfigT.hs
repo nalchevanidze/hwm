@@ -78,7 +78,7 @@ instance Has (Env m) [WorkspaceGroup] where
   obtain Env {config} = workspace config
 
 instance Has (Env m) Environments where
-  obtain Env {config} = enviroments config
+  obtain Env {config} = environments config
 
 instance Has (Env m) Version where
   obtain Env {config} = version config
@@ -113,7 +113,7 @@ instance MonadIssue ConfigT where
 
 computeHash :: Config -> Text
 computeHash cfg =
-  let hashInput = T.encodeUtf8 (T.pack (show (envTargets $ enviroments cfg)))
+  let hashInput = T.encodeUtf8 (T.pack (show (envTargets $ environments cfg)))
       hashBytes = SHA256.hash hashInput
    in T.decodeUtf8 (Base16.encode hashBytes)
 
@@ -143,7 +143,7 @@ updateConfig f m = do
 runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
   config <- resolveResultTSilent (readYaml hwm)
-  cache <- loadCache (envDefault (enviroments config))
+  cache <- loadCache (envDefault (environments config))
   changed <- hasHashChanged config <$> getFileHash hwm
   pkgs <- resolveResultTSilent (pkgRegistry (workspace config))
   let env = Env {options = opts, config, cache, pkgs}
@@ -183,4 +183,4 @@ askCache :: ConfigT Cache
 askCache = asks cache
 
 askMatrix :: ConfigT Environments
-askMatrix = asks (enviroments . config)
+askMatrix = asks (environments . config)
