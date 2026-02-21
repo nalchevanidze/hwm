@@ -12,7 +12,7 @@ where
 import Control.Monad.Except (MonadError (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
-import HWM.Core.Formatting (Format (format))
+import HWM.Core.Formatting (Format (format), subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Domain.Config (Config (..))
@@ -22,7 +22,7 @@ import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchiveOptions (..), createArchive)
 import HWM.Runtime.Network (uploadToGitHub)
-import HWM.Runtime.UI (putLine)
+import HWM.Runtime.UI (putLine, section)
 import Options.Applicative (help, long, metavar, short, showDefault, strOption, value)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
@@ -93,5 +93,9 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
         uploadToGitHub uploadUrl sha256Path
         putLine "checksum published"
 
-    for_ archives $ \ArchiveInfo {..} -> do
-      putLine $ "✅ Produced: " <> format archivePath
+    putLine ""
+    section name
+      $ for_ archives
+      $ \ArchiveInfo {..} -> do
+        putLine $ subPathSign <> format archivePath
+        putLine $ subPathSign <> format sha256Path
