@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -38,11 +38,13 @@ library
       HWM.CLI.Command.Environment.Remove
       HWM.CLI.Command.Environment.SetDefault
       HWM.CLI.Command.Init
-      HWM.CLI.Command.Publish
       HWM.CLI.Command.Registry
       HWM.CLI.Command.Registry.Add
       HWM.CLI.Command.Registry.Audit
       HWM.CLI.Command.Registry.Ls
+      HWM.CLI.Command.Release.Artifacts
+      HWM.CLI.Command.Release.Publish
+      HWM.CLI.Command.Release.Root
       HWM.CLI.Command.Run
       HWM.CLI.Command.Status
       HWM.CLI.Command.Sync
@@ -62,7 +64,8 @@ library
       HWM.Domain.Config
       HWM.Domain.ConfigT
       HWM.Domain.Dependencies
-      HWM.Domain.Matrix
+      HWM.Domain.Environments
+      HWM.Domain.Release
       HWM.Domain.Workspace
       HWM.Integrations.Scaffold
       HWM.Integrations.Toolchain.Cabal
@@ -70,9 +73,12 @@ library
       HWM.Integrations.Toolchain.Lib
       HWM.Integrations.Toolchain.Package
       HWM.Integrations.Toolchain.Stack
+      HWM.Runtime.Archive
       HWM.Runtime.Cache
       HWM.Runtime.Files
       HWM.Runtime.Logging
+      HWM.Runtime.Network
+      HWM.Runtime.Platform
       HWM.Runtime.Process
       HWM.Runtime.Snapshots
       HWM.Runtime.UI
@@ -108,6 +114,7 @@ library
     , typed-process >=0.2.6.1 && <=0.2.13.0
     , unordered-containers >=0.2.14.0 && <=0.2.21
     , yaml >=0.11.5.0 && <=0.11.11.2
+    , zip-archive >=0.4.1 && <=0.4.3.2
   default-language: Haskell2010
 
 executable hwm
@@ -145,4 +152,5 @@ executable hwm
     , typed-process >=0.2.6.1 && <=0.2.13.0
     , unordered-containers >=0.2.14.0 && <=0.2.21
     , yaml >=0.11.5.0 && <=0.11.11.2
+    , zip-archive >=0.4.1 && <=0.4.3.2
   default-language: Haskell2010

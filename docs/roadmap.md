@@ -48,48 +48,6 @@ Automate tedious Haskell maintenance tasks:
 hwm registry prune --unused
 ```
 
-- Import analysis/pruning: Cross-reference `build-depends` with actual `import` statements in `.hs` files (using `-ddump-minimal-imports`). Safely remove unused packages from `.cabal` and `stack.yaml`.
-- Extra-deps: Inject missing `extra-deps` into Stack configs if not in snapshot; derive fixed versions from Cabal plan analysis.
-- Circular dependencies: Detect cycles between internal workspace packages.
-- Unreachable packages: List packages present in directory but not included in any environment matrix.
-
-## Release Orchestration & Native Archiving
-
-Replace fragile release scripts and external system dependencies (`7z`, `tar`, `shasum`) with a declarative, pure-Haskell archiving pipeline. HWM natively orchestrates binary releases, zipping, and cryptographic hashing for any CI provider.
-
-**Configuration (`hwm.yaml`):**
-Decouple internal package names from shipped binaries and define cross-platform archive templates.
-
-```yaml
-workspace:
-  - name: cli-tools
-    type: app
-    binaries:
-      morpheus: morpheus-cli  # <final-binary>: <cabal-package>
-    archive:
-      format: zip             # Natively zips the compiled binary
-      name_template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
-      checksum: sha256        # Automatically generates checksums.txt
-
-```
-
-**CLI & Universal CI Integration:**
-Build, rename, zip, and hash artifacts in one step. Use `--out` to export the resulting file paths for zero-config handoff to any CI environment.
-
-```bash
-# Natively build, archive, hash, and export asset paths
-hwm release morpheus-cli --out=release.env
-
-```
-
-**Key Capabilities:**
-
-* **Explicit Mapping & Normalization:** Build `morpheus-cli` but output the clean `morpheus` binary (auto-appending `.exe` on Windows).
-* **Smart Platform Detection:** Automatically populates `{{os}}` and `{{arch}}` (e.g., `linux-x64`, `macos-arm64`).
-* **Cryptographic Checksums:** Natively generates `checksums.txt` to enable immediate distribution via Homebrew, Nix, and AUR.
-* **Zero External Dependencies:** Archiving and hashing run in pure Haskell. No system tools required on the runner.
-* **Universal Handoff:** CI-agnostic output seamlessly bridges HWM with GitHub, GitLab, Jenkins, or bare-metal servers.
-
 ## Deep Nix Integration
 
 Maintaining a `flake.nix` for a multi-package, multi-GHC monorepo is notoriously painful. HWM will act as the ultimate bridge, generating idiomatic Nix configurations directly from `hwm.yaml` with zero boilerplate.
@@ -108,6 +66,39 @@ hwm sync --nix  # Synchronize flake alongside cabal/stack
 ```
 
 **The Value:** True hybrid workflows. Nix power-users get full reproducibility, while the rest of the team continues using standard Cabal/Stack. Both use the exact same single source of truth.
+
+
+## 🗺️ Roadmap: Professional Distribution (v0.1.0)
+
+### **The Goal**
+
+Transition from manual "side-loading" via `install.sh` to a standard, versioned distribution model using **Homebrew** for macOS and Linux.
+---
+
+### **1. Artifact Maturity (Current Work)**
+
+* **Standardized Pipeline:** Finalize `hwm release artifacts` to produce consistent, versioned `.tar.gz` and `.sha256` pairs.
+* **Release Automation:** Integrate `--gh-publish` to ensure the cloud binaries are always the source of truth.
+
+### **2. The Homebrew Integration**
+
+* **Create `homebrew-hwm`:** Establish a dedicated GitHub repository (e.g., `nalchevanidze/homebrew-hwm`) to act as your personal "Tap."
+* **Formula Automation:** Add a post-build hook in HWM that:
+1. Calculates the SHA-256 of the new release.
+2. Updates the Ruby formula (`hwm.rb`) with the new URL and checksum.
+3. Pushes the change to the Tap repository automatically.
+
+
+* **Deprecate `install.sh`:** Replace the manual script with a simple one-liner for users:
+```bash
+brew tap nalchevanidze/hwm && brew install hwm
+```
+
+### **3. Strategic Benefits**
+
+* **Automatic Updates:** Users gain `brew upgrade hwm`, removing the need for them to manually re-run an installation script.
+* **Environment Safety:** Homebrew handles `$PATH` conflicts and ensures the binary is placed in `/usr/local/bin` or `/opt/homebrew/bin` correctly.
+* **Security:** Cryptographic signing (via the `.sha256` seal) becomes a first-class citizen of the installation process.
 
 ## Contributing
 

@@ -22,7 +22,7 @@ import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, config)
-import HWM.Domain.Matrix (BuildEnvironment (..), getBuildEnvironment, getBuildEnvironments)
+import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment, getBuildEnvironments)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (createEnvYaml, stackPath)
 import HWM.Runtime.Cache (prepareDir)
@@ -61,7 +61,7 @@ runScript :: Name -> ScriptOptions -> ConfigT ()
 runScript scriptName ScriptOptions {..} = do
   prepareDir logRoot
   cfg <- asks config
-  case M.lookup scriptName (scripts cfg) of
+  case M.lookup scriptName (cfgScripts cfg) of
     Just script -> do
       envs <- getEnvs scriptEnvs
       targets <- concatMap snd <$> resolveWorkspaces scriptTargets

@@ -22,6 +22,7 @@ module HWM.Domain.ConfigT
     askVersion,
     saveConfig,
     resolveResultUI,
+    getArchiveConfigs,
   )
 where
 
@@ -30,14 +31,15 @@ import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString.Base16 as Base16
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import HWM.Core.Common (Check (..))
+import HWM.Core.Common (Check (..), Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Has (Has (..))
 import HWM.Core.Options (Options (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runResultT)
 import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
-import HWM.Domain.Matrix (Matrix (..))
+import HWM.Domain.Environments (Environments (..))
+import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
 import HWM.Runtime.Files (addHash, readYaml, rewrite_)
@@ -75,13 +77,13 @@ instance Has (Env m) Config where
   obtain = config
 
 instance Has (Env m) [WorkspaceGroup] where
-  obtain Env {config} = workspace config
+  obtain Env {config} = cfgWorkspace config
 
-instance Has (Env m) Matrix where
-  obtain Env {config} = matrix config
+instance Has (Env m) Environments where
+  obtain Env {config} = cfgEnvironments config
 
 instance Has (Env m) Version where
-  obtain Env {config} = version config
+  obtain Env {config} = cfgVersion config
 
 instance Has (Env m) PkgRegistry where
   obtain = pkgs
@@ -113,7 +115,7 @@ instance MonadIssue ConfigT where
 
 computeHash :: Config -> Text
 computeHash cfg =
-  let hashInput = T.encodeUtf8 (T.pack (show (environments $ matrix cfg)))
+  let hashInput = T.encodeUtf8 (T.pack (show (envTargets $ cfgEnvironments cfg)))
       hashBytes = SHA256.hash hashInput
    in T.decodeUtf8 (Base16.encode hashBytes)
 
@@ -143,9 +145,9 @@ updateConfig f m = do
 runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
   config <- resolveResultTSilent (readYaml hwm)
-  cache <- loadCache (defaultEnvironment (matrix config))
+  cache <- loadCache (envDefault (cfgEnvironments config))
   changed <- hasHashChanged config <$> getFileHash hwm
-  pkgs <- resolveResultTSilent (pkgRegistry (workspace config))
+  pkgs <- resolveResultTSilent (pkgRegistry (cfgWorkspace config))
   let env = Env {options = opts, config, cache, pkgs}
       resultT = unpackConfigT (if changed then checkConfig >> m else m) env
   resolveResultT resultT cache
@@ -182,5 +184,10 @@ unpackConfigT (ConfigT action) = runReaderT action
 askCache :: ConfigT Cache
 askCache = asks cache
 
-askMatrix :: ConfigT Matrix
-askMatrix = asks (matrix . config)
+askMatrix :: ConfigT Environments
+askMatrix = asks (cfgEnvironments . config)
+
+getArchiveConfigs :: ConfigT (Map Name ArtifactConfig)
+getArchiveConfigs = do
+  release <- asks (cfgRelease . config)
+  pure $ fromMaybe mempty (release >>= rlsArtifacts)

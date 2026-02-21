@@ -51,7 +51,7 @@ instance ParseCLI InitOptions where
 initWorkspace :: InitOptions -> Options -> IO ()
 initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
   root <- liftIO getCurrentDirectory
-  let name = fromMaybe (deriveName root) projectName
+  let cfgName = fromMaybe (deriveName root) projectName
   section "init" $ do
     unless forceOverride $ forbidOverride (normalise (root </> hwm opts))
     stacks <- scanStackFiles opts root
@@ -59,14 +59,15 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
     pkgs <- scanPkgs root
     scanning "packages" pkgs
     when (null pkgs) $ throwError "No packages listed in stack.yaml. Add at least one package before running 'hwm init'"
-    (registry, graph) <- deriveRegistry pkgs
-    version <- deriveVersion (map pkgVersion pkgs)
-    matrix <- buildMatrix pkgs stacks
-    workspace <- buildWorkspaceGroups graph pkgs
+    (cfgRegistry, graph) <- deriveRegistry pkgs
+    cfgVersion <- deriveVersion (map pkgVersion pkgs)
+    cfgEnvironments <- buildMatrix pkgs stacks
+    cfgWorkspace <- buildWorkspaceGroups graph pkgs
     saveConfig
       Config
-        { bounds = versionBounds version,
-          scripts = defaultScripts,
+        { cfgBounds = versionBounds cfgVersion,
+          cfgScripts = defaultScripts,
+          cfgRelease = Nothing,
           ..
         }
       opts

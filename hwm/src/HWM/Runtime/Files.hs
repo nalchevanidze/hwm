@@ -14,6 +14,7 @@ module HWM.Runtime.Files
     addHash,
     forbidOverride,
     cleanRelativePath,
+    aesonYAMLOptionsAdvanced,
   )
 where
 
@@ -163,7 +164,19 @@ toKebabCase = concatMap toKebab
       | otherwise = [x]
 
 aesonYAMLOptions :: Options
-aesonYAMLOptions = defaultOptions {fieldLabelModifier = toKebabCase, omitNothingFields = True}
+aesonYAMLOptions = defaultOptions {fieldLabelModifier = toKebabCase . fieldLabelModifier defaultOptions, omitNothingFields = True}
+
+aesonYAMLOptionsAdvanced :: String -> Options
+aesonYAMLOptionsAdvanced prefix = defaultOptions {fieldLabelModifier = toKebabCase . stripFieldNamespace prefix . fieldLabelModifier defaultOptions, omitNothingFields = True}
+
+dropPrefix :: String -> String -> String
+dropPrefix name = drop (length name)
+
+stripFieldNamespace :: String -> String -> String
+stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
+  where
+    __uncapitalize [] = []
+    __uncapitalize (x : xs) = toLower x : xs
 
 select :: (MonadError Issue m, Format t, Ord t) => Text -> t -> Map t a -> m a
 select e k = maybe (throwError $ fromString $ "Unknown " <> toString e <> ": " <> toString (format k) <> "!") pure . lookup k

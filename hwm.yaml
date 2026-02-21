@@ -1,4 +1,4 @@
-# hash: e7b77bc2760df12d8332ef151b6fe7570d382a3b26df1c3274bf1a53e0c1632f
+# hash: a0f410d3e627b8946a2dcefc0a4cb8385941ad7bcb6b3c563119481e621d5766
 name: hwm
 version: 0.0.5
 bounds: '>= 0.0.0 && <  0.1.0'
@@ -7,29 +7,29 @@ workspace:
   members:
   - hwm
   publish: true
-matrix:
-  default-environment: stable
-  environments:
-  - name: legacy
-    ghc: 8.10.7
-    resolver: lts-18.10
-    extra-deps:
-      aeson: 1.4.4.0
-      base-orphans: 0.8.1
-      fastsum: 0.1.0.0
-      megaparsec: 7.0.5
-      modern-uri: 0.3.0.0
-      relude: 0.3.0
-      retry: 0.8.1.0
-      time-compat: 1.9.2.2
-      websockets: 0.12.6.0
-  - name: stable
-    ghc: 9.6.3
-    resolver: lts-22.6
-    extra-deps:
-      fastsum: 0.1.1.1
-      list-extras: 0.4.1.6
-      type-aligned: 0.9.6
+environments:
+  default: stable
+  targets:
+    legacy:
+      ghc: 8.10.7
+      resolver: lts-18.10
+      extra-deps:
+        aeson: 1.4.4.0
+        base-orphans: 0.8.1
+        fastsum: 0.1.0.0
+        megaparsec: 7.0.5
+        modern-uri: 0.3.0.0
+        relude: 0.3.0
+        retry: 0.8.1.0
+        time-compat: 1.9.2.2
+        websockets: 0.12.6.0
+    stable:
+      ghc: 9.6.3
+      resolver: lts-22.6
+      extra-deps:
+        fastsum: 0.1.1.1
+        list-extras: 0.4.1.6
+        type-aligned: 0.9.6
 registry:
 - Cabal                 >=  3.8         &&  <=  3.16.1.0
 - Glob                  >=  0.10.1      &&  <=  0.10.2
@@ -58,6 +58,10 @@ registry:
 - typed-process         >=  0.2.6.1     &&  <=  0.2.13.0
 - unordered-containers  >=  0.2.14.0    &&  <=  0.2.21
 - yaml                  >=  0.11.5.0    &&  <=  0.11.11.2
+- zip-archive           >=  0.4.1       &&  <=  0.4.3.2
+release:
+  artifacts:
+    hwm: libs/hwm:hwm
 scripts:
   build: stack build --fast
   clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean

@@ -9,7 +9,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
-import HWM.Domain.Matrix (existsEnviroment, printEnvironments, removeEnvironmentByName)
+import HWM.Domain.Environments (existsEnviroment, printEnvironments, removeEnvironmentByName)
 import Options.Applicative (help, metavar, strArgument)
 import Relude
 
@@ -27,8 +27,5 @@ runEnvRemove EnvRemoveOptions {..} = do
   exists <- existsEnviroment envName
   unless exists $ throwError $ fromString $ "Environment '" <> toString envName <> "' does not exist."
   updateConfig
-    ( \cfg@Config {..} ->
-        let mtx' = removeEnvironmentByName envName matrix
-         in pure cfg {matrix = mtx'}
-    )
+    (\cfg@Config {..} -> pure cfg {cfgEnvironments = removeEnvironmentByName envName cfgEnvironments})
     (printEnvironments Nothing)

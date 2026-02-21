@@ -21,6 +21,6 @@ instance ParseCLI RegistryLsOptions where
 
 runRegistryLs :: RegistryLsOptions -> ConfigT ()
 runRegistryLs RegistryLsOptions {regSearch} = do
-  deps <- asks (toDependencyList . registry . config)
+  deps <- asks (toDependencyList . cfgRegistry . config)
   let filtered = maybe deps (\s -> filter (T.isInfixOf s . format) deps) regSearch
   section "registry" $ forM_ (formatTable (map format filtered)) putLine

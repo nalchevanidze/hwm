@@ -1,6 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Eta reduce" #-}
 
 module HWM.Core.Formatting
   ( Color (..),
@@ -26,6 +29,7 @@ module HWM.Core.Formatting
     formatTable,
     formatList,
     monadStatus,
+    formatTemplate,
   )
 where
 
@@ -100,6 +104,13 @@ displayStatus :: [(Text, Status)] -> Text
 displayStatus ls =
   let status = deriveStatus (map snd ls)
    in if isOk status then statusIcon status else formatStatus ls
+
+formatTemplate :: [(Text, Text)] -> Text -> Text
+formatTemplate vars template =
+  foldl' applyVar template vars
+  where
+    applyVar current (key, val) =
+      T.replace ("{{" <> key <> "}}") val current
 
 padDots :: Int -> Text -> Text
 padDots width s = s <> " " <> chalk Dim (T.replicate (max 0 (width - T.length s)) ".") <> " "

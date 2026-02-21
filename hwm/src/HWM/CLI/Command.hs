@@ -14,8 +14,8 @@ where
 import Data.Version (showVersion)
 import HWM.CLI.Command.Environment (EnvCommand, runEnv)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
-import HWM.CLI.Command.Publish (publish)
 import HWM.CLI.Command.Registry (RegistryCommand, runRegistry)
+import HWM.CLI.Command.Release.Root (ReleaseCommand (..), runRelease)
 import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
 import HWM.CLI.Command.Sync (sync)
@@ -30,14 +30,15 @@ import Relude hiding (fix)
 
 data Command
   = Sync {tag :: Maybe Name}
-  | Publish {groupName :: Maybe Name}
   | Version VersionOptions
   | Run {scriptName :: Name, runOptions :: ScriptOptions}
   | Status
   | Init {initOptions :: InitOptions}
-  | Registry RegistryCommand
+  | -- Domain-specific commands
+    Registry RegistryCommand
   | Env EnvCommand
   | Workspace WorkspaceCommand
+  | Release ReleaseCommand
   deriving (Show)
 
 currentVersion :: String
@@ -45,7 +46,7 @@ currentVersion = showVersion CLI.version
 
 -- | Run the top-level command
 command :: Command -> ConfigT ()
-command Publish {groupName} = publish groupName
+command (Release cmd) = runRelease cmd
 command (Version options) = runVersion options
 command Sync {tag} = sync tag
 command Run {scriptName, runOptions} = runScript scriptName runOptions

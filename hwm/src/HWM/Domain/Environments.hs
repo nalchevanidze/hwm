@@ -9,9 +9,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Domain.Matrix
-  ( BuildEnv (..),
-    Matrix (..),
+module HWM.Domain.Environments
+  ( EnviromentTarget (..),
+    Environments (..),
     BuildEnvironment (..),
     getBuildEnvironments,
     getBuildEnvironment,
@@ -34,6 +34,7 @@ import Data.Aeson
 import Data.Foldable (Foldable (..))
 import Data.List ((\\))
 import qualified Data.Map as M
+import qualified Data.Map as Map
 import Data.Traversable (for)
 import HWM.Core.Common
   ( Check (..),
@@ -47,53 +48,54 @@ import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (TestedRange (..))
 import HWM.Domain.Workspace (WorkspaceGroup, memberPkgs)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
-import HWM.Runtime.Files (aesonYAMLOptions)
+import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced)
 import HWM.Runtime.UI (MonadUI, forTable, sectionEnvironments)
 import Relude
 
 type Extras = VersionMap
 
-data Matrix = Matrix
-  { defaultEnvironment :: Name,
-    environments :: [BuildEnv]
+data Environments = Environments
+  { envDefault :: Name,
+    envTargets :: Map Name EnviromentTarget
   }
   deriving
     ( Generic,
       Show
     )
 
-newEnv :: Name -> Version -> Name -> BuildEnv
-newEnv name ghc resolver =
-  BuildEnv
-    { name = name,
-      ghc = ghc,
+newEnv :: Version -> Name -> EnviromentTarget
+newEnv ghc resolver =
+  EnviromentTarget
+    { ghc = ghc,
       resolver = resolver,
       extraDeps = Nothing,
       exclude = Nothing,
       allowNewer = Nothing
     }
 
-instance FromJSON Matrix where
-  parseJSON = genericParseJSON aesonYAMLOptions
+prefix :: String
+prefix = "env"
 
-instance ToJSON Matrix where
-  toJSON = genericToJSON aesonYAMLOptions
+instance FromJSON Environments where
+  parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced prefix)
+
+instance ToJSON Environments where
+  toJSON = genericToJSON (aesonYAMLOptionsAdvanced prefix)
 
 instance
   ( MonadError Issue m,
     MonadReader env m,
-    Has env Matrix,
+    Has env Environments,
     Has env [WorkspaceGroup],
     Has env Cache,
     MonadIO m
   ) =>
-  Check m Matrix
+  Check m Environments
   where
-  check Matrix {..} = traverse_ check environments
+  check Environments {..} = traverse_ check envTargets
 
-data BuildEnv = BuildEnv
-  { name :: Name,
-    ghc :: Version,
+data EnviromentTarget = EnviromentTarget
+  { ghc :: Version,
     resolver :: Name,
     extraDeps :: Maybe Extras,
     exclude :: Maybe [Text],
@@ -106,10 +108,10 @@ data BuildEnv = BuildEnv
       Eq
     )
 
-instance FromJSON BuildEnv where
+instance FromJSON EnviromentTarget where
   parseJSON = genericParseJSON aesonYAMLOptions
 
-instance ToJSON BuildEnv where
+instance ToJSON EnviromentTarget where
   toJSON = genericToJSON aesonYAMLOptions
 
 instance
@@ -119,9 +121,9 @@ instance
     Has env Cache,
     MonadIO m
   ) =>
-  Check m BuildEnv
+  Check m EnviromentTarget
   where
-  check BuildEnv {..} =
+  check EnviromentTarget {..} =
     sequence_
       [ traverse_ check (maybe [] hkgRefs extraDeps),
         checkPkgNames exclude
@@ -141,7 +143,7 @@ checkPkgNames ls = do
   unless (null unknown) (throwError $ fromString ("unknown packages: " <> show unknown))
 
 data BuildEnvironment = BuildEnvironment
-  { buildEnv :: BuildEnv,
+  { buildEnv :: EnviromentTarget,
     buildPkgs :: [Pkg],
     buildName :: Name,
     buildExtraDeps :: Maybe Extras,
@@ -159,21 +161,21 @@ instance Format BuildEnvironment where
 
 getBuildEnvironments ::
   ( MonadReader env m,
-    Has env Matrix,
+    Has env Environments,
     Has env [WorkspaceGroup],
     MonadIO m,
     MonadError Issue m
   ) =>
   m [BuildEnvironment]
 getBuildEnvironments = do
-  envs <- environments <$> askEnv
-  for envs $ \env -> do
+  envs <- envTargets <$> askEnv
+  for (Map.toList envs) $ \(name, env) -> do
     pkgs <- askAllPackages
     pure
       BuildEnvironment
         { buildEnv = env,
           buildPkgs = excludePkgs env pkgs,
-          buildName = name env,
+          buildName = name,
           buildExtraDeps = extraDeps env,
           buildResolver = resolver env
         }
@@ -182,7 +184,7 @@ getBuildEnvironments = do
 
 getBuildEnvironment ::
   ( MonadReader env m,
-    Has env Matrix,
+    Has env Environments,
     Has env [WorkspaceGroup],
     Has env Cache,
     MonadIO m,
@@ -192,7 +194,7 @@ getBuildEnvironment ::
   m BuildEnvironment
 getBuildEnvironment inputName = do
   envs <- getBuildEnvironments
-  defaultname <- defaultEnvironment <$> askEnv
+  defaultname <- envDefault <$> askEnv
   case inputName of
     Just name -> matchEnv envs name (select envs name)
     Nothing -> do
@@ -247,15 +249,15 @@ askAllPackages = do
   groups <- askGroups
   concat <$> traverse memberPkgs groups
 
-existsEnviroment :: (MonadReader env m, Has env Matrix) => Name -> m Bool
+existsEnviroment :: (MonadReader env m, Has env Environments) => Name -> m Bool
 existsEnviroment n = do
-  envs <- environments <$> askEnv
-  pure $ isJust $ find ((n ==) . name) envs
+  envs <- envTargets <$> askEnv
+  pure $ isJust $ Map.lookup n envs
 
-printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env [WorkspaceGroup], Has env Matrix, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
+printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env [WorkspaceGroup], Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
 printEnvironments name = do
   active <- getBuildEnvironment name
-  def <- defaultEnvironment <$> askEnv
+  def <- envDefault <$> askEnv
   environments <- getBuildEnvironments
   sectionEnvironments (Just $ format def) $ forTable 0 environments $ \env ->
     ( format env,
@@ -264,7 +266,7 @@ printEnvironments name = do
         else chalk Gray (buildResolver env)
     )
 
-getTestedRange :: (Monad m, MonadReader env m, Has env [WorkspaceGroup], Has env Matrix, MonadIO m, MonadError Issue m) => m TestedRange
+getTestedRange :: (Monad m, MonadReader env m, Has env [WorkspaceGroup], Has env Environments, MonadIO m, MonadError Issue m) => m TestedRange
 getTestedRange = do
   env <- getBuildEnvironments
   legacy <- getSnapshot (minimum $ map buildResolver env)
@@ -272,6 +274,6 @@ getTestedRange = do
   pure TestedRange {legacy = legacy, nightly = nightly}
 
 -- | Remove an environment from the matrix by name
-removeEnvironmentByName :: Name -> Matrix -> Matrix
+removeEnvironmentByName :: Name -> Environments -> Environments
 removeEnvironmentByName envName matrix =
-  matrix {environments = filter ((envName /=) . name) (environments matrix)}
+  matrix {envTargets = Map.delete envName (envTargets matrix)}

@@ -4,6 +4,7 @@
 module HWM.Runtime.Process
   ( silentRun,
     inheritRun,
+    exec,
   )
 where
 
@@ -13,7 +14,15 @@ import GHC.IO (evaluate)
 import Relude
 import System.Environment (getEnvironment)
 import qualified System.IO as TIO
+import System.Process (readProcessWithExitCode)
 import System.Process.Typed
+
+exec :: (MonadIO m) => Text -> [Text] -> m (Bool, String)
+exec name args = do
+  (code, _, out) <- liftIO (readProcessWithExitCode (toString name) (map toString args) "")
+  case code of
+    ExitSuccess {} -> pure (True, out)
+    ExitFailure {} -> pure (False, out)
 
 provideYamlPath :: (MonadIO m) => String -> m [(String, String)]
 provideYamlPath yamlPath = do

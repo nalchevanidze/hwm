@@ -31,25 +31,25 @@ instance ParseCLI VersionOptions where
 
 bumpVersion :: VersionChange -> Config -> ConfigT Config
 bumpVersion (BumpVersion bump) Config {..} = do
-  let version' = nextVersion bump version
+  let version' = nextVersion bump cfgVersion
   sectionTableM
     size
     ("bump version (" <> format bump <> ")")
-    [ ("from", pure $ format version),
+    [ ("from", pure $ format cfgVersion),
       ("to", pure $ chalk Cyan (format version'))
     ]
 
   let bounds' = versionBounds version'
-  pure Config {version = version', bounds = bounds', ..}
+  pure Config {cfgVersion = version', cfgBounds = bounds', ..}
 bumpVersion (FixedVersion version') Config {..} = do
   sectionTableM
     size
     "set version"
-    [ ("from", pure $ format version),
-      ("to", pure $ chalk Cyan (format version') <> if version' == version then " (no change)" else "")
+    [ ("from", pure $ format cfgVersion),
+      ("to", pure $ chalk Cyan (format version') <> if version' == cfgVersion then " (no change)" else "")
     ]
 
-  when (version' < version)
+  when (version' < cfgVersion)
     $ injectIssue
       ( Issue
           { issueTopic = "version",
@@ -60,12 +60,12 @@ bumpVersion (FixedVersion version') Config {..} = do
       )
 
   let bounds' = versionBounds version'
-  pure Config {version = version', bounds = bounds', ..}
+  pure Config {cfgVersion = version', cfgBounds = bounds', ..}
 
 runVersion :: VersionOptions -> ConfigT ()
 runVersion (VersionOptions (Just bump)) = (bumpVersion bump `updateConfig`) $ do
   sectionConfig size [("hwm.yaml", pure $ chalk Green "✓")]
   syncPackages
 runVersion (VersionOptions Nothing) = do
-  putLine . format . version =<< asks config
+  putLine . format . cfgVersion =<< asks config
   exitSuccess

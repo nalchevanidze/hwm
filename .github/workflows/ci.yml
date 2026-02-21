@@ -4,18 +4,34 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
+  setup:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+        ghc: [9.6.3]
+    runs-on: ${{ matrix.os }}
+    name: Setup ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+        with:
+          ghc: ${{ matrix.ghc }}
+
+      # Build ONLY dependencies. If this succeeds, the cache is SAVED.
+      - name: Install dependencies
+        shell: bash
+        run: stack build --fast --test --only-dependencies
+
   build:
+    needs: setup
     strategy:
       matrix:
         include:
           - ghc: 9.6.3
             env: stable
-          # - ghc: 8.10.7
-          #   env: legacy
       fail-fast: false
     runs-on: ubuntu-latest
     name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
@@ -24,18 +40,37 @@ jobs:
       - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
         with:
           ghc: ${{ matrix.ghc }}
-      
-      - name: Sync environment
-        run: hwm sync ${{ matrix.env }}
-
-      - name: Install dependencies
-        run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
 
       - name: Build
         run: stack build --fast
 
       - name: Test
         run: stack test --fast
+
+  archive:
+    needs: setup
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+    name: Artifact ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+
+      - name: Build and Install
+        shell: bash
+        run: |
+          stack install --fast
+          echo "$(stack path --local-bin)" >> $GITHUB_PATH
+
+      - name: Test Archiving
+        shell: bash
+        run: |
+          hash -r || true
+          hwm --version
+          hwm release artifacts
 
   hlint:
     runs-on: ubuntu-latest
@@ -49,24 +84,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s
-
-  artifacts:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
-    name: Artifact ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
-
-      - name: Binary
-        uses: nalchevanidze/hwm/actions/pkg@v0.0.5
-        with:
-          package: hwm
-          executable: hwm
-          smoke_test: version
 
 concurrency:
   group: ${{ github.ref }}

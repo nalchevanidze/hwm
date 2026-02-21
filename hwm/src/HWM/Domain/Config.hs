@@ -25,20 +25,22 @@ import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (Bounds)
 import HWM.Domain.Dependencies (Dependencies, getBounds)
-import HWM.Domain.Matrix (Matrix (..))
+import HWM.Domain.Environments (Environments (..))
+import HWM.Domain.Release (Release)
 import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup)
 import HWM.Runtime.Cache (Cache)
-import HWM.Runtime.Files (aesonYAMLOptions)
+import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import Relude
 
 data Config = Config
-  { name :: Name,
-    version :: Version,
-    bounds :: Bounds,
-    workspace :: [WorkspaceGroup],
-    matrix :: Matrix,
-    registry :: Dependencies,
-    scripts :: Map Name Text
+  { cfgName :: Name,
+    cfgVersion :: Version,
+    cfgBounds :: Bounds,
+    cfgWorkspace :: [WorkspaceGroup],
+    cfgEnvironments :: Environments,
+    cfgRegistry :: Dependencies,
+    cfgScripts :: Map Name Text,
+    cfgRelease :: Maybe Release
   }
   deriving
     ( Generic,
@@ -47,26 +49,29 @@ data Config = Config
 
 getRule :: (MonadError Issue m) => PkgName -> PkgRegistry -> Config -> m Bounds
 getRule depName ps Config {..}
-  | Map.member depName ps = pure bounds
-  | otherwise = getBounds depName registry
+  | Map.member depName ps = pure cfgBounds
+  | otherwise = getBounds depName cfgRegistry
+
+prefix :: String
+prefix = "cfg"
 
 instance FromJSON Config where
-  parseJSON = genericParseJSON aesonYAMLOptions
+  parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced prefix)
 
 instance ToJSON Config where
-  toJSON = genericToJSON aesonYAMLOptions
+  toJSON = genericToJSON (aesonYAMLOptionsAdvanced prefix)
 
 instance
   ( MonadError Issue m,
     MonadReader env m,
     Has env Cache,
     Has env [WorkspaceGroup],
-    Has env Matrix,
+    Has env Environments,
     MonadIO m
   ) =>
   Check m Config
   where
-  check Config {..} = check matrix
+  check Config {..} = check cfgEnvironments
 
 defaultScripts :: Map Name Text
 defaultScripts =
