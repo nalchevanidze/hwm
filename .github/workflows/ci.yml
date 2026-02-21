@@ -55,11 +55,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+
+      - name: Build and Install
+        shell: bash
+        run: |
+          stack install --fast
+          echo "$(stack path --local-bin)" >> $GITHUB_PATH
+
       - name: Test Archiving
         shell: bash
         run: |
-          set -euo pipefail
-          stack install --fast
+          # Ensure the shell session refreshes its binary lookup
+          hash -r || true
+          hwm --version
           hwm release artifacts
 
 concurrency:
