@@ -10,6 +10,7 @@ module HWM.CLI.Command.Release.Archive
 where
 
 import Control.Monad.Except (MonadError (..))
+import qualified Data.Map as Map
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format))
@@ -23,7 +24,6 @@ import HWM.Runtime.UI (putLine)
 import Options.Applicative (help, long, metavar, strOption)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
-
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions
@@ -50,24 +50,25 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
   liftIO $ removePathForcibly releaseDir
   liftIO $ createDirectoryIfMissing True releaseDir
 
-  cfgs <- getArchiveConfigs
+  cfgs <- Map.toList <$> getArchiveConfigs
 
-  putLine $ "Building and extracting " <> format pkgName <> "..."
-  stackGenBinary pkgName releaseDir
+  for_ cfgs $ \(name, cfg) -> do
+    putLine $ "Building and extracting " <> format pkgName <> "..."
+    stackGenBinary pkgName releaseDir
 
-  putLine "Compressing artifact..."
+    putLine "Compressing artifact..."
 
-  ArchiveInfo {..} <- createZipArchive releaseDir (fromMaybe (format pkgName) execName) "./"
+    ArchiveInfo {..} <- createZipArchive releaseDir (fromMaybe (format pkgName) execName) "./"
 
-  for_ outFile $ \file ->
-    liftIO
-      $ writeFile file
-      $ toString
-      $ T.unlines
-        [ "HWM_ASSET_NAME=" <> format zipPath,
-          "HWM_BIN_NAME=" <> binName,
-          "HWM_ASSET_HASH=" <> sha256
-        ]
+    for_ outFile $ \file ->
+      liftIO
+        $ writeFile file
+        $ toString
+        $ T.unlines
+          [ "HWM_ASSET_NAME=" <> format zipPath,
+            "HWM_BIN_NAME=" <> binName,
+            "HWM_ASSET_HASH=" <> sha256
+          ]
 
-  putLine $ "✅ Produced: " <> format zipPath <> "\nHash: " <> format sha256
-  pure ()
+    putLine $ "✅ Produced: " <> format zipPath <> "\nHash: " <> format sha256
+    pure ()
