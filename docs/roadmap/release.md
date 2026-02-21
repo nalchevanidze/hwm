@@ -141,10 +141,10 @@ If the `--gh-publish` flag is present, HWM performs a high-speed streaming uploa
 - [x] Generate `.sha256` checksum alongside `.zip`.
 - [x] Use `{{binary}}-{{os}}-{{arch}}.zip` naming convention.
 - [ ] Allow advanced YAML overrides (e.g., format, strip, name template).
-- [ ] Support `.tar.gz` archives via `tar` package.
+- [x] Support `.tar.gz` archives via `tar` package.
 - [x] Orchestrate full distribution lifecycle in `release:` block.
 - [X] Build with `stack` or `cabal` using `-O2` and `-split-sections`.
-- [ ] Move binaries to release directory.
+- [x] Move binaries to release directory.
 - [x] Zip binaries as `<binary>-<os>-<arch>.zip`.
 - [x] Generate SHA256 hash and `.sha256` sidecar file.
 - [x] Coordinator job creates GitHub Release and `upload_url`.
