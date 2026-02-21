@@ -61,6 +61,7 @@ runReleaseArchive ReleaseArchiveOptions {} = do
     putLine "Compressing artifact..."
 
     ArchiveInfo {..} <- createZipArchive localDir executableName "./"
+    
 
     putLine $ "✅ Produced: " <> format zipPath <> "\nHash: " <> format sha256
     pure ()
