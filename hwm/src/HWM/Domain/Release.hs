@@ -45,7 +45,7 @@ instance ToJSON Release where
 
 data ArchiveConfig = ArchiveConfig
   { arcSource :: Text,
-    arcFormat :: ArchiveFormat,
+    arcFormats :: [ArchiveFormat],
     arcGhcOptions :: [Text],
     arcNameTemplate :: Text
   }
@@ -56,19 +56,17 @@ data ArchiveConfig = ArchiveConfig
       Eq
     )
 
-data ArchiveFormat = Zip | TarGz | Auto
+data ArchiveFormat = Zip | TarGz
   deriving (Generic, Show, Ord, Eq)
 
 instance FromJSON ArchiveFormat where
   parseJSON (String "zip") = pure Zip
   parseJSON (String "tar.gz") = pure TarGz
-  parseJSON (String "auto") = pure Auto
   parseJSON _ = fail "Invalid archive format"
 
 instance ToJSON ArchiveFormat where
   toJSON Zip = String "zip"
   toJSON TarGz = String "tar.gz"
-  toJSON Auto = String "auto"
 
 defaultFormat :: Text
 defaultFormat = "{{binary}}-v{{version}}-{{os}}-{{arch}}"
@@ -86,7 +84,7 @@ defaultArchiveConfig :: Text -> ArchiveConfig
 defaultArchiveConfig src =
   ArchiveConfig
     { arcSource = src,
-      arcFormat = Zip,
+      arcFormats = [TarGz, Zip],
       arcGhcOptions =
         [ "-O2", -- High-level optimization
           "-split-sections", -- Enables dead-code elimination at the function level

@@ -25,7 +25,7 @@ import HWM.Core.Formatting (Format (..))
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Release (ArchiveFormat (..), formatArchiveTemplate)
-import HWM.Runtime.Platform (OS (..), Platform (..), detectPlatform, platformExt)
+import HWM.Runtime.Platform (detectPlatform, platformExt)
 import Relude
 import System.Directory (doesFileExist)
 import System.FilePath.Posix (joinPath, normalise, takeDirectory, takeFileName, (</>))
@@ -42,11 +42,8 @@ data ArchiveOptions = ArchiveOptions
     name :: Name,
     outDir :: FilePath,
     nameTemplate :: Text,
-    formatPreference :: ArchiveFormat
+    archiveFormats :: [ArchiveFormat]
   }
-
-data Target = TargetZip | TargetTarGz
-  deriving (Show, Eq)
 
 createArchive ::
   (MonadIO m, MonadError Issue m) =>
@@ -60,25 +57,19 @@ createArchive version ArchiveOptions {..} = do
 
   platform <- detectPlatform
 
-  let targets = case (formatPreference, os platform) of
-        (Auto, Windows) -> [TargetZip]
-        (Auto, _) -> [TargetTarGz, TargetZip] -- Both for Linux/Mac
-        (Zip, _) -> [TargetZip]
-        (TarGz, _) -> [TargetTarGz]
-
-  forM targets $ \target -> do
-    let ext = if target == TargetZip then ".zip" else ".tar.gz"
+  forM archiveFormats $ \target -> do
+    let ext = if target == Zip then ".zip" else ".tar.gz"
     let archiveName = formatArchiveTemplate name version platform nameTemplate <> ext
     let binNameWithExt = name <> platformExt platform
     let archivePath = normalise $ joinPath [outDir, toString archiveName]
 
     liftIO $ case target of
-      TargetZip -> do
+      Zip -> do
         entry <- Zip.readEntry [] binPath
         let rootEntry = entry {Zip.eRelativePath = toString binNameWithExt}
         let archive = Zip.addEntryToArchive rootEntry Zip.emptyArchive
         BSL.writeFile archivePath (Zip.fromArchive archive)
-      TargetTarGz -> do
+      TarGz -> do
         callProcess
           "tar"
           [ "-czvf",
