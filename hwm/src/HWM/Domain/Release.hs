@@ -4,7 +4,7 @@
 
 module HWM.Domain.Release
   ( Release (..),
-    ArchiveConfig (..),
+    ArtifactConfig (..),
     ArchiveFormat (..),
     formatArchiveTemplate,
   )
@@ -27,8 +27,8 @@ import HWM.Runtime.Platform (Platform (..))
 import Relude
 
 data Release = Release
-  { rlsArchive :: Maybe (Map Name ArchiveConfig),
-    rlsPublish :: Maybe (Map Name Value)
+  { rlsArtifacts :: Maybe (Map Name ArtifactConfig),
+    rlsLibs :: Maybe (Map Name Value)
   }
   deriving
     ( Generic,
@@ -44,7 +44,7 @@ instance FromJSON Release where
 instance ToJSON Release where
   toJSON = genericToJSON (aesonYAMLOptionsAdvanced prefix)
 
-data ArchiveConfig = ArchiveConfig
+data ArtifactConfig = ArtifactConfig
   { arcSource :: Text,
     arcFormats :: [ArchiveFormat],
     arcGhcOptions :: [Text],
@@ -84,9 +84,9 @@ formatArchiveTemplate name version platform =
       ("arch", format $ arch platform)
     ]
 
-defaultArchiveConfig :: Text -> ArchiveConfig
+defaultArchiveConfig :: Text -> ArtifactConfig
 defaultArchiveConfig src =
-  ArchiveConfig
+  ArtifactConfig
     { arcSource = src,
       arcFormats = [TarGz, Zip],
       arcGhcOptions =
@@ -98,14 +98,14 @@ defaultArchiveConfig src =
       arcNameTemplate = defaultFormat
     }
 
-isDefaultArchiveConfig :: ArchiveConfig -> Bool
+isDefaultArchiveConfig :: ArtifactConfig -> Bool
 isDefaultArchiveConfig arc = arc == defaultArchiveConfig (arcSource arc)
 
-instance FromJSON ArchiveConfig where
+instance FromJSON ArtifactConfig where
   parseJSON (String x) = pure $ defaultArchiveConfig x
   parseJSON v = genericParseJSON (aesonYAMLOptionsAdvanced prefix) v
 
-instance ToJSON ArchiveConfig where
+instance ToJSON ArtifactConfig where
   toJSON v
     | isDefaultArchiveConfig v = String (arcSource v)
     | otherwise = genericToJSON (aesonYAMLOptionsAdvanced prefix) v

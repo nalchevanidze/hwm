@@ -39,7 +39,7 @@ import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runRe
 import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.Environments (Environments (..))
-import HWM.Domain.Release (ArchiveConfig, Release (..))
+import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
 import HWM.Runtime.Files (addHash, readYaml, rewrite_)
@@ -187,7 +187,7 @@ askCache = asks cache
 askMatrix :: ConfigT Environments
 askMatrix = asks (cfgEnvironments . config)
 
-getArchiveConfigs :: ConfigT (Map Name ArchiveConfig)
+getArchiveConfigs :: ConfigT (Map Name ArtifactConfig)
 getArchiveConfigs = do
   release <- asks (cfgRelease . config)
-  pure $ fromMaybe mempty (release >>= rlsArchive)
+  pure $ fromMaybe mempty (release >>= rlsArtifacts)

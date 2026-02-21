@@ -19,7 +19,7 @@ import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (fromEither)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
-import HWM.Domain.Release (ArchiveConfig (..), ArchiveFormat)
+import HWM.Domain.Release (ArtifactConfig (..), ArchiveFormat)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchiveOptions (..), createArchive)
@@ -82,7 +82,7 @@ prepeareDir dir = liftIO $ do
   removePathForcibly dir
   createDirectoryIfMissing True dir
 
-applyOverrieds :: Maybe [ArchiveFormat] -> ArchiveOverrides -> ArchiveConfig -> ArchiveConfig
+applyOverrieds :: Maybe [ArchiveFormat] -> ArchiveOverrides -> ArtifactConfig -> ArtifactConfig
 applyOverrieds formats ArchiveOverrides {..} cfg =
   cfg
     { arcFormats = fromMaybe (arcFormats cfg) formats,
@@ -93,7 +93,7 @@ applyOverrieds formats ArchiveOverrides {..} cfg =
 parseFormats :: [Text] -> ConfigT [ArchiveFormat]
 parseFormats = fromEither "can't parse archive format" . traverse parse
 
-withOverrides :: ReleaseArchiveOptions -> Map Name ArchiveConfig -> ConfigT [(Name, ArchiveConfig)]
+withOverrides :: ReleaseArchiveOptions -> Map Name ArtifactConfig -> ConfigT [(Name, ArtifactConfig)]
 withOverrides ReleaseArchiveOptions {..} cfgs = do
   parsedFormats <- traverse parseFormats ovFormat
   case targetName of
@@ -107,7 +107,7 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   prepeareDir outputDir
   version <- asks (cfgVersion . config)
   cfgs <- getArchiveConfigs >>= withOverrides ops
-  for_ cfgs $ \(name, ArchiveConfig {..}) -> do
+  for_ cfgs $ \(name, ArtifactConfig {..}) -> do
     binaryDir <- genBindaryDir name
     putLine $ "Building and extracting \"" <> name <> "\" ..."
     let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
