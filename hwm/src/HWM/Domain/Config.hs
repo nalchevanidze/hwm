@@ -28,7 +28,7 @@ import HWM.Domain.Dependencies (Dependencies, getBounds)
 import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup)
 import HWM.Runtime.Cache (Cache)
-import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced)
+import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import Relude
 
 data Config = Config
