@@ -49,19 +49,13 @@ runReleaseArchive ReleaseArchiveOptions {} = do
     let localDir = joinPath [releaseDir, toString name]
     liftIO $ removePathForcibly localDir
     liftIO $ createDirectoryIfMissing True localDir
-
     putLine $ "Building and extracting \"" <> name <> "\" ..."
     let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
-    putLine $ "find \"" <> workspaceId <> "\" with \"" <> executableName <> "\" ..."
     targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
-
     stackGenBinary pkgName localDir
-
     putLine "Compressing artifact..."
-
     ArchiveInfo {..} <- createZipArchive localDir executableName "./"
-    
-
+      
     putLine $ "✅ Produced: " <> format zipPath <> "\nHash: " <> format sha256
     pure ()
