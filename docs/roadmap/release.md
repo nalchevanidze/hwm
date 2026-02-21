@@ -140,7 +140,7 @@ If the `--gh-publish` flag is present, HWM performs a high-speed streaming uploa
 - [x] Native zipping via pure-Haskell engine (`zip-archive`).
 - [x] Generate `.sha256` checksum alongside `.zip`.
 - [ ] Strip DWARF symbols for small binaries.
-- [ ] Use `{{binary}}-{{os}}-{{arch}}.zip` naming convention.
+- [x] Use `{{binary}}-{{os}}-{{arch}}.zip` naming convention.
 - [ ] Allow advanced YAML overrides (e.g., format, strip, name template).
 - [ ] Support `.tar.gz` archives via `tar` package.
 - [ ] Opt-out of stripping or pass custom Cabal flags.
@@ -150,8 +150,8 @@ If the `--gh-publish` flag is present, HWM performs a high-speed streaming uploa
 - [ ] Build with `stack` or `cabal` using `-O2` and `-split-sections`.
 - [ ] Strip debug symbols for minimal size.
 - [ ] Move binaries to release directory.
-- [ ] Zip binaries as `<binary>-<os>-<arch>.zip`.
-- [ ] Generate SHA256 hash and `.sha256` sidecar file.
+- [x] Zip binaries as `<binary>-<os>-<arch>.zip`.
+- [x] Generate SHA256 hash and `.sha256` sidecar file.
 - [ ] Coordinator job creates GitHub Release and `upload_url`.
 - [ ] Matrix workers upload artifacts using `hwm release archive --gh-publish <upload-url>`.
 - [ ] Upload `.zip` and `.sha256` to GitHub Release.
