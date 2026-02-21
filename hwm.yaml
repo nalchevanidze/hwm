@@ -9,26 +9,27 @@ workspace:
     publish: true
 environments:
   default: stable
-  legacy:
-    ghc: 8.10.7
-    resolver: lts-18.10
-    extra-deps:
-      aeson: 1.4.4.0
-      base-orphans: 0.8.1
-      fastsum: 0.1.0.0
-      megaparsec: 7.0.5
-      modern-uri: 0.3.0.0
-      relude: 0.3.0
-      retry: 0.8.1.0
-      time-compat: 1.9.2.2
-      websockets: 0.12.6.0
-  stable:
-    ghc: 9.6.3
-    resolver: lts-22.6
-    extra-deps:
-      fastsum: 0.1.1.1
-      list-extras: 0.4.1.6
-      type-aligned: 0.9.6
+  targets:
+    legacy:
+      ghc: 8.10.7
+      resolver: lts-18.10
+      extra-deps:
+        aeson: 1.4.4.0
+        base-orphans: 0.8.1
+        fastsum: 0.1.0.0
+        megaparsec: 7.0.5
+        modern-uri: 0.3.0.0
+        relude: 0.3.0
+        retry: 0.8.1.0
+        time-compat: 1.9.2.2
+        websockets: 0.12.6.0
+    stable:
+      ghc: 9.6.3
+      resolver: lts-22.6
+      extra-deps:
+        fastsum: 0.1.1.1
+        list-extras: 0.4.1.6
+        type-aligned: 0.9.6
 registry:
   - Cabal                 >=  3.8         &&  <=  3.16.1.0
   - Glob                  >=  0.10.1      &&  <=  0.10.2
