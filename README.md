@@ -248,7 +248,7 @@ release:
 hwm release artifacts
 
 # Publish to GitHub Releases with a masked upload URL
-hwm release artifacts --gh-publish <upload_url>
+hwm release artifacts --gh-upload <upload_url>
 
 ```
 

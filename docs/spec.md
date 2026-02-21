@@ -868,7 +868,7 @@ hwm release artifacts [OPTIONS]
 | Option | Default | Description |
 | --- | --- | --- |
 | `--output-dir <path>` | `.hwm/dist` | Staging directory (wiped before every run). |
-| `--gh-publish <upload-url>` | `none` | Triggers GitHub asset upload with provided upload URL. |
+| `--gh-upload <upload-url>` | `none` | Triggers GitHub asset upload with provided upload URL. |
 | `--format <format>` | `none` | Artifact format to generate (`zip`, `tar.gz`, etc.). |
 | `--ghc-options <options>` | `-O2 -threaded -split-sections` | Custom GHC flags. |
 | `--name-template <template>` | `{{binary}}-v{{version}}-{{os}}-{{arch}}` | Artifact naming template. |
@@ -897,7 +897,7 @@ hwm release artifacts [OPTIONS]
 
 ## 5. GitHub Publishing
 
-If `--gh-publish <upload-url>` is set, HWM:
+If `--gh-upload <upload-url>` is set, HWM:
 - Uploads artifacts and their checksums
 - Verifies successful upload (HTTP 201)
 
