@@ -26,6 +26,7 @@ import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (Bounds)
 import HWM.Domain.Dependencies (Dependencies, getBounds)
 import HWM.Domain.Environments (Environments (..))
+import HWM.Domain.Release (Release)
 import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup)
 import HWM.Runtime.Cache (Cache)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
@@ -38,7 +39,8 @@ data Config = Config
     cfgWorkspace :: [WorkspaceGroup],
     cfgEnvironments :: Environments,
     cfgRegistry :: Dependencies,
-    cfgScripts :: Map Name Text
+    cfgScripts :: Map Name Text,
+    cfgRelease :: Maybe Release
   }
   deriving
     ( Generic,
