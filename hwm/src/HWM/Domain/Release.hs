@@ -20,6 +20,7 @@ import Data.Aeson
 import Data.Yaml (Value (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), formatTemplate)
+import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Version (Version)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import HWM.Runtime.Platform (Platform (..))
@@ -60,9 +61,12 @@ data ArchiveFormat = Zip | TarGz
   deriving (Generic, Show, Ord, Eq)
 
 instance FromJSON ArchiveFormat where
-  parseJSON (String "zip") = pure Zip
-  parseJSON (String "tar.gz") = pure TarGz
-  parseJSON _ = fail "Invalid archive format"
+  parseJSON = parseJSON >=> parse
+
+instance Parse ArchiveFormat where
+  parse "zip" = pure Zip
+  parse "tar.gz" = pure TarGz
+  parse s = fail $ "Invalid archive format: " <> toString s <> ". Supported: zip, tar.gz."
 
 instance ToJSON ArchiveFormat where
   toJSON Zip = String "zip"
