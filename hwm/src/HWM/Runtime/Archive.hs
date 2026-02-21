@@ -52,7 +52,7 @@ createArchive ::
   (MonadIO m, MonadError Issue m) =>
   Version ->
   ArchiveOptions ->
-  m ArchiveInfo
+  m [ArchiveInfo]
 createArchive version ArchiveOptions {..} = do
   let binPath = sourceDir </> toString name
   binExists <- liftIO $ doesFileExist binPath
@@ -60,41 +60,42 @@ createArchive version ArchiveOptions {..} = do
 
   platform <- detectPlatform
 
-  -- 1. Determine the actual format based on 'Auto' logic
-  let actualFormat = case (formatPreference, os platform) of
-        (Auto, Windows) -> TargetZip
-        (Zip, _) -> TargetZip
-        (Auto, _) -> TargetTarGz
-        (TarGz, _) -> TargetTarGz
+  let targets = case (formatPreference, os platform) of
+        (Auto, Windows) -> [TargetZip]
+        (Auto, _) -> [TargetTarGz, TargetZip] -- Both for Linux/Mac
+        (Zip, _) -> [TargetZip]
+        (TarGz, _) -> [TargetTarGz]
 
-  let ext = if actualFormat == TargetZip then ".zip" else ".tar.gz"
+  forM targets $ \target -> do
+    let ext = if target == TargetZip then ".zip" else ".tar.gz"
+    let archiveName = formatArchiveTemplate name version platform nameTemplate <> ext
+    let binNameWithExt = name <> platformExt platform
+    let archivePath = normalise $ joinPath [outDir, toString archiveName]
 
-  let archiveName = formatArchiveTemplate name version platform nameTemplate <> ext
-  let binName = name <> platformExt platform
-  let archivePath = normalise $ joinPath [outDir, toString archiveName]
+    liftIO $ case target of
+      TargetZip -> do
+        entry <- Zip.readEntry [] binPath
+        let rootEntry = entry {Zip.eRelativePath = toString binNameWithExt}
+        let archive = Zip.addEntryToArchive rootEntry Zip.emptyArchive
+        BSL.writeFile archivePath (Zip.fromArchive archive)
+      TargetTarGz -> do
+        callProcess
+          "tar"
+          [ "-czvf",
+            archivePath,
+            "-C",
+            takeDirectory binPath,
+            takeFileName binPath
+          ]
 
-  -- 2. Execute the archiving
-  liftIO $ case actualFormat of
-    TargetZip -> do
-      entry <- Zip.readEntry [] binPath
-      let rootEntry = entry {Zip.eRelativePath = toString binName}
-      let archive = Zip.addEntryToArchive rootEntry Zip.emptyArchive
-      BSL.writeFile archivePath (Zip.fromArchive archive)
-    TargetTarGz -> do
-      -- We use system tar to preserve +x permissions on Unix
-      callProcess
-        "tar"
-        [ "-czvf",
-          archivePath,
-          "-C",
-          takeDirectory binPath,
-          takeFileName binPath
-        ]
+    hashBS <- liftIO $ BS.readFile archivePath
+    let sha256 = T.decodeUtf8 (Base16.encode (SHA256.hash hashBS))
+    let sha256Path = archivePath <> ".sha256"
+    liftIO $ T.writeFile sha256Path (format sha256)
 
-  -- 3. Compute SHA256 (Works for both formats)
-  hashBS <- liftIO $ BS.readFile archivePath
-  let sha256 = T.decodeUtf8 (Base16.encode (SHA256.hash hashBS))
-  let sha256Path = archivePath <> ".sha256"
-  liftIO $ T.writeFile sha256Path (format sha256)
-
-  pure ArchiveInfo {..}
+    pure
+      ArchiveInfo
+        { archivePath = archivePath,
+          binName = name,
+          sha256Path = sha256Path
+        }
