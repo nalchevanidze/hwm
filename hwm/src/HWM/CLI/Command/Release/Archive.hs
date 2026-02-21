@@ -86,16 +86,15 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
     putLine "Compressing artifact..."
     archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats}
 
-    for_ ghPublishUrl $ \uploadUrl -> do
-      for_ archives $ \ArchiveInfo {..} -> do
-        uploadToGitHub uploadUrl archivePath
-        putLine "gh published"
-        uploadToGitHub uploadUrl sha256Path
-        putLine "checksum published"
-
     putLine ""
     section name
       $ for_ archives
       $ \ArchiveInfo {..} -> do
+        for_ ghPublishUrl $ \uploadUrl -> do
+          uploadToGitHub uploadUrl archivePath
+          putLine "gh published"
+          uploadToGitHub uploadUrl sha256Path
+          putLine "checksum published"
+
         putLine $ subPathSign <> format archivePath
         putLine $ subPathSign <> format sha256Path
