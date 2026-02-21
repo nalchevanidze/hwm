@@ -10,7 +10,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Environments
-  ( BuildEnv (..),
+  ( EnviromentTarget (..),
     Environments (..),
     BuildEnvironment (..),
     getBuildEnvironments,
@@ -34,6 +34,7 @@ import Data.Aeson
 import Data.Foldable (Foldable (..))
 import Data.List ((\\))
 import qualified Data.Map as M
+import qualified Data.Map as Map
 import Data.Traversable (for)
 import HWM.Core.Common
   ( Check (..),
@@ -55,18 +56,17 @@ type Extras = VersionMap
 
 data Environments = Environments
   { envDefault :: Name,
-    environments :: [BuildEnv]
+    envTargets :: Map Name EnviromentTarget
   }
   deriving
     ( Generic,
       Show
     )
 
-newEnv :: Name -> Version -> Name -> BuildEnv
-newEnv name ghc resolver =
-  BuildEnv
-    { name = name,
-      ghc = ghc,
+newEnv :: Version -> Name -> EnviromentTarget
+newEnv ghc resolver =
+  EnviromentTarget
+    { ghc = ghc,
       resolver = resolver,
       extraDeps = Nothing,
       exclude = Nothing,
@@ -89,11 +89,10 @@ instance
   ) =>
   Check m Environments
   where
-  check Environments {..} = traverse_ check environments
+  check Environments {..} = traverse_ check envTargets
 
-data BuildEnv = BuildEnv
-  { name :: Name,
-    ghc :: Version,
+data EnviromentTarget = EnviromentTarget
+  { ghc :: Version,
     resolver :: Name,
     extraDeps :: Maybe Extras,
     exclude :: Maybe [Text],
@@ -106,10 +105,10 @@ data BuildEnv = BuildEnv
       Eq
     )
 
-instance FromJSON BuildEnv where
+instance FromJSON EnviromentTarget where
   parseJSON = genericParseJSON aesonYAMLOptions
 
-instance ToJSON BuildEnv where
+instance ToJSON EnviromentTarget where
   toJSON = genericToJSON aesonYAMLOptions
 
 instance
@@ -119,9 +118,9 @@ instance
     Has env Cache,
     MonadIO m
   ) =>
-  Check m BuildEnv
+  Check m EnviromentTarget
   where
-  check BuildEnv {..} =
+  check EnviromentTarget {..} =
     sequence_
       [ traverse_ check (maybe [] hkgRefs extraDeps),
         checkPkgNames exclude
@@ -141,7 +140,7 @@ checkPkgNames ls = do
   unless (null unknown) (throwError $ fromString ("unknown packages: " <> show unknown))
 
 data BuildEnvironment = BuildEnvironment
-  { buildEnv :: BuildEnv,
+  { buildEnv :: EnviromentTarget,
     buildPkgs :: [Pkg],
     buildName :: Name,
     buildExtraDeps :: Maybe Extras,
@@ -166,14 +165,14 @@ getBuildEnvironments ::
   ) =>
   m [BuildEnvironment]
 getBuildEnvironments = do
-  envs <- environments <$> askEnv
-  for envs $ \env -> do
+  envs <- envTargets <$> askEnv
+  for (Map.toList envs) $ \(name, env) -> do
     pkgs <- askAllPackages
     pure
       BuildEnvironment
         { buildEnv = env,
           buildPkgs = excludePkgs env pkgs,
-          buildName = name env,
+          buildName = name,
           buildExtraDeps = extraDeps env,
           buildResolver = resolver env
         }
@@ -192,7 +191,7 @@ getBuildEnvironment ::
   m BuildEnvironment
 getBuildEnvironment inputName = do
   envs <- getBuildEnvironments
-  defaultname <- defaultEnvironment <$> askEnv
+  defaultname <- envDefault <$> askEnv
   case inputName of
     Just name -> matchEnv envs name (select envs name)
     Nothing -> do
@@ -249,13 +248,13 @@ askAllPackages = do
 
 existsEnviroment :: (MonadReader env m, Has env Environments) => Name -> m Bool
 existsEnviroment n = do
-  envs <- environments <$> askEnv
-  pure $ isJust $ find ((n ==) . name) envs
+  envs <- envTargets <$> askEnv
+  pure $ isJust $ Map.lookup n envs
 
 printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env [WorkspaceGroup], Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
 printEnvironments name = do
   active <- getBuildEnvironment name
-  def <- defaultEnvironment <$> askEnv
+  def <- envDefault <$> askEnv
   environments <- getBuildEnvironments
   sectionEnvironments (Just $ format def) $ forTable 0 environments $ \env ->
     ( format env,
@@ -274,4 +273,4 @@ getTestedRange = do
 -- | Remove an environment from the matrix by name
 removeEnvironmentByName :: Name -> Environments -> Environments
 removeEnvironmentByName envName matrix =
-  matrix {environments = filter ((envName /=) . name) (environments matrix)}
+  matrix {envTargets = Map.delete envName (envTargets matrix)}

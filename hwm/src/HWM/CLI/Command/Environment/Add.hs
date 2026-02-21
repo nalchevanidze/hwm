@@ -6,6 +6,7 @@ module HWM.CLI.Command.Environment.Add (EnvAddOptions, runEnvAdd) where
 
 import Control.Monad.Except (throwError)
 import qualified Data.Map as M
+import qualified Data.Map as Map
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), padDots)
@@ -62,6 +63,6 @@ runEnvAdd EnvAddOptions {..} = do
             ( \cfg@Config {..} -> do
                 ghc <- getSnapshotGHC resolver
                 putLine $ padDots size "ghc" <> format ghc
-                pure cfg {matrix = matrix {environments = environments matrix <> [newEnv envName ghc resolver]}}
+                pure cfg {matrix = matrix {envTargets = Map.insert envName (newEnv ghc resolver) (envTargets matrix)}}
             )
             (pure ())

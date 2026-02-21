@@ -40,7 +40,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName, pkgId, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..), fromEither)
 import HWM.Core.Version (Version, parseGHCVersion)
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Domain.Environments (BuildEnv (..), BuildEnvironment (..), Environments (..), getBuildEnvironment, hkgRefs)
+import HWM.Domain.Environments (BuildEnvironment (..), EnviromentTarget (..), Environments (..), getBuildEnvironment, hkgRefs)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
 import HWM.Runtime.Logging (log)
@@ -93,7 +93,7 @@ syncStackYaml :: ConfigT ()
 syncStackYaml = do
   stackYamlPath <- stack <$> askOptions
   rewrite_ stackYamlPath $ const $ do
-    BuildEnvironment {buildPkgs, buildEnv = BuildEnv {..}} <- getBuildEnvironment Nothing
+    BuildEnvironment {buildPkgs, buildEnv = EnviromentTarget {..}} <- getBuildEnvironment Nothing
     pure
       Stack
         { saveHackageCreds = Just False,
@@ -112,7 +112,7 @@ createEnvYaml target = do
   path <- stackPath (Just target)
   liftIO $ createDirectoryIfMissing True ".hwm/matrix/"
   rewrite_ path $ const $ do
-    BuildEnvironment {buildEnv = BuildEnv {..}, ..} <- getBuildEnvironment (Just target)
+    BuildEnvironment {buildEnv = EnviromentTarget {..}, ..} <- getBuildEnvironment (Just target)
     pure
       Stack
         { saveHackageCreds = Just False,
@@ -196,13 +196,13 @@ deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExte
 
 buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> NonEmpty (Name, Stack) -> m Environments
 buildMatrix pkgs (defaultEnv :| envs) = do
-  environments <- sortOn ghc <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
-  pure Environments {defaultEnvironment = fst defaultEnv, environments}
+  environments <- sortOn (ghc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
+  pure Environments {envDefault = fst defaultEnv, envTargets = Map.fromList environments}
 
-inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m BuildEnv
+inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m (Name, EnviromentTarget)
 inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do
   ghc <- maybe (getSnapshotGHC resolver) (fromEither "GHC Parsing" . parseGHCVersion) compiler
   extraDeps <- parseExtraDeps (fromMaybe [] deps)
   let excludeList = filter ((`notElem` packages) . pkgDirPath) allPkgs
       exclude = if null excludeList then Nothing else Just (map pkgId excludeList)
-  pure BuildEnv {..}
+  pure (name, EnviromentTarget {..})

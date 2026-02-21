@@ -113,7 +113,7 @@ instance MonadIssue ConfigT where
 
 computeHash :: Config -> Text
 computeHash cfg =
-  let hashInput = T.encodeUtf8 (T.pack (show (environments $ matrix cfg)))
+  let hashInput = T.encodeUtf8 (T.pack (show (envTargets $ matrix cfg)))
       hashBytes = SHA256.hash hashInput
    in T.decodeUtf8 (Base16.encode hashBytes)
 
@@ -143,7 +143,7 @@ updateConfig f m = do
 runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
   config <- resolveResultTSilent (readYaml hwm)
-  cache <- loadCache (defaultEnvironment (matrix config))
+  cache <- loadCache (envDefault (matrix config))
   changed <- hasHashChanged config <$> getFileHash hwm
   pkgs <- resolveResultTSilent (pkgRegistry (workspace config))
   let env = Env {options = opts, config, cache, pkgs}
