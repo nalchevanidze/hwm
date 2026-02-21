@@ -92,10 +92,7 @@ Transition from manual "side-loading" via `install.sh` to a standard, versioned 
 * **Deprecate `install.sh`:** Replace the manual script with a simple one-liner for users:
 ```bash
 brew tap nalchevanidze/hwm && brew install hwm
-
 ```
-
-
 
 ### **3. Strategic Benefits**
 
