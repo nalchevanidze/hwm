@@ -34,8 +34,8 @@ data Command
   | Run {scriptName :: Name, runOptions :: ScriptOptions}
   | Status
   | Init {initOptions :: InitOptions}
-  -- Domain-specific commands
-  | Registry RegistryCommand
+  | -- Domain-specific commands
+    Registry RegistryCommand
   | Env EnvCommand
   | Workspace WorkspaceCommand
   | Release ReleaseCommand

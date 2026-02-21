@@ -61,7 +61,7 @@ createArchive version ArchivingPlan {..} = do
     let archiveName = formatArchiveTemplate name version platform nameTemplate <> ext
     let archivePath = normalise $ joinPath [outDir, toString archiveName]
 
-    success <- writeArchive target (binPath  <> toString (platformExt platform)) archivePath (name <> platformExt platform)
+    success <- writeArchive target (binPath <> toString (platformExt platform)) archivePath (name <> platformExt platform)
 
     if success
       then Just <$> finalizeArchive archivePath
