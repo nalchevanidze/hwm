@@ -13,8 +13,6 @@ module HWM.Runtime.Archive
 where
 
 import qualified Codec.Archive.Zip as Zip
-import Control.Exception (try)
-import Control.Exception.Base (IOException)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (throwError)
 import qualified Crypto.Hash.SHA256 as SHA256
@@ -25,14 +23,14 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
-import HWM.Core.Result (Issue)
+import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (..))
 import HWM.Core.Version (Version)
 import HWM.Domain.Release (ArchiveFormat (..), formatArchiveTemplate)
 import HWM.Runtime.Platform (detectPlatform, platformExt)
+import HWM.Runtime.Process (exec)
 import Relude
 import System.Directory (doesFileExist)
 import System.FilePath.Posix (joinPath, normalise, takeDirectory, takeFileName, (</>))
-import System.Process (callProcess)
 
 data ArchiveInfo = ArchiveInfo
   { archivePath :: FilePath,
@@ -48,7 +46,7 @@ data ArchivingPlan = ArchivingPlan
   }
 
 createArchive ::
-  (MonadIO m, MonadError Issue m) =>
+  (MonadIO m, MonadError Issue m, MonadIssue m) =>
   Version ->
   ArchivingPlan ->
   m [ArchiveInfo]
@@ -69,29 +67,25 @@ createArchive version ArchivingPlan {..} = do
       then Just <$> finalizeArchive archivePath
       else pure Nothing
 
-writeArchive :: (MonadIO m) => ArchiveFormat -> FilePath -> FilePath -> Name -> m Bool
+writeArchive :: (MonadIO m, MonadIssue m) => ArchiveFormat -> FilePath -> FilePath -> Name -> m Bool
 writeArchive Zip binPath outPath binNameWithExt = liftIO $ do
   entry <- Zip.readEntry [] binPath
   let rootEntry = entry {Zip.eRelativePath = toString binNameWithExt}
   let archive = Zip.addEntryToArchive rootEntry Zip.emptyArchive
   BSL.writeFile outPath (Zip.fromArchive archive)
   pure True
-writeArchive TarGz binPath outPath _ = liftIO $ do
-  result <-
-    try
-      $ callProcess
-        "tar"
-        [ "-czvf",
-          outPath,
-          "-C",
-          takeDirectory binPath,
-          takeFileName binPath
-        ]
-  case (result :: Either IOException ()) of
-    Left _ -> do
-      putStrLn "⚠️  Warning: Failed to create .tar.gz (check if 'tar' is installed)"
-      pure False
-    Right _ -> pure True
+writeArchive TarGz binPath outPath _ = do
+  (isOk, _) <-
+    exec
+      "tar"
+      [ "-czvf",
+        format outPath,
+        "-C",
+        format (takeDirectory binPath),
+        format (takeFileName binPath)
+      ]
+  unless isOk $ injectIssue (Issue {issueTopic = "archive", issueMessage = "⚠️  Warning: Failed to create .tar.gz (check if 'tar' is installed)", issueSeverity = SeverityWarning, issueDetails = Nothing})
+  pure isOk
 
 finalizeArchive :: (MonadIO m) => FilePath -> m ArchiveInfo
 finalizeArchive archPath = do

@@ -44,13 +44,12 @@ import HWM.Domain.Environments (BuildEnvironment (..), EnviromentTarget (..), En
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
 import HWM.Runtime.Logging (log)
+import HWM.Runtime.Process (exec)
 import Relude hiding (head, tail)
 import System.Directory (createDirectoryIfMissing, doesFileExist)
-import System.Exit (ExitCode (..))
 import System.FilePath (dropExtension, (</>))
 import System.FilePath.Glob (compile, globDir1)
 import System.FilePath.Posix (takeFileName)
-import System.Process (readProcessWithExitCode)
 
 data Stack = Stack
   { packages :: [FilePath],
@@ -124,21 +123,17 @@ createEnvYaml target = do
 
 stackGenBinary :: PkgName -> FilePath -> [Text] -> ConfigT ()
 stackGenBinary pkgName dirPath args = do
-  (success, buildOut) <- runStack (["install", toString pkgName, "--local-bin-path", dirPath] <> map toString args)
+  (success, buildOut) <- runStack (["install", format pkgName, "--local-bin-path", format dirPath] <> args)
   unless success $ throwError (fromString $ "Build failed: " <> buildOut)
 
-runStack :: [String] -> ConfigT (Bool, String)
-runStack args = do
-  (code, _, out) <- liftIO (readProcessWithExitCode "stack" args "")
-  case code of
-    ExitSuccess {} -> pure (True, out)
-    ExitFailure {} -> pure (False, out)
+runStack :: [Text] -> ConfigT (Bool, String)
+runStack = exec "stack"
 
 sdist :: Pkg -> ConfigT [Issue]
 sdist pkg = do
   let issueTopic = pkgMemberId pkg
       issueMessage = "stack sdist detected Issues. No packages were published."
-  (isSuccess, out) <- runStack ["sdist", toString (pkgName pkg)]
+  (isSuccess, out) <- runStack ["sdist", format (pkgName pkg)]
   let severity = if isSuccess then findIssue out else Just SeverityError
   case severity of
     Nothing -> pure []
@@ -149,7 +144,7 @@ sdist pkg = do
 
 upload :: Pkg -> ConfigT (Status, [Issue])
 upload pkg = do
-  (isSuccess, out) <- runStack ["upload", toString (pkgName pkg)]
+  (isSuccess, out) <- runStack ["upload", format (pkgName pkg)]
   ( if isSuccess
       then pure (Checked, [])
       else
