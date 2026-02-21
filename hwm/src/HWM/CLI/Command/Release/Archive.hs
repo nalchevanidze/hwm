@@ -25,7 +25,7 @@ import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchiveOptions (..), createArchive)
 import HWM.Runtime.Network (uploadToGitHub)
 import HWM.Runtime.UI (putLine, section)
-import Options.Applicative (help, long, metavar, option, short, showDefault, str, strOption, value)
+import Options.Applicative (help, long, metavar, option, showDefault, str, strOption, value)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
 import System.FilePath (joinPath)
@@ -49,23 +49,22 @@ data ArchiveOverrides = ArchiveOverrides
 instance ParseCLI ArchiveOverrides where
   parseCLI =
     ArchiveOverrides
-      <$> optional (option (parseLS <$> str) (long "ghc-option" <> short 'g' <> metavar "GHC_OPTION" <> help "Override GHC options for the release target. Can be specified multiple times."))
-      <*> optional (strOption (long "name-template" <> short 'n' <> metavar "NAME_TEMPLATE" <> help "Override the name template for the release target. Use {name} and {version} as placeholders."))
+      <$> optional (option (parseLS <$> str) (long "ghc-options" <> metavar "GHC_OPTION" <> help "Override GHC options for the release target. Can be specified multiple times."))
+      <*> optional (strOption (long "name-template" <> metavar "NAME_TEMPLATE" <> help "Override the name template for the release target. Use {name} and {version} as placeholders."))
 
 instance ParseCLI ReleaseArchiveOptions where
   parseCLI =
     ReleaseArchiveOptions
-      <$> optional (strOption (long "target" <> short 't' <> metavar "TARGET" <> help "Name of the release target to build. If not specified, all targets will be built."))
-      <*> optional (strOption (long "gh-publish" <> short 'u' <> metavar "UPLOAD_URL" <> help "URL to upload the release artifact. If not specified, the artifact will not be uploaded."))
+      <$> optional (strOption (long "target" <> metavar "TARGET" <> help "Name of the release target to build. If not specified, all targets will be built."))
+      <*> optional (strOption (long "gh-publish" <> metavar "UPLOAD_URL" <> help "URL to upload the release artifact. If not specified, the artifact will not be uploaded."))
       <*> strOption
         ( long "output-dir"
-            <> short 'o'
             <> metavar "OUTPUT_DIR"
             <> help "Directory to output the release artifacts."
             <> value ".hwm/dist"
             <> showDefault
         )
-      <*> optional (option (parseLS <$> str) (long "format" <> short 'f' <> metavar "FORMAT" <> help "Override the archive format for the release target. Supported: zip, tar.gz."))
+      <*> optional (option (parseLS <$> str) (long "format" <> metavar "FORMAT" <> help "Override the archive format for the release target. Supported: zip, tar.gz."))
       <*> parseCLI
 
 genBindaryDir :: (MonadIO m, ToString a) => a -> m FilePath
