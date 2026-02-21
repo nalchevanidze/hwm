@@ -1,4 +1,4 @@
-# hash: e7b77bc2760df12d8332ef151b6fe7570d382a3b26df1c3274bf1a53e0c1632f
+# hash: a0f410d3e627b8946a2dcefc0a4cb8385941ad7bcb6b3c563119481e621d5766
 name: hwm
 version: 0.0.5
 bounds: ">= 0.0.0 && <  0.1.0"
@@ -30,9 +30,6 @@ environments:
         fastsum: 0.1.1.1
         list-extras: 0.4.1.6
         type-aligned: 0.9.6
-release:
-  archive:
-    hwm: libs/hwm:hwm
 registry:
   - Cabal                 >=  3.8         &&  <=  3.16.1.0
   - Glob                  >=  0.10.1      &&  <=  0.10.2
@@ -62,6 +59,9 @@ registry:
   - unordered-containers  >=  0.2.14.0    &&  <=  0.2.21
   - yaml                  >=  0.11.5.0    &&  <=  0.11.11.2
   - zip-archive           >=  0.4.1       &&  <=  0.4.3.2
+release:
+  archive:
+    hwm: libs/hwm:hwm
 scripts:
   build: stack build --fast
   clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
