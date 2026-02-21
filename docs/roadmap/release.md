@@ -79,3 +79,63 @@ release:
       registry: ghcr.io     # Automatically containerize the binary
 
 ```
+
+
+# Iteration 3: The "Release Pipeline Orchestrator"
+
+## 🛠 HWM Release Workflow: The "Deep Dive"
+
+The workflow is designed to be **Stateless** and **Matrix-Safe**. It ensures that no matter how many operating systems you are building for, the result is consistent and secure.
+
+### 1. The Configuration Phase (Declarative)
+
+The developer defines the "What" in the `hwm.yaml`.
+
+* **Target Mapping:** Maps a friendly name (e.g., `morpheus`) to a specific workspace and executable (`libs/hwm:hwm`).
+* **Implicit Defaults:** HWM automatically assumes production optimizations (`-O2`), code stripping, and `zip` formatting unless overridden.
+
+### 2. The Build & Optimize Phase (Local)
+
+HWM invokes the Haskell build tool (`stack` or `cabal`) with "Production Injection":
+
+* **GHC Flags:** HWM forces `-O2` (max optimization) and `-split-sections` (to prepare for dead-code elimination).
+* **Binary Stripping:** Once compiled, HWM runs the `strip` command (or the internal linker equivalent) to remove all debug symbols and metadata.
+* *Result:* The binary size typically drops by **70-80%**.
+
+
+
+### 3. The Archiving & Security Phase (Local)
+
+HWM moves the optimized binary into a temporary release directory and secures it:
+
+* **Zipping:** Creates `morpheus-<os>-<arch>.zip`.
+* **Hashing:** HWM runs the `SHA256` algorithm over the `.zip` file.
+* **Sidecar Generation:** It creates a small text file, `morpheus-<os>-<arch>.zip.sha256`, containing only the hash. This allows users to verify the download without unzipping it first.
+
+### 4. The Orchestration Phase (CI/CD)
+
+This is where the "Boss and Worker" pattern handles the GitHub Matrix:
+
+* **The Coordinator (Boss):** A single CI job creates a GitHub Release and generates an `upload_url`.
+* **The Matrix (Workers):** Multiple machines (Linux, macOS, Windows) receive that URL.
+* **The Command:** `hwm release archive --publish <upload-url>`
+
+### 5. The Publishing Phase (Cloud)
+
+If the `--publish` flag is present, HWM performs a high-speed streaming upload:
+
+* **Binary Upload:** Sends the `.zip` to the GitHub `upload_url`.
+* **Checksum Upload:** Sends the `.sha256` file to the same release.
+* **Manifest:** HWM saves a `release-manifest.json` locally for the CI logs to prove exactly what was shipped.
+
+---
+
+## 🏗 Why this works better than manual scripts
+
+| Step | Manual Way | HWM Way |
+| --- | --- | --- |
+| **Optimization** | Forget to add `-O2` or `-threaded`. | Automatically injected. |
+| **Size** | 120MB binary (too big for GitHub). | 18MB binary (stripped & zipped). |
+| **Security** | No checksum provided. | Automatic `.sha256` sidecar. |
+| **Matrix** | 3 OSs fight over the same Release. | Workers target a specific `upload_url`. |
+

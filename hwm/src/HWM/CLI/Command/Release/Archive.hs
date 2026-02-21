@@ -15,7 +15,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format))
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Domain.ConfigT (ConfigT)
+import HWM.Domain.ConfigT (ConfigT, getArchiveConfigs)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), createZipArchive)
@@ -23,6 +23,7 @@ import HWM.Runtime.UI (putLine)
 import Options.Applicative (help, long, metavar, strOption)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
+
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions
@@ -46,9 +47,10 @@ runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
 runReleaseArchive ReleaseArchiveOptions {..} = do
   targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [opsPkgName]
   Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> opsPkgName <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
-
   liftIO $ removePathForcibly releaseDir
   liftIO $ createDirectoryIfMissing True releaseDir
+
+  cfgs <- getArchiveConfigs
 
   putLine $ "Building and extracting " <> format pkgName <> "..."
   stackGenBinary pkgName releaseDir

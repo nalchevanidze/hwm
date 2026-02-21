@@ -22,6 +22,7 @@ module HWM.Domain.ConfigT
     askVersion,
     saveConfig,
     resolveResultUI,
+    getArchiveConfigs,
   )
 where
 
@@ -30,7 +31,7 @@ import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString.Base16 as Base16
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import HWM.Core.Common (Check (..))
+import HWM.Core.Common (Check (..), Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Has (Has (..))
 import HWM.Core.Options (Options (..))
@@ -38,6 +39,7 @@ import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runRe
 import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.Environments (Environments (..))
+import HWM.Domain.Release (ArchiveConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
 import HWM.Runtime.Files (addHash, readYaml, rewrite_)
@@ -184,3 +186,8 @@ askCache = asks cache
 
 askMatrix :: ConfigT Environments
 askMatrix = asks (cfgEnvironments . config)
+
+getArchiveConfigs :: ConfigT (Map Name ArchiveConfig)
+getArchiveConfigs = do
+  release <- asks (cfgRelease . config)
+  pure $ fromMaybe mempty (release >>= rlsArchive)
