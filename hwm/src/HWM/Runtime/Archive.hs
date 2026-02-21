@@ -8,12 +8,13 @@ module HWM.Runtime.Archive (createZipArchive, ArchiveInfo (..)) where
 import qualified Codec.Archive.Zip as Zip
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (throwError)
-import qualified Data.ByteString.Lazy as BSL
-import qualified Data.ByteString as BS
 import qualified Crypto.Hash.SHA256 as SHA256
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Base16
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.IO as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Result (Issue)
@@ -52,5 +53,8 @@ createZipArchive sourceDir name outDIr = do
   -- Compute SHA256 hash of the archive
   hashBS <- liftIO $ BS.readFile zipPath
   let sha256 = T.decodeUtf8 (Base16.encode (SHA256.hash hashBS))
+
+  let sha256Path = zipPath <> ".sha256"
+  liftIO $ T.writeFile sha256Path (format sha256)
 
   pure ArchiveInfo {..}
