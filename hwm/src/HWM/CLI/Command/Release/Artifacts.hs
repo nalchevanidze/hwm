@@ -28,7 +28,7 @@ import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
 import HWM.Runtime.Network (uploadToGitHub)
-import HWM.Runtime.UI (indent, putLine, section, sectionTableM)
+import HWM.Runtime.UI (indent, mapMTable, putLine, section, sectionTableM)
 import Options.Applicative (help, long, metavar, option, showDefault, str, strOption, value)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
@@ -118,15 +118,7 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
         ("targets", pure $ formatList "," (map fst cfgs))
       ]
 
-  section "build" $ pure ()
-  plans <- for cfgs $ \(name, ArtifactConfig {..}) -> do
-    binaryDir <- genBindaryDir name
-
-    let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
-    optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
-    Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
-    stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
-    pure $ (name, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
+  plans <- mapMTable "build" $ map (\x -> (fst x, buildPkg x)) cfgs
 
   section "archive" $ pure ()
   artifacts <- for plans $ \(name, plan) -> do
@@ -148,3 +140,11 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
         putLine "gh published"
         uploadToGitHub uploadUrl sha256Path
         putLine "checksum published"
+  where
+    buildPkg (name, ArtifactConfig {..}) = do
+      binaryDir <- genBindaryDir name
+      let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
+      optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
+      Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
+      stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
+      pure $ (name, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})

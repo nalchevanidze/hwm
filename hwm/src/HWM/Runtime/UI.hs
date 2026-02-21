@@ -24,6 +24,7 @@ module HWM.Runtime.UI
     statusIndicator,
     runSpinner,
     printGenTable,
+    mapMTable,
   )
 where
 
@@ -33,6 +34,7 @@ import Control.Monad.Except (MonadError (..))
 import Data.List (groupBy, maximum, (!!))
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
+import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (..), Format (..), Status (..), chalk, indentBlockNum, padDots, renderSummaryStatus, subPathSign)
 import HWM.Core.Result
   ( Issue (..),
@@ -94,17 +96,17 @@ putLine txt = do
 indent :: (MonadUI m) => Int -> m a -> m a
 indent amount = uiWithIndent (+ amount)
 
-sectionWithIcon :: (MonadUI m) => Text -> Text -> m a -> m ()
-sectionWithIcon emoji title action = do
+sectionBase :: (MonadUI m) => Text -> Text -> m a -> m a
+sectionBase emoji title action = do
   putLine ""
   putLine (emoji <> " " <> chalk Bold title)
-  indent 1 action $> ()
+  indent 1 action
 
 section :: (MonadUI m) => Text -> m a -> m ()
-section = sectionWithIcon "•"
+section t m = sectionBase "•" t m $> ()
 
 sectionWorkspace :: (MonadUI m) => m a -> m ()
-sectionWorkspace = sectionWithIcon "./" "workspace"
+sectionWorkspace m = sectionBase "./" "workspace" m $> ()
 
 sectionEnvironments :: (MonadUI m) => Maybe Text -> m a -> m ()
 sectionEnvironments title = section ("environments" <> maybe "" (\name -> chalk Dim " (default: " <> chalk Magenta name <> chalk Dim ")") title)
@@ -119,6 +121,15 @@ tableM minSize rows = traverse_ formatRow rows
 
 sectionTableM :: (MonadUI m) => Int -> Text -> [(Text, m Text)] -> m ()
 sectionTableM size title = section title . tableM size
+
+mapMTable :: (MonadUI m) => Text -> [(Name, m (Text, a))] -> m [(Name, a)]
+mapMTable title rows = sectionBase "•" title $ traverse formatRow rows
+  where
+    maxLabelLen = maximum (0 : map (T.length . fst) rows) + 2
+    formatRow (label, valueM) = do
+      (value, mvalue) <- valueM
+      putLine $ padDots maxLabelLen label <> value
+      pure (label, mvalue)
 
 sectionConfig :: (MonadUI m) => Int -> [(Text, m Text)] -> m ()
 sectionConfig size = section "config" . tableM size
