@@ -14,8 +14,9 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), subPathSign)
-import HWM.Core.Parsing (Parse (..), ParseCLI (..))
+import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
 import HWM.Core.Pkg (Pkg (..))
+import HWM.Core.Result (fromEither)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Release (ArchiveConfig (..), ArchiveFormat)
@@ -34,13 +35,13 @@ data ReleaseArchiveOptions = ReleaseArchiveOptions
   { targetName :: Maybe Text,
     ghPublishUrl :: Maybe Text,
     outputDir :: FilePath,
+    ovFormat :: Maybe [Text],
     overrides :: ArchiveOverrides
   }
   deriving (Show)
 
 data ArchiveOverrides = ArchiveOverrides
-  { ovFormat :: Maybe ArchiveFormat,
-    ovGhcOptions :: Maybe [Text],
+  { ovGhcOptions :: Maybe [Text],
     ovNameTemplate :: Maybe Text
   }
   deriving (Show)
@@ -48,8 +49,7 @@ data ArchiveOverrides = ArchiveOverrides
 instance ParseCLI ArchiveOverrides where
   parseCLI =
     ArchiveOverrides
-      <$> optional (option (str >>= parse) (long "format" <> short 'f' <> metavar "FORMAT" <> help "Override the archive format for the release target. Supported: zip, tar.gz."))
-      <*> optional (some (strOption (long "ghc-option" <> short 'g' <> metavar "GHC_OPTION" <> help "Override GHC options for the release target. Can be specified multiple times.")))
+      <$> optional (option (parseLS <$> str) (long "ghc-option" <> short 'g' <> metavar "GHC_OPTION" <> help "Override GHC options for the release target. Can be specified multiple times."))
       <*> optional (strOption (long "name-template" <> short 'n' <> metavar "NAME_TEMPLATE" <> help "Override the name template for the release target. Use {name} and {version} as placeholders."))
 
 instance ParseCLI ReleaseArchiveOptions where
@@ -65,6 +65,7 @@ instance ParseCLI ReleaseArchiveOptions where
             <> value ".hwm/dist"
             <> showDefault
         )
+      <*> optional (option (parseLS <$> str) (long "format" <> short 'f' <> metavar "FORMAT" <> help "Override the archive format for the release target. Supported: zip, tar.gz."))
       <*> parseCLI
 
 genBindaryDir :: (MonadIO m, ToString a) => a -> m FilePath
@@ -82,16 +83,25 @@ prepeareDir dir = liftIO $ do
   removePathForcibly dir
   createDirectoryIfMissing True dir
 
-applyOverrieds :: ArchiveOverrides -> ArchiveConfig -> ArchiveConfig
-applyOverrieds _ cfg = cfg
+applyOverrieds :: Maybe [ArchiveFormat] -> ArchiveOverrides -> ArchiveConfig -> ArchiveConfig
+applyOverrieds formats ArchiveOverrides {..} cfg =
+  cfg
+    { arcFormats = fromMaybe (arcFormats cfg) formats,
+      arcGhcOptions = fromMaybe (arcGhcOptions cfg) ovGhcOptions,
+      arcNameTemplate = fromMaybe (arcNameTemplate cfg) ovNameTemplate
+    }
+
+parseFormats :: [Text] -> ConfigT [ArchiveFormat]
+parseFormats = fromEither "can't parse archive format" . traverse parse
 
 withOverrides :: ReleaseArchiveOptions -> Map Name ArchiveConfig -> ConfigT [(Name, ArchiveConfig)]
 withOverrides ReleaseArchiveOptions {..} cfgs = do
+  parsedFormats <- traverse parseFormats ovFormat
   case targetName of
     Just target -> case Map.lookup target cfgs of
-      Just cfg -> pure [(target, applyOverrieds overrides cfg)]
+      Just cfg -> pure [(target, applyOverrieds parsedFormats overrides cfg)]
       Nothing -> throwError $ fromString $ "Target \"" <> toString target <> "\" not found in configuration."
-    Nothing -> pure $ map (second (applyOverrieds overrides)) (Map.toList cfgs)
+    Nothing -> pure $ map (second (applyOverrieds parsedFormats overrides)) (Map.toList cfgs)
 
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
 runReleaseArchive ops@ReleaseArchiveOptions {..} = do
