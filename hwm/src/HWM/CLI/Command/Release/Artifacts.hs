@@ -15,6 +15,7 @@ where
 import Control.Monad.Except (MonadError (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import Data.Traversable (for)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), formatList, subPathSign)
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
@@ -25,7 +26,7 @@ import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..))
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
-import HWM.Runtime.Archive (ArchiveInfo (..), ArchiveOptions (..), createArchive)
+import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
 import HWM.Runtime.Network (uploadToGitHub)
 import HWM.Runtime.UI (indent, putLine, section, sectionTableM)
 import Options.Applicative (help, long, metavar, option, showDefault, str, strOption, value)
@@ -118,33 +119,32 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       ]
 
   section "build" $ pure ()
-  for_ cfgs $ \(name, ArtifactConfig {..}) -> do
+  plans <- for cfgs $ \(name, ArtifactConfig {..}) -> do
     binaryDir <- genBindaryDir name
 
     let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
     optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
     stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
+    pure $ (name, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
 
-    
-    indent 1 $ putLine "Compressing artifact..."
-    archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats}
-
-    section "archives"
+  section "archive" $ pure ()
+  artifacts <- for plans $ \(name, plan) -> do
+    archives <- createArchive version plan
+    indent 1
+      $ section name
       $ for_ archives
       $ \ArchiveInfo {..} -> do
         putLine $ subPathSign <> format archivePath
         putLine $ subPathSign <> format sha256Path
+    pure (name, archives)
 
-    putLine ""
-    section name
+  for_ ghPublishUrl $ \uploadUrl -> section "publish (github)"
+    $ for_ artifacts
+    $ \(name, archives) -> section name
       $ for_ archives
       $ \ArchiveInfo {..} -> do
-        for_ ghPublishUrl $ \uploadUrl -> do
-          uploadToGitHub uploadUrl archivePath
-          putLine "gh published"
-          uploadToGitHub uploadUrl sha256Path
-          putLine "checksum published"
-
-        putLine $ subPathSign <> format archivePath
-        putLine $ subPathSign <> format sha256Path
+        uploadToGitHub uploadUrl archivePath
+        putLine "gh published"
+        uploadToGitHub uploadUrl sha256Path
+        putLine "checksum published"

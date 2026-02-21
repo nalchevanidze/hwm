@@ -6,7 +6,7 @@
 
 module HWM.Runtime.Archive
   ( createArchive,
-    ArchiveOptions (..),
+    ArchivingPlan (..),
     ArchiveInfo (..),
     ArchiveFormat (..),
   )
@@ -39,7 +39,7 @@ data ArchiveInfo = ArchiveInfo
     sha256Path :: FilePath
   }
 
-data ArchiveOptions = ArchiveOptions
+data ArchivingPlan = ArchivingPlan
   { sourceDir :: FilePath,
     name :: Name,
     outDir :: FilePath,
@@ -50,14 +50,14 @@ data ArchiveOptions = ArchiveOptions
 createArchive ::
   (MonadIO m, MonadError Issue m) =>
   Version ->
-  ArchiveOptions ->
+  ArchivingPlan ->
   m [ArchiveInfo]
-createArchive version ArchiveOptions {..} = do
+createArchive version ArchivingPlan {..} = do
   let binPath = sourceDir </> toString name
   binExists <- liftIO $ doesFileExist binPath
   unless binExists $ throwError (fromString $ "Binary not found at expected path: " <> binPath)
   platform <- detectPlatform
-  
+
   fmap catMaybes $ forM archiveFormats $ \target -> do
     let ext = if target == Zip then ".zip" else ".tar.gz"
     let archiveName = formatArchiveTemplate name version platform nameTemplate <> ext
