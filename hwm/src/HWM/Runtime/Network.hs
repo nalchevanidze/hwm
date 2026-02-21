@@ -21,7 +21,6 @@ getGitHubToken = do
     (pure . T.pack)
     maybeToken
 
--- | Specialized upload for GitHub to avoid the "Multipart" error
 uploadToGitHub :: (MonadIO m, MonadError Issue m) => Text -> FilePath -> m ()
 uploadToGitHub uploadUrl filePath = do
   token <- getGitHubToken
