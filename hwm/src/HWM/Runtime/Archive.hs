@@ -75,15 +75,7 @@ writeArchive Zip binPath outPath binNameWithExt = liftIO $ do
   BSL.writeFile outPath (Zip.fromArchive archive)
   pure True
 writeArchive TarGz binPath outPath _ = do
-  (isOk, _) <-
-    exec
-      "tar"
-      [ "-czvf",
-        format outPath,
-        "-C",
-        format (takeDirectory binPath),
-        format (takeFileName binPath)
-      ]
+  (isOk, _) <- exec "tar" ["-czvf", format outPath, "-C", format (takeDirectory binPath), format (takeFileName binPath)]
   unless isOk $ injectIssue (Issue {issueTopic = "archive", issueMessage = "⚠️  Warning: Failed to create .tar.gz (check if 'tar' is installed)", issueSeverity = SeverityWarning, issueDetails = Nothing})
   pure isOk
 
