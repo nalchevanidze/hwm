@@ -42,7 +42,7 @@ library
       HWM.CLI.Command.Registry.Add
       HWM.CLI.Command.Registry.Audit
       HWM.CLI.Command.Registry.Ls
-      HWM.CLI.Command.Release.Archive
+      HWM.CLI.Command.Release.Artifacts
       HWM.CLI.Command.Release.Publish
       HWM.CLI.Command.Release.Root
       HWM.CLI.Command.Run
