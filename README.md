@@ -26,7 +26,7 @@ In a typical Haskell monorepo, maintaining consistency is a full-time job:
 
 1. **Dependency Drift:** "Why does `core` use `aeson-2.0` but `api` uses `aeson-1.5`?"
 2. **Matrix Complexity:** Testing GHC 9.6 (Stable) and 8.10 (Legacy) requires maintaining multiple fragile `stack.yaml` files.
-3. **Broken IDEs:** Adding a module often breaks HLS until you manually update a complex `hie.yaml`.
+3. **Broken IDEs:** Adding a module often breaks HLS, requiring manual updates to a complex `hie.yaml`.
 4. **CI Hell:** You only find out your bounds are wrong after waiting 15 minutes for GitHub Actions to fail.
 
 ### ✅ The Solution
@@ -108,7 +108,7 @@ hwm run build
 
 ## 🧪 Born from Necessity
 
-HWM wasn't built in a vacuum. It was created to solve the massive orchestration headaches of the **[Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql)** ecosystem.
+HWM was not built in a vacuum. It was created to solve the massive orchestration headaches of the **[Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql)** ecosystem.
 
 Today, it powers the entire Morpheus monorepo, managing:
 
@@ -212,7 +212,7 @@ The `artifacts` pipeline is HWM's **End-User Distribution Engine**. It transform
 
 #### Configuration
 
-HWM uses a **Hybrid-Flat** structure where targets and settings share the same namespace for clarity and simplicity.
+HWM uses a **Hybrid-Flat** structure, where targets and settings share the same namespace for clarity and simplicity.
 
 ```yaml
 # hwm.yaml
@@ -264,14 +264,12 @@ matrix:
 
 HWM transforms your monorepo into a format LLMs can actually understand.
 
-- **Context Window Friendly:** Instead of pasting 20+ `.cabal` files to give an AI context, paste one `hwm.yaml`.
-- **Safe Refactoring:** Ask your AI agent to _"Upgrade dependencies to GHC 9.10"_ by editing the `matrix` in `hwm.yaml`. HWM handles the dangerous work of propagating those changes to 50+ files deterministically.
-
+ - **Context Window Friendly:** Instead of pasting 20+ `.cabal` files to provide AI context, paste one `hwm.yaml`.
 ---
 
 ## ⚖️ Comparison
 
-Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM provides a middle ground.
+Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM offers a middle ground.
 
 | Feature                | 🐢 Manual Config          | ❄️ Nix / Bazel            | 🚀 HWM                            |
 | ---------------------- | ------------------------- | ------------------------- | --------------------------------- |
@@ -284,7 +282,7 @@ Most Haskell teams are stuck between "Manual Chaos" and "Nix Overkill." HWM prov
 
 ## 🔮 Roadmap
 
-HWM is actively evolving. While the core Workspace and Matrix engines are stable, we are actively building the following "Day 2" operations:
+HWM is actively evolving. While the core Workspace and Matrix engines are stable, we are actively developing the following "Day 2" operations:
 
 - **Professional Distribution (v0.1.0):** Automated Homebrew Formula generation and universal installers (`.deb`, `.rpm`).
 - **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml`.
