@@ -7,10 +7,10 @@ workspace:
     members:
       - hwm
     publish: true
-matrix:
+environments:
   default: stable
-  environments:
-    - name: legacy
+  targets:
+    legacy:
       ghc: 8.10.7
       resolver: lts-18.10
       extra-deps:
@@ -23,7 +23,7 @@ matrix:
         retry: 0.8.1.0
         time-compat: 1.9.2.2
         websockets: 0.12.6.0
-    - name: stable
+    stable:
       ghc: 9.6.3
       resolver: lts-22.6
       extra-deps:
