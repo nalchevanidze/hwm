@@ -222,13 +222,12 @@ version: 0.1.2
 
 release:
   artifacts:
-    # Binary Targets (Internal Path)
+  
     morpheus: libs/hwm-cli:morpheus
-    hwm-daemon: apps/daemon:hwm-daemon
 
-    # Pipeline Settings
-    formats: [Zip, TarGz]
-    name_template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
+    hwm-daemon: apps/daemon:hwm-daemon
+    formats: [zip, tar.gz]
+    name-template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
 ```
 
 #### Usage
