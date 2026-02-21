@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Runtime.Archive
@@ -12,6 +13,8 @@ module HWM.Runtime.Archive
 where
 
 import qualified Codec.Archive.Zip as Zip
+import Control.Exception (try)
+import Control.Exception.Base (IOException)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (throwError)
 import qualified Crypto.Hash.SHA256 as SHA256
@@ -33,7 +36,6 @@ import System.Process (callProcess)
 
 data ArchiveInfo = ArchiveInfo
   { archivePath :: FilePath,
-    binName :: Name,
     sha256Path :: FilePath
   }
 
@@ -54,39 +56,47 @@ createArchive version ArchiveOptions {..} = do
   let binPath = sourceDir </> toString name
   binExists <- liftIO $ doesFileExist binPath
   unless binExists $ throwError (fromString $ "Binary not found at expected path: " <> binPath)
-
   platform <- detectPlatform
-
-  forM archiveFormats $ \target -> do
+  
+  fmap catMaybes $ forM archiveFormats $ \target -> do
     let ext = if target == Zip then ".zip" else ".tar.gz"
     let archiveName = formatArchiveTemplate name version platform nameTemplate <> ext
-    let binNameWithExt = name <> platformExt platform
     let archivePath = normalise $ joinPath [outDir, toString archiveName]
 
-    liftIO $ case target of
-      Zip -> do
-        entry <- Zip.readEntry [] binPath
-        let rootEntry = entry {Zip.eRelativePath = toString binNameWithExt}
-        let archive = Zip.addEntryToArchive rootEntry Zip.emptyArchive
-        BSL.writeFile archivePath (Zip.fromArchive archive)
-      TarGz -> do
-        callProcess
-          "tar"
-          [ "-czvf",
-            archivePath,
-            "-C",
-            takeDirectory binPath,
-            takeFileName binPath
-          ]
+    success <- writeArchive target binPath archivePath (name <> platformExt platform)
 
-    hashBS <- liftIO $ BS.readFile archivePath
-    let sha256 = T.decodeUtf8 (Base16.encode (SHA256.hash hashBS))
-    let sha256Path = archivePath <> ".sha256"
-    liftIO $ T.writeFile sha256Path (format sha256)
+    if success
+      then Just <$> finalizeArchive archivePath
+      else pure Nothing
 
-    pure
-      ArchiveInfo
-        { archivePath = archivePath,
-          binName = name,
-          sha256Path = sha256Path
-        }
+writeArchive :: (MonadIO m) => ArchiveFormat -> FilePath -> FilePath -> Name -> m Bool
+writeArchive Zip binPath outPath binNameWithExt = liftIO $ do
+  entry <- Zip.readEntry [] binPath
+  let rootEntry = entry {Zip.eRelativePath = toString binNameWithExt}
+  let archive = Zip.addEntryToArchive rootEntry Zip.emptyArchive
+  BSL.writeFile outPath (Zip.fromArchive archive)
+  pure True
+writeArchive TarGz binPath outPath _ = liftIO $ do
+  result <-
+    try
+      $ callProcess
+        "tar"
+        [ "-czvf",
+          outPath,
+          "-C",
+          takeDirectory binPath,
+          takeFileName binPath
+        ]
+  case (result :: Either IOException ()) of
+    Left _ -> do
+      putStrLn "⚠️  Warning: Failed to create .tar.gz (check if 'tar' is installed)"
+      pure False
+    Right _ -> pure True
+
+finalizeArchive :: (MonadIO m) => FilePath -> m ArchiveInfo
+finalizeArchive archPath = do
+  hashBS <- liftIO $ BS.readFile archPath
+  let sha256 = T.decodeUtf8 (Base16.encode (SHA256.hash hashBS))
+  let sha256Path = archPath <> ".sha256"
+  liftIO $ T.writeFile sha256Path (format sha256)
+  pure ArchiveInfo {archivePath = archPath, sha256Path = sha256Path}
