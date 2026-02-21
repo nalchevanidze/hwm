@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Release.Archive
+module HWM.CLI.Command.Release.Artifacts
   ( ReleaseArchiveOptions (..),
     parseCLI,
     runReleaseArchive,

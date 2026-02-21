@@ -7,7 +7,7 @@ module HWM.CLI.Command.Release.Root
   )
 where
 
-import HWM.CLI.Command.Release.Archive (ReleaseArchiveOptions, runReleaseArchive)
+import HWM.CLI.Command.Release.Artifacts (ReleaseArchiveOptions, runReleaseArchive)
 import HWM.CLI.Command.Release.Publish (PublishOptions, runPublish)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.ConfigT (ConfigT)
@@ -23,7 +23,7 @@ data ReleaseCommand
 instance ParseCLI ReleaseCommand where
   parseCLI =
     hsubparser
-      ( command "archive" (info (ReleaseArchive <$> parseCLI) (progDesc "Build, archive, hash, and export a package release"))
+      ( command "artifacts" (info (ReleaseArchive <$> parseCLI) (progDesc "Build, archive, hash, and export a package release"))
           <> command "publish" (info (Publish <$> parseCLI) (progDesc "Publish a package release to Hackage"))
       )
 
