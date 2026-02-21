@@ -40,7 +40,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName, pkgId, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..), fromEither)
 import HWM.Core.Version (Version, parseGHCVersion)
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Domain.Matrix (BuildEnv (..), BuildEnvironment (..), Matrix (..), getBuildEnvironment, hkgRefs)
+import HWM.Domain.Environments (BuildEnv (..), BuildEnvironment (..), Environments (..), getBuildEnvironment, hkgRefs)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
 import HWM.Runtime.Logging (log)
@@ -194,10 +194,10 @@ scanStackFiles opts root = do
 deriveEnviromentName :: FilePath -> Maybe Text
 deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExtension (takeFileName path)))
 
-buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> NonEmpty (Name, Stack) -> m Matrix
+buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> NonEmpty (Name, Stack) -> m Environments
 buildMatrix pkgs (defaultEnv :| envs) = do
   environments <- sortOn ghc <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
-  pure Matrix {defaultEnvironment = fst defaultEnv, environments}
+  pure Environments {defaultEnvironment = fst defaultEnv, environments}
 
 inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m BuildEnv
 inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do

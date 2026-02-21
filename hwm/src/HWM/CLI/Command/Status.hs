@@ -6,7 +6,7 @@ module HWM.CLI.Command.Status (showStatus) where
 import HWM.Core.Formatting (Color (..), Format (..), chalk)
 import qualified HWM.Domain.Config as C
 import HWM.Domain.ConfigT (ConfigT, config)
-import HWM.Domain.Matrix (printEnvironments)
+import HWM.Domain.Environments (printEnvironments)
 import HWM.Domain.Workspace (forWorkspace)
 import HWM.Integrations.Toolchain.Package (validatePackage)
 import HWM.Runtime.UI (sectionTableM)

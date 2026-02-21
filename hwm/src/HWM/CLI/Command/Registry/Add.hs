@@ -12,7 +12,7 @@ import HWM.Domain.Bounds (deriveBounds)
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
 import HWM.Domain.Dependencies (Dependency (Dependency), lookupBounds, singleDeps)
-import HWM.Domain.Matrix (getTestedRange)
+import HWM.Domain.Environments (getTestedRange)
 import HWM.Domain.Workspace (forWorkspaceTuple, resolveWorkspaces)
 import HWM.Integrations.Toolchain.Package
 import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM)

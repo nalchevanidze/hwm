@@ -25,7 +25,7 @@ import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (Bounds)
 import HWM.Domain.Dependencies (Dependencies, getBounds)
-import HWM.Domain.Matrix (Matrix (..))
+import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup)
 import HWM.Runtime.Cache (Cache)
 import HWM.Runtime.Files (aesonYAMLOptions)
@@ -36,7 +36,7 @@ data Config = Config
     version :: Version,
     bounds :: Bounds,
     workspace :: [WorkspaceGroup],
-    matrix :: Matrix,
+    matrix :: Environments,
     registry :: Dependencies,
     scripts :: Map Name Text
   }
@@ -61,7 +61,7 @@ instance
     MonadReader env m,
     Has env Cache,
     Has env [WorkspaceGroup],
-    Has env Matrix,
+    Has env Environments,
     MonadIO m
   ) =>
   Check m Config

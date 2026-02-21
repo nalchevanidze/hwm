@@ -37,7 +37,7 @@ import HWM.Core.Options (Options (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runResultT)
 import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
-import HWM.Domain.Matrix (Matrix (..))
+import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
 import HWM.Runtime.Files (addHash, readYaml, rewrite_)
@@ -77,7 +77,7 @@ instance Has (Env m) Config where
 instance Has (Env m) [WorkspaceGroup] where
   obtain Env {config} = workspace config
 
-instance Has (Env m) Matrix where
+instance Has (Env m) Environments where
   obtain Env {config} = matrix config
 
 instance Has (Env m) Version where
@@ -182,5 +182,5 @@ unpackConfigT (ConfigT action) = runReaderT action
 askCache :: ConfigT Cache
 askCache = asks cache
 
-askMatrix :: ConfigT Matrix
+askMatrix :: ConfigT Environments
 askMatrix = asks (matrix . config)

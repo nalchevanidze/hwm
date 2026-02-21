@@ -11,7 +11,7 @@ import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, auditHasAny, format
 import HWM.Domain.Config (Config (registry))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
 import HWM.Domain.Dependencies (mapDeps, mapWithName)
-import HWM.Domain.Matrix (getTestedRange)
+import HWM.Domain.Environments (getTestedRange)
 import HWM.Integrations.Toolchain.Package (syncPackages)
 import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
 import Options.Applicative
