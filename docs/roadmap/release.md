@@ -43,7 +43,7 @@ release:
     morpheus: libs/code-gen:morpheus
 
     legacy-api:                     # The advanced (Phase 2) usage
-      source: legacy-server
+      source: legacy/app:server
       format: tar.gz                # Override the zip default
       strip: false                  # Keep debug symbols for this specific binary
       name_template: "{{binary}}-v{{version}}-ubuntu"
