@@ -19,7 +19,10 @@ runs:
     - name: Cache
       uses: actions/cache@v5
       with:
-        path: ~/.stack
-        key: ${{ runner.os  }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml') }}
+        path: |
+          ~/.stack
+          C:\sr
+          .stack-work
+        key: ${{ runner.os }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml', 'hwm.yaml') }}
         restore-keys: |
-          ${{ runner.os }}-${{ inputs.ghc }}-stack
+          ${{ runner.os }}-${{ inputs.ghc }}-stack-
