@@ -75,13 +75,13 @@ instance Has (Env m) Config where
   obtain = config
 
 instance Has (Env m) [WorkspaceGroup] where
-  obtain Env {config} = workspace config
+  obtain Env {config} = cfgWorkspace config
 
 instance Has (Env m) Environments where
-  obtain Env {config} = environments config
+  obtain Env {config} = cfgEnvironments config
 
 instance Has (Env m) Version where
-  obtain Env {config} = version config
+  obtain Env {config} = cfgVersion config
 
 instance Has (Env m) PkgRegistry where
   obtain = pkgs
@@ -113,7 +113,7 @@ instance MonadIssue ConfigT where
 
 computeHash :: Config -> Text
 computeHash cfg =
-  let hashInput = T.encodeUtf8 (T.pack (show (envTargets $ environments cfg)))
+  let hashInput = T.encodeUtf8 (T.pack (show (envTargets $ cfgEnvironments cfg)))
       hashBytes = SHA256.hash hashInput
    in T.decodeUtf8 (Base16.encode hashBytes)
 
@@ -143,9 +143,9 @@ updateConfig f m = do
 runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
   config <- resolveResultTSilent (readYaml hwm)
-  cache <- loadCache (envDefault (environments config))
+  cache <- loadCache (envDefault (cfgEnvironments config))
   changed <- hasHashChanged config <$> getFileHash hwm
-  pkgs <- resolveResultTSilent (pkgRegistry (workspace config))
+  pkgs <- resolveResultTSilent (pkgRegistry (cfgWorkspace config))
   let env = Env {options = opts, config, cache, pkgs}
       resultT = unpackConfigT (if changed then checkConfig >> m else m) env
   resolveResultT resultT cache
@@ -183,4 +183,4 @@ askCache :: ConfigT Cache
 askCache = asks cache
 
 askMatrix :: ConfigT Environments
-askMatrix = asks (environments . config)
+askMatrix = asks (cfgEnvironments . config)

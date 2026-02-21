@@ -28,17 +28,17 @@ import HWM.Domain.Dependencies (Dependencies, getBounds)
 import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup)
 import HWM.Runtime.Cache (Cache)
-import HWM.Runtime.Files (aesonYAMLOptions)
+import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced)
 import Relude
 
 data Config = Config
-  { name :: Name,
-    version :: Version,
-    bounds :: Bounds,
-    workspace :: [WorkspaceGroup],
-    environments :: Environments,
-    registry :: Dependencies,
-    scripts :: Map Name Text
+  { cfgName :: Name,
+    cfgVersion :: Version,
+    cfgBounds :: Bounds,
+    cfgWorkspace :: [WorkspaceGroup],
+    cfgEnvironments :: Environments,
+    cfgRegistry :: Dependencies,
+    cfgScripts :: Map Name Text
   }
   deriving
     ( Generic,
@@ -47,14 +47,17 @@ data Config = Config
 
 getRule :: (MonadError Issue m) => PkgName -> PkgRegistry -> Config -> m Bounds
 getRule depName ps Config {..}
-  | Map.member depName ps = pure bounds
-  | otherwise = getBounds depName registry
+  | Map.member depName ps = pure cfgBounds
+  | otherwise = getBounds depName cfgRegistry
+
+prefix :: String
+prefix = "cfg"
 
 instance FromJSON Config where
-  parseJSON = genericParseJSON aesonYAMLOptions
+  parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced prefix)
 
 instance ToJSON Config where
-  toJSON = genericToJSON aesonYAMLOptions
+  toJSON = genericToJSON (aesonYAMLOptionsAdvanced prefix)
 
 instance
   ( MonadError Issue m,
@@ -66,7 +69,7 @@ instance
   ) =>
   Check m Config
   where
-  check Config {..} = check environments
+  check Config {..} = check cfgEnvironments
 
 defaultScripts :: Map Name Text
 defaultScripts =

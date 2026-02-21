@@ -9,7 +9,7 @@ import HWM.Core.Formatting (Color (..), Format (..), chalk, padDots)
 import HWM.Core.Parsing (ParseCLI (..), parse, parseOptions)
 import HWM.Core.Pkg (PkgName (..))
 import HWM.Domain.Bounds (deriveBounds)
-import HWM.Domain.Config (Config (registry))
+import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
 import HWM.Domain.Dependencies (Dependency (Dependency), lookupBounds, singleDeps)
 import HWM.Domain.Environments (getTestedRange)
@@ -36,8 +36,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
     [ ("package", pure $ chalk Magenta (format opsPkgName)),
       ("target", pure $ chalk Cyan (if null opsWorkspace then "none (registry only)" else T.intercalate ", " opsWorkspace))
     ]
-
-  registered <- asks (lookupBounds opsPkgName . registry . config)
+  registered <- asks (lookupBounds opsPkgName . cfgRegistry . config)
   case registered of
     Nothing -> do
       range <- getTestedRange
@@ -47,7 +46,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
       bounds <- deriveBounds opsPkgName range
       let dependency = Dependency opsPkgName bounds
 
-      ((\cf -> pure cf {registry = registry cf <> singleDeps dependency}) `updateConfig`) $ do
+      ((\cf -> pure cf {cfgRegistry = cfgRegistry cf <> singleDeps dependency}) `updateConfig`) $ do
         sectionConfig 0 [("hwm.yaml", pure $ chalk Green "✓")]
         addDepToPackage workspaces dependency
     Just bounds -> do

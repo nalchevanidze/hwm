@@ -61,7 +61,7 @@ runScript :: Name -> ScriptOptions -> ConfigT ()
 runScript scriptName ScriptOptions {..} = do
   prepareDir logRoot
   cfg <- asks config
-  case M.lookup scriptName (scripts cfg) of
+  case M.lookup scriptName (cfgScripts cfg) of
     Just script -> do
       envs <- getEnvs scriptEnvs
       targets <- concatMap snd <$> resolveWorkspaces scriptTargets

@@ -37,7 +37,7 @@ instance ParseCLI WorkspaceAddOptions where
 
 runWorkspaceAdd :: WorkspaceAddOptions -> ConfigT ()
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Nothing), ..}) = do
-  wss <- asks (workspace . config)
+  wss <- asks (cfgWorkspace . config)
   if existsWokspaceGroup groupId wss
     then
       throwError
@@ -49,7 +49,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Nothing), ..}) 
           }
     else do
       let ws = wss ++ [WorkspaceGroup groupId opsWorkspaceDir [] opsPrefix (Just opsPublish)]
-      updateConfig (\cfg -> pure $ cfg {workspace = ws}) $ sectionWorkspace $ do
+      updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ sectionWorkspace $ do
         putLine ""
         putLine $ "• " <> chalk Bold groupId <> " " <> displayStatus [("added", Checked)]
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId), ..}) = do
@@ -68,7 +68,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId),
           }
     else do
       scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
-      updateConfig (\cfg -> pure $ cfg {workspace = ws})
+      updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws})
         $ sectionWorkspace
         $ do
           putLine ""
