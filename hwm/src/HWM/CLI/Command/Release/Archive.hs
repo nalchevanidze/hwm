@@ -61,7 +61,7 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
     stackGenBinary pkgName localDir
     putLine "Compressing artifact..."
-    ArchiveInfo {..} <- createZipArchive ArchiveOptions {outDir = "./", sourceDir = localDir, name = executableName}
+    ArchiveInfo {..} <- createZipArchive ArchiveOptions {zipNameTemplate = arcNameTemplate, outDir = "./", sourceDir = localDir, name = executableName}
     for_ ghPublishUrl $ \uploadUrl -> do
       uploadToGitHub uploadUrl zipPath
       putLine "gh published"

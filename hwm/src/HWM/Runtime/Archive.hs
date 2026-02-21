@@ -32,7 +32,7 @@ data ArchiveOptions = ArchiveOptions
   { sourceDir :: FilePath,
     name :: Name,
     outDir :: FilePath,
-    nameTemplate :: Text
+    zipNameTemplate :: Text
   }
 
 createZipArchive ::
