@@ -17,6 +17,7 @@ import HWM.Core.Formatting (Format (format))
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Domain.ConfigT (ConfigT, getArchiveConfigs)
+import HWM.Domain.Release (ArchiveConfig (..))
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), createZipArchive)
@@ -27,7 +28,7 @@ import System.Directory (createDirectoryIfMissing, removePathForcibly)
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions
-  { opsPkgName :: Name,
+  { opsPkgName :: Maybe Name,
     execName :: Maybe Name,
     outFile :: Maybe FilePath
   }
@@ -36,7 +37,7 @@ data ReleaseArchiveOptions = ReleaseArchiveOptions
 instance ParseCLI ReleaseArchiveOptions where
   parseCLI =
     ReleaseArchiveOptions
-      <$> strOption (long "pkg" <> metavar "PACKAGE" <> help "Name of the package to release")
+      <$> optional (strOption (long "pkg" <> metavar "PACKAGE" <> help "Name of the package to release"))
       <*> optional (strOption (long "exec" <> metavar "EXECUTABLE" <> help "Name of the executable to release"))
       <*> optional (strOption (long "out" <> metavar "FILE" <> help "Export resulting file paths to FILE"))
 
@@ -45,20 +46,22 @@ releaseDir = ".hwm/release"
 
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
 runReleaseArchive ReleaseArchiveOptions {..} = do
-  targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [opsPkgName]
-  Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> opsPkgName <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
   liftIO $ removePathForcibly releaseDir
   liftIO $ createDirectoryIfMissing True releaseDir
 
   cfgs <- Map.toList <$> getArchiveConfigs
 
-  for_ cfgs $ \(name, cfg) -> do
-    putLine $ "Building and extracting " <> format pkgName <> "..."
+  for_ cfgs $ \(name, ArchiveConfig {..}) -> do
+    putLine $ "Building and extracting \"" <> name <> "\" ..."
+    let (workspaceId, executableName) = T.breakOn ":" arcSource
+    targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
+    Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
+
     stackGenBinary pkgName releaseDir
 
     putLine "Compressing artifact..."
 
-    ArchiveInfo {..} <- createZipArchive releaseDir (fromMaybe (format pkgName) execName) "./"
+    ArchiveInfo {..} <- createZipArchive releaseDir executableName "./"
 
     for_ outFile $ \file ->
       liftIO
