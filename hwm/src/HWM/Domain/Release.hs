@@ -4,6 +4,7 @@
 
 module HWM.Domain.Release
   ( Release (..),
+    ArchiveConfig (..),
   )
 where
 
@@ -14,12 +15,13 @@ import Data.Aeson
     genericParseJSON,
     genericToJSON,
   )
+import Data.Yaml (Value (..))
 import HWM.Core.Common (Name)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import Relude
 
 data Release = Release
-  { rlsArchive :: Maybe (Map Name Value),
+  { rlsArchive :: Maybe (Map Name ArchiveConfig),
     rlsPublish :: Maybe (Map Name Value)
   }
   deriving
@@ -35,3 +37,37 @@ instance FromJSON Release where
 
 instance ToJSON Release where
   toJSON = genericToJSON (aesonYAMLOptionsAdvanced prefix)
+
+data ArchiveConfig = ArchiveConfig
+  { arcSource :: Text,
+    arcFormat :: Text,
+    arcStrip :: Bool,
+    arcNameTemplate :: Text
+  }
+  deriving
+    ( Generic,
+      Show,
+      Ord,
+      Eq
+    )
+
+defaultArchiveConfig :: Text -> ArchiveConfig
+defaultArchiveConfig src =
+  ArchiveConfig
+    { arcSource = src,
+      arcFormat = "zip",
+      arcStrip = True,
+      arcNameTemplate = "{{binary}}-v{{version}}"
+    }
+
+isDefaultArchiveConfig :: ArchiveConfig -> Bool
+isDefaultArchiveConfig arc = arc == defaultArchiveConfig (arcSource arc)
+
+instance FromJSON ArchiveConfig where
+  parseJSON (String x) = pure $ defaultArchiveConfig x
+  parseJSON v = genericParseJSON (aesonYAMLOptionsAdvanced prefix) v
+
+instance ToJSON ArchiveConfig where
+  toJSON v
+    | isDefaultArchiveConfig v = String (arcSource v)
+    | otherwise = genericToJSON (aesonYAMLOptionsAdvanced prefix) v

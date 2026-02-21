@@ -67,6 +67,7 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
       Config
         { cfgBounds = versionBounds cfgVersion,
           cfgScripts = defaultScripts,
+          cfgRelease = Nothing,
           ..
         }
       opts
