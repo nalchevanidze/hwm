@@ -17,7 +17,7 @@ import qualified Data.Text.IO as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Result (Issue)
-import HWM.Runtime.Platform (detectPlatform, platformExt)
+import HWM.Runtime.Platform (Platform, detectPlatform, platformExt)
 import Relude
 import System.Directory (doesFileExist)
 import System.FilePath.Posix (joinPath, normalise, (</>))
@@ -35,6 +35,9 @@ data ArchiveOptions = ArchiveOptions
     zipNameTemplate :: Text
   }
 
+formatZipName :: Platform -> Name -> FilePath
+formatZipName platform name = toString $ name <> "-" <> format platform <> ".zip"
+
 createZipArchive ::
   (MonadIO m, MonadError Issue m) =>
   ArchiveOptions ->
@@ -46,7 +49,7 @@ createZipArchive ArchiveOptions {..} = do
 
   platform <- detectPlatform
   let binName = name <> platformExt platform -- e.g., "morpheus.exe"
-  let zipPath = normalise $ joinPath [outDir, toString (name <> "-" <> format platform <> ".zip")]
+  let zipPath = normalise $ joinPath [outDir, formatZipName platform name]
 
   -- Read the binary from the disk into a Zip Entry
   entry <- liftIO $ Zip.readEntry [] binPath
