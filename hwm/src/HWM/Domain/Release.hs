@@ -5,6 +5,7 @@
 module HWM.Domain.Release
   ( Release (..),
     ArchiveConfig (..),
+    ArchiveFormat (..),
   )
 where
 
