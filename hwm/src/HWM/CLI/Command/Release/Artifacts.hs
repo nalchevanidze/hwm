@@ -24,7 +24,7 @@ import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchiveOptions (..), createArchive)
 import HWM.Runtime.Network (uploadToGitHub)
-import HWM.Runtime.UI (putLine, section)
+import HWM.Runtime.UI (putLine, section, indent)
 import Options.Applicative (help, long, metavar, option, showDefault, str, strOption, value)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
@@ -108,13 +108,15 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   version <- asks (cfgVersion . config)
   cfgs <- getArchiveConfigs >>= withOverrides ops
   for_ cfgs $ \(name, ArtifactConfig {..}) -> do
+    
     binaryDir <- genBindaryDir name
-    putLine $ "Building and extracting \"" <> name <> "\" ..."
+    section "artifacts" $
+      putLine $ "Building and extracting \"" <> name <> "\" ..."
     let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
     targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
     stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
-    putLine "Compressing artifact..."
+    indent 1 $ putLine "Compressing artifact..."
     archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats}
 
     putLine ""
