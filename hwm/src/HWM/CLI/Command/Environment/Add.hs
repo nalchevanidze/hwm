@@ -63,6 +63,6 @@ runEnvAdd EnvAddOptions {..} = do
             ( \cfg@Config {..} -> do
                 ghc <- getSnapshotGHC resolver
                 putLine $ padDots size "ghc" <> format ghc
-                pure cfg {matrix = matrix {envTargets = Map.insert envName (newEnv ghc resolver) (envTargets matrix)}}
+                pure cfg {enviroments = enviroments {envTargets = Map.insert envName (newEnv ghc resolver) (envTargets enviroments)}}
             )
             (pure ())
