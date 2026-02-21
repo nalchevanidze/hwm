@@ -56,17 +56,19 @@ data ArchiveConfig = ArchiveConfig
       Eq
     )
 
-data ArchiveFormat = Zip | TarGz
+data ArchiveFormat = Zip | TarGz | Auto
   deriving (Generic, Show, Ord, Eq)
 
 instance FromJSON ArchiveFormat where
   parseJSON (String "zip") = pure Zip
   parseJSON (String "tar.gz") = pure TarGz
+  parseJSON (String "auto") = pure Auto
   parseJSON _ = fail "Invalid archive format"
 
 instance ToJSON ArchiveFormat where
   toJSON Zip = String "zip"
   toJSON TarGz = String "tar.gz"
+  toJSON Auto = String "auto"
 
 defaultFormat :: Text
 defaultFormat = "{{binary}}-v{{version}}-{{os}}-{{arch}}"
