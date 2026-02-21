@@ -118,17 +118,14 @@ This is where the "Boss and Worker" pattern handles the GitHub Matrix:
 
 * **The Coordinator (Boss):** A single CI job creates a GitHub Release and generates an `upload_url`.
 * **The Matrix (Workers):** Multiple machines (Linux, macOS, Windows) receive that URL.
-* **The Command:** `hwm release archive --publish <upload-url>`
+* **The Command:** `hwm release archive --gh-publish <upload-url>`
 
 ### 5. The Publishing Phase (Cloud)
 
-If the `--publish` flag is present, HWM performs a high-speed streaming upload:
+If the `--gh-publish` flag is present, HWM performs a high-speed streaming upload:
 
 * **Binary Upload:** Sends the `.zip` to the GitHub `upload_url`.
 * **Checksum Upload:** Sends the `.sha256` file to the same release.
-* **Manifest:** HWM saves a `release-manifest.json` locally for the CI logs to prove exactly what was shipped.
-
----
 
 ## 🏗 Why this works better than manual scripts
 
