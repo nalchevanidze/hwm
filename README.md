@@ -214,15 +214,15 @@ The `artifacts` pipeline is HWM's **End-User Distribution Engine**. It transform
 HWM uses a **Hybrid-Flat** structure, where targets and settings share the same namespace for clarity and simplicity.
 
 ```yaml
-# hwm.yaml
-project: morpheus
-version: 0.1.2
-
 release:
   artifacts:
+    # short-hand targets to build and package
     morpheus: libs/cli:morpheus
-    daemon: apps/daemon:hwm-daemon
+    # custom target with specific formats and naming
+    daemon:
+      source: apps/daemon:hwm-daemon
       formats: [zip, tar.gz]
+      ghc-options: -O2
       name-template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
 ```
 
