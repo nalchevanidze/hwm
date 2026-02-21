@@ -125,6 +125,7 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
     optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
     stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
+
     
     indent 1 $ putLine "Compressing artifact..."
     archives <- createArchive version ArchiveOptions {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats}
