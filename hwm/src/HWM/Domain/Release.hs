@@ -13,7 +13,6 @@ where
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (toJSON),
-    Value,
     genericParseJSON,
     genericToJSON,
   )
@@ -28,7 +27,7 @@ import Relude
 
 data Release = Release
   { rlsArtifacts :: Maybe (Map Name ArtifactConfig),
-    rlsLibs :: Maybe (Map Name Value)
+    rlsLibs :: Maybe (Map Name Name)
   }
   deriving
     ( Generic,
