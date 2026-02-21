@@ -122,9 +122,9 @@ createEnvYaml target = do
           ..
         }
 
-stackGenBinary :: PkgName -> FilePath -> ConfigT ()
-stackGenBinary pkgName dirPath = do
-  (success, buildOut) <- runStack ["install", toString pkgName, "--local-bin-path", dirPath]
+stackGenBinary :: PkgName -> FilePath -> [String] -> ConfigT ()
+stackGenBinary pkgName dirPath args = do
+  (success, buildOut) <- runStack (["install", toString pkgName, "--local-bin-path", dirPath] <> args)
   unless success $ throwError (fromString $ "Build failed: " <> buildOut)
 
 runStack :: [String] -> ConfigT (Bool, String)

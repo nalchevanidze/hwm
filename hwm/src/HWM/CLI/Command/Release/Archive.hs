@@ -61,7 +61,7 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
     let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
     targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
-    stackGenBinary pkgName localDir
+    stackGenBinary pkgName localDir ["--ghc-options=-optl-s" | arcStrip]
     putLine "Compressing artifact..."
     ArchiveInfo {..} <- createZipArchive version ArchiveOptions {zipNameTemplate = arcNameTemplate, outDir = "./", sourceDir = localDir, name = executableName}
     for_ ghPublishUrl $ \uploadUrl -> do
