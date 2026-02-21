@@ -46,7 +46,7 @@ instance ToJSON Release where
 data ArchiveConfig = ArchiveConfig
   { arcSource :: Text,
     arcFormat :: ArchiveFormat,
-    arcStrip :: Bool,
+    arcGhcOptions :: [Text],
     arcNameTemplate :: Text
   }
   deriving
@@ -85,7 +85,12 @@ defaultArchiveConfig src =
   ArchiveConfig
     { arcSource = src,
       arcFormat = Zip,
-      arcStrip = True,
+      arcGhcOptions =
+        [ "-O2", -- High-level optimization
+          "-split-sections", -- Enables dead-code elimination at the function level
+          "-optl-s", -- Tells the linker to strip symbols
+          "-threaded" -- Essential for modern CLI concurrency
+        ],
       arcNameTemplate = defaultFormat
     }
 

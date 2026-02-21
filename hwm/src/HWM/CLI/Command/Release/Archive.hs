@@ -49,6 +49,10 @@ instance ParseCLI ReleaseArchiveOptions where
 releaseDir :: FilePath
 releaseDir = ".hwm/release"
 
+ghcOptions :: [Text] -> [Text]
+ghcOptions [] = []
+ghcOptions xs = ["--ghc-options=" <> T.unwords xs]
+
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
 runReleaseArchive ReleaseArchiveOptions {..} = do
   version <- asks (cfgVersion . config)
@@ -61,7 +65,7 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
     let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
     targets <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
     Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure targets
-    stackGenBinary pkgName localDir ["--ghc-options=-optl-s" | arcStrip]
+    stackGenBinary pkgName localDir (ghcOptions arcGhcOptions)
     putLine "Compressing artifact..."
     ArchiveInfo {..} <- createZipArchive version ArchiveOptions {zipNameTemplate = arcNameTemplate, outDir = "./", sourceDir = localDir, name = executableName}
     for_ ghPublishUrl $ \uploadUrl -> do

@@ -147,12 +147,10 @@ If the `--gh-publish` flag is present, HWM performs a high-speed streaming uploa
 - [x] Orchestrate full distribution lifecycle in `release:` block.
 - [ ] Add `publish:` for Hackage uploads (`cabal sdist`).
 - [ ] Add `docker:` for containerizing binaries.
-- [ ] Build with `stack` or `cabal` using `-O2` and `-split-sections`.
-- [ ] Strip debug symbols for minimal size.
+- [X] Build with `stack` or `cabal` using `-O2` and `-split-sections`.
 - [ ] Move binaries to release directory.
 - [x] Zip binaries as `<binary>-<os>-<arch>.zip`.
 - [x] Generate SHA256 hash and `.sha256` sidecar file.
-- [ ] Coordinator job creates GitHub Release and `upload_url`.
-- [ ] Matrix workers upload artifacts using `hwm release archive --gh-publish <upload-url>`.
-- [ ] Upload `.zip` and `.sha256` to GitHub Release.
-- [ ] (Planned) Publish to Hackage and Docker registries.
+- [x] Coordinator job creates GitHub Release and `upload_url`.
+- [x] Matrix workers upload artifacts using `hwm release archive --gh-publish <upload-url>`.
+- [x] Upload `.zip` and `.sha256` to GitHub Release.
