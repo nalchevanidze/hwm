@@ -17,7 +17,7 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Format (format), formatList, subPathSign)
+import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon, subPathSign)
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (fromEither)
@@ -147,4 +147,4 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
       Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
       stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
-      pure $ (name, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
+      pure $ (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
