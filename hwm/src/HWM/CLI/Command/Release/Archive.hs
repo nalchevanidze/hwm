@@ -20,14 +20,17 @@ import HWM.Domain.Release (ArchiveConfig (..))
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), createZipArchive)
+import HWM.Runtime.Network (uploadToGitHub)
 import HWM.Runtime.UI (putLine)
+import Options.Applicative (help, long, metavar, short, strOption)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
 import System.FilePath (joinPath)
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions
-  {
+  { targetName :: Maybe Text,
+    ghPublishUrl :: Maybe Text
   }
   -- opsTarget :: Maybe Name,
   -- opsFormat :: ArchiveFormat,
@@ -37,13 +40,16 @@ data ReleaseArchiveOptions = ReleaseArchiveOptions
   deriving (Show)
 
 instance ParseCLI ReleaseArchiveOptions where
-  parseCLI = pure ReleaseArchiveOptions {}
+  parseCLI =
+    ReleaseArchiveOptions
+      <$> optional (strOption (long "target" <> short 't' <> metavar "TARGET" <> help "Name of the release target to build. If not specified, all targets will be built."))
+      <*> optional (strOption (long "gh-publish" <> short 'u' <> metavar "UPLOAD_URL" <> help "URL to upload the release artifact. If not specified, the artifact will not be uploaded."))
 
 releaseDir :: FilePath
 releaseDir = ".hwm/release"
 
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
-runReleaseArchive ReleaseArchiveOptions {} = do
+runReleaseArchive ReleaseArchiveOptions {..} = do
   cfgs <- Map.toList <$> getArchiveConfigs
   for_ cfgs $ \(name, ArchiveConfig {..}) -> do
     let localDir = joinPath [releaseDir, toString name]
@@ -56,6 +62,9 @@ runReleaseArchive ReleaseArchiveOptions {} = do
     stackGenBinary pkgName localDir
     putLine "Compressing artifact..."
     ArchiveInfo {..} <- createZipArchive localDir executableName "./"
-      
+    for_ ghPublishUrl $ \uploadUrl -> do
+      uploadToGitHub uploadUrl zipPath
+      putLine "gh published"
+
     putLine $ "✅ Produced: " <> format zipPath <> "\nHash: " <> format sha256
     pure ()
