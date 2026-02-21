@@ -35,7 +35,7 @@ data ReleaseArchiveOptions = ReleaseArchiveOptions
   }
   -- opsTarget :: Maybe Name,
   -- opsFormat :: ArchiveFormat,
-  -- opsStrip :: Bool,
+  -- opsGhcOptions :: [Text],
   -- opsNameTemplate :: Text
 
   deriving (Show)
