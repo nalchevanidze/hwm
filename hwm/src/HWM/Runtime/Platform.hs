@@ -6,7 +6,7 @@ module HWM.Runtime.Platform
     Arch (..),
     Platform (..),
     detectPlatform,
-    platformExt,
+    platformFilePath,
   )
 where
 
@@ -38,9 +38,9 @@ data Platform = Platform {os :: OS, arch :: Arch} deriving (Eq, Show)
 instance Format Platform where
   format (Platform os' arch') = format os' <> "-" <> format arch'
 
-platformExt :: Platform -> Text
-platformExt (Platform Windows _) = ".exe"
-platformExt _ = ""
+platformFilePath :: Platform -> Text -> FilePath
+platformFilePath (Platform Windows _) fileName = toString (fileName <> ".exe")
+platformFilePath _ fileName = toString fileName
 
 detectPlatform :: (MonadIO m) => m Platform
 detectPlatform = liftIO $ do

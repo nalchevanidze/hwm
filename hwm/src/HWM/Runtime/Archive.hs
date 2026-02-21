@@ -26,7 +26,7 @@ import HWM.Core.Formatting (Format (..))
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (..))
 import HWM.Core.Version (Version)
 import HWM.Domain.Release (ArchiveFormat (..), formatArchiveTemplate)
-import HWM.Runtime.Platform (detectPlatform, platformExt)
+import HWM.Runtime.Platform (detectPlatform, platformFilePath)
 import HWM.Runtime.Process (exec)
 import Relude
 import System.Directory (doesFileExist)
@@ -45,32 +45,37 @@ data ArchivingPlan = ArchivingPlan
     archiveFormats :: [ArchiveFormat]
   }
 
+checkBinFile :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
+checkBinFile binPath = do
+  binExists <- liftIO $ doesFileExist binPath
+  unless binExists $ throwError (fromString $ "Binary not found at expected path: \"" <> binPath <> "\". Ensure the build step succeeded and the binary is located at the correct path.")
+
 createArchive ::
   (MonadIO m, MonadError Issue m, MonadIssue m) =>
   Version ->
   ArchivingPlan ->
   m [ArchiveInfo]
 createArchive version ArchivingPlan {..} = do
-  let binPath = sourceDir </> toString name
-  binExists <- liftIO $ doesFileExist binPath
-  unless binExists $ throwError (fromString $ "Binary not found at expected path: " <> binPath)
   platform <- detectPlatform
+  let binName = platformFilePath platform name
+  let binPath = sourceDir </> binName
+  checkBinFile binPath
 
   fmap catMaybes $ forM archiveFormats $ \target -> do
     let ext = if target == Zip then ".zip" else ".tar.gz"
     let archiveName = formatArchiveTemplate name version platform nameTemplate <> ext
     let archivePath = normalise $ joinPath [outDir, toString archiveName]
 
-    success <- writeArchive target (binPath <> toString (platformExt platform)) archivePath (name <> platformExt platform)
+    success <- writeArchive target binPath archivePath binName
 
     if success
       then Just <$> finalizeArchive archivePath
       else pure Nothing
 
-writeArchive :: (MonadIO m, MonadIssue m) => ArchiveFormat -> FilePath -> FilePath -> Name -> m Bool
+writeArchive :: (MonadIO m, MonadIssue m) => ArchiveFormat -> FilePath -> FilePath -> FilePath -> m Bool
 writeArchive Zip binPath outPath binNameWithExt = liftIO $ do
   entry <- Zip.readEntry [] binPath
-  let rootEntry = entry {Zip.eRelativePath = toString binNameWithExt}
+  let rootEntry = entry {Zip.eRelativePath = binNameWithExt}
   let archive = Zip.addEntryToArchive rootEntry Zip.emptyArchive
   BSL.writeFile outPath (Zip.fromArchive archive)
   pure True

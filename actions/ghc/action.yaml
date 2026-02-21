@@ -15,6 +15,7 @@ runs:
         if [ "$RUNNER_OS" == "Windows" ]; then
           echo "STACK_ROOT=C:\sr" >> $GITHUB_ENV
           echo "STACK_ROOT_DIR=C:\sr" >> $GITHUB_ENV
+          echo "STACK_PATH=C:\sr" >> $GITHUB_ENV
         else
           echo "STACK_ROOT_DIR=~/.stack" >> $GITHUB_ENV
         fi
