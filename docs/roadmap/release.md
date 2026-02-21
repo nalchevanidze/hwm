@@ -140,7 +140,7 @@ If the `--gh-publish` flag is present, HWM performs a high-speed streaming uploa
 - [x] Native zipping via pure-Haskell engine (`zip-archive`).
 - [x] Generate `.sha256` checksum alongside `.zip`.
 - [x] Use `{{binary}}-{{os}}-{{arch}}.zip` naming convention.
-- [ ] Allow advanced YAML overrides (e.g., format, strip, name template).
+- [x] Allow advanced YAML overrides (e.g., format, strip, name template).
 - [x] Support `.tar.gz` archives via `tar` package.
 - [x] Orchestrate full distribution lifecycle in `release:` block.
 - [X] Build with `stack` or `cabal` using `-O2` and `-split-sections`.
