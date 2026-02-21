@@ -8,7 +8,7 @@ workspace:
       - hwm
     publish: true
 matrix:
-  default-environment: stable
+  default: stable
   environments:
     - name: legacy
       ghc: 8.10.7
