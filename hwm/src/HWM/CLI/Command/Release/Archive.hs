@@ -12,12 +12,13 @@ where
 import Control.Monad.Except (MonadError (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
-import HWM.Domain.Release (ArchiveConfig (..))
+import HWM.Domain.Release (ArchiveConfig (..), ArchiveFormat)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchiveOptions (..), createArchive)
@@ -32,14 +33,17 @@ import System.FilePath (joinPath)
 data ReleaseArchiveOptions = ReleaseArchiveOptions
   { targetName :: Maybe Text,
     ghPublishUrl :: Maybe Text,
-    outputDir :: FilePath
+    outputDir :: FilePath,
+    overrides :: Maybe ArchiveOverrides
   }
-  -- opsTarget :: Maybe Name,
-  -- opsFormat :: ArchiveFormat,
-  -- opsGhcOptions :: [Text],
-  -- opsNameTemplate :: Text
-  -- outputDir :: FilePath
+  deriving (Show)
 
+data ArchiveOverrides = ArchiveOverrides
+  { ovTarget :: Maybe Name,
+    ovFormat :: ArchiveFormat,
+    ovGhcOptions :: [Text],
+    ovNameTemplate :: Text
+  }
   deriving (Show)
 
 instance ParseCLI ReleaseArchiveOptions where
@@ -55,6 +59,7 @@ instance ParseCLI ReleaseArchiveOptions where
             <> value ".hwm/dist"
             <> showDefault
         )
+      <*> pure Nothing
 
 genBindaryDir :: (MonadIO m, ToString a) => a -> m FilePath
 genBindaryDir name = do
@@ -71,11 +76,23 @@ prepeareDir dir = liftIO $ do
   removePathForcibly dir
   createDirectoryIfMissing True dir
 
+applyOverrieds :: Maybe ArchiveOverrides -> ArchiveConfig -> ArchiveConfig
+applyOverrieds Nothing cfg = cfg
+applyOverrieds (Just _) cfg = cfg
+
+withOverrides :: ReleaseArchiveOptions -> Map Name ArchiveConfig -> ConfigT [(Name, ArchiveConfig)]
+withOverrides ReleaseArchiveOptions {..} cfgs = do
+  case targetName of
+    Just target -> case Map.lookup target cfgs of
+      Just cfg -> pure [(target, applyOverrieds overrides cfg)]
+      Nothing -> throwError $ fromString $ "Target \"" <> toString target <> "\" not found in configuration."
+    Nothing -> pure $ map (second (applyOverrieds overrides)) (Map.toList cfgs)
+
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
-runReleaseArchive ReleaseArchiveOptions {..} = do
+runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   prepeareDir outputDir
   version <- asks (cfgVersion . config)
-  cfgs <- Map.toList <$> getArchiveConfigs
+  cfgs <- getArchiveConfigs >>= withOverrides ops
   for_ cfgs $ \(name, ArchiveConfig {..}) -> do
     binaryDir <- genBindaryDir name
     putLine $ "Building and extracting \"" <> name <> "\" ..."
