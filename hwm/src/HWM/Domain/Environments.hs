@@ -48,7 +48,7 @@ import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (TestedRange (..))
 import HWM.Domain.Workspace (WorkspaceGroup, memberPkgs)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
-import HWM.Runtime.Files (aesonYAMLOptions)
+import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced)
 import HWM.Runtime.UI (MonadUI, forTable, sectionEnvironments)
 import Relude
 
@@ -73,11 +73,14 @@ newEnv ghc resolver =
       allowNewer = Nothing
     }
 
+prefix :: String
+prefix = "env"
+
 instance FromJSON Environments where
-  parseJSON = genericParseJSON aesonYAMLOptions
+  parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced prefix)
 
 instance ToJSON Environments where
-  toJSON = genericToJSON aesonYAMLOptions
+  toJSON = genericToJSON (aesonYAMLOptionsAdvanced prefix)
 
 instance
   ( MonadError Issue m,
