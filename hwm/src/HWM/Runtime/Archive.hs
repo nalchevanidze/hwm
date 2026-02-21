@@ -12,7 +12,6 @@ import qualified Crypto.Hash.SHA256 as SHA256
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Base16
 import qualified Data.ByteString.Lazy as BSL
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T
 import HWM.Core.Common (Name)
@@ -23,7 +22,11 @@ import Relude
 import System.Directory (doesFileExist)
 import System.FilePath.Posix (joinPath, normalise, (</>))
 
-data ArchiveInfo = ArchiveInfo {zipPath :: FilePath, binName :: Name, sha256 :: T.Text}
+data ArchiveInfo = ArchiveInfo {
+  zipPath :: FilePath, 
+  binName :: Name, 
+  sha256Path :: FilePath
+  }
 
 createZipArchive ::
   (MonadIO m, MonadError Issue m) =>

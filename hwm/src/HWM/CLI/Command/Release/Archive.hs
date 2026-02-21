@@ -65,6 +65,7 @@ runReleaseArchive ReleaseArchiveOptions {..} = do
     for_ ghPublishUrl $ \uploadUrl -> do
       uploadToGitHub uploadUrl zipPath
       putLine "gh published"
+      uploadToGitHub uploadUrl sha256Path
+      putLine "checksum published"
 
-    putLine $ "✅ Produced: " <> format zipPath <> "\nHash: " <> format sha256
-    pure ()
+    putLine $ "✅ Produced: " <> format zipPath
