@@ -163,18 +163,9 @@ buildWorkspace graph = fmap (Map.fromList . concat) . traverse groupToWorkspace 
               { dir = cleanRelativePath (Just $ toString (pkgGroup pkg)),
                 members,
                 prefix = prefix
-                -- publish = derivePublish (pkgGroup pkg : members) TODO: move into release logic
               }
           )
         ]
-
--- derivePublish :: [Name] -> Maybe Bool
--- derivePublish names
---   | any (`elem` nonPublish) loweredNames = Nothing
---   | otherwise = Just True
---   where
---     loweredNames = map T.toLower names
---     nonPublish = ["examples", "example", "bench", "benchmarks"]
 
 forWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => (Pkg -> m ()) -> m ()
 forWorkspace f = forWorkspaceCore $ \pkg -> do
