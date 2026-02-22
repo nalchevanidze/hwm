@@ -65,9 +65,10 @@ instance Format Version where
   format = formatList "." . toSeries
 
 instance Parse Version where
-  parse s = either (fail . toString . (prefix <>)) pure (sepBy "." s >>= fromSeries)
+  parse s = either tofail pure (sepBy "." vNumbers >>= fromSeries)
     where
-      prefix = "invalid version(" <> s <> ")" <> ": "
+      vNumbers = fromMaybe s (T.stripPrefix "v" s)
+      tofail x = fail $ toString ("invalid version(" <> s <> ")" <> ": " <> x)
 
 fromSeries :: (MonadFail m) => [Int] -> m Version
 fromSeries [] = fail "version should have at least one number!"
