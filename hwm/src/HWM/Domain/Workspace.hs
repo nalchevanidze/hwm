@@ -33,6 +33,7 @@ import Data.Aeson
     Options (..),
     ToJSON (toJSON),
     genericToJSON,
+    withText,
   )
 import Data.Aeson.Types
   ( defaultOptions,
@@ -52,10 +53,19 @@ import HWM.Runtime.UI (MonadUI, putLine, sectionWorkspace)
 import Relude
 
 data WorkspaceRef = WorkspaceRef
-  { wsGroupId :: Name,
-    wsMemberId :: Maybe Name
+  { wsRefGroupId :: Name,
+    wsRefMemberId :: Maybe Name
   }
   deriving (Show, Eq, Generic)
+
+instance FromJSON WorkspaceRef where
+  parseJSON = withText "WorkspaceRef" $ \t ->
+    let (g, m) = parseWorkspaceId t
+     in pure $ WorkspaceRef g m
+
+instance ToJSON WorkspaceRef where
+  toJSON (WorkspaceRef g Nothing) = toJSON g
+  toJSON (WorkspaceRef g (Just m)) = toJSON $ g <> "/" <> m
 
 data WorkGroup = WorkGroup
   { name :: Name,
