@@ -20,9 +20,8 @@ module HWM.Domain.Workspace
     forWorkspaceTuple,
     parseWorkspaceRef,
     forWorkspaceCore,
-    editWorkgroup,
+    addWorkgroupMember,
     allPackages,
-    getMembers,
     resolveWsPkgs,
     WsPkgs,
   )
@@ -196,8 +195,17 @@ forWorkspaceTuple ws f = sectionWorkspace $ do
       status <- f pkg
       putLine (subPathSign <> padDots maxLen (pkgMemberId pkg) <> status)
 
-editWorkgroup :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => Name -> (WorkGroup -> WorkGroup) -> m (Workspace, WorkGroup)
-editWorkgroup name f = do
+addWorkgroupMember :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => Name -> Name -> m (Workspace, WorkGroup)
+addWorkgroupMember name memberId = do
   ws <- askWorkspaceGroups
-  c <- selectGroup name ws
-  pure (Map.adjust f name ws, c)
+  w <- selectGroup name ws
+  if memberId `elem` members w
+    then
+      throwError
+        Issue
+          { issueTopic = memberId,
+            issueMessage = "A member package with name \"" <> memberId <> "\" already exists in workspace group \"" <> name <> "\".",
+            issueSeverity = SeverityError,
+            issueDetails = Nothing
+          }
+    else pure $ (Map.adjust (\g -> g {members = members g <> [memberId]}) name ws, w)

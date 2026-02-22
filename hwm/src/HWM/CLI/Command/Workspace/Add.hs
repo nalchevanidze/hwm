@@ -12,7 +12,7 @@ import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityError, SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
-import HWM.Domain.Workspace (WorkGroup (..), WorkspaceRef (..), editWorkgroup, parseWorkspaceRef)
+import HWM.Domain.Workspace (WorkGroup (..), WorkspaceRef (..), addWorkgroupMember, parseWorkspaceRef)
 import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Integrations.Toolchain.Hie (syncHie)
 import HWM.Integrations.Toolchain.Stack (syncStackYaml)
@@ -53,30 +53,20 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId Noth
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Just memberId), ..}) = do
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
-  (ws, w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})
-  if memberId `elem` members w
-    then
-      throwError
-        Issue
-          { issueTopic = memberId,
-            issueMessage = "A member package with name \"" <> memberId <> "\" already exists in workspace group \"" <> groupId <> "\".",
-            issueSeverity = SeverityError,
-            issueDetails = Nothing
-          }
-    else do
-      scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
-      updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws})
-        $ sectionWorkspace
-        $ do
-          putLine ""
-          putLine $ "• " <> chalk Bold groupId
-          putLine $ subPathSign <> padDots 16 memberId <> displayStatus [("added", Checked)]
-          sectionConfig
-            0
-            [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
-              ("hie.yaml", syncHie $> chalk Green "✓")
-            ]
-      pure ()
+  (ws, w) <- addWorkgroupMember groupId memberId
+  scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
+  updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws})
+    $ sectionWorkspace
+    $ do
+      putLine ""
+      putLine $ "• " <> chalk Bold groupId
+      putLine $ subPathSign <> padDots 16 memberId <> displayStatus [("added", Checked)]
+      sectionConfig
+        0
+        [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
+          ("hie.yaml", syncHie $> chalk Green "✓")
+        ]
+  pure ()
   where
     noEffect label =
       Issue

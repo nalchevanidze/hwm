@@ -56,8 +56,7 @@ collectGroups Nothing = do
   concat <$> traverse resolveWsPkgs (Map.elems pbMap)
 collectGroups (Just name) = do
   pbMap <- fromMaybe mempty . (>>= rlsPublish) <$> asks (cfgRelease . config)
-  let publishGroup = Map.lookup name pbMap
-  case publishGroup of
+  case Map.lookup name pbMap of
     Just pbList -> resolveWsPkgs pbList
     Nothing -> throwError $ fromString $ toString $ "No publish configuration found for group \"" <> name <> "\". Check release configuration."
 
