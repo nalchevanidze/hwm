@@ -60,9 +60,7 @@ jobs:
       - uses: ./.github/actions/latest-hwm
       - name: Test Archiving
         shell: bash
-        run: |
-          hwm --version
-          hwm release artifacts
+        run: hwm release artifacts
 
   hlint:
     runs-on: ubuntu-latest
