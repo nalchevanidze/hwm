@@ -60,7 +60,7 @@ instance ParseCLI ReleaseArchiveOptions where
   parseCLI =
     ReleaseArchiveOptions
       <$> optional (strOption (long "target" <> metavar "TARGET" <> help "Name of the release target to build. If not specified, all targets will be built."))
-      <*> optional (strOption (long "gh-publish" <> metavar "UPLOAD_URL" <> help "URL to upload the release artifact. If not specified, the artifact will not be uploaded."))
+      <*> optional (strOption (long "gh-upload" <> metavar "UPLOAD_URL" <> help "URL to upload the release artifact. If not specified, the artifact will not be uploaded."))
       <*> strOption
         ( long "output-dir"
             <> metavar "OUTPUT_DIR"

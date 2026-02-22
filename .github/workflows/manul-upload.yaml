@@ -19,32 +19,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
-
-      # - name: Upload Packages
-      #   run: hwm publish libs
-      #   env:
-      #     HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-      #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-
-      # - name: Upload HWM logs artifact
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: hwm-logs
-      #     path: .hwm/logs/
-
-      # - name: Show sdist.log
-      #   if: always()
-      #   run: |
-      #     if [ -f .hwm/logs/sdist.log ]; then
-      #       echo "::group::.hwm/logs/sdist.log"
-      #       cat .hwm/logs/sdist.log
-      #       echo "::endgroup::"
-      #     else
-      #       echo "No .hwm/logs/sdist.log found"
-      #     fi
-
+      - uses: ./.github/actions/latest-hwm
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -74,13 +49,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
-
-      - name: Upload Executable Binary
-        uses: nalchevanidze/hwm/actions/pkg@v0.0.5
-        with:
-          package: hwm
-          executable: hwm
-          smoke_test: -v
-          upload_url: ${{ needs.publish_release.outputs.upload_url }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ./.github/actions/latest-hwm
+      - name: Upload Release Artifacts to GitHub Release
+        shell: bash
+        run: hwm release artifacts --gh-upload ${{ needs.publish_release.outputs.upload_url }}

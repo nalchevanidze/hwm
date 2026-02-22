@@ -16,7 +16,7 @@ jobs:
     name: Setup ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - uses: ./.github/actions/latest-hwm
         with:
           ghc: ${{ matrix.ghc }}
 
@@ -37,7 +37,7 @@ jobs:
     name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - uses: ./.github/actions/latest-hwm
         with:
           ghc: ${{ matrix.ghc }}
 
@@ -57,20 +57,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
-
-      - name: Build and Install
-        shell: bash
-        run: |
-          stack install --fast
-          echo "$(stack path --local-bin)" >> $GITHUB_PATH
-
+      - uses: ./.github/actions/latest-hwm
       - name: Test Archiving
         shell: bash
-        run: |
-          hash -r || true
-          hwm --version
-          hwm release artifacts
+        run: hwm release artifacts
 
   hlint:
     runs-on: ubuntu-latest
