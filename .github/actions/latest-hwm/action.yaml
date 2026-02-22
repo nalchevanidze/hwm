@@ -40,9 +40,11 @@ runs:
 
     - name: Build and Install
       shell: bash
-      run: |
-        stack install --fast
-        echo "$(stack path --local-bin)" >> $GITHUB_PATH
-        hash -r || true
-        hwm --version
+      run: echo "$(stack path --local-bin)" >> $GITHUB_PATH
 
+    - name: Build and Install
+      shell: bash
+      run: |
+        hash -r || true
+        stack install --fast
+        hwm --version
