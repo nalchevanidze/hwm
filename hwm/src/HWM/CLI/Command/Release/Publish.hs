@@ -23,12 +23,14 @@ import HWM.Core.Formatting
     statusIcon,
   )
 import HWM.Core.Parsing (ParseCLI (..))
-import HWM.Core.Pkg (Pkg (..))
+import HWM.Core.Pkg (Pkg (..), pkgId)
 import HWM.Core.Result (Issue, Severity (..), maxSeverity)
 import HWM.Domain.Config (Config (cfgRelease))
 import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
+import HWM.Domain.Dependencies (sortByDependencyHierarchy)
 import HWM.Domain.Release (Release (..))
-import HWM.Domain.Workspace (WsPkgs, resolveWsPkgs)
+import HWM.Domain.Workspace (WsPkgs, allPackages, resolveWsPkgs)
+import HWM.Integrations.Toolchain.Package (deriveRegistry)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM, sectionWorkspace)
 import Options.Applicative (argument, help, metavar, str)
@@ -49,6 +51,11 @@ instance ParseCLI PublishOptions where
   parseCLI =
     PublishOptions
       <$> optional (argument str (metavar "GROUP" <> help "Name of the workspace group to publish (default: all)"))
+
+arrangePackageRelease :: [Pkg] -> ConfigT [Pkg]
+arrangePackageRelease pkgs = do
+  (_, graph) <- allPackages >>= deriveRegistry
+  sortByDependencyHierarchy graph pkgs
 
 collectGroups :: Maybe Name -> ConfigT WsPkgs
 collectGroups Nothing = do
@@ -73,12 +80,21 @@ runPublish PublishOptions {..} = do
       ("registry", pure "hackage")
     ]
 
+  section "selecting packages"
+    $ sectionWorkspace
+    $ for_ wgs
+    $ \(name, pkgs) ->
+      section (chalk Bold name) $ do
+        for_ pkgs $ \pkg -> do
+          putLine $ "└── " <> padDots (genMaxLen (map pkgMemberId pkgs)) (pkgMemberId pkg)
+
   issues <- traverse sdist (concatMap snd wgs)
   failIssues (concat issues)
-  -- TODO: typological anlysis to determine order of uploads
-  sectionWorkspace $ for_ wgs $ \(name, pkgs) ->
-    section (chalk Bold name) $ do
-      for_ pkgs $ \pkg -> do
-        (status, publishIssues) <- upload pkg
-        putLine $ "└── " <> padDots (genMaxLen (map pkgMemberId pkgs)) (pkgMemberId pkg) <> statusIcon status
-        failIssues publishIssues
+
+  section "publishing" $ do
+    pkgs <- arrangePackageRelease (concatMap snd wgs)
+    let size = genMaxLen (map pkgId pkgs)
+    for_ pkgs $ \pkg -> do
+      (status, publishIssues) <- upload pkg
+      putLine $ "└── " <> padDots size (pkgId pkg) <> statusIcon status
+      failIssues publishIssues
