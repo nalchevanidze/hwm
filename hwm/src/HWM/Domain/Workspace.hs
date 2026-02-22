@@ -51,12 +51,17 @@ import HWM.Runtime.Files (cleanRelativePath)
 import HWM.Runtime.UI (MonadUI, putLine, sectionWorkspace)
 import Relude
 
+data WorkspaceRef = WorkspaceRef
+  { wsGroupId :: Name,
+    wsMemberId :: Maybe Name
+  }
+  deriving (Show, Eq, Generic)
+
 data WorkGroup = WorkGroup
   { name :: Name,
     dir :: Maybe FilePath,
     members :: [Name],
-    prefix :: Maybe Text,
-    publish :: Maybe Bool
+    prefix :: Maybe Text
   }
   deriving
     ( Generic,
@@ -123,7 +128,7 @@ selectGroup name groups =
   maybe (throwError $ fromString $ toString ("Workspace group \"" <> name <> "\" not found! " <> availableOptions (map pkgGroupName groups))) pure (find ((== name) . pkgGroupName) groups)
 
 canPublish :: WorkGroup -> Bool
-canPublish WorkGroup {publish} = fromMaybe False publish
+canPublish WorkGroup {} = False -- TODO: move into release logic, need to check all members and their dependencies for non-publishable names like "examples", "bench", etc.
 
 buildWorkspaceGroups :: (Monad m, MonadError Issue m) => DependencyGraph -> [Pkg] -> m [WorkGroup]
 buildWorkspaceGroups graph = fmap concat . traverse groupToWorkspace . groupBy sameGroup . sortOn pkgGroup
@@ -138,18 +143,18 @@ buildWorkspaceGroups graph = fmap concat . traverse groupToWorkspace . groupBy s
             { name = if T.null (pkgGroup pkg) then "libs" else slugify (pkgGroup pkg),
               dir = cleanRelativePath (Just $ toString (pkgGroup pkg)),
               members,
-              prefix = prefix,
-              publish = derivePublish (pkgGroup pkg : members)
+              prefix = prefix
+              -- publish = derivePublish (pkgGroup pkg : members) TODO: move into release logic
             }
         ]
 
-derivePublish :: [Name] -> Maybe Bool
-derivePublish names
-  | any (`elem` nonPublish) loweredNames = Nothing
-  | otherwise = Just True
-  where
-    loweredNames = map T.toLower names
-    nonPublish = ["examples", "example", "bench", "benchmarks"]
+-- derivePublish :: [Name] -> Maybe Bool
+-- derivePublish names
+--   | any (`elem` nonPublish) loweredNames = Nothing
+--   | otherwise = Just True
+--   where
+--     loweredNames = map T.toLower names
+--     nonPublish = ["examples", "example", "bench", "benchmarks"]
 
 forWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env [WorkGroup]) => (Pkg -> m ()) -> m ()
 forWorkspace f = forWorkspaceCore $ \pkg -> do
