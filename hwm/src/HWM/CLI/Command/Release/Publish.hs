@@ -80,15 +80,15 @@ runPublish PublishOptions {..} = do
     ]
 
   pkgs <- arrangePackageRelease (concatMap snd wgs)
+  let size = genMaxLen (map pkgId pkgs)
   section "publishing plan (topological sort)" $ do
     for_ (zip pkgs [1 ..] :: [(Pkg, Int)]) $ \(pkg, idx) -> do
-      putLine $ "└── " <> padDots (genMaxLen (map pkgMemberId pkgs)) (pkgMemberId pkg) <> show idx
+      putLine $ "└── " <> padDots size (pkgId pkg) <> show idx
 
   issues <- traverse sdist (concatMap snd wgs)
   failIssues (concat issues)
 
   section "publishing" $ do
-    let size = genMaxLen (map pkgId pkgs)
     for_ pkgs $ \pkg -> do
       (status, publishIssues) <- upload pkg
       putLine $ "└── " <> padDots size (pkgId pkg) <> statusIcon status
