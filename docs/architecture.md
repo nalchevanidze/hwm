@@ -97,7 +97,7 @@ data Options = Options
 ```haskell
 data Config = Config
   { name :: Name, version :: Version, bounds :: Bounds
-  , workspace :: [WorkspaceGroup], matrix :: Matrix
+  , workspace :: [WorkGroup], matrix :: Matrix
   , registry :: Dependencies, scripts :: Map Name Text
   }
 
@@ -107,16 +107,16 @@ getRule :: PkgName -> PkgRegistry -> Config -> m Bounds
 #### Workspace.hs
 
 ```haskell
-data WorkspaceGroup = WorkspaceGroup
+data WorkGroup = WorkGroup
   { name :: Name, dir :: Maybe FilePath, members :: [Name]
   , prefix :: Maybe Text, publish :: Maybe Bool
   }
 
-type PkgRegistry = Map PkgName WorkspaceGroup
+type PkgRegistry = Map PkgName WorkGroup
 
 -- Resolves directory as: {dir}/{prefix}-{member}
-memberPkgs :: WorkspaceGroup -> m [Pkg]
-resolveTargets :: [WorkspaceGroup] -> [Name] -> m [Pkg]
+memberPkgs :: WorkGroup -> m [Pkg]
+resolveTargets :: [WorkGroup] -> [Name] -> m [Pkg]
 ```
 
 #### Matrix.hs
@@ -457,7 +457,7 @@ User: hwm init [-f|--force] [NAME]
         │
         ├─> Analyze & Group Packages
         │   ├─> Detect common prefixes and directory patterns
-        │   └─> Build WorkspaceGroup list
+        │   └─> Build WorkGroup list
         │
         ├─> Infer Metadata
         │   ├─> Project name (from arg or directory name)
@@ -482,7 +482,7 @@ initWorkspace :: InitOptions -> Options -> IO ()
 scanStackFiles :: (MonadIO m, MonadError Issue m) => Options -> FilePath -> m (NonEmpty (Name, Stack))
 deriveRegistry :: (Monad m, MonadError Issue m, MonadIO m) => [Pkg] -> m (Dependencies, DependencyGraph)
 buildMatrix :: [Pkg] -> [FilePath] -> IO Matrix
-buildWorkspaceGroups :: (Monad m, MonadError Issue m) => DependencyGraph -> [Pkg] -> m [WorkspaceGroup]
+buildWorkspaceGroups :: (Monad m, MonadError Issue m) => DependencyGraph -> [Pkg] -> m [WorkGroup]
 ```
 
 ### Sync Command Flow
@@ -541,7 +541,7 @@ class Has env a where
 instance Has (Env m) Config where obtain = config
 instance Has (Env m) Cache where obtain = cache
 instance Has (Env m) Options where obtain = options
-instance Has (Env m) [WorkspaceGroup] where obtain = workspace . config
+instance Has (Env m) [WorkGroup] where obtain = workspace . config
 instance Has (Env m) Matrix where obtain = matrix . config
 
 -- Usage

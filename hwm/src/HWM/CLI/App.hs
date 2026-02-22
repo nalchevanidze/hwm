@@ -51,40 +51,40 @@ commands =
 parseCommand :: Parser Command
 parseCommand =
   commands
-    [ ( "sync",
-        "Regenerate stack.yaml and .cabal files. Optional: switch environment.",
-        Sync <$> optional (argument str (metavar "ENV" <> help "Switch to a specific environment (e.g., legacy, stable)"))
-      ),
-      ( "version",
-        "Show version or bump it (patch | minor | major).",
-        Version <$> parseCLI
-      ),
-      ( "run",
-        "Run a script defined in hwm.yaml",
-        Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI
-      ),
-      ( "status",
-        "Show the current environment, version, and sync status.",
-        pure Status
-      ),
-      ( "init",
-        "Initialize a new HWM workspace by scanning the current directory.",
+    [ ( "init",
+        "Initialize a new HWM workspace by scanning the directory structure.",
         Init <$> parseCLI
       ),
-      ( "registry",
-        "Manage the dependency registry (add, audit, ls).",
-        Registry <$> parseCLI
+      ( "status",
+        "Show current project version, active environment, and sync state.",
+        pure Status
       ),
-      ( "environment",
-        "Manage build environments (add, remove, set-default, ls).",
-        Env <$> parseCLI
+      ( "sync",
+        "Generate stack.yaml/cabal files for a specific environment (defaults to 'default').",
+        Sync <$> optional (argument str (metavar "ENV" <> help "Environment name or 'all' for the full matrix"))
+      ),
+      ( "run",
+        "Execute a script defined in hwm.yaml (e.g., build, test, lint).",
+        Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Script name") <*> parseCLI
       ),
       ( "workspace",
-        "Manage workspaces (add, ls).",
+        "Manage workspace groups and package members.",
         Workspace <$> parseCLI
       ),
+      ( "environment",
+        "Manage GHC toolchains and resolver targets.",
+        Env <$> parseCLI
+      ),
+      ( "registry",
+        "Audit and manage the dependency registry and version bounds.",
+        Registry <$> parseCLI
+      ),
+      ( "version",
+        "Display the current workspace version or bump it (patch, minor, major).",
+        Version <$> parseCLI
+      ),
       ( "release",
-        "Release related commands (package, publish).",
+        "Manage delivery: build artifacts or publish release trains.",
         Release <$> parseCLI
       )
     ]

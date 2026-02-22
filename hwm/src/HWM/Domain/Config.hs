@@ -23,11 +23,11 @@ import HWM.Core.Has (Has)
 import HWM.Core.Pkg
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
-import HWM.Domain.Bounds (Bounds)
+import HWM.Domain.Bounds (Bounds, versionBounds)
 import HWM.Domain.Dependencies (Dependencies, getBounds)
 import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Release (Release)
-import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup)
+import HWM.Domain.Workspace (PkgRegistry, Workspace)
 import HWM.Runtime.Cache (Cache)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import Relude
@@ -35,8 +35,8 @@ import Relude
 data Config = Config
   { cfgName :: Name,
     cfgVersion :: Version,
-    cfgBounds :: Bounds,
-    cfgWorkspace :: [WorkspaceGroup],
+    cfgBounds :: Maybe Bounds,
+    cfgWorkspace :: Workspace,
     cfgEnvironments :: Environments,
     cfgRegistry :: Dependencies,
     cfgScripts :: Map Name Text,
@@ -49,7 +49,7 @@ data Config = Config
 
 getRule :: (MonadError Issue m) => PkgName -> PkgRegistry -> Config -> m Bounds
 getRule depName ps Config {..}
-  | Map.member depName ps = pure cfgBounds
+  | Map.member depName ps = pure (fromMaybe (versionBounds cfgVersion) cfgBounds)
   | otherwise = getBounds depName cfgRegistry
 
 prefix :: String
@@ -65,7 +65,7 @@ instance
   ( MonadError Issue m,
     MonadReader env m,
     Has env Cache,
-    Has env [WorkspaceGroup],
+    Has env Workspace,
     Has env Environments,
     MonadIO m
   ) =>

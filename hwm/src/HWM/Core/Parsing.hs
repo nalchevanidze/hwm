@@ -36,7 +36,7 @@ import Data.Text
     uncons,
   )
 import qualified Data.Text as T
-import Options.Applicative (Mod, Parser, help, long, option, short, strOption, switch)
+import Options.Applicative (Mod, Parser, help, long, short, strOption, switch)
 import Options.Applicative.Builder (OptionFields)
 import Relude hiding
   ( break,

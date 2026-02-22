@@ -13,7 +13,6 @@ where
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (toJSON),
-    Value,
     genericParseJSON,
     genericToJSON,
   )
@@ -22,13 +21,16 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), formatTemplate)
 import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Version (Version)
+import HWM.Domain.Workspace (WorkspaceRef)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import HWM.Runtime.Platform (Platform (..))
 import Relude
 
+type Publishables = Map Name [WorkspaceRef]
+
 data Release = Release
   { rlsArtifacts :: Maybe (Map Name ArtifactConfig),
-    rlsLibs :: Maybe (Map Name Value)
+    rlsPublish :: Maybe Publishables
   }
   deriving
     ( Generic,
