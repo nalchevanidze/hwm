@@ -1,5 +1,5 @@
 name: hwm
-version: 0.0.5
+version: 0.1.0
 github: nalchevanidze/hwm
 license: MIT
 author: Daviti Nalchevanidze
@@ -53,4 +53,4 @@ executables:
     source-dirs: app
     ghc-options: -Wall
     dependencies:
-    - hwm  >=  0.0.0  &&  <  0.1.0
+    - hwm  >=  0.1.0  &&  <  0.2.0
