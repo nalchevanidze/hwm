@@ -32,7 +32,7 @@ import HWM.Domain.Release (Release (..))
 import HWM.Domain.Workspace (WsPkgs, allPackages, resolveWsPkgs)
 import HWM.Integrations.Toolchain.Package (deriveRegistry)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
-import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM, sectionWorkspace)
+import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (intercalate)
 
@@ -76,23 +76,19 @@ runPublish PublishOptions {..} = do
     0
     "publish"
     [ ("version", pure $ chalk Magenta (format version)),
-      ("target", pure $ chalk Cyan (format (T.intercalate ", " (map fst wgs)))),
+      ("target", pure $ chalk Cyan (fromMaybe "all" publishGroup)),
       ("registry", pure "hackage")
     ]
 
-  section "selecting packages"
-    $ sectionWorkspace
-    $ for_ wgs
-    $ \(name, pkgs) ->
-      section (chalk Bold name) $ do
-        for_ pkgs $ \pkg -> do
-          putLine $ "└── " <> padDots (genMaxLen (map pkgMemberId pkgs)) (pkgMemberId pkg)
+  pkgs <- arrangePackageRelease (concatMap snd wgs)
+  section "dependency plan (topological sort)" $ do
+    for_ (zip pkgs [1 ..] :: [(Pkg, Int)]) $ \(pkg, idx) -> do
+      putLine $ "└── " <> padDots (genMaxLen (map pkgMemberId pkgs)) (pkgMemberId pkg) <> show idx
 
   issues <- traverse sdist (concatMap snd wgs)
   failIssues (concat issues)
 
   section "publishing" $ do
-    pkgs <- arrangePackageRelease (concatMap snd wgs)
     let size = genMaxLen (map pkgId pkgs)
     for_ pkgs $ \pkg -> do
       (status, publishIssues) <- upload pkg
