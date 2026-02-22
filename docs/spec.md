@@ -620,7 +620,7 @@ git push --tags
 
 ### Package Resolution
 
-**Input:** WorkspaceGroup
+**Input:** WorkGroup
 
 ```yaml
 workspace:

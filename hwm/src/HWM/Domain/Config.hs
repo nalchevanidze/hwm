@@ -27,7 +27,7 @@ import HWM.Domain.Bounds (Bounds)
 import HWM.Domain.Dependencies (Dependencies, getBounds)
 import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Release (Release)
-import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup)
+import HWM.Domain.Workspace (PkgRegistry, WorkGroup)
 import HWM.Runtime.Cache (Cache)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import Relude
@@ -36,7 +36,7 @@ data Config = Config
   { cfgName :: Name,
     cfgVersion :: Version,
     cfgBounds :: Bounds,
-    cfgWorkspace :: [WorkspaceGroup],
+    cfgWorkspace :: [WorkGroup],
     cfgEnvironments :: Environments,
     cfgRegistry :: Dependencies,
     cfgScripts :: Map Name Text,
@@ -65,7 +65,7 @@ instance
   ( MonadError Issue m,
     MonadReader env m,
     Has env Cache,
-    Has env [WorkspaceGroup],
+    Has env [WorkGroup],
     Has env Environments,
     MonadIO m
   ) =>

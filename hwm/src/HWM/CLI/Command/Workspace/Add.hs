@@ -12,7 +12,7 @@ import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityError, SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
-import HWM.Domain.Workspace (WorkspaceGroup (..), editWorkgroup, existsWokspaceGroup, parseWorkspaceId)
+import HWM.Domain.Workspace (WorkGroup (..), editWorkgroup, existsWokspaceGroup, parseWorkspaceId)
 import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Integrations.Toolchain.Hie (syncHie)
 import HWM.Integrations.Toolchain.Stack (syncStackYaml)
@@ -48,7 +48,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Nothing), ..}) 
             issueDetails = Nothing
           }
     else do
-      let ws = wss ++ [WorkspaceGroup groupId opsWorkspaceDir [] opsPrefix (Just opsPublish)]
+      let ws = wss ++ [WorkGroup groupId opsWorkspaceDir [] opsPrefix (Just opsPublish)]
       updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ sectionWorkspace $ do
         putLine ""
         putLine $ "• " <> chalk Bold groupId <> " " <> displayStatus [("added", Checked)]

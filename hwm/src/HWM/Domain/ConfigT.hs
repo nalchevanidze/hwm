@@ -40,7 +40,7 @@ import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Release (ArtifactConfig, Release (..))
-import HWM.Domain.Workspace (PkgRegistry, WorkspaceGroup, pkgRegistry)
+import HWM.Domain.Workspace (PkgRegistry, WorkGroup, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
 import HWM.Runtime.Files (addHash, readYaml, rewrite_)
 import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
@@ -76,7 +76,7 @@ instance Has (Env m) Cache where
 instance Has (Env m) Config where
   obtain = config
 
-instance Has (Env m) [WorkspaceGroup] where
+instance Has (Env m) [WorkGroup] where
   obtain Env {config} = cfgWorkspace config
 
 instance Has (Env m) Environments where

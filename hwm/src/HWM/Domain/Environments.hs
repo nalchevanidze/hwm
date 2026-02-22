@@ -46,7 +46,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName, pkgId)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (TestedRange (..))
-import HWM.Domain.Workspace (WorkspaceGroup, memberPkgs)
+import HWM.Domain.Workspace (WorkGroup, memberPkgs)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
 import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced)
 import HWM.Runtime.UI (MonadUI, forTable, sectionEnvironments)
@@ -86,7 +86,7 @@ instance
   ( MonadError Issue m,
     MonadReader env m,
     Has env Environments,
-    Has env [WorkspaceGroup],
+    Has env [WorkGroup],
     Has env Cache,
     MonadIO m
   ) =>
@@ -117,7 +117,7 @@ instance ToJSON EnviromentTarget where
 instance
   ( MonadError Issue m,
     MonadReader env m,
-    Has env [WorkspaceGroup],
+    Has env [WorkGroup],
     Has env Cache,
     MonadIO m
   ) =>
@@ -132,7 +132,7 @@ instance
 checkPkgNames ::
   ( MonadError Issue m,
     MonadReader env m,
-    Has env [WorkspaceGroup],
+    Has env [WorkGroup],
     MonadIO m
   ) =>
   Maybe [Text] ->
@@ -162,7 +162,7 @@ instance Format BuildEnvironment where
 getBuildEnvironments ::
   ( MonadReader env m,
     Has env Environments,
-    Has env [WorkspaceGroup],
+    Has env [WorkGroup],
     MonadIO m,
     MonadError Issue m
   ) =>
@@ -185,7 +185,7 @@ getBuildEnvironments = do
 getBuildEnvironment ::
   ( MonadReader env m,
     Has env Environments,
-    Has env [WorkspaceGroup],
+    Has env [WorkGroup],
     Has env Cache,
     MonadIO m,
     MonadError Issue m
@@ -213,7 +213,7 @@ data HkgRef = HkgRef
 instance
   ( MonadError Issue m,
     MonadReader env m,
-    HasAll env [[WorkspaceGroup], Cache],
+    HasAll env [[WorkGroup], Cache],
     MonadIO m
   ) =>
   Check m HkgRef
@@ -235,12 +235,12 @@ hkgRefs = map (uncurry HkgRef) . M.toList
 instance Format HkgRef where
   format HkgRef {..} = format pkgName <> "-" <> format pkgVersion
 
-askGroups :: (MonadReader env m, Has env [WorkspaceGroup]) => m [WorkspaceGroup]
+askGroups :: (MonadReader env m, Has env [WorkGroup]) => m [WorkGroup]
 askGroups = askEnv
 
 askAllPackages ::
   ( MonadReader env m,
-    Has env [WorkspaceGroup],
+    Has env [WorkGroup],
     MonadIO m,
     MonadError Issue m
   ) =>
@@ -254,7 +254,7 @@ existsEnviroment n = do
   envs <- envTargets <$> askEnv
   pure $ isJust $ Map.lookup n envs
 
-printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env [WorkspaceGroup], Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
+printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env [WorkGroup], Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
 printEnvironments name = do
   active <- getBuildEnvironment name
   def <- envDefault <$> askEnv
@@ -266,7 +266,7 @@ printEnvironments name = do
         else chalk Gray (buildResolver env)
     )
 
-getTestedRange :: (Monad m, MonadReader env m, Has env [WorkspaceGroup], Has env Environments, MonadIO m, MonadError Issue m) => m TestedRange
+getTestedRange :: (Monad m, MonadReader env m, Has env [WorkGroup], Has env Environments, MonadIO m, MonadError Issue m) => m TestedRange
 getTestedRange = do
   env <- getBuildEnvironments
   legacy <- getSnapshot (minimum $ map buildResolver env)
