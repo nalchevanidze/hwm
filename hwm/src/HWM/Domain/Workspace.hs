@@ -14,7 +14,6 @@ module HWM.Domain.Workspace
     PkgRegistry,
     WorkspaceRef (..),
     buildWorkspace,
-    askWorkspaceGroups,
     resolveWorkspaces,
     forWorkspace,
     forWorkspaceTuple,
@@ -114,8 +113,8 @@ resolveGroup g = Map.fromList . map ((,snd g) . pkgName) <$> memberPkgs g
 pkgRegistry :: (MonadIO m, MonadError Issue m) => Workspace -> m PkgRegistry
 pkgRegistry = fmap Map.unions . traverse resolveGroup . Map.toList
 
-askWorkspaceGroups :: (MonadReader env m, Has env Workspace) => m Workspace
-askWorkspaceGroups = asks obtain
+askWorkspace :: (MonadReader env m, Has env Workspace) => m Workspace
+askWorkspace = asks obtain
 
 groupByGroupName :: [Pkg] -> WsPkgs
 groupByGroupName pkgs =
@@ -131,7 +130,7 @@ resolveWsPkgs = fmap (groupByGroupName . (S.toList . S.fromList) . concat) . tra
 
 resolveWsRef :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => WorkspaceRef -> m [Pkg]
 resolveWsRef wsRef = do
-  ws <- askWorkspaceGroups
+  ws <- askWorkspace
   members <- selectGroup (wsRefGroupId wsRef) ws >>= memberPkgs . (wsRefGroupId wsRef,)
   resolveT members (wsRefMemberId wsRef)
 
@@ -170,7 +169,7 @@ forWorkspace f = forWorkspaceCore $ \pkg -> do
 
 forWorkspaceCore :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => (Pkg -> m Text) -> m ()
 forWorkspaceCore f = do
-  gs <- Map.toList <$> askWorkspaceGroups
+  gs <- Map.toList <$> askWorkspace
   sectionWorkspace
     $ for_ gs
     $ \(name, wg) -> do
@@ -194,7 +193,7 @@ forWorkspaceTuple ws f = sectionWorkspace $ do
 
 addWorkgroupMember :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => Name -> Name -> m (Workspace, WorkGroup)
 addWorkgroupMember name memberId = do
-  ws <- askWorkspaceGroups
+  ws <- askWorkspace
   w <- selectGroup name ws
   if memberId `elem` members w
     then
