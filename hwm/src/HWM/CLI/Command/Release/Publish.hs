@@ -25,7 +25,7 @@ import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue, Severity (..), maxSeverity)
 import HWM.Domain.ConfigT (ConfigT, askVersion)
-import HWM.Domain.Workspace (WorkGroup, askWorkspaceGroups, canPublish, memberPkgs, pkgGroupName, selectGroup)
+import HWM.Domain.Workspace (WorkGroup, askWorkspaceGroups, canPublish, memberPkgs,  selectGroup, Workspace)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM, sectionWorkspace)
 import Options.Applicative (argument, help, metavar, str)
@@ -47,7 +47,7 @@ instance ParseCLI PublishOptions where
     PublishOptions
       <$> optional (argument str (metavar "GROUP" <> help "Name of the workspace group to publish (default: all)"))
 
-collectGroups :: Maybe Name -> [WorkGroup] -> ConfigT [WorkGroup]
+collectGroups :: Maybe Name -> Workspace -> ConfigT [WorkGroup]
 collectGroups Nothing ws = pure $ filter canPublish ws
 collectGroups (Just target) ws = do
   groups <- traverse (`selectGroup` ws) [target]
