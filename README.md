@@ -8,10 +8,10 @@
 
 HWM is an **active workspace maintainer** that helps you:
 
-* **Manage & Validate:** Auto-generate and sync the configuration files your toolchain expects (`stack.yaml`, `package.yaml`, `hie.yaml`).
-* **Derive & Verify:** Automatically calculate safe dependency bounds derived directly from your successful matrix builds.
-* **Test Locally:** Run comprehensive matrix tests across multiple GHC versions right on your machine.
-* **Release & Publish:** Streamline versioning, binary artifact generation, and Hackage publishing via simple workflow triggers.
+- **Manage & Validate:** Auto-generate and sync the configuration files your toolchain expects (`stack.yaml`, `package.yaml`, `hie.yaml`).
+- **Derive & Verify:** Automatically calculate safe dependency bounds derived directly from your successful matrix builds.
+- **Test Locally:** Run comprehensive matrix tests across multiple GHC versions right on your machine.
+- **Release & Publish:** Streamline versioning, binary artifact generation, and Hackage publishing via simple workflow triggers.
 
 ---
 
@@ -64,9 +64,9 @@ graph TD
 
 ```
 
-* **You write:** `hwm.yaml` (1 file).
-* **HWM generates:** `stack.yaml`, `package.yaml`, `.cabal`, `hie.yaml`.
-* **You run:** Standard `stack` or `cabal` commands (or use `hwm run` wrappers).
+- **You write:** `hwm.yaml` (1 file).
+- **HWM generates:** `stack.yaml`, `package.yaml`, `.cabal`, `hie.yaml`.
+- **You run:** Standard `stack` or `cabal` commands (or use `hwm run` wrappers).
 
 ---
 
@@ -106,9 +106,9 @@ HWM was created to solve the orchestration needs of the **[Morpheus GraphQL](htt
 
 Today, it powers the entire Morpheus repository, smoothly managing:
 
-* **15+ Packages:** Keeping `core`, `api`, and `client` synchronized.
-* **Hybrid Matrices:** Testing `stable` (GHC 9.6) and `legacy` (GHC 8.10) environments side-by-side.
-* **Unified Registry:** Maintaining a single source of truth for version bounds across the repository.
+- **15+ Packages:** Keeping `core`, `api`, and `client` synchronized.
+- **Hybrid Matrices:** Testing `stable` (GHC 9.6) and `legacy` (GHC 8.10) environments side-by-side.
+- **Unified Registry:** Maintaining a single source of truth for version bounds across the repository.
 
 > **💡 Tip:** View the [live configuration here](https://github.com/morpheusgraphql/morpheus-graphql/blob/main/hwm.yaml) to see a full-scale example of HWM in action.
 
@@ -161,10 +161,10 @@ hwm workspace add libs/core
 
 **What HWM does instantly:**
 
-* Generates the package directory and `package.yaml`.
-* Registers the new package under the correct group in `hwm.yaml`.
-* Wires the package into `stack.yaml` for immediate building.
-* Injects the package into `hie.yaml` for LSP support.
+- Generates the package directory and `package.yaml`.
+- Registers the new package under the correct group in `hwm.yaml`.
+- Wires the package into `stack.yaml` for immediate building.
+- Injects the package into `hie.yaml` for LSP support.
 
 ### 3. Matrix & Environment Management
 
@@ -183,14 +183,13 @@ environments:
     nightly:
       ghc: 9.10.1
       resolver: nightly-2024-05-22
-
 ```
 
 **Manage Environments:**
 
-* **Add:** `hwm environment add stable lts-24.25` (Validates against Stackage).
-* **Switch:** `hwm environment set-default stable`.
-* **List:** `hwm environment ls`.
+- **Add:** `hwm environment add stable lts-24.25` (Validates against Stackage).
+- **Switch:** `hwm environment set-default stable`.
+- **List:** `hwm environment ls`.
 
 **Run Your Matrix Locally:** Validate compatibility before pushing your code.
 
@@ -204,84 +203,69 @@ hwm run test --env=all
 <img src="images/matrix.png" alt="HWM Matrix Build Output" width="700">
 </p>
 
-### 4. Automated Release Workflows
+### 3. Release & Distribution
 
-By combining HWM with `relasy`, you can fully automate the release lifecycle with a single CI workflow trigger.
-
-* **Auto-Versioning:** Calculate the next semantic version based on changes.
-* **Auto-Publishing:** Upload synchronized packages to Hackage.
-
-```bash
-# Triggered by your CI pipeline:
-hwm version minor   # Bumps versions atomically
-hwm publish libs    # Uploads the entire workspace group
-
-```
+HWM introduces **Release Trains**, decoupling your workspace structure from your distribution strategy.
 
 #### 📦 Artifact Pipeline
 
-The `artifacts` pipeline is HWM's end-user distribution engine. It transforms raw binaries into optimized, compressed, and hashed distribution units, implemented entirely in Haskell for maximum portability.
-
-##### Configuration
-
-HWM uses a **Hybrid-Flat** structure, keeping targets and settings in the same namespace for clarity.
+The `artifacts` pipeline transforms raw binaries into hashed, compressed distribution units.
 
 ```yaml
 release:
   artifacts:
-    # Short-hand targets to build and package
-    morpheus: libs/cli:morpheus
-
+    # Format: [artifact-name]: [workspace-ref]:[executable-name]
+    hwm: libs/hwm:hwm
     # Custom target with specific formats and naming
     daemon:
       source: apps/daemon:hwm-daemon
       formats: [zip, tar.gz]
       ghc-options: -O2
       name-template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
-
 ```
 
-##### Usage
+#### 🚢 Publication Trains
+
+Define groups of packages to be published together. This allows you to manage "core" vs "plugin" releases separately.
+
+```yaml
+release:
+  publish:
+    main:
+      - libs/core # Specific member
+      - apps # Entire workspace group
+```
+
+**Usage:**
 
 ```bash
-# Local staging (wipes and fills .hwm/dist)
+# Bump version across the workspace (updates hwm.yaml and all package.yaml)
+hwm version minor
+
+# Build local binaries and hashes
 hwm release artifacts
 
-# Publish to GitHub Releases with a masked upload URL
-hwm release artifacts --gh-upload <upload_url>
+# Push a specific train to Hackage
+hwm release publish main
 
 ```
-
----
-
-## 🤖 Built for the AI Era
-
-HWM natively condenses your workspace configuration into a format modern LLMs can easily parse.
-
-* **Context Window Friendly:** Instead of providing an AI with 20+ `.cabal` files to explain your workspace architecture, you only need to provide a single `hwm.yaml` file.
-
----
 
 ## ⚖️ The Haskell Tooling Landscape
 
-HWM is designed to offer a comfortable middle ground between standard manual setup and advanced orchestration frameworks, providing high automation with a gentle learning curve.
-
-| Feature | Standard Setup | Nix / Bazel | 🚀 HWM |
-| --- | --- | --- | --- |
-| **Config Source** | Decentralized (Multiple files) | Centralized (`flake.nix`) | **Centralized (`hwm.yaml`)** |
-| **Workspace Addition** | Manual Edits | Manual Edits | **✅ Auto-Discovery & Wiring** |
-| **Release Pipelines** | Manual Scripts | Custom Scripts | **✅ Native Automation** |
-| **Artifact Builds** | Bash Scripts | Requires Expertise | **✅ Native `.zip/.tar.gz**` |
-
----
+| Feature                | Standard Setup | Nix / Bazel        | 🚀 HWM                            |
+| ---------------------- | -------------- | ------------------ | --------------------------------- |
+| **Config Source**      | Decentralized  | Centralized        | **Centralized (`hwm.yaml`)**      |
+| **Workspace Addition** | Manual Edits   | Manual Edits       | **✅ Auto-Discovery & Wiring**    |
+| **Release Pipelines**  | Manual Scripts | Custom Scripts     | **✅ Declarative Release Trains** |
+| **Artifact Builds**    | Bash Scripts   | Requires Expertise | **✅ Native `.zip/.tar.gz**`      |
 
 ## 🔮 Roadmap
 
 HWM is actively evolving. While the core Workspace and Matrix engines are stable, we are actively developing the following operational features:
 
-* **Professional Distribution (v0.1.0):** Automated Homebrew Formula generation and universal installers (`.deb`, `.rpm`).
-* **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml`.
-* **Smart Registry Pruning:** Automated detection of unused imports and missing `extra-deps`.
+- **Professional Distribution (v0.1.0):** Automated Homebrew Formula generation and universal installers (`.deb`, `.rpm`).
+- **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml`.
+- **Smart Registry Pruning:** Automated detection of unused imports and missing `extra-deps`.
 
 ---
 
