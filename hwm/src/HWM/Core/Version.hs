@@ -26,7 +26,7 @@ import qualified Data.Text as T
 import GHC.Show (Show (..))
 import HWM.Core.Formatting (Format (..), formatList)
 import HWM.Core.Has (Has (obtain))
-import HWM.Core.Parsing (Parse (..), fromToString, isVersionLike, sepBy)
+import HWM.Core.Parsing (Parse (..), fromToString, sepBy)
 import Relude hiding (show)
 
 data Version = Version
@@ -140,7 +140,10 @@ parseGHCVersion text = parse (fromMaybe text (T.stripPrefix "ghc-" text))
 
 data VersionChange = FixedVersion Version | BumpVersion Bump deriving (Show)
 
+isBump :: Text -> Bool
+isBump = (`elem` ["major", "minor", "patch"])
+
 instance Parse VersionChange where
   parse x
-    | isVersionLike x = FixedVersion <$> parse x
-    | otherwise = BumpVersion <$> parse x
+    | isBump x = BumpVersion <$> parse x
+    | otherwise = FixedVersion <$> parse x
