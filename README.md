@@ -33,7 +33,6 @@ HWM handles the implementation details by generating the configuration files you
 <img src="images/status.png" alt="HWM Status Output" width="600">
 </p>
 
----
 
 ## 🧠 The Brain: Smart Bounds Discovery
 
@@ -46,7 +45,6 @@ When you run `hwm registry audit --fix`, HWM doesn't just guess versions; it per
 3. It validates that your code actually compiles in both.
 4. It updates `hwm.yaml` with the "Tested Truth."
 
----
 
 ## 🧩 The "Missing Link" Architecture
 
