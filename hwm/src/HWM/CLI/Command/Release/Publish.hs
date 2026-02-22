@@ -29,7 +29,7 @@ import HWM.Core.Result (Issue, Severity (..), maxSeverity)
 import HWM.Domain.Config (Config (cfgRelease))
 import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
 import HWM.Domain.Release (Release (..))
-import HWM.Domain.Workspace (WorkGroup, Workspace, askWorkspaceGroups, memberPkgs, selectGroup)
+import HWM.Domain.Workspace (WorkGroup, Workspace, askWorkspaceGroups, memberPkgs, resolveWsRef)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM, sectionWorkspace)
 import Options.Applicative (argument, help, metavar, str)
@@ -57,11 +57,7 @@ collectGroups (Just name) ws = do
   pbMap <- fromMaybe mempty . (>>= rlsPublish) <$> asks (cfgRelease . config)
   let publishGroup = Map.lookup name pbMap
   case publishGroup of
-    Just pbList -> do
-      wg <- selectGroup pbList ws
-      if canPublish wg
-        then pure [(pbList, wg)]
-        else throwError $ fromString $ toString $ "Target group \"" <> pbList <> "\" cannot be published. Check workspace group configuration."
+    Just pbList -> pkgs <-  concat <$> traverse (resolveWsRef ws) pbList 
     Nothing -> throwError $ fromString $ toString $ "No publish configuration found for group \"" <> name <> "\". Check release configuration."
 
 runPublish :: PublishOptions -> ConfigT ()

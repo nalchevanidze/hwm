@@ -14,7 +14,6 @@ module HWM.Domain.Workspace
     PkgRegistry,
     WorkspaceRef (..),
     memberPkgs,
-    selectGroup,
     buildWorkspace,
     askWorkspaceGroups,
     resolveWorkspaces,
@@ -107,6 +106,8 @@ allPackages = askEnv >>= getMembers
 
 type PkgRegistry = Map PkgName WorkGroup
 
+type WsPkgs = [(Name, [Pkg])]
+
 resolveGroup :: (MonadIO m, MonadError Issue m) => (Name, WorkGroup) -> m PkgRegistry
 resolveGroup g = Map.fromList . map ((,snd g) . pkgName) <$> memberPkgs g
 
@@ -116,24 +117,33 @@ pkgRegistry = fmap Map.unions . traverse resolveGroup . Map.toList
 askWorkspaceGroups :: (MonadReader env m, Has env Workspace) => m Workspace
 askWorkspaceGroups = asks obtain
 
-resolveWorkspaces :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => [Name] -> m [(Name, [Pkg])]
-resolveWorkspaces names = do
-  ws <- askWorkspaceGroups
-  allPkgs <- (S.toList . S.fromList) . concat <$> traverse (resolveTarget ws) names
-  let grouped = groupByGroupName allPkgs
-  pure grouped
-
-groupByGroupName :: [Pkg] -> [(Name, [Pkg])]
+groupByGroupName :: [Pkg] -> WsPkgs
 groupByGroupName pkgs =
   let sorted = sortOn pkgGroup pkgs
       grouped = groupBy (\a b -> pkgGroup a == pkgGroup b) sorted
    in [(maybe "" pkgGroup (viaNonEmpty head g), g) | g <- grouped, not (null g)]
 
-resolveTarget :: (MonadIO m, MonadError Issue m) => Workspace -> Text -> m [Pkg]
-resolveTarget ws target = do
-  let (g, n) = parseWorkspaceRef target
-  members <- selectGroup g ws >>= memberPkgs . (g,)
-  resolveT members n
+resolveWorkspaces :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => [Name] -> m WsPkgs
+resolveWorkspaces names = do
+  ws <- askWorkspaceGroups
+  allPkgs <- (S.toList . S.fromList) . concat <$> traverse (resolveWsRef ws . parseWorkspaceRef) names
+  let grouped = groupByGroupName allPkgs
+  pure grouped
+
+resolveWorkspaces1 :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => [Name] -> m WsPkgs
+resolveWorkspaces1 names = do
+  ws <- askWorkspaceGroups
+  allPkgs <- (S.toList . S.fromList) . concat <$> traverse (resolveWsRef ws . parseWorkspaceRef) names
+  let grouped = groupByGroupName allPkgs
+  pure grouped
+
+resolveWsRef :: (MonadIO m, MonadError Issue m) => Workspace -> WorkspaceRef -> m [Pkg]
+resolveWsRef ws wsRef = do
+  members <- selectGroup (wsRefGroupId wsRef) ws >>= memberPkgs . (wsRefGroupId wsRef,)
+  resolveT members (wsRefMemberId wsRef)
+
+selectGroup :: (MonadError Issue m) => Name -> Workspace -> m WorkGroup
+selectGroup name groups = maybe (throwError $ fromString $ toString ("Workspace group \"" <> name <> "\" not found! " <> availableOptions (Map.keys groups))) pure (Map.lookup name groups)
 
 resolveT :: (MonadError Issue m) => [Pkg] -> Maybe Name -> m [Pkg]
 resolveT pkgs Nothing = pure pkgs
@@ -141,9 +151,6 @@ resolveT pkgs (Just target) =
   case find (\p -> target == pkgMemberId p) pkgs of
     Just p -> pure [p]
     Nothing -> throwError $ fromString $ toString $ "Target not found: " <> target
-
-selectGroup :: (MonadError Issue m) => Name -> Workspace -> m WorkGroup
-selectGroup name groups = maybe (throwError $ fromString $ toString ("Workspace group \"" <> name <> "\" not found! " <> availableOptions (Map.keys groups))) pure (Map.lookup name groups)
 
 buildWorkspace :: (Monad m, MonadError Issue m) => DependencyGraph -> [Pkg] -> m Workspace
 buildWorkspace graph = fmap (Map.fromList . concat) . traverse groupToWorkspace . groupBy sameGroup . sortOn pkgGroup
