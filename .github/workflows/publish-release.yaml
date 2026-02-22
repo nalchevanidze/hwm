@@ -67,6 +67,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/latest-hwm
-      - name: Test Archiving
+      - name: Upload Release Artifacts to GitHub Release
         shell: bash
         run: hwm release artifacts --gh-upload ${{ needs.publish_release.outputs.upload_url }}
