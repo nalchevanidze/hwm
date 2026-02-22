@@ -208,4 +208,4 @@ addWorkgroupMember name memberId = do
             issueSeverity = SeverityError,
             issueDetails = Nothing
           }
-    else pure $ (Map.adjust (\g -> g {members = members g <> [memberId]}) name ws, w)
+    else pure (Map.adjust (\g -> g {members = members g <> [memberId]}) name ws, w)
