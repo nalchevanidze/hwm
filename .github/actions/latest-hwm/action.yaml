@@ -1,0 +1,47 @@
+name: Source Distribution
+inputs:
+  ghc:
+    description: GHC Version
+    required: false
+    default: 9.6.3
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set Stack Root
+      shell: bash
+      run: |
+        # Explicitly set the Stack Root to a predictable path on Windows
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          echo "STACK_ROOT=C:\sr" >> $GITHUB_ENV
+          echo "STACK_ROOT_DIR=C:\sr" >> $GITHUB_ENV
+          echo "STACK_PATH=C:\sr" >> $GITHUB_ENV
+        else
+          echo "STACK_ROOT_DIR=~/.stack" >> $GITHUB_ENV
+        fi
+
+    - name: Install GHC
+      uses: haskell-actions/setup@v2.9.0
+      with:
+        ghc-version: ${{ inputs.ghc }}
+        enable-stack: true
+        # This tells the setup action to use our custom root
+        stack-setup-ghc: true
+
+    - uses: nalchevanidze/hwm/actions/cli@v0.0.5
+
+    - name: Cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ${{ env.STACK_ROOT_DIR }}
+          .stack-work
+        key: ${{ runner.os }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml', 'hwm.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ inputs.ghc }}-stack-
+
+    - name: Build and Install
+      shell: bash
+      run: |
+        stack install --fast
+        echo "$(stack path --local-bin)" >> $GITHUB_PATH
