@@ -12,15 +12,15 @@ module HWM.Domain.Workspace
     WorkGroup (..),
     pkgRegistry,
     PkgRegistry,
+    WorkspaceRef (..),
     memberPkgs,
     selectGroup,
-    canPublish,
     buildWorkspace,
     askWorkspaceGroups,
     resolveWorkspaces,
     forWorkspace,
     forWorkspaceTuple,
-    parseWorkspaceId,
+    parseWorkspaceRef,
     forWorkspaceCore,
     editWorkgroup,
     allPackages,
@@ -62,13 +62,16 @@ data WorkspaceRef = WorkspaceRef
   deriving (Show, Eq, Generic)
 
 instance FromJSON WorkspaceRef where
-  parseJSON = withText "WorkspaceRef" $ \t ->
-    let (g, m) = parseWorkspaceId t
-     in pure $ WorkspaceRef g m
+  parseJSON = withText "WorkspaceRef" $ pure . parseWorkspaceRef
 
 instance ToJSON WorkspaceRef where
   toJSON (WorkspaceRef g Nothing) = toJSON g
   toJSON (WorkspaceRef g (Just m)) = toJSON $ g <> "/" <> m
+
+parseWorkspaceRef :: Text -> WorkspaceRef
+parseWorkspaceRef input = case T.breakOn "/" input of
+  (pkg, "") -> WorkspaceRef pkg Nothing -- No slash found
+  (grp, rest) -> WorkspaceRef grp (Just (T.drop 1 rest)) -- Drop the "/"
 
 data WorkGroup = WorkGroup
   { dir :: Maybe FilePath,
@@ -126,14 +129,9 @@ groupByGroupName pkgs =
       grouped = groupBy (\a b -> pkgGroup a == pkgGroup b) sorted
    in [(maybe "" pkgGroup (viaNonEmpty head g), g) | g <- grouped, not (null g)]
 
-parseWorkspaceId :: Text -> (Text, Maybe Text)
-parseWorkspaceId input = case T.breakOn "/" input of
-  (pkg, "") -> (pkg, Nothing) -- No slash found
-  (grp, rest) -> (grp, Just (T.drop 1 rest)) -- Drop the "/"
-
 resolveTarget :: (MonadIO m, MonadError Issue m) => Workspace -> Text -> m [Pkg]
 resolveTarget ws target = do
-  let (g, n) = parseWorkspaceId target
+  let (g, n) = parseWorkspaceRef target
   members <- selectGroup g ws >>= memberPkgs . (g,)
   resolveT members n
 
@@ -146,9 +144,6 @@ resolveT pkgs (Just target) =
 
 selectGroup :: (MonadError Issue m) => Name -> Workspace -> m WorkGroup
 selectGroup name groups = maybe (throwError $ fromString $ toString ("Workspace group \"" <> name <> "\" not found! " <> availableOptions (Map.keys groups))) pure (Map.lookup name groups)
-
-canPublish :: WorkGroup -> Bool
-canPublish WorkGroup {} = False -- TODO: move into release logic, need to check all members and their dependencies for non-publishable names like "examples", "bench", etc.
 
 buildWorkspace :: (Monad m, MonadError Issue m) => DependencyGraph -> [Pkg] -> m Workspace
 buildWorkspace graph = fmap (Map.fromList . concat) . traverse groupToWorkspace . groupBy sameGroup . sortOn pkgGroup

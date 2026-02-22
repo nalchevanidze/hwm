@@ -6,14 +6,13 @@ module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) wher
 
 import Control.Monad.Error.Class (MonadError (throwError))
 import qualified Data.Map as Map
-import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatus, padDots, subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityError, SeverityWarning))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
-import HWM.Domain.Workspace (WorkGroup (..), editWorkgroup, parseWorkspaceId)
+import HWM.Domain.Workspace (WorkGroup (..), WorkspaceRef (..), editWorkgroup, parseWorkspaceRef)
 import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Integrations.Toolchain.Hie (syncHie)
 import HWM.Integrations.Toolchain.Stack (syncStackYaml)
@@ -22,7 +21,7 @@ import Options.Applicative (help, long, metavar, strArgument, strOption)
 import Relude
 
 data WorkspaceAddOptions = WorkspaceAddOptions
-  { opsWorkspaceId :: (Name, Maybe Name),
+  { opsWorkspaceId :: WorkspaceRef,
     opsWorkspaceDir :: Maybe FilePath,
     opsPrefix :: Maybe Text
   }
@@ -30,12 +29,12 @@ data WorkspaceAddOptions = WorkspaceAddOptions
 
 instance ParseCLI WorkspaceAddOptions where
   parseCLI =
-    (WorkspaceAddOptions . parseWorkspaceId <$> strArgument (metavar "NAME" <> help "Name of the workspace to add"))
+    (WorkspaceAddOptions . parseWorkspaceRef <$> strArgument (metavar "NAME" <> help "Name of the workspace to add"))
       <*> optional (strOption (long "dir" <> help "Directory for the workspace (defaults to group name)"))
       <*> optional (strOption (long "prefix" <> help "Prefix to add to all member package names"))
 
 runWorkspaceAdd :: WorkspaceAddOptions -> ConfigT ()
-runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Nothing), ..}) = do
+runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId Nothing, ..}) = do
   wss <- asks (cfgWorkspace . config)
   if Map.member groupId wss
     then
@@ -51,7 +50,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Nothing), ..}) 
       updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ sectionWorkspace $ do
         putLine ""
         putLine $ "• " <> chalk Bold groupId <> " " <> displayStatus [("added", Checked)]
-runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = (groupId, Just memberId), ..}) = do
+runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Just memberId), ..}) = do
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
   (ws, w) <- editWorkgroup groupId (\g -> g {members = members g <> [memberId]})

@@ -10,6 +10,7 @@ module HWM.CLI.Command.Release.Publish
   )
 where
 
+import Control.Exception (throw)
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
@@ -25,8 +26,10 @@ import HWM.Core.Formatting
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue, Severity (..), maxSeverity)
-import HWM.Domain.ConfigT (ConfigT, askVersion)
-import HWM.Domain.Workspace (WorkGroup, Workspace, askWorkspaceGroups, canPublish, memberPkgs, selectGroup)
+import HWM.Domain.Config (Config (cfgRelease))
+import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
+import HWM.Domain.Release (Release (..))
+import HWM.Domain.Workspace (WorkGroup, Workspace, askWorkspaceGroups, memberPkgs, selectGroup)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM, sectionWorkspace)
 import Options.Applicative (argument, help, metavar, str)
@@ -51,10 +54,15 @@ instance ParseCLI PublishOptions where
 collectGroups :: Maybe Name -> Workspace -> ConfigT [(Name, WorkGroup)]
 collectGroups Nothing ws = pure $ filter (canPublish . snd) (Map.toList ws)
 collectGroups (Just name) ws = do
-  wg <- selectGroup name ws
-  if canPublish wg
-    then pure [(name, wg)]
-    else throwError $ fromString $ toString $ "Target group \"" <> name <> "\" cannot be published. Check workspace group configuration."
+  pbMap <- fromMaybe mempty . (>>= rlsPublish) <$> asks (cfgRelease . config)
+  let publishGroup = Map.lookup name pbMap
+  case publishGroup of
+    Just pbList -> do
+      wg <- selectGroup pbList ws
+      if canPublish wg
+        then pure [(pbList, wg)]
+        else throwError $ fromString $ toString $ "Target group \"" <> pbList <> "\" cannot be published. Check workspace group configuration."
+    Nothing -> throwError $ fromString $ toString $ "No publish configuration found for group \"" <> name <> "\". Check release configuration."
 
 runPublish :: PublishOptions -> ConfigT ()
 runPublish PublishOptions {..} = do

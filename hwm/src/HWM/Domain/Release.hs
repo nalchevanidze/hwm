@@ -25,9 +25,12 @@ import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import HWM.Runtime.Platform (Platform (..))
 import Relude
 
+
+type Publishables = Map Name [Name]
+
 data Release = Release
   { rlsArtifacts :: Maybe (Map Name ArtifactConfig),
-    rlsLibs :: Maybe (Map Name Name)
+    rlsPublish :: Maybe Publishables
   }
   deriving
     ( Generic,
