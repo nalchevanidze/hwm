@@ -12,7 +12,6 @@ where
 
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Map as Map
-import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting
   ( Color (..),
