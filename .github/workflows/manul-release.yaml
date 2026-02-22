@@ -75,12 +75,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/latest-hwm
-
-      - name: Upload Executable Binary
-        uses: nalchevanidze/hwm/actions/pkg@v0.0.5
-        with:
-          package: hwm
-          executable: hwm
-          smoke_test: -v
-          upload_url: ${{ needs.publish_release.outputs.upload_url }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Release Artifacts to GitHub Release
+        shell: bash
+        run: hwm release artifacts --gh-upload ${{ needs.publish_release.outputs.upload_url }}
