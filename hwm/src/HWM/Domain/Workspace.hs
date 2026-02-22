@@ -10,13 +10,12 @@
 module HWM.Domain.Workspace
   ( Workspace,
     WorkGroup (..),
-    pkgGroupName,
     pkgRegistry,
     PkgRegistry,
     memberPkgs,
     selectGroup,
     canPublish,
-    buildWorkspaceGroups,
+    buildWorkspace,
     askWorkspaceGroups,
     resolveWorkspaces,
     forWorkspace,
@@ -24,8 +23,8 @@ module HWM.Domain.Workspace
     parseWorkspaceId,
     forWorkspaceCore,
     editWorkgroup,
-    existsWokspaceGroup,
     allPackages,
+    getMembers,
   )
 where
 
@@ -71,9 +70,6 @@ instance ToJSON WorkspaceRef where
   toJSON (WorkspaceRef g Nothing) = toJSON g
   toJSON (WorkspaceRef g (Just m)) = toJSON $ g <> "/" <> m
 
-
-
-
 data WorkGroup = WorkGroup
   { dir :: Maybe FilePath,
     members :: [Name],
@@ -88,11 +84,14 @@ data WorkGroup = WorkGroup
 instance ToJSON WorkGroup where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
-memberPkgs :: (MonadIO m, MonadError Issue m) => WorkGroup -> m [Pkg]
-memberPkgs WorkGroup {..} = traverse (makePkg name dir prefix) members
+memberPkgs :: (MonadIO m, MonadError Issue m) => (Name, WorkGroup) -> m [Pkg]
+memberPkgs (name, WorkGroup {..}) = traverse (makePkg name dir prefix) members
 
-pkgGroupName :: WorkGroup -> Name
-pkgGroupName WorkGroup {..} = name
+getMembers :: (MonadIO m, MonadError Issue m) => Workspace -> m [Pkg]
+getMembers ws = do
+  let groups = Map.toList ws
+  pkgs <- traverse memberPkgs groups
+  pure $ concat pkgs
 
 allPackages ::
   ( MonadReader env m,
@@ -101,17 +100,15 @@ allPackages ::
     MonadError Issue m
   ) =>
   m [Pkg]
-allPackages = do
-  ws <- askEnv
-  concat <$> traverse memberPkgs ws
+allPackages = askEnv >>= getMembers
 
 type PkgRegistry = Map PkgName WorkGroup
 
-resolveGroup :: (MonadIO m, MonadError Issue m) => WorkGroup -> m PkgRegistry
-resolveGroup g = Map.fromList . map ((,g) . pkgName) <$> memberPkgs g
+resolveGroup :: (MonadIO m, MonadError Issue m) => (Name, WorkGroup) -> m PkgRegistry
+resolveGroup g = Map.fromList . map ((,snd g) . pkgName) <$> memberPkgs g
 
 pkgRegistry :: (MonadIO m, MonadError Issue m) => Workspace -> m PkgRegistry
-pkgRegistry = fmap Map.unions . traverse resolveGroup
+pkgRegistry = fmap Map.unions . traverse resolveGroup . Map.toList
 
 askWorkspaceGroups :: (MonadReader env m, Has env Workspace) => m Workspace
 askWorkspaceGroups = asks obtain
@@ -137,7 +134,7 @@ parseWorkspaceId input = case T.breakOn "/" input of
 resolveTarget :: (MonadIO m, MonadError Issue m) => Workspace -> Text -> m [Pkg]
 resolveTarget ws target = do
   let (g, n) = parseWorkspaceId target
-  members <- selectGroup g ws >>= memberPkgs
+  members <- selectGroup g ws >>= memberPkgs . (g,)
   resolveT members n
 
 resolveT :: (MonadError Issue m) => [Pkg] -> Maybe Name -> m [Pkg]
@@ -147,18 +144,14 @@ resolveT pkgs (Just target) =
     Just p -> pure [p]
     Nothing -> throwError $ fromString $ toString $ "Target not found: " <> target
 
-existsWokspaceGroup :: Name -> Workspace -> Bool
-existsWokspaceGroup name = any ((== name) . pkgGroupName)
-
 selectGroup :: (MonadError Issue m) => Name -> Workspace -> m WorkGroup
-selectGroup name groups =
-  maybe (throwError $ fromString $ toString ("Workspace group \"" <> name <> "\" not found! " <> availableOptions (map pkgGroupName groups))) pure (find ((== name) . pkgGroupName) groups)
+selectGroup name groups = maybe (throwError $ fromString $ toString ("Workspace group \"" <> name <> "\" not found! " <> availableOptions (Map.keys groups))) pure (Map.lookup name groups)
 
 canPublish :: WorkGroup -> Bool
 canPublish WorkGroup {} = False -- TODO: move into release logic, need to check all members and their dependencies for non-publishable names like "examples", "bench", etc.
 
-buildWorkspaceGroups :: (Monad m, MonadError Issue m) => DependencyGraph -> [Pkg] -> m Workspace
-buildWorkspaceGroups graph = fmap concat . traverse groupToWorkspace . groupBy sameGroup . sortOn pkgGroup
+buildWorkspace :: (Monad m, MonadError Issue m) => DependencyGraph -> [Pkg] -> m Workspace
+buildWorkspace graph = fmap (Map.fromList . concat) . traverse groupToWorkspace . groupBy sameGroup . sortOn pkgGroup
   where
     sameGroup left right = pkgGroup left == pkgGroup right
     groupToWorkspace [] = pure []
@@ -191,13 +184,13 @@ forWorkspace f = forWorkspaceCore $ \pkg -> do
 
 forWorkspaceCore :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => (Pkg -> m Text) -> m ()
 forWorkspaceCore f = do
-  gs <- askWorkspaceGroups
+  gs <- Map.toList <$> askWorkspaceGroups
   sectionWorkspace
     $ for_ gs
-    $ \g -> do
+    $ \(name, wg) -> do
       putLine ""
-      putLine $ "• " <> chalk Bold (pkgGroupName g)
-      pkgs <- memberPkgs g
+      putLine $ "• " <> chalk Bold name
+      pkgs <- memberPkgs (name, wg)
       let maxLen = genMaxLen (map pkgMemberId pkgs)
       for_ pkgs $ \pkg -> do
         status <- f pkg
@@ -213,8 +206,8 @@ forWorkspaceTuple ws f = sectionWorkspace $ do
       status <- f pkg
       putLine (subPathSign <> padDots maxLen (pkgMemberId pkg) <> status)
 
-editWorkgroup :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => Name -> (WorkGroup -> WorkGroup) -> m ([WorkGroup], WorkGroup)
+editWorkgroup :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => Name -> (WorkGroup -> WorkGroup) -> m (Workspace, WorkGroup)
 editWorkgroup name f = do
   ws <- askWorkspaceGroups
   c <- selectGroup name ws
-  pure (map (\g -> if pkgGroupName g == name then f g else g) ws, c)
+  pure (Map.adjust f name ws, c)

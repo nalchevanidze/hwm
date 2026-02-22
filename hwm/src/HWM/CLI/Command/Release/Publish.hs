@@ -11,6 +11,7 @@ module HWM.CLI.Command.Release.Publish
 where
 
 import Control.Monad.Error.Class (MonadError (..))
+import qualified Data.Map as Map
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting
@@ -25,7 +26,7 @@ import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue, Severity (..), maxSeverity)
 import HWM.Domain.ConfigT (ConfigT, askVersion)
-import HWM.Domain.Workspace (WorkGroup, askWorkspaceGroups, canPublish, memberPkgs,  selectGroup, Workspace)
+import HWM.Domain.Workspace (WorkGroup, Workspace, askWorkspaceGroups, canPublish, memberPkgs, selectGroup)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM, sectionWorkspace)
 import Options.Applicative (argument, help, metavar, str)
@@ -47,14 +48,13 @@ instance ParseCLI PublishOptions where
     PublishOptions
       <$> optional (argument str (metavar "GROUP" <> help "Name of the workspace group to publish (default: all)"))
 
-collectGroups :: Maybe Name -> Workspace -> ConfigT [WorkGroup]
-collectGroups Nothing ws = pure $ filter canPublish ws
-collectGroups (Just target) ws = do
-  groups <- traverse (`selectGroup` ws) [target]
-  let notPublishable = filter (not . canPublish) groups
-  for_ notPublishable $ \g ->
-    throwError $ fromString $ toString $ "Target group \"" <> pkgGroupName g <> "\" cannot be published. Check workspace group configuration."
-  pure groups
+collectGroups :: Maybe Name -> Workspace -> ConfigT [(Name, WorkGroup)]
+collectGroups Nothing ws = pure $ filter (canPublish . snd) (Map.toList ws)
+collectGroups (Just name) ws = do
+  wg <- selectGroup name ws
+  if canPublish wg
+    then pure [(name, wg)]
+    else throwError $ fromString $ toString $ "Target group \"" <> name <> "\" cannot be published. Check workspace group configuration."
 
 runPublish :: PublishOptions -> ConfigT ()
 runPublish PublishOptions {..} = do
@@ -67,15 +67,15 @@ runPublish PublishOptions {..} = do
     0
     "publish"
     [ ("version", pure $ chalk Magenta (format version)),
-      ("target", pure $ chalk Cyan (format (T.intercalate ", " (map pkgGroupName groups)))),
+      ("target", pure $ chalk Cyan (format (T.intercalate ", " (map fst groups)))),
       ("registry", pure "hackage")
     ]
 
-  issues <- traverse memberPkgs groups >>= traverse sdist . concat
+  issues <- traverse (memberPkgs . snd) groups >>= traverse sdist . concat
   failIssues (concat issues)
 
-  sectionWorkspace $ for_ groups $ \g ->
-    section (chalk Bold (pkgGroupName g)) $ do
+  sectionWorkspace $ for_ groups $ \(name, g) ->
+    section (chalk Bold name) $ do
       pkgs <- memberPkgs g
       for_ pkgs $ \pkg -> do
         (status, publishIssues) <- upload pkg

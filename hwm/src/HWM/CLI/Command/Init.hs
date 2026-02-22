@@ -19,7 +19,7 @@ import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (versionBounds)
 import HWM.Domain.Config (Config (..), defaultScripts)
 import HWM.Domain.ConfigT (resolveResultUI, saveConfig)
-import HWM.Domain.Workspace (buildWorkspaceGroups)
+import HWM.Domain.Workspace (buildWorkspace)
 import HWM.Integrations.Toolchain.Package (deriveRegistry)
 import HWM.Integrations.Toolchain.Stack (buildMatrix, scanStackFiles)
 import HWM.Runtime.Files (forbidOverride)
@@ -62,7 +62,7 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
     (cfgRegistry, graph) <- deriveRegistry pkgs
     cfgVersion <- deriveVersion (map pkgVersion pkgs)
     cfgEnvironments <- buildMatrix pkgs stacks
-    cfgWorkspace <- buildWorkspaceGroups graph pkgs
+    cfgWorkspace <- buildWorkspace graph pkgs
     saveConfig
       Config
         { cfgBounds = versionBounds cfgVersion,
