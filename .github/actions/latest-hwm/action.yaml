@@ -13,11 +13,7 @@ runs:
       run: |
         # Explicitly set the Stack Root to a predictable path on Windows
         if [ "$RUNNER_OS" == "Windows" ]; then
-          echo "STACK_ROOT=C:\sr" >> $GITHUB_ENV
-          echo "STACK_ROOT_DIR=C:\sr" >> $GITHUB_ENV
-          echo "STACK_PATH=C:\sr" >> $GITHUB_ENV
-        else
-          echo "STACK_ROOT_DIR=~/.stack" >> $GITHUB_ENV
+          echo "STACK_ROOT=${{ github.workspace }}\.stack" >> $GITHUB_ENV
         fi
 
     - name: Install GHC
@@ -32,7 +28,8 @@ runs:
       uses: actions/cache@v5
       with:
         path: |
-          ${{ env.STACK_ROOT_DIR }}
+          ${{ env.STACK_ROOT }}
+          ~/.stack
           .stack-work
         key: ${{ runner.os }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml', 'hwm.yaml') }}
         restore-keys: |
