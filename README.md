@@ -244,6 +244,10 @@ hwm release publish main
 
 ```
 
+<p align="center">
+<img src="images/publish.png" alt="HWM Publish Output" width="600">
+</p>
+
 ## ⚖️ The Haskell Tooling Landscape
 
 | Feature                | Standard Setup     | Nix / Bazel    | 🚀 HWM                            |
