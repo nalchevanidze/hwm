@@ -129,9 +129,8 @@ resolveWorkspaces = resolveWsPkgs . map parseWorkspaceRef
 resolveWsPkgs :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => [WorkspaceRef] -> m WsPkgs
 resolveWsPkgs names = do
   ws <- askWorkspaceGroups
-  allPkgs <- (S.toList . S.fromList) . concat <$> traverse (resolveWsRef ws) names
-  let grouped = groupByGroupName allPkgs
-  pure grouped
+  groupByGroupName . (S.toList . S.fromList) . concat <$> traverse (resolveWsRef ws) names
+
 
 resolveWsRef :: (MonadIO m, MonadError Issue m) => Workspace -> WorkspaceRef -> m [Pkg]
 resolveWsRef ws wsRef = do
