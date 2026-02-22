@@ -59,24 +59,24 @@ collectGroups (Just name) ws = do
 runPublish :: PublishOptions -> ConfigT ()
 runPublish PublishOptions {..} = do
   ws <- askWorkspaceGroups
-  groups <- collectGroups publishGroup ws
+  wgs <- collectGroups publishGroup ws
   version <- askVersion
-  when (null groups) $ throwError "No publishable groups found. Check workspace group configuration."
+  when (null wgs) $ throwError "No publishable groups found. Check workspace group configuration."
 
   sectionTableM
     0
     "publish"
     [ ("version", pure $ chalk Magenta (format version)),
-      ("target", pure $ chalk Cyan (format (T.intercalate ", " (map fst groups)))),
+      ("target", pure $ chalk Cyan (format (T.intercalate ", " (map fst wgs)))),
       ("registry", pure "hackage")
     ]
 
-  issues <- traverse (memberPkgs . snd) groups >>= traverse sdist . concat
+  issues <- traverse memberPkgs wgs >>= traverse sdist . concat
   failIssues (concat issues)
 
-  sectionWorkspace $ for_ groups $ \(name, g) ->
+  sectionWorkspace $ for_ wgs $ \(name, g) ->
     section (chalk Bold name) $ do
-      pkgs <- memberPkgs g
+      pkgs <- memberPkgs (name, g)
       for_ pkgs $ \pkg -> do
         (status, publishIssues) <- upload pkg
         putLine $ "└── " <> padDots (genMaxLen (map pkgMemberId pkgs)) (pkgMemberId pkg) <> statusIcon status
