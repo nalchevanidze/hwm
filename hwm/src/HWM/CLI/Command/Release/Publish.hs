@@ -81,7 +81,7 @@ runPublish PublishOptions {..} = do
     ]
 
   pkgs <- arrangePackageRelease (concatMap snd wgs)
-  section "dependency plan (topological sort)" $ do
+  section "publishing plan (topological sort)" $ do
     for_ (zip pkgs [1 ..] :: [(Pkg, Int)]) $ \(pkg, idx) -> do
       putLine $ "└── " <> padDots (genMaxLen (map pkgMemberId pkgs)) (pkgMemberId pkg) <> show idx
 
