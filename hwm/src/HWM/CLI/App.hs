@@ -51,37 +51,37 @@ commands =
 parseCommand :: Parser Command
 parseCommand =
   commands
-    [ ( "sync",
-        "Regenerate stack.yaml and .cabal files. Optional: switch environment.",
-        Sync <$> optional (argument str (metavar "ENV" <> help "Switch to a specific environment (e.g., legacy, stable)"))
-      ),
-      ( "version",
-        "Show version or bump it (patch | minor | major).",
-        Version <$> parseCLI
-      ),
-      ( "run",
-        "Run a script defined in hwm.yaml",
-        Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI
+    [ ( "init",
+        "Initialize a new HWM workspace by scanning the current directory.",
+        Init <$> parseCLI
       ),
       ( "status",
         "Show the current environment, version, and sync status.",
         pure Status
       ),
-      ( "init",
-        "Initialize a new HWM workspace by scanning the current directory.",
-        Init <$> parseCLI
+      ( "sync",
+        "Regenerate stack.yaml and .cabal files. Optional: switch environment.",
+        Sync <$> optional (argument str (metavar "ENV" <> help "Switch to a specific environment (e.g., legacy, stable)"))
       ),
-      ( "registry",
-        "Manage the dependency registry (add, audit, ls).",
-        Registry <$> parseCLI
+      ( "run",
+        "Run a script defined in hwm.yaml",
+        Run <$> argument (T.pack <$> str) (metavar "SCRIPT" <> help "Name of the script to run") <*> parseCLI
+      ),
+      ( "workspace",
+        "Manage workspaces (add, ls).",
+        Workspace <$> parseCLI
       ),
       ( "environment",
         "Manage build environments (add, remove, set-default, ls).",
         Env <$> parseCLI
       ),
-      ( "workspace",
-        "Manage workspaces (add, ls).",
-        Workspace <$> parseCLI
+      ( "registry",
+        "Manage the dependency registry (add, audit, ls).",
+        Registry <$> parseCLI
+      ),
+      ( "version",
+        "Show version or bump it (patch | minor | major).",
+        Version <$> parseCLI
       ),
       ( "release",
         "Release related commands (artifacts, publish).",
