@@ -127,13 +127,11 @@ resolveWorkspaces :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env 
 resolveWorkspaces = resolveWsPkgs . map parseWorkspaceRef
 
 resolveWsPkgs :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => [WorkspaceRef] -> m WsPkgs
-resolveWsPkgs names = do
+resolveWsPkgs = fmap (groupByGroupName . (S.toList . S.fromList) . concat) . traverse resolveWsRef
+
+resolveWsRef :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => WorkspaceRef -> m [Pkg]
+resolveWsRef wsRef = do
   ws <- askWorkspaceGroups
-  groupByGroupName . (S.toList . S.fromList) . concat <$> traverse (resolveWsRef ws) names
-
-
-resolveWsRef :: (MonadIO m, MonadError Issue m) => Workspace -> WorkspaceRef -> m [Pkg]
-resolveWsRef ws wsRef = do
   members <- selectGroup (wsRefGroupId wsRef) ws >>= memberPkgs . (wsRefGroupId wsRef,)
   resolveT members (wsRefMemberId wsRef)
 
