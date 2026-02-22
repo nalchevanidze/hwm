@@ -84,7 +84,7 @@ parseCommand =
         Workspace <$> parseCLI
       ),
       ( "release",
-        "Release related commands (package, publish).",
+        "Release related commands (artifacts, publish).",
         Release <$> parseCLI
       )
     ]
