@@ -13,7 +13,6 @@ module HWM.Domain.Workspace
     pkgRegistry,
     PkgRegistry,
     WorkspaceRef (..),
-    memberPkgs,
     buildWorkspace,
     askWorkspaceGroups,
     resolveWorkspaces,
@@ -24,6 +23,8 @@ module HWM.Domain.Workspace
     editWorkgroup,
     allPackages,
     getMembers,
+    resolveWsPkgs,
+    WsPkgs,
   )
 where
 
@@ -124,16 +125,12 @@ groupByGroupName pkgs =
    in [(maybe "" pkgGroup (viaNonEmpty head g), g) | g <- grouped, not (null g)]
 
 resolveWorkspaces :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => [Name] -> m WsPkgs
-resolveWorkspaces names = do
-  ws <- askWorkspaceGroups
-  allPkgs <- (S.toList . S.fromList) . concat <$> traverse (resolveWsRef ws . parseWorkspaceRef) names
-  let grouped = groupByGroupName allPkgs
-  pure grouped
+resolveWorkspaces = resolveWsPkgs . map parseWorkspaceRef
 
-resolveWorkspaces1 :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => [Name] -> m WsPkgs
-resolveWorkspaces1 names = do
+resolveWsPkgs :: (MonadIO m, MonadError Issue m, MonadReader env m, Has env Workspace) => [WorkspaceRef] -> m WsPkgs
+resolveWsPkgs names = do
   ws <- askWorkspaceGroups
-  allPkgs <- (S.toList . S.fromList) . concat <$> traverse (resolveWsRef ws . parseWorkspaceRef) names
+  allPkgs <- (S.toList . S.fromList) . concat <$> traverse (resolveWsRef ws) names
   let grouped = groupByGroupName allPkgs
   pure grouped
 

@@ -10,7 +10,6 @@ module HWM.CLI.Command.Release.Publish
   )
 where
 
-import Control.Exception (throw)
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
@@ -29,7 +28,7 @@ import HWM.Core.Result (Issue, Severity (..), maxSeverity)
 import HWM.Domain.Config (Config (cfgRelease))
 import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
 import HWM.Domain.Release (Release (..))
-import HWM.Domain.Workspace (WorkGroup, Workspace, askWorkspaceGroups, memberPkgs, resolveWsRef)
+import HWM.Domain.Workspace (WsPkgs, resolveWsPkgs)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM, sectionWorkspace)
 import Options.Applicative (argument, help, metavar, str)
@@ -51,22 +50,22 @@ instance ParseCLI PublishOptions where
     PublishOptions
       <$> optional (argument str (metavar "GROUP" <> help "Name of the workspace group to publish (default: all)"))
 
-collectGroups :: Maybe Name -> Workspace -> ConfigT [(Name, WorkGroup)]
-collectGroups Nothing ws = pure $ filter (canPublish . snd) (Map.toList ws)
-collectGroups (Just name) ws = do
+collectGroups :: Maybe Name -> ConfigT WsPkgs
+collectGroups Nothing = do
+  pbMap <- fromMaybe mempty . (>>= rlsPublish) <$> asks (cfgRelease . config)
+  concat <$> traverse resolveWsPkgs (Map.elems pbMap)
+collectGroups (Just name) = do
   pbMap <- fromMaybe mempty . (>>= rlsPublish) <$> asks (cfgRelease . config)
   let publishGroup = Map.lookup name pbMap
   case publishGroup of
-    Just pbList -> pkgs <-  concat <$> traverse (resolveWsRef ws) pbList 
+    Just pbList -> resolveWsPkgs pbList
     Nothing -> throwError $ fromString $ toString $ "No publish configuration found for group \"" <> name <> "\". Check release configuration."
 
 runPublish :: PublishOptions -> ConfigT ()
 runPublish PublishOptions {..} = do
-  ws <- askWorkspaceGroups
-  wgs <- collectGroups publishGroup ws
+  wgs <- collectGroups publishGroup
   version <- askVersion
   when (null wgs) $ throwError "No publishable groups found. Check workspace group configuration."
-
   sectionTableM
     0
     "publish"
@@ -75,12 +74,11 @@ runPublish PublishOptions {..} = do
       ("registry", pure "hackage")
     ]
 
-  issues <- traverse memberPkgs wgs >>= traverse sdist . concat
+  issues <- traverse sdist (concatMap snd wgs)
   failIssues (concat issues)
-
-  sectionWorkspace $ for_ wgs $ \(name, g) ->
+  -- TODO: typological anlysis to determine order of uploads
+  sectionWorkspace $ for_ wgs $ \(name, pkgs) ->
     section (chalk Bold name) $ do
-      pkgs <- memberPkgs (name, g)
       for_ pkgs $ \pkg -> do
         (status, publishIssues) <- upload pkg
         putLine $ "└── " <> padDots (genMaxLen (map pkgMemberId pkgs)) (pkgMemberId pkg) <> statusIcon status
