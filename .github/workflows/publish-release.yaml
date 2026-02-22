@@ -19,7 +19,7 @@ jobs:
       - uses: ./.github/actions/latest-hwm
 
       - name: Upload Packages
-        run: hwm publish libs
+        run: hwm release publish main
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
