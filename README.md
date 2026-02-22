@@ -2,9 +2,9 @@
 
 > **Infrastructure-as-Code for your Haskell Workspaces.**
 
-**HWM is not a replacement build tool.** It is the missing link that orchestrates the tools you already rely on (`stack`, `cabal`, `hls`), transforming them into a unified, declarative pipeline.
+**HWM is not a build tool replacement.** It is the missing link that orchestrates the tools you already rely on (`stack`, `cabal`, `hls`), transforming them into a unified, declarative pipeline.
 
-**Think of HWM as Terraform for your local repository.** Whether you are managing a single open-source library or a multi-package enterprise workspace, HWM ensures the state of your project files matches your declared intent across all environments.
+**Think of HWM as Terraform for your local Haskell repository.** Whether you are managing a single open-source library or a multi-package enterprise workspace, HWM ensures the state of your project files matches your declared intent across all environments.
 
 HWM is an **active workspace maintainer** that helps you:
 
@@ -19,14 +19,14 @@ HWM is an **active workspace maintainer** that helps you:
 
 Haskell tooling is incredibly powerful. HWM was designed to help you scale that tooling effortlessly as your project grows:
 
-1. **The "Sandwich" Bounds Logic:** HWM finds the safest version bounds by auditing your `legacy` (min) and `nightly` (max) snapshots. It effectively "sandwiches" your code between the oldest and newest supported environments to find the truth.
+1. **The "Sandwich" Bounds Logic:** HWM determines the safest version bounds by auditing your `legacy` (minimum) and `nightly` (maximum) snapshots. It effectively "sandwiches" your code between the oldest and newest supported environments to determine compatibility.
 2. **Seamless HLS Integration:** Adding a package or moving a module automatically updates your `hie.yaml`, keeping your Haskell Language Server responsive and accurate.
 3. **Unified Dependency Management:** HWM acts as a centralized registry for your workspace, ensuring perfect alignment across all packages.
 4. **Native Artifact Distribution:** HWM replaces custom deployment scripts with a clean, declarative pipeline for compressing and hashing binary artifacts.
 
 ### ✅ The Solution: A Single Source of Truth
 
-You define your workspace architecture in a single file: `hwm.yaml`.
+Define your workspace architecture in a single file: `hwm.yaml`.
 HWM handles the implementation details by generating the configuration files your standard tools expect.
 
 <p align="center">
@@ -93,7 +93,7 @@ cabal install hwm
 
 ### Zero-Config Onboarding
 
-Already have a Stack project? Transform it into an HWM workspace in seconds.
+Already have a Stack project? Convert it into an HWM workspace in seconds.
 
 ```bash
 # 1. Generate hwm.yaml from your existing stack.yaml
@@ -116,7 +116,7 @@ HWM was created to solve the orchestration needs of the **[Morpheus GraphQL](htt
 
 Today, it powers the entire Morpheus repository, smoothly managing:
 
-* **15+ Packages:** Keeping `core`, `api`, and `client` synchronized.
+* **15+ Packages:** Synchronizing `core`, `api`, and `client` packages.
 * **Hybrid Matrices:** Testing `stable` (GHC 9.6) and `legacy` (GHC 8.10) environments side-by-side.
 * **Unified Registry:** Maintaining a single source of truth for version bounds across the repository.
 
@@ -144,7 +144,7 @@ hwm registry add servant libs
 
 **Audit & Fix:**
 
-Audit your bounds against actual Stackage snapshots, ensuring you only claim support for versions validated by your build matrix.
+Audit your bounds against actual Stackage snapshots to ensure you only claim support for versions validated by your build matrix.
 
 ```bash
 # Auto-update bounds in hwm.yaml to match tested snapshots
@@ -225,7 +225,7 @@ release:
 
 #### 🚢 Publication Trains
 
-Define groups of packages to be published together. This allows you to manage "core" vs "plugin" releases separately.
+Define groups of packages to be published together, allowing you to manage "core" and "plugin" releases separately.
 
 ```yaml
 release:
@@ -263,6 +263,7 @@ hwm release publish main
 
 HWM is actively evolving. While the core Workspace and Matrix engines are stable, we are actively developing the following operational features:
 
+The following operational features are under active development:
 * **Professional Distribution (v0.1.0):** Automated Homebrew Formula generation and universal installers (`.deb`, `.rpm`).
 * **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml`.
 * **Smart Registry Pruning:** Automated detection of unused imports and missing `extra-deps`.
@@ -270,4 +271,4 @@ HWM is actively evolving. While the core Workspace and Matrix engines are stable
 
 ## 🧬 Status
 
-HWM is currently in **v0.1.0 (Beta)**. We highly value your feedback! Please [open an issue](https://github.com/nalchevanidze/hwm/issues) if you encounter bugs or want to share how you are using HWM.
+HWM is currently in **v0.1.0 (Beta)**. Your feedback is highly valued! Please [open an issue](https://github.com/nalchevanidze/hwm/issues) if you encounter bugs or want to share how you are using HWM.
