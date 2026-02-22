@@ -43,3 +43,6 @@ runs:
       run: |
         stack install --fast
         echo "$(stack path --local-bin)" >> $GITHUB_PATH
+        hash -r || true
+        hwm --version
+
