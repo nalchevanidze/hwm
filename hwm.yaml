@@ -6,7 +6,6 @@ workspace:
   libs:
     members:
       - hwm
-    publish: true
 environments:
   default: stable
   targets:
