@@ -8,10 +8,10 @@
 
 HWM is an **active workspace maintainer** that helps you:
 
-* **Manage & Validate:** Auto-generate and sync the configuration files your toolchain expects (`stack.yaml`, `package.yaml`, `hie.yaml`).
-* **Smart Bounds Discovery:** Automatically calculate safe dependency bounds derived directly from your successful matrix builds.
-* **Test Locally:** Run comprehensive matrix tests across multiple GHC versions right on your machine.
-* **Release & Publish:** Streamline versioning, binary artifact generation, and Hackage publishing via declarative **Release Trains**.
+- **Manage & Validate:** Auto-generate and sync the configuration files your toolchain expects (`stack.yaml`, `package.yaml`, `hie.yaml`).
+- **Smart Bounds Discovery:** Automatically calculate safe dependency bounds derived directly from your successful matrix builds.
+- **Test Locally:** Run comprehensive matrix tests across multiple GHC versions right on your machine.
+- **Release & Publish:** Streamline versioning, binary artifact generation, and Hackage publishing via declarative **Release Trains**. You define what to release, HWM handles the rest including its topological(deployment) order.
 
 ---
 
@@ -33,7 +33,6 @@ HWM handles the implementation details by generating the configuration files you
 <img src="images/status.png" alt="HWM Status Output" width="600">
 </p>
 
-
 ## 🧠 The Brain: Smart Bounds Discovery
 
 The core innovation of HWM is its ability to turn **Matrix Builds** into **Cabal Bounds**.
@@ -44,7 +43,6 @@ When you run `hwm registry audit --fix`, HWM doesn't just guess versions; it per
 2. It looks at your `stable` or `nightly` environment to find the **upper bound**.
 3. It validates that your code actually compiles in both.
 4. It updates `hwm.yaml` with the "Tested Truth."
-
 
 ## 🧩 The "Missing Link" Architecture
 
@@ -74,9 +72,9 @@ graph TD
 
 ```
 
-* **You write:** `hwm.yaml` (1 file).
-* **HWM generates:** `stack.yaml`, `package.yaml`, `.cabal`, `hie.yaml`.
-* **You run:** Standard `stack` commands or **HWM shortcuts** like `hwm build`.
+- **You write:** `hwm.yaml` (1 file).
+- **HWM generates:** `stack.yaml`, `package.yaml`, `.cabal`, `hie.yaml`.
+- **You run:** Standard `stack` commands or **HWM shortcuts** like `hwm build`.
 
 ---
 
@@ -116,12 +114,11 @@ HWM was created to solve the orchestration needs of the **[Morpheus GraphQL](htt
 
 Today, it powers the entire Morpheus repository, smoothly managing:
 
-* **15+ Packages:** Synchronizing `core`, `api`, and `client` packages.
-* **Hybrid Matrices:** Testing `stable` (GHC 9.6) and `legacy` (GHC 8.10) environments side-by-side.
-* **Unified Registry:** Maintaining a single source of truth for version bounds across the repository.
+- **15+ Packages:** Synchronizing `core`, `api`, and `client` packages.
+- **Hybrid Matrices:** Testing `stable` (GHC 9.6) and `legacy` (GHC 8.10) environments side-by-side.
+- **Unified Registry:** Maintaining a single source of truth for version bounds across the repository.
 
 > **💡 Tip:** View the [live configuration here](https://github.com/morpheusgraphql/morpheus-graphql/blob/main/hwm.yaml) to see a full-scale example of HWM in action.
-
 
 ---
 
@@ -186,7 +183,6 @@ environments:
     legacy:
       ghc: 8.10.7
       resolver: lts-18.10
-
 ```
 
 **Run Your Matrix Locally:**
@@ -220,7 +216,6 @@ release:
       formats: [zip, tar.gz]
       ghc-options: -O2
       name-template: "{{binary}}-v{{version}}-{{os}}-{{arch}}"
-
 ```
 
 #### 🚢 Publication Trains
@@ -232,8 +227,7 @@ release:
   publish:
     main:
       - libs/core # Specific member
-      - apps      # Entire workspace group
-
+      - apps # Entire workspace group
 ```
 
 **Usage:**
@@ -250,24 +244,28 @@ hwm release publish main
 
 ```
 
+<p align="center">
+<img src="images/publish.png" alt="HWM Publish Output" width="600">
+</p>
+
 ## ⚖️ The Haskell Tooling Landscape
 
-| Feature | Standard Setup | Nix / Bazel | 🚀 HWM |
-| --- | --- | --- | --- |
-| **Config Source** | Decentralized | Centralized | **Centralized (`hwm.yaml`)** |
-| **Bound Management** | Manual Trial/Error | Fixed Hashes | **✅ Smart Bounds Discovery** |
-| **Workspace Addition** | Manual Edits | Manual Edits | **✅ Auto-Discovery & Wiring** |
-| **Release Pipelines** | Manual Scripts | Custom Scripts | **✅ Declarative Release Trains** |
+| Feature                | Standard Setup     | Nix / Bazel    | 🚀 HWM                            |
+| ---------------------- | ------------------ | -------------- | --------------------------------- |
+| **Config Source**      | Decentralized      | Centralized    | **Centralized (`hwm.yaml`)**      |
+| **Bound Management**   | Manual Trial/Error | Fixed Hashes   | **✅ Smart Bounds Discovery**     |
+| **Workspace Addition** | Manual Edits       | Manual Edits   | **✅ Auto-Discovery & Wiring**    |
+| **Release Pipelines**  | Manual Scripts     | Custom Scripts | **✅ Declarative Release Trains** |
 
 ## 🔮 Roadmap
 
 HWM is actively evolving. While the core Workspace and Matrix engines are stable, we are actively developing the following operational features:
 
 The following operational features are under active development:
-* **Professional Distribution (v0.1.0):** Automated Homebrew Formula generation and universal installers (`.deb`, `.rpm`).
-* **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml`.
-* **Smart Registry Pruning:** Automated detection of unused imports and missing `extra-deps`.
 
+- **Professional Distribution (v0.1.0):** Automated Homebrew Formula generation and universal installers (`.deb`, `.rpm`).
+- **Deep Nix Integration:** Generating `flake.nix` directly from `hwm.yaml`.
+- **Smart Registry Pruning:** Automated detection of unused imports and missing `extra-deps`.
 
 ## 🧬 Status
 
