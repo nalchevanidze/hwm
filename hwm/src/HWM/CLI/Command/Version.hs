@@ -12,7 +12,6 @@ import HWM.Core.Formatting (Color (..), Format (..), chalk)
 import HWM.Core.Parsing (Parse (..), ParseCLI (parseCLI))
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (..))
 import HWM.Core.Version (VersionChange (..), nextVersion)
-import HWM.Domain.Bounds (versionBounds)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
 import HWM.Integrations.Toolchain.Package (syncPackages)
@@ -38,9 +37,7 @@ bumpVersion (BumpVersion bump) Config {..} = do
     [ ("from", pure $ format cfgVersion),
       ("to", pure $ chalk Cyan (format version'))
     ]
-
-  let bounds' = versionBounds version'
-  pure Config {cfgVersion = version', cfgBounds = bounds', ..}
+  pure Config {cfgVersion = version', cfgBounds = Nothing, ..}
 bumpVersion (FixedVersion version') Config {..} = do
   sectionTableM
     size
@@ -59,8 +56,7 @@ bumpVersion (FixedVersion version') Config {..} = do
           }
       )
 
-  let bounds' = versionBounds version'
-  pure Config {cfgVersion = version', cfgBounds = bounds', ..}
+  pure Config {cfgVersion = version', ..}
 
 runVersion :: VersionOptions -> ConfigT ()
 runVersion (VersionOptions (Just bump)) = (bumpVersion bump `updateConfig`) $ do

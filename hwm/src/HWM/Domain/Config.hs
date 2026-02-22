@@ -23,7 +23,7 @@ import HWM.Core.Has (Has)
 import HWM.Core.Pkg
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
-import HWM.Domain.Bounds (Bounds)
+import HWM.Domain.Bounds (Bounds, versionBounds)
 import HWM.Domain.Dependencies (Dependencies, getBounds)
 import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Release (Release)
@@ -35,7 +35,7 @@ import Relude
 data Config = Config
   { cfgName :: Name,
     cfgVersion :: Version,
-    cfgBounds :: Bounds,
+    cfgBounds :: Maybe Bounds,
     cfgWorkspace :: Workspace,
     cfgEnvironments :: Environments,
     cfgRegistry :: Dependencies,
@@ -49,7 +49,7 @@ data Config = Config
 
 getRule :: (MonadError Issue m) => PkgName -> PkgRegistry -> Config -> m Bounds
 getRule depName ps Config {..}
-  | Map.member depName ps = pure cfgBounds
+  | Map.member depName ps = pure (fromMaybe (versionBounds cfgVersion) cfgBounds)
   | otherwise = getBounds depName cfgRegistry
 
 prefix :: String

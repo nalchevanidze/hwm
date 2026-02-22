@@ -65,7 +65,7 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
     cfgWorkspace <- buildWorkspace graph pkgs
     saveConfig
       Config
-        { cfgBounds = versionBounds cfgVersion,
+        { cfgBounds = Nothing,
           cfgScripts = defaultScripts,
           cfgRelease = Nothing,
           ..
