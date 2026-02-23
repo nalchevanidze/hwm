@@ -36,6 +36,7 @@ import Data.Foldable (Foldable (..))
 import Data.List ((\\))
 import qualified Data.Map as M
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common
@@ -77,8 +78,10 @@ newEnv ghc resolver =
 
 environmentHash :: Environments -> Text
 environmentHash Environments {..} =
-  let xs = mapMaybe extraDeps (toList envTargets)
-   in  traceShow xs $  hashValue (T.pack (show xs))
+  let deps = Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe extraDeps (toList envTargets)
+   in hashValue (T.intercalate ":" deps)
+  where
+    toSig (pkg, v) = format pkg <> "-" <> format v
 
 prefix :: String
 prefix = "env"
