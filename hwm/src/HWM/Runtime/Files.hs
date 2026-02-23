@@ -15,7 +15,8 @@ module HWM.Runtime.Files
     forbidOverride,
     cleanRelativePath,
     aesonYAMLOptionsAdvanced,
-    hashValue,
+    genSignature,
+    Signature,
   )
 where
 
@@ -36,6 +37,7 @@ import Data.Char (isUpper, toLower)
 import Data.List (elemIndex, stripPrefix)
 import Data.Map (lookup)
 import Data.Text (toTitle)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
@@ -46,11 +48,14 @@ import System.Directory (doesFileExist, removeFile)
 import System.FilePath (joinPath, splitDirectories)
 import System.IO.Error (isDoesNotExistError)
 
-hashValue :: Text -> Text
-hashValue txt =
-  let hashInput = T.encodeUtf8 txt
+newtype Signature = Signature Text
+  deriving (Eq, Ord, Show)
+
+genSignature :: [Text] -> Signature
+genSignature txt =
+  let hashInput = T.encodeUtf8 (T.intercalate ":" txt)
       hashBytes = SHA256.hash hashInput
-   in T.decodeUtf8 (Base16.encode hashBytes)
+   in Signature (T.decodeUtf8 (Base16.encode hashBytes))
 
 printException :: SomeException -> String
 printException = show

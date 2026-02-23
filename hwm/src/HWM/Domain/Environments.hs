@@ -37,7 +37,6 @@ import Data.List ((\\))
 import qualified Data.Map as M
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common
   ( Check (..),
@@ -51,7 +50,7 @@ import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (TestedRange (..))
 import HWM.Domain.Workspace (Workspace, allPackages)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
-import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced, hashValue)
+import HWM.Runtime.Files (Signature, aesonYAMLOptions, aesonYAMLOptionsAdvanced, genSignature)
 import HWM.Runtime.UI (MonadUI, forTable_, sectionEnvironments)
 import Relude
 
@@ -76,10 +75,9 @@ newEnv ghc resolver =
       allowNewer = Nothing
     }
 
-environmentHash :: Environments -> Text
+environmentHash :: Environments -> Signature
 environmentHash Environments {..} =
-  let deps = Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe extraDeps (toList envTargets)
-   in hashValue (T.intercalate ":" deps)
+  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe extraDeps (toList envTargets)
   where
     toSig (pkg, v) = format pkg <> "-" <> format v
 
