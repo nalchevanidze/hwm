@@ -65,7 +65,7 @@ instance ParseCLI ReleaseArchiveOptions where
         ( long "output-dir"
             <> metavar "OUTPUT_DIR"
             <> help "Directory to output the release artifacts."
-            <> value ".hwm/dist"
+            <> value defaultOutputDir
             <> showDefault
         )
       <*> optional (option (parseLS <$> str) (long "format" <> metavar "FORMAT" <> help "Override the archive format for the release target. Supported: zip, tar.gz."))
@@ -81,11 +81,13 @@ ghcOptions :: [Text] -> [Text]
 ghcOptions [] = []
 ghcOptions xs = ["--ghc-options=" <> T.unwords xs]
 
+defaultOutputDir :: FilePath
+defaultOutputDir = ".hwm/dist"
+
 prepeareDir :: (MonadIO m) => FilePath -> m ()
 prepeareDir dir = liftIO $ do
   removePathForcibly dir
   createDirectoryIfMissing True dir
-
 applyOverrieds :: Maybe [ArchiveFormat] -> ArchiveOverrides -> ArtifactConfig -> ArtifactConfig
 applyOverrieds formats ArchiveOverrides {..} cfg =
   cfg
@@ -108,7 +110,7 @@ withOverrides ReleaseArchiveOptions {..} cfgs = do
 
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
 runReleaseArchive ops@ReleaseArchiveOptions {..} = do
-  prepeareDir outputDir
+  prepeareDir defaultOutputDir
   version <- asks (cfgVersion . config)
   cfgs <- getArchiveConfigs >>= withOverrides ops
 
