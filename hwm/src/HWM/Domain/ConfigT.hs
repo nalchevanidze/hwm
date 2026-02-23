@@ -38,7 +38,7 @@ import HWM.Domain.Environments (Environments (..), environmentHash)
 import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, Workspace, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
-import HWM.Runtime.Files (Signature, addHash, getFileHash, readYaml, rewrite_)
+import HWM.Runtime.Files (Signature, addHash, getFileSignature, readYaml, rewrite_)
 import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
 import Relude
 
@@ -126,7 +126,7 @@ runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
   config <- resolveResultTSilent (readYaml hwm)
   cache <- loadCache (envDefault (cfgEnvironments config))
-  fileSignature <- getFileHash hwm
+  fileSignature <- getFileSignature hwm
   let currentSignature = environmentHash (cfgEnvironments config)
   pkgs <- resolveResultTSilent (pkgRegistry (cfgWorkspace config))
   let env = Env {options = opts, config, cache, pkgs, fileSignature}

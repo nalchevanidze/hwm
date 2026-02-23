@@ -17,7 +17,7 @@ module HWM.Runtime.Files
     aesonYAMLOptionsAdvanced,
     genSignature,
     Signature,
-    getFileHash,
+    getFileSignature,
   )
 where
 
@@ -211,8 +211,8 @@ addHash filePath (Signed hash) = do
   liftIO $ writeFileBS filePath (T.encodeUtf8 contentWithHash)
 addHash _ Unsigned = pure ()
 
-getFileHash :: (MonadIO m) => FilePath -> m Signature
-getFileHash filePath = do
+getFileSignature :: (MonadIO m) => FilePath -> m Signature
+getFileSignature filePath = do
   content <- liftIO $ T.decodeUtf8 <$> readFileBS filePath
   case T.lines content of
     (firstLine : _) ->
