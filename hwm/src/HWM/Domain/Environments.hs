@@ -43,7 +43,7 @@ import HWM.Core.Common
     Name,
   )
 import HWM.Core.Formatting (Color (..), Format (..), availableOptions, chalk)
-import HWM.Core.Has (Has, HasAll, askEnv)
+import HWM.Core.Has (Has (..), HasAll, askEnv)
 import HWM.Core.Pkg (Pkg (..), PkgName, pkgId)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
@@ -96,15 +96,20 @@ instance
     Has env Environments,
     Has env Workspace,
     Has env Cache,
+    Has env Signature,
     MonadIO m
   ) =>
   Check m Environments
   where
-  check Environments {..} = traverse_ checkTarget envTargets
+  check Environments {..} = do
+    fileSig <- askEnv
+    traverse_ (checkTarget fileSig) envTargets
     where
-      checkTarget EnviromentTarget {..} = sequence_ [checkExtraDeps, checkPkgNames exclude]
-        where
-          checkExtraDeps = traverse_ check (maybe [] hkgRefs extraDeps)
+      signature = environmentHash Environments {..}
+      checkTarget fileSig EnviromentTarget {..}
+        | fileSig == signature = checkPkgNames exclude
+        -- checking all hkgRefs is expensive, so we skip it if the signature matches
+        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs extraDeps), checkPkgNames exclude]
 
 data EnviromentTarget = EnviromentTarget
   { ghc :: Version,
