@@ -46,7 +46,8 @@ data Env (m :: Type -> Type) = Env
   { options :: Options,
     config :: Config,
     cache :: Cache,
-    pkgs :: PkgRegistry
+    pkgs :: PkgRegistry,
+    initialSignature :: Signature
   }
 
 type ConfigEnv = Env IO
@@ -84,6 +85,9 @@ instance Has (Env m) Version where
 instance Has (Env m) PkgRegistry where
   obtain = pkgs
 
+instance Has (Env m) Signature where
+  obtain = initialSignature
+
 instance MonadUI ConfigT where
   uiWrite txt = do
     Options {quiet} <- asks options
@@ -99,9 +103,8 @@ instance MonadIssue ConfigT where
   catchIssues (ConfigT action) = ConfigT $ ReaderT (catchIssues . runReaderT action)
   mapIssue f (ConfigT action) = ConfigT $ ReaderT $ \env -> mapIssue f (runReaderT action env)
 
-hasHashChanged :: Config -> Maybe Signature -> Bool
-hasHashChanged _ Nothing = True
-hasHashChanged cfg (Just storedHash) = storedHash /= environmentHash (cfgEnvironments cfg)
+hasHashChanged :: Config -> Signature -> Bool
+hasHashChanged cfg storedHash = storedHash /= environmentHash (cfgEnvironments cfg)
 
 checkConfig :: ConfigT ()
 checkConfig = do

@@ -49,14 +49,22 @@ import System.Directory (doesFileExist, removeFile)
 import System.FilePath (joinPath, splitDirectories)
 import System.IO.Error (isDoesNotExistError)
 
-newtype Signature = Signature Text
-  deriving (Eq, Ord, Show)
+data Signature = Signed Text | Unsigned
+  deriving (Ord, Show)
+
+instance Eq Signature where
+  (Signed hash1) == (Signed hash2) = hash1 == hash2
+  _ == _ = False
 
 genSignature :: [Text] -> Signature
 genSignature txt =
   let hashInput = T.encodeUtf8 (T.intercalate ":" txt)
       hashBytes = SHA256.hash hashInput
-   in Signature (T.decodeUtf8 (Base16.encode hashBytes))
+   in Signed (T.decodeUtf8 (Base16.encode hashBytes))
+
+instance Format Signature where
+  format (Signed hash) = "# hash: " <> hash <> "\n"
+  format Unsigned = ""
 
 printException :: SomeException -> String
 printException = show
@@ -197,20 +205,21 @@ select :: (MonadError Issue m, Format t, Ord t) => Text -> t -> Map t a -> m a
 select e k = maybe (throwError $ fromString $ "Unknown " <> toString e <> ": " <> toString (format k) <> "!") pure . lookup k
 
 addHash :: (MonadIO m) => FilePath -> Signature -> m ()
-addHash filePath (Signature hash) = do
+addHash filePath (Signed hash) = do
   content <- liftIO $ T.decodeUtf8 <$> readFileBS filePath
   let contentWithHash = "# hash: " <> hash <> "\n" <> content
   liftIO $ writeFileBS filePath (T.encodeUtf8 contentWithHash)
+addHash _ Unsigned = pure ()
 
-getFileHash :: FilePath -> IO (Maybe Signature)
+getFileHash :: FilePath -> IO Signature
 getFileHash filePath = do
   content <- T.decodeUtf8 <$> readFileBS filePath
   case T.lines content of
     (firstLine : _) ->
       case T.stripPrefix "# hash: " firstLine of
-        Just hash -> pure (Just (Signature hash))
-        Nothing -> pure Nothing
-    [] -> pure Nothing
+        Just hash -> pure (Signed hash)
+        Nothing -> pure Unsigned
+    [] -> pure Unsigned
 
 forbidOverride :: (MonadIO m, MonadError e m, IsString e) => FilePath -> m ()
 forbidOverride path = do
