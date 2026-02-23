@@ -100,7 +100,11 @@ instance
   ) =>
   Check m Environments
   where
-  check Environments {..} = traverse_ check envTargets
+  check Environments {..} = traverse_ checkTarget envTargets
+    where
+      checkTarget EnviromentTarget {..} = sequence_ [checkExtraDeps, checkPkgNames exclude]
+        where
+          checkExtraDeps = traverse_ check (maybe [] hkgRefs extraDeps)
 
 data EnviromentTarget = EnviromentTarget
   { ghc :: Version,
@@ -121,21 +125,6 @@ instance FromJSON EnviromentTarget where
 
 instance ToJSON EnviromentTarget where
   toJSON = genericToJSON aesonYAMLOptions
-
-instance
-  ( MonadError Issue m,
-    MonadReader env m,
-    Has env Workspace,
-    Has env Cache,
-    MonadIO m
-  ) =>
-  Check m EnviromentTarget
-  where
-  check EnviromentTarget {..} =
-    sequence_
-      [ traverse_ check (maybe [] hkgRefs extraDeps),
-        checkPkgNames exclude
-      ]
 
 checkPkgNames ::
   ( MonadError Issue m,
