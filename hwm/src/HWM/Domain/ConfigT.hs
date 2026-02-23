@@ -38,7 +38,7 @@ import HWM.Core.Options (Options (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runResultT)
 import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
-import HWM.Domain.Environments (Environments (..))
+import HWM.Domain.Environments (Environments (..), environmentHash)
 import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, Workspace, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
@@ -113,12 +113,9 @@ instance MonadIssue ConfigT where
   catchIssues (ConfigT action) = ConfigT $ ReaderT (catchIssues . runReaderT action)
   mapIssue f (ConfigT action) = ConfigT $ ReaderT $ \env -> mapIssue f (runReaderT action env)
 
-computeHash :: Config -> Text
-computeHash cfg = hashValue (T.pack (show (envTargets $ cfgEnvironments cfg)))
-
 hasHashChanged :: Config -> Maybe Text -> Bool
 hasHashChanged _ Nothing = True
-hasHashChanged cfg (Just storedHash) = storedHash /= computeHash cfg
+hasHashChanged cfg (Just storedHash) = storedHash /= environmentHash (cfgEnvironments cfg)
 
 checkConfig :: ConfigT ()
 checkConfig = do
@@ -132,7 +129,7 @@ saveConfig :: (MonadError Issue m, MonadIO m) => Config -> Options -> m ()
 saveConfig config ops = do
   let file = hwm ops
   rewrite_ file (const $ pure config)
-  addHash file (computeHash config)
+  addHash file (environmentHash (cfgEnvironments config))
 
 updateConfig :: (Config -> ConfigT Config) -> ConfigT b -> ConfigT b
 updateConfig f m = do

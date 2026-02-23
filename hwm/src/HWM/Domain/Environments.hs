@@ -21,6 +21,7 @@ module HWM.Domain.Environments
     removeEnvironmentByName,
     newEnv,
     existsEnviroment,
+    environmentHash,
   )
 where
 
@@ -35,6 +36,7 @@ import Data.Foldable (Foldable (..))
 import Data.List ((\\))
 import qualified Data.Map as M
 import qualified Data.Map as Map
+import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common
   ( Check (..),
@@ -48,7 +50,7 @@ import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (TestedRange (..))
 import HWM.Domain.Workspace (Workspace, allPackages)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
-import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced)
+import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced, hashValue)
 import HWM.Runtime.UI (MonadUI, forTable_, sectionEnvironments)
 import Relude
 
@@ -72,6 +74,9 @@ newEnv ghc resolver =
       exclude = Nothing,
       allowNewer = Nothing
     }
+
+environmentHash :: Environments -> Text
+environmentHash cfg = hashValue (T.pack (show (envTargets cfg)))
 
 prefix :: String
 prefix = "env"
