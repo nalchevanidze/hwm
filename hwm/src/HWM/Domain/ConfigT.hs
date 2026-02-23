@@ -42,7 +42,7 @@ import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, Workspace, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
-import HWM.Runtime.Files (addHash, readYaml, rewrite_)
+import HWM.Runtime.Files (addHash, hashValue, readYaml, rewrite_)
 import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
 import Relude
 
@@ -114,10 +114,7 @@ instance MonadIssue ConfigT where
   mapIssue f (ConfigT action) = ConfigT $ ReaderT $ \env -> mapIssue f (runReaderT action env)
 
 computeHash :: Config -> Text
-computeHash cfg =
-  let hashInput = T.encodeUtf8 (T.pack (show (envTargets $ cfgEnvironments cfg)))
-      hashBytes = SHA256.hash hashInput
-   in T.decodeUtf8 (Base16.encode hashBytes)
+computeHash cfg = hashValue (T.pack (show (envTargets $ cfgEnvironments cfg)))
 
 hasHashChanged :: Config -> Maybe Text -> Bool
 hasHashChanged _ Nothing = True

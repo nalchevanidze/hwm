@@ -15,11 +15,13 @@ module HWM.Runtime.Files
     forbidOverride,
     cleanRelativePath,
     aesonYAMLOptionsAdvanced,
+    hashValue,
   )
 where
 
 import Control.Exception (catch, throwIO, tryJust)
 import Control.Monad.Error.Class (MonadError (..))
+import qualified Crypto.Hash.SHA256 as SHA256
 import Data.Aeson
   ( FromJSON (..),
     Object,
@@ -29,6 +31,7 @@ import Data.Aeson
     defaultOptions,
   )
 import Data.ByteString (readFile, writeFile)
+import qualified Data.ByteString.Base16 as Base16
 import Data.Char (isUpper, toLower)
 import Data.List (elemIndex, stripPrefix)
 import Data.Map (lookup)
@@ -42,6 +45,12 @@ import Relude hiding (readFile, writeFile)
 import System.Directory (doesFileExist, removeFile)
 import System.FilePath (joinPath, splitDirectories)
 import System.IO.Error (isDoesNotExistError)
+
+hashValue :: Text -> Text
+hashValue txt =
+  let hashInput = T.encodeUtf8 txt
+      hashBytes = SHA256.hash hashInput
+   in T.decodeUtf8 (Base16.encode hashBytes)
 
 printException :: SomeException -> String
 printException = show
