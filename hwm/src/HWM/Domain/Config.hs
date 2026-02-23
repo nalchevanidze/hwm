@@ -29,7 +29,7 @@ import HWM.Domain.Environments (Environments (..))
 import HWM.Domain.Release (Release)
 import HWM.Domain.Workspace (PkgRegistry, Workspace)
 import HWM.Runtime.Cache (Cache)
-import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
+import HWM.Runtime.Files (Signature, aesonYAMLOptionsAdvanced)
 import Relude
 
 data Config = Config
@@ -68,6 +68,7 @@ instance
     Has env Cache,
     Has env Workspace,
     Has env Environments,
+    Has env Signature,
     MonadIO m
   ) =>
   Check m Config

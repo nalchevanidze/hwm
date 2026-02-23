@@ -21,6 +21,7 @@ module HWM.Domain.Environments
     removeEnvironmentByName,
     newEnv,
     existsEnviroment,
+    environmentHash,
   )
 where
 
@@ -35,20 +36,21 @@ import Data.Foldable (Foldable (..))
 import Data.List ((\\))
 import qualified Data.Map as M
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Traversable (for)
 import HWM.Core.Common
   ( Check (..),
     Name,
   )
 import HWM.Core.Formatting (Color (..), Format (..), availableOptions, chalk)
-import HWM.Core.Has (Has, HasAll, askEnv)
+import HWM.Core.Has (Has (..), HasAll, askEnv)
 import HWM.Core.Pkg (Pkg (..), PkgName, pkgId)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (TestedRange (..))
 import HWM.Domain.Workspace (Workspace, allPackages)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
-import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced)
+import HWM.Runtime.Files (Signature, aesonYAMLOptions, aesonYAMLOptionsAdvanced, genSignature)
 import HWM.Runtime.UI (MonadUI, forTable_, sectionEnvironments)
 import Relude
 
@@ -73,6 +75,12 @@ newEnv ghc resolver =
       allowNewer = Nothing
     }
 
+environmentHash :: Environments -> Signature
+environmentHash Environments {..} =
+  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe extraDeps (toList envTargets)
+  where
+    toSig (pkg, v) = format pkg <> "-" <> format v
+
 prefix :: String
 prefix = "env"
 
@@ -88,11 +96,20 @@ instance
     Has env Environments,
     Has env Workspace,
     Has env Cache,
+    Has env Signature,
     MonadIO m
   ) =>
   Check m Environments
   where
-  check Environments {..} = traverse_ check envTargets
+  check Environments {..} = do
+    fileSig <- askEnv
+    traverse_ (checkTarget fileSig) envTargets
+    where
+      signature = environmentHash Environments {..}
+      checkTarget fileSig EnviromentTarget {..}
+        | fileSig == signature = checkPkgNames exclude
+        -- checking all hkgRefs is expensive, so we skip it if the signature matches
+        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs extraDeps), checkPkgNames exclude]
 
 data EnviromentTarget = EnviromentTarget
   { ghc :: Version,
@@ -113,21 +130,6 @@ instance FromJSON EnviromentTarget where
 
 instance ToJSON EnviromentTarget where
   toJSON = genericToJSON aesonYAMLOptions
-
-instance
-  ( MonadError Issue m,
-    MonadReader env m,
-    Has env Workspace,
-    Has env Cache,
-    MonadIO m
-  ) =>
-  Check m EnviromentTarget
-  where
-  check EnviromentTarget {..} =
-    sequence_
-      [ traverse_ check (maybe [] hkgRefs extraDeps),
-        checkPkgNames exclude
-      ]
 
 checkPkgNames ::
   ( MonadError Issue m,

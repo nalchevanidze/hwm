@@ -27,10 +27,6 @@ module HWM.Domain.ConfigT
 where
 
 import Control.Monad.Error.Class
-import qualified Crypto.Hash.SHA256 as SHA256
-import qualified Data.ByteString.Base16 as Base16
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import HWM.Core.Common (Check (..), Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Has (Has (..))
@@ -38,11 +34,11 @@ import HWM.Core.Options (Options (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runResultT)
 import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
-import HWM.Domain.Environments (Environments (..))
+import HWM.Domain.Environments (Environments (..), environmentHash)
 import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, Workspace, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
-import HWM.Runtime.Files (addHash, readYaml, rewrite_)
+import HWM.Runtime.Files (Signature, addHash, getFileSignature, readYaml, rewrite_)
 import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
 import Relude
 
@@ -50,7 +46,8 @@ data Env (m :: Type -> Type) = Env
   { options :: Options,
     config :: Config,
     cache :: Cache,
-    pkgs :: PkgRegistry
+    pkgs :: PkgRegistry,
+    fileSignature :: Signature
   }
 
 type ConfigEnv = Env IO
@@ -88,22 +85,15 @@ instance Has (Env m) Version where
 instance Has (Env m) PkgRegistry where
   obtain = pkgs
 
+instance Has (Env m) Signature where
+  obtain = fileSignature
+
 instance MonadUI ConfigT where
   uiWrite txt = do
     Options {quiet} <- asks options
     unless quiet $ liftIO $ putStr (toString txt)
   uiIndentLevel = ConfigT $ lift uiIndentLevel
   uiWithIndent f (ConfigT (ReaderT action)) = ConfigT $ ReaderT (uiWithIndent f . action)
-
-getFileHash :: FilePath -> IO (Maybe Text)
-getFileHash filePath = do
-  content <- T.decodeUtf8 <$> readFileBS filePath
-  case T.lines content of
-    (firstLine : _) ->
-      case T.stripPrefix "# hash: " firstLine of
-        Just hash -> pure (Just hash)
-        Nothing -> pure Nothing
-    [] -> pure Nothing
 
 debug :: Text -> ConfigT ()
 debug _ = pure ()
@@ -112,16 +102,6 @@ instance MonadIssue ConfigT where
   injectIssue = ConfigT . lift . injectIssue
   catchIssues (ConfigT action) = ConfigT $ ReaderT (catchIssues . runReaderT action)
   mapIssue f (ConfigT action) = ConfigT $ ReaderT $ \env -> mapIssue f (runReaderT action env)
-
-computeHash :: Config -> Text
-computeHash cfg =
-  let hashInput = T.encodeUtf8 (T.pack (show (envTargets $ cfgEnvironments cfg)))
-      hashBytes = SHA256.hash hashInput
-   in T.decodeUtf8 (Base16.encode hashBytes)
-
-hasHashChanged :: Config -> Maybe Text -> Bool
-hasHashChanged _ Nothing = True
-hasHashChanged cfg (Just storedHash) = storedHash /= computeHash cfg
 
 checkConfig :: ConfigT ()
 checkConfig = do
@@ -135,7 +115,7 @@ saveConfig :: (MonadError Issue m, MonadIO m) => Config -> Options -> m ()
 saveConfig config ops = do
   let file = hwm ops
   rewrite_ file (const $ pure config)
-  addHash file (computeHash config)
+  addHash file (environmentHash (cfgEnvironments config))
 
 updateConfig :: (Config -> ConfigT Config) -> ConfigT b -> ConfigT b
 updateConfig f m = do
@@ -146,10 +126,11 @@ runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
   config <- resolveResultTSilent (readYaml hwm)
   cache <- loadCache (envDefault (cfgEnvironments config))
-  changed <- hasHashChanged config <$> getFileHash hwm
+  fileSignature <- getFileSignature hwm
+  let currentSignature = environmentHash (cfgEnvironments config)
   pkgs <- resolveResultTSilent (pkgRegistry (cfgWorkspace config))
-  let env = Env {options = opts, config, cache, pkgs}
-      resultT = unpackConfigT (if changed then checkConfig >> m else m) env
+  let env = Env {options = opts, config, cache, pkgs, fileSignature}
+      resultT = unpackConfigT (if fileSignature /= currentSignature then checkConfig >> m else m) env
   resolveResultT resultT cache
 
 resolveResultT :: ResultT (UIT IO) a -> Cache -> IO ()

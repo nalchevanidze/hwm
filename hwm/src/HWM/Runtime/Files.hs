@@ -15,11 +15,15 @@ module HWM.Runtime.Files
     forbidOverride,
     cleanRelativePath,
     aesonYAMLOptionsAdvanced,
+    genSignature,
+    Signature,
+    getFileSignature,
   )
 where
 
 import Control.Exception (catch, throwIO, tryJust)
 import Control.Monad.Error.Class (MonadError (..))
+import qualified Crypto.Hash.SHA256 as SHA256
 import Data.Aeson
   ( FromJSON (..),
     Object,
@@ -29,10 +33,12 @@ import Data.Aeson
     defaultOptions,
   )
 import Data.ByteString (readFile, writeFile)
+import qualified Data.ByteString.Base16 as Base16
 import Data.Char (isUpper, toLower)
 import Data.List (elemIndex, stripPrefix)
 import Data.Map (lookup)
 import Data.Text (toTitle)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
@@ -42,6 +48,23 @@ import Relude hiding (readFile, writeFile)
 import System.Directory (doesFileExist, removeFile)
 import System.FilePath (joinPath, splitDirectories)
 import System.IO.Error (isDoesNotExistError)
+
+data Signature = Signed Text | Unsigned
+  deriving (Ord, Show)
+
+instance Eq Signature where
+  (Signed hash1) == (Signed hash2) = hash1 == hash2
+  _ == _ = False
+
+genSignature :: [Text] -> Signature
+genSignature txt =
+  let hashInput = T.encodeUtf8 (T.intercalate ":" txt)
+      hashBytes = SHA256.hash hashInput
+   in Signed (T.decodeUtf8 (Base16.encode hashBytes))
+
+instance Format Signature where
+  format (Signed hash) = "# hash: " <> hash <> "\n"
+  format Unsigned = ""
 
 printException :: SomeException -> String
 printException = show
@@ -181,11 +204,22 @@ stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
 select :: (MonadError Issue m, Format t, Ord t) => Text -> t -> Map t a -> m a
 select e k = maybe (throwError $ fromString $ "Unknown " <> toString e <> ": " <> toString (format k) <> "!") pure . lookup k
 
-addHash :: (MonadIO m) => FilePath -> Text -> m ()
-addHash filePath hash = do
+addHash :: (MonadIO m) => FilePath -> Signature -> m ()
+addHash filePath (Signed hash) = do
   content <- liftIO $ T.decodeUtf8 <$> readFileBS filePath
   let contentWithHash = "# hash: " <> hash <> "\n" <> content
   liftIO $ writeFileBS filePath (T.encodeUtf8 contentWithHash)
+addHash _ Unsigned = pure ()
+
+getFileSignature :: (MonadIO m) => FilePath -> m Signature
+getFileSignature filePath = do
+  content <- liftIO $ T.decodeUtf8 <$> readFileBS filePath
+  case T.lines content of
+    (firstLine : _) ->
+      case T.stripPrefix "# hash: " firstLine of
+        Just hash -> pure (Signed hash)
+        Nothing -> pure Unsigned
+    [] -> pure Unsigned
 
 forbidOverride :: (MonadIO m, MonadError e m, IsString e) => FilePath -> m ()
 forbidOverride path = do
