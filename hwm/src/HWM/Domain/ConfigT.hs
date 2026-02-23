@@ -103,9 +103,6 @@ instance MonadIssue ConfigT where
   catchIssues (ConfigT action) = ConfigT $ ReaderT (catchIssues . runReaderT action)
   mapIssue f (ConfigT action) = ConfigT $ ReaderT $ \env -> mapIssue f (runReaderT action env)
 
-hasHashChanged :: Config -> Signature -> Bool
-hasHashChanged cfg storedHash = storedHash /= environmentHash (cfgEnvironments cfg)
-
 checkConfig :: ConfigT ()
 checkConfig = do
   cfg <- asks config
@@ -129,10 +126,11 @@ runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
   config <- resolveResultTSilent (readYaml hwm)
   cache <- loadCache (envDefault (cfgEnvironments config))
-  changed <- hasHashChanged config <$> getFileHash hwm
+  initialSignature <- getFileHash hwm
+  let currentSignature = environmentHash (cfgEnvironments config)
   pkgs <- resolveResultTSilent (pkgRegistry (cfgWorkspace config))
-  let env = Env {options = opts, config, cache, pkgs}
-      resultT = unpackConfigT (if changed then checkConfig >> m else m) env
+  let env = Env {options = opts, config, cache, pkgs, initialSignature}
+      resultT = unpackConfigT (if initialSignature /= currentSignature then checkConfig >> m else m) env
   resolveResultT resultT cache
 
 resolveResultT :: ResultT (UIT IO) a -> Cache -> IO ()

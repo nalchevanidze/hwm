@@ -211,9 +211,9 @@ addHash filePath (Signed hash) = do
   liftIO $ writeFileBS filePath (T.encodeUtf8 contentWithHash)
 addHash _ Unsigned = pure ()
 
-getFileHash :: FilePath -> IO Signature
+getFileHash :: (MonadIO m) => FilePath -> m Signature
 getFileHash filePath = do
-  content <- T.decodeUtf8 <$> readFileBS filePath
+  content <- liftIO $ T.decodeUtf8 <$> readFileBS filePath
   case T.lines content of
     (firstLine : _) ->
       case T.stripPrefix "# hash: " firstLine of
