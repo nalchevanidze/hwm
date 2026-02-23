@@ -47,7 +47,7 @@ data Env (m :: Type -> Type) = Env
     config :: Config,
     cache :: Cache,
     pkgs :: PkgRegistry,
-    initialSignature :: Signature
+    fileSignature :: Signature
   }
 
 type ConfigEnv = Env IO
@@ -86,7 +86,7 @@ instance Has (Env m) PkgRegistry where
   obtain = pkgs
 
 instance Has (Env m) Signature where
-  obtain = initialSignature
+  obtain = fileSignature
 
 instance MonadUI ConfigT where
   uiWrite txt = do
@@ -126,11 +126,11 @@ runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
   config <- resolveResultTSilent (readYaml hwm)
   cache <- loadCache (envDefault (cfgEnvironments config))
-  initialSignature <- getFileHash hwm
+  fileSignature <- getFileHash hwm
   let currentSignature = environmentHash (cfgEnvironments config)
   pkgs <- resolveResultTSilent (pkgRegistry (cfgWorkspace config))
-  let env = Env {options = opts, config, cache, pkgs, initialSignature}
-      resultT = unpackConfigT (if initialSignature /= currentSignature then checkConfig >> m else m) env
+  let env = Env {options = opts, config, cache, pkgs, fileSignature}
+      resultT = unpackConfigT (if fileSignature /= currentSignature then checkConfig >> m else m) env
   resolveResultT resultT cache
 
 resolveResultT :: ResultT (UIT IO) a -> Cache -> IO ()
