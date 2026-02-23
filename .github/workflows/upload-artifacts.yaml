@@ -28,3 +28,5 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Upload Artifacts
         run: hwm release artifacts --github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
