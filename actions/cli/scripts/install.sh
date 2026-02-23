@@ -46,7 +46,6 @@ case "$ARCH_TAG" in
   *)                ARCH_TAG="unknown" ;;
 esac
 
-PLATFORM_ID="${OS_TAG}-${ARCH_TAG}"
 PLATFORM_SUMMARY="OS=$OS_TAG ARCH=$ARCH_TAG (raw: $ARCH_RAW)"
 
 # Extension for executables
@@ -107,7 +106,7 @@ WORKDIR="$(mktemp -d 2>/dev/null || (rm -rf .pkg-local && mkdir -p .pkg-local &&
 cleanup() { rm -rf "$WORKDIR" 2>/dev/null || true; }
 trap cleanup EXIT
 
-ASSET="${APP_NAME}-${PLATFORM_ID}.zip"
+ASSET="${APP_NAME}-${VERSION}-${OS_TAG}-${ARCH_TAG}.zip"
 
 url_for_tag() {
   local tag="$1"
