@@ -76,7 +76,9 @@ newEnv ghc resolver =
     }
 
 environmentHash :: Environments -> Text
-environmentHash cfg = hashValue (T.pack (show (envTargets cfg)))
+environmentHash Environments {..} =
+  let xs = mapMaybe extraDeps (toList envTargets)
+   in  traceShow xs $  hashValue (T.pack (show xs))
 
 prefix :: String
 prefix = "env"

@@ -27,8 +27,6 @@ module HWM.Domain.ConfigT
 where
 
 import Control.Monad.Error.Class
-import qualified Crypto.Hash.SHA256 as SHA256
-import qualified Data.ByteString.Base16 as Base16
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import HWM.Core.Common (Check (..), Name)
@@ -42,7 +40,7 @@ import HWM.Domain.Environments (Environments (..), environmentHash)
 import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, Workspace, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
-import HWM.Runtime.Files (addHash, hashValue, readYaml, rewrite_)
+import HWM.Runtime.Files (addHash, readYaml, rewrite_)
 import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
 import Relude
 
