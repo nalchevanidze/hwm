@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -19,12 +20,12 @@ module HWM.Runtime.UI
     sectionEnvironments,
     sectionConfig,
     sectionTableM,
-    forTable,
+    forTable_,
     printSummary,
     statusIndicator,
     runSpinner,
     printGenTable,
-    mapMTable,
+    forTable,
   )
 where
 
@@ -111,32 +112,33 @@ sectionWorkspace m = sectionBase "./" "workspace" m $> ()
 sectionEnvironments :: (MonadUI m) => Maybe Text -> m a -> m ()
 sectionEnvironments title = section ("environments" <> maybe "" (\name -> chalk Dim " (default: " <> chalk Magenta name <> chalk Dim ")") title)
 
-tableM :: (MonadUI m) => Int -> [(Text, m Text)] -> m ()
-tableM minSize rows = traverse_ formatRow rows
-  where
-    maxLabelLen = maximum (minSize : map (T.length . fst) rows) + 2
-    formatRow (label, valueM) = do
-      value <- valueM
-      putLine $ padDots maxLabelLen label <> value
+minRawSize :: Int
+minRawSize = 16
 
-sectionTableM :: (MonadUI m) => Int -> Text -> [(Text, m Text)] -> m ()
-sectionTableM size title = section title . tableM size
-
-mapMTable :: (MonadUI m) => Text -> [(Name, m (Text, a))] -> m [(Name, a)]
-mapMTable title rows = sectionBase "•" title $ traverse formatRow rows
+forHLTable :: (MonadUI m) => [a] -> (a -> (Name, m (Name, b))) -> m [(Name, b)]
+forHLTable as f = traverse formatRow rows
   where
-    maxLabelLen = maximum (0 : map (T.length . fst) rows) + 2
+    rows = map f as
+    maxLabelLen = maximum (minRawSize : map (T.length . fst) rows) + 2
     formatRow (label, valueM) = do
       (value, mvalue) <- valueM
       putLine $ padDots maxLabelLen label <> value
       pure (label, mvalue)
 
-sectionConfig :: (MonadUI m) => Int -> [(Text, m Text)] -> m ()
-sectionConfig size = section "config" . tableM size
+forTable :: (MonadUI m) => Name -> [a] -> (a -> (Name, m (Name, b))) -> m [(Name, b)]
+forTable title as f = sectionBase "•" title $ forHLTable as f
 
-forTable :: (MonadUI m) => Int -> [a] -> (a -> (Text, Text)) -> m ()
-forTable minSize rows f =
-  tableM minSize (map (second pure . f) rows)
+forTable_ :: (MonadUI m) => [a] -> (a -> (Text, m Text)) -> m ()
+forTable_ rows f = tableM_ (map f rows)
+
+tableM_ :: (MonadUI m) => [(Text, m Text)] -> m ()
+tableM_ rows = forHLTable rows (second ((,()) <$>)) $> ()
+
+sectionTableM :: (MonadUI m) => Text -> [(Text, m Text)] -> m ()
+sectionTableM title = section title . tableM_
+
+sectionConfig :: (MonadUI m) => [(Text, m Text)] -> m ()
+sectionConfig = section "config" . tableM_
 
 printGenTable :: (MonadUI m) => [[Text]] -> m ()
 printGenTable rows =

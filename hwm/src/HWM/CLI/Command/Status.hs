@@ -17,7 +17,6 @@ showStatus :: ConfigT ()
 showStatus = do
   cfg <- asks config
   sectionTableM
-    0
     "project"
     [ ("name", pure $ chalk Magenta (cfgName cfg)),
       ("version", pure $ chalk Green (format $ cfgVersion cfg))

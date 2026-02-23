@@ -29,7 +29,7 @@ runRegistryAudit :: RegistryAuditOptions -> ConfigT ()
 runRegistryAudit RegistryAuditOptions {..} = do
   originalRegistry <- asks (cfgRegistry . config)
   range <- getTestedRange
-  sectionTableM 16 "audit" [("mode", pure (if auditFix then if auditForce then chalk Yellow "fix (force)" else chalk Cyan "fix" else "check"))]
+  sectionTableM "audit" [("mode", pure (if auditFix then if auditForce then chalk Yellow "fix (force)" else chalk Cyan "fix" else "check"))]
 
   let dependencyAudits = filter (auditHasAny (/= Valid)) $ mapWithName (auditBounds range) originalRegistry
   section "registry" $ printGenTable $ formatAudit <$> dependencyAudits
@@ -41,7 +41,7 @@ runRegistryAudit RegistryAuditOptions {..} = do
     else do
       if auditFix
         then ((\cf -> pure $ cf {cfgRegistry = mapDeps (updateDepBounds auditForce range) originalRegistry}) `updateConfig`) $ do
-          sectionConfig 0 [("hwm.yaml", pure $ chalk Green "✓")]
+          sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
           syncPackages
         else do
           injectIssue

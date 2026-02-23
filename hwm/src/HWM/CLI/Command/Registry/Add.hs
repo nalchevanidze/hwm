@@ -31,7 +31,6 @@ runRegistryAdd :: RegistryAddOptions -> ConfigT ()
 runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
   workspaces <- resolveWorkspaces opsWorkspace
   sectionTableM
-    0
     "add dependency"
     [ ("package", pure $ chalk Magenta (format opsPkgName)),
       ("target", pure $ chalk Cyan (if null opsWorkspace then "none (registry only)" else T.intercalate ", " opsWorkspace))
@@ -47,7 +46,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
       let dependency = Dependency opsPkgName bounds
 
       ((\cf -> pure cf {cfgRegistry = cfgRegistry cf <> singleDeps dependency}) `updateConfig`) $ do
-        sectionConfig 0 [("hwm.yaml", pure $ chalk Green "✓")]
+        sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
         addDepToPackage workspaces dependency
     Just bounds -> do
       section "discovery" $ do

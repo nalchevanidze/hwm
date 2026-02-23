@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Registry
+module HWM.CLI.Command.Registry.Root
   ( RegistryCommand (..),
     runRegistry,
   )

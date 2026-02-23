@@ -19,13 +19,11 @@ sync tag = do
   env <- getBuildEnvironment tag
   updateRegistry $ \reg -> reg {currentEnv = buildName env}
   sectionTableM
-    0
     "sync"
     [ ("enviroment", pure $ chalk Cyan $ format env),
       ("resolver", pure $ buildResolver env)
     ]
   sectionConfig
-    0
     [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
       ("hie.yaml", syncHie $> chalk Green "✓")
     ]

@@ -71,7 +71,7 @@ parseCommand =
         "Manage workspace groups and package members.",
         Workspace <$> parseCLI
       ),
-      ( "environment",
+      ( "environments",
         "Manage GHC toolchains and resolver targets.",
         Env <$> parseCLI
       ),

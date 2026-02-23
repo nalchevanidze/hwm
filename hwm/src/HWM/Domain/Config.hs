@@ -34,6 +34,7 @@ import Relude
 
 data Config = Config
   { cfgName :: Name,
+    cfgGithub :: Maybe Text,
     cfgVersion :: Version,
     cfgBounds :: Maybe Bounds,
     cfgWorkspace :: Workspace,

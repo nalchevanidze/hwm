@@ -43,7 +43,7 @@ import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..), EnviromentTarget (..), Environments (..), getBuildEnvironment, hkgRefs)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
-import HWM.Runtime.Logging (log)
+import HWM.Runtime.Logging (logIssue)
 import HWM.Runtime.Process (exec)
 import Relude hiding (head, tail)
 import System.Directory (createDirectoryIfMissing, doesFileExist)
@@ -138,7 +138,7 @@ sdist pkg = do
   case severity of
     Nothing -> pure []
     Just issueSeverity -> do
-      issueFile <- log "sdist" [("COMMAND", "stack sdist " <> format (pkgName pkg)), ("SEVERITY", show issueSeverity)] (pack out)
+      issueFile <- logIssue "sdist" issueSeverity [("COMMAND", "stack sdist " <> format (pkgName pkg))] (pack out)
       let issueDetails = Just GenericIssue {issueFile}
        in pure [Issue {..}]
 

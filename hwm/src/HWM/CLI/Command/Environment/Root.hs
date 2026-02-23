@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Environment
+module HWM.CLI.Command.Environment.Root
   ( EnvCommand (..),
     runEnv,
   )

@@ -62,7 +62,6 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Jus
       putLine $ "• " <> chalk Bold groupId
       putLine $ subPathSign <> padDots 16 memberId <> displayStatus [("added", Checked)]
       sectionConfig
-        0
         [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
           ("hie.yaml", syncHie $> chalk Green "✓")
         ]

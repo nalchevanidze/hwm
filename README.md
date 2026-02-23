@@ -236,8 +236,8 @@ release:
 # Bump version across the workspace
 hwm version minor
 
-# Build local binaries and hashes, (or use --gh-upload to directly upload to GitHub Releases)
-hwm release artifacts --gh-upload <github-upload-url>
+# Build local binaries and hashes, (or use  --github to directly upload to GitHub Releases)
+hwm release artifacts  --github
 
 # Push a specific train to Hackage
 hwm release publish main

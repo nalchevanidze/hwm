@@ -25,8 +25,7 @@ import HWM.Domain.ConfigT (ConfigT, config)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment, getBuildEnvironments)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (createEnvYaml, stackPath)
-import HWM.Runtime.Cache (prepareDir)
-import HWM.Runtime.Logging (logError, logRoot)
+import HWM.Runtime.Logging (logIssue)
 import HWM.Runtime.Process (inheritRun, silentRun)
 import HWM.Runtime.UI (putLine, runSpinner, sectionEnvironments, sectionWorkspace, statusIndicator)
 import Options.Applicative
@@ -59,7 +58,6 @@ getEnvs names = for names (getBuildEnvironment . Just)
 
 runScript :: Name -> ScriptOptions -> ConfigT ()
 runScript scriptName ScriptOptions {..} = do
-  prepareDir logRoot
   cfg <- asks config
   case M.lookup scriptName (cfgScripts cfg) of
     Just script -> do
@@ -92,7 +90,7 @@ runCommand padding multi scripts targets envName = do
       (success, content) <- silentRun yamlPath cmd (async (runSpinner padding env))
       statusIndicator padding env (statusIcon (if success then Checked else Invalid))
       unless success $ do
-        path <- logError buildName [("ENVIRONMENT", format benv), ("COMMAND", format cmd)] content
+        path <- logIssue buildName SeverityError [("ENVIRONMENT", format benv), ("COMMAND", format cmd)] content
         throwError
           Issue
             { issueTopic = buildName,

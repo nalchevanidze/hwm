@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -7,19 +8,25 @@ module HWM.Domain.Release
     ArtifactConfig (..),
     ArchiveFormat (..),
     formatArchiveTemplate,
+    ReleaseArtifactConfigs,
+    getArtifact,
+    selectedArtifacts,
   )
 where
 
+import Control.Monad.Error.Class (MonadError (..))
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (toJSON),
     genericParseJSON,
     genericToJSON,
   )
+import qualified Data.Map as Map
 import Data.Yaml (Value (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), formatTemplate)
 import HWM.Core.Parsing (Parse (..))
+import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Workspace (WorkspaceRef)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
@@ -45,6 +52,19 @@ instance FromJSON Release where
 
 instance ToJSON Release where
   toJSON = genericToJSON (aesonYAMLOptionsAdvanced prefix)
+
+type ReleaseArtifactConfigs = Map Name ArtifactConfig
+
+getArtifact :: (MonadError Issue m) => Name -> ReleaseArtifactConfigs -> m ArtifactConfig
+getArtifact name cfgs = case Map.lookup name cfgs of
+  Just cfg -> pure cfg
+  Nothing -> throwError $ fromString $ "Artifact \"" <> toString name <> "\" not found in release configuration."
+
+selectedArtifacts :: (MonadError Issue m) => Maybe Name -> ReleaseArtifactConfigs -> m [(Name, ArtifactConfig)]
+selectedArtifacts (Just target) cfgs = do
+  cfg <- getArtifact target cfgs
+  pure [(target, cfg)]
+selectedArtifacts Nothing cfgs = pure $ Map.toList cfgs
 
 data ArtifactConfig = ArtifactConfig
   { arcSource :: Text,
