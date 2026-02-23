@@ -43,6 +43,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
       - uses: ./.github/actions/setup
       - name: Upload Artifacts
         run: hwm release artifacts --github
