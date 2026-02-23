@@ -17,6 +17,7 @@ module HWM.Runtime.Files
     aesonYAMLOptionsAdvanced,
     genSignature,
     Signature,
+    getFileHash,
   )
 where
 
@@ -200,6 +201,16 @@ addHash filePath (Signature hash) = do
   content <- liftIO $ T.decodeUtf8 <$> readFileBS filePath
   let contentWithHash = "# hash: " <> hash <> "\n" <> content
   liftIO $ writeFileBS filePath (T.encodeUtf8 contentWithHash)
+
+getFileHash :: FilePath -> IO (Maybe Signature)
+getFileHash filePath = do
+  content <- T.decodeUtf8 <$> readFileBS filePath
+  case T.lines content of
+    (firstLine : _) ->
+      case T.stripPrefix "# hash: " firstLine of
+        Just hash -> pure (Just (Signature hash))
+        Nothing -> pure Nothing
+    [] -> pure Nothing
 
 forbidOverride :: (MonadIO m, MonadError e m, IsString e) => FilePath -> m ()
 forbidOverride path = do

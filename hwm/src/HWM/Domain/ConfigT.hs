@@ -27,8 +27,6 @@ module HWM.Domain.ConfigT
 where
 
 import Control.Monad.Error.Class
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import HWM.Core.Common (Check (..), Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Has (Has (..))
@@ -40,7 +38,7 @@ import HWM.Domain.Environments (Environments (..), environmentHash)
 import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, Workspace, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
-import HWM.Runtime.Files (addHash, readYaml, rewrite_)
+import HWM.Runtime.Files (Signature, addHash, getFileHash, readYaml, rewrite_)
 import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
 import Relude
 
@@ -93,16 +91,6 @@ instance MonadUI ConfigT where
   uiIndentLevel = ConfigT $ lift uiIndentLevel
   uiWithIndent f (ConfigT (ReaderT action)) = ConfigT $ ReaderT (uiWithIndent f . action)
 
-getFileHash :: FilePath -> IO (Maybe Text)
-getFileHash filePath = do
-  content <- T.decodeUtf8 <$> readFileBS filePath
-  case T.lines content of
-    (firstLine : _) ->
-      case T.stripPrefix "# hash: " firstLine of
-        Just hash -> pure (Just hash)
-        Nothing -> pure Nothing
-    [] -> pure Nothing
-
 debug :: Text -> ConfigT ()
 debug _ = pure ()
 
@@ -111,7 +99,7 @@ instance MonadIssue ConfigT where
   catchIssues (ConfigT action) = ConfigT $ ReaderT (catchIssues . runReaderT action)
   mapIssue f (ConfigT action) = ConfigT $ ReaderT $ \env -> mapIssue f (runReaderT action env)
 
-hasHashChanged :: Config -> Maybe Text -> Bool
+hasHashChanged :: Config -> Maybe Signature -> Bool
 hasHashChanged _ Nothing = True
 hasHashChanged cfg (Just storedHash) = storedHash /= environmentHash (cfgEnvironments cfg)
 
