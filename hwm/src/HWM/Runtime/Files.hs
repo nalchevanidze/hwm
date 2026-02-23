@@ -195,8 +195,8 @@ stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
 select :: (MonadError Issue m, Format t, Ord t) => Text -> t -> Map t a -> m a
 select e k = maybe (throwError $ fromString $ "Unknown " <> toString e <> ": " <> toString (format k) <> "!") pure . lookup k
 
-addHash :: (MonadIO m) => FilePath -> Text -> m ()
-addHash filePath hash = do
+addHash :: (MonadIO m) => FilePath -> Signature -> m ()
+addHash filePath (Signature hash) = do
   content <- liftIO $ T.decodeUtf8 <$> readFileBS filePath
   let contentWithHash = "# hash: " <> hash <> "\n" <> content
   liftIO $ writeFileBS filePath (T.encodeUtf8 contentWithHash)
