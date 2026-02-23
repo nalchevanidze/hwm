@@ -5,6 +5,7 @@ module HWM.Core.Options
   ( Options (..),
     defaultOptions,
     askOptions,
+    whenCI,
   )
 where
 
@@ -29,3 +30,8 @@ defaultOptions =
       stack = "./stack.yaml",
       quiet = False
     }
+
+whenCI :: (MonadIO m) => m () -> m ()
+whenCI action = do
+  ci <- liftIO $ isJust <$> lookupEnv "CI"
+  when ci action

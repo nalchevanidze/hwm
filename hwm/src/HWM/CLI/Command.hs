@@ -12,15 +12,15 @@ module HWM.CLI.Command
 where
 
 import Data.Version (showVersion)
-import HWM.CLI.Command.Environment (EnvCommand, runEnv)
+import HWM.CLI.Command.Environment.Root (EnvCommand, runEnv)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
-import HWM.CLI.Command.Registry (RegistryCommand, runRegistry)
+import HWM.CLI.Command.Registry.Root (RegistryCommand, runRegistry)
 import HWM.CLI.Command.Release.Root (ReleaseCommand (..), runRelease)
 import HWM.CLI.Command.Run (ScriptOptions, runScript)
 import HWM.CLI.Command.Status (showStatus)
 import HWM.CLI.Command.Sync (sync)
 import HWM.CLI.Command.Version (VersionOptions, runVersion)
-import HWM.CLI.Command.Workspace (WorkspaceCommand, runWorkspace)
+import HWM.CLI.Command.Workspace.Root (WorkspaceCommand, runWorkspace)
 import HWM.Core.Common (Name)
 import HWM.Core.Options (Options (..), defaultOptions)
 import HWM.Core.Version (Bump (..))

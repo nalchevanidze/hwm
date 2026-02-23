@@ -2,18 +2,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Runtime.Logging
-  ( logRoot,
-    logPath,
-    log,
-    logError,
-  )
-where
+module HWM.Runtime.Logging (logIssue) where
 
 import Data.Time (getCurrentTime)
 import HWM.Core.Common (Name)
+import HWM.Core.Options (whenCI)
+import HWM.Core.Result (Severity)
+import HWM.Runtime.Cache (prepareDir)
+import HWM.Runtime.UI (MonadUI, putLine)
 import Relude
-import System.Directory (createDirectoryIfMissing)
 import qualified System.IO as TIO
 
 logRoot :: FilePath
@@ -22,18 +19,16 @@ logRoot = ".hwm/logs"
 logPath :: Name -> FilePath
 logPath name = logRoot <> "/" <> toString name <> ".log"
 
-log :: (MonadIO m) => Name -> [(Text, Text)] -> Text -> m FilePath
-log name table content = do
+logIssue :: (MonadIO m, MonadUI m) => Name -> Severity -> [(Text, Text)] -> Text -> m FilePath
+logIssue name severity table content = do
+  prepareDir logRoot
   timestamp <- liftIO getCurrentTime
-  let logInfo = [("TIMESTAMP", show timestamp)]
+  let logInfo = [("TIMESTAMP", show timestamp), ("SEVERITY", show severity)]
   let path = logPath name
-  liftIO $ createDirectoryIfMissing True logRoot
   let boxTop = "┌──────────────────────────────────────────────────────────"
       boxBottom = "└──────────────────────────────────────────────────────────"
       rows = map (\(k, v) -> "│ " <> k <> ": " <> v) (table <> logInfo)
       header = unlines (boxTop : rows <> [boxBottom, "", content, ""])
   liftIO $ TIO.appendFile path (toString header)
+  whenCI $ putLine content
   pure path
-
-logError :: (MonadIO m) => Name -> [(Text, Text)] -> Text -> m FilePath
-logError name table = log name (table <> [("TYPE", "ERROR")])

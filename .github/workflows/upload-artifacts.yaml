@@ -1,0 +1,27 @@
+# Manually trigger a release workflow to upload artifacts to a GitHub Release (use carefully).
+name: Force Upload Artifacts to GitHub Release
+on: workflow_dispatch
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  upload_artifact:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+          - os: macos-latest
+            target: mac-os
+          - os: windows-latest
+            target: windows
+    name: Upload Artifact ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Upload Release Artifacts to GitHub Release
+        run: hwm release artifacts --github

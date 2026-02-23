@@ -78,7 +78,7 @@ Transition from manual "side-loading" via `install.sh` to a standard, versioned 
 ### **1. Artifact Maturity (Current Work)**
 
 * **Standardized Pipeline:** Finalize `hwm release artifacts` to produce consistent, versioned `.tar.gz` and `.sha256` pairs.
-* **Release Automation:** Integrate `--gh-upload` to ensure the cloud binaries are always the source of truth.
+* **Release Automation:** Integrate ` --github` to ensure the cloud binaries are always the source of truth.
 
 ### **2. The Homebrew Integration**
 

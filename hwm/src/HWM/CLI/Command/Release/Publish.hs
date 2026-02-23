@@ -49,7 +49,7 @@ newtype PublishOptions = PublishOptions
 instance ParseCLI PublishOptions where
   parseCLI =
     PublishOptions
-      <$> optional (argument str (metavar "GROUP" <> help "Name of the workspace group to publish (default: all)"))
+      <$> optional (argument str (metavar "GROUP" <> help "Name of the release group to publish (default: all)"))
 
 arrangePackageRelease :: [Pkg] -> ConfigT [Pkg]
 arrangePackageRelease pkgs = do
@@ -72,7 +72,6 @@ runPublish PublishOptions {..} = do
   version <- askVersion
   when (null wgs) $ throwError "No publishable groups found. Check workspace group configuration."
   sectionTableM
-    0
     "publish"
     [ ("version", pure $ chalk Magenta (format version)),
       ("target", pure $ chalk Cyan (fromMaybe "all" publishGroup)),

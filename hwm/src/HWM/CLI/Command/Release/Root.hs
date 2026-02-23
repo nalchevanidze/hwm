@@ -23,8 +23,12 @@ data ReleaseCommand
 instance ParseCLI ReleaseCommand where
   parseCLI =
     hsubparser
-      ( command "artifacts" (info (ReleaseArchive <$> parseCLI) (progDesc "Build, archive, hash, and export a package release"))
-          <> command "publish" (info (Publish <$> parseCLI) (progDesc "Publish a package release to Hackage"))
+      ( command
+          "artifacts"
+          (info (ReleaseArchive <$> parseCLI) (progDesc "Generate, bundle, and upload release artifacts"))
+          <> command
+            "publish"
+            (info (Publish <$> parseCLI) (progDesc "Publish the workspace packages to Hackage"))
       )
 
 runRelease :: ReleaseCommand -> ConfigT ()

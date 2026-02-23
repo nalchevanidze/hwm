@@ -49,7 +49,7 @@ import HWM.Domain.Bounds (TestedRange (..))
 import HWM.Domain.Workspace (Workspace, allPackages)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
 import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced)
-import HWM.Runtime.UI (MonadUI, forTable, sectionEnvironments)
+import HWM.Runtime.UI (MonadUI, forTable_, sectionEnvironments)
 import Relude
 
 type Extras = VersionMap
@@ -245,11 +245,12 @@ printEnvironments name = do
   active <- getBuildEnvironment name
   def <- envDefault <$> askEnv
   environments <- getBuildEnvironments
-  sectionEnvironments (Just $ format def) $ forTable 0 environments $ \env ->
+  sectionEnvironments (Just $ format def) $ forTable_ environments $ \env ->
     ( format env,
-      if env == active
-        then chalk Cyan (buildResolver env <> " (active)")
-        else chalk Gray (buildResolver env)
+      pure
+        $ if env == active
+          then chalk Cyan (buildResolver env <> " (active)")
+          else chalk Gray (buildResolver env)
     )
 
 getTestedRange :: (Monad m, MonadReader env m, Has env Workspace, Has env Environments, MonadIO m, MonadError Issue m) => m TestedRange

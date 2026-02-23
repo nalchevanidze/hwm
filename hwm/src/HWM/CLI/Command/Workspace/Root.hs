@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.CLI.Command.Workspace
+module HWM.CLI.Command.Workspace.Root
   ( WorkspaceCommand (..),
     runWorkspace,
   )

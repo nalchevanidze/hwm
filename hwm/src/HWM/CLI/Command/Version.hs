@@ -20,9 +20,6 @@ import Options.Applicative (argument, help, metavar)
 import Options.Applicative.Builder (str)
 import Relude
 
-size :: Int
-size = 16
-
 newtype VersionOptions = VersionOptions {bump :: Maybe VersionChange} deriving (Show)
 
 instance ParseCLI VersionOptions where
@@ -32,7 +29,6 @@ bumpVersion :: VersionChange -> Config -> ConfigT Config
 bumpVersion (BumpVersion bump) Config {..} = do
   let version' = nextVersion bump cfgVersion
   sectionTableM
-    size
     ("bump version (" <> format bump <> ")")
     [ ("from", pure $ format cfgVersion),
       ("to", pure $ chalk Cyan (format version'))
@@ -40,7 +36,6 @@ bumpVersion (BumpVersion bump) Config {..} = do
   pure Config {cfgVersion = version', cfgBounds = Nothing, ..}
 bumpVersion (FixedVersion version') Config {..} = do
   sectionTableM
-    size
     "set version"
     [ ("from", pure $ format cfgVersion),
       ("to", pure $ chalk Cyan (format version') <> if version' == cfgVersion then " (no change)" else "")
@@ -60,7 +55,7 @@ bumpVersion (FixedVersion version') Config {..} = do
 
 runVersion :: VersionOptions -> ConfigT ()
 runVersion (VersionOptions (Just bump)) = (bumpVersion bump `updateConfig`) $ do
-  sectionConfig size [("hwm.yaml", pure $ chalk Green "✓")]
+  sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
   syncPackages
 runVersion (VersionOptions Nothing) = do
   putLine . format . cfgVersion =<< asks config

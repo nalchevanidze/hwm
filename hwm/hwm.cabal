@@ -32,16 +32,16 @@ library
   exposed-modules:
       HWM.CLI.App
       HWM.CLI.Command
-      HWM.CLI.Command.Environment
       HWM.CLI.Command.Environment.Add
       HWM.CLI.Command.Environment.Ls
       HWM.CLI.Command.Environment.Remove
+      HWM.CLI.Command.Environment.Root
       HWM.CLI.Command.Environment.SetDefault
       HWM.CLI.Command.Init
-      HWM.CLI.Command.Registry
       HWM.CLI.Command.Registry.Add
       HWM.CLI.Command.Registry.Audit
       HWM.CLI.Command.Registry.Ls
+      HWM.CLI.Command.Registry.Root
       HWM.CLI.Command.Release.Artifacts
       HWM.CLI.Command.Release.Publish
       HWM.CLI.Command.Release.Root
@@ -49,9 +49,9 @@ library
       HWM.CLI.Command.Status
       HWM.CLI.Command.Sync
       HWM.CLI.Command.Version
-      HWM.CLI.Command.Workspace
       HWM.CLI.Command.Workspace.Add
       HWM.CLI.Command.Workspace.Ls
+      HWM.CLI.Command.Workspace.Root
       HWM.Core.Common
       HWM.Core.Formatting
       HWM.Core.Has
@@ -69,6 +69,7 @@ library
       HWM.Domain.Workspace
       HWM.Integrations.Scaffold
       HWM.Integrations.Toolchain.Cabal
+      HWM.Integrations.Toolchain.Github
       HWM.Integrations.Toolchain.Hie
       HWM.Integrations.Toolchain.Lib
       HWM.Integrations.Toolchain.Package
