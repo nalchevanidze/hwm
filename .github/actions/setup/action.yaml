@@ -1,4 +1,4 @@
-name: Source Distribution
+name: Setup
 inputs:
   ghc:
     description: GHC Version
