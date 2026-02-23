@@ -29,7 +29,7 @@ runs:
           ${{ env.STACK_ROOT }}
           ~/.stack
           .stack-work
-        key: ${{ runner.os }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml', 'hwm.yaml') }}
+        key: ${{ runner.os }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml') }}
         restore-keys: |
           ${{ runner.os }}-${{ inputs.ghc }}-stack-
 
