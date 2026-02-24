@@ -8,6 +8,7 @@ import HWM.Core.Formatting (Color (..), Format (..), chalk)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import HWM.Integrations.Toolchain.Hie (syncHie)
+import HWM.Integrations.Toolchain.Nix (syncNixFile)
 import HWM.Integrations.Toolchain.Package (syncPackages)
 import HWM.Integrations.Toolchain.Stack (syncStackYaml)
 import HWM.Runtime.Cache (Registry (..), updateRegistry)
@@ -28,3 +29,4 @@ sync tag = do
       ("hie.yaml", syncHie $> chalk Green "✓")
     ]
   syncPackages
+  syncNixFile
