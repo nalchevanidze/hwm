@@ -14,7 +14,6 @@ import HWM.Core.Version (Era (eraNixpkgs), Version, formatNixGhc, selectEra)
 import HWM.Domain.Config (Config (Config, cfgName))
 import HWM.Domain.ConfigT (ConfigT, Env (config))
 import HWM.Domain.Environments (BuildEnvironment (..), EnviromentTarget (..), getBuildEnvironment)
-import HWM.Runtime.UI (sectionTableM)
 import Relude
 
 syncNixFile :: ConfigT ()
@@ -22,7 +21,6 @@ syncNixFile = do
   Config {..} <- asks config
   BuildEnvironment {buildPkgs, buildEnv = EnviromentTarget {..}} <- getBuildEnvironment Nothing
   liftIO $ TIO.writeFile "flake.nix" (deriveFlakeNix cfgName ghc buildPkgs)
-  sectionTableM "nix" [("flake.nix", pure "generated")]
 
 renderNixName :: Text -> Text
 renderNixName name = toCamelCase name <> "WorkspacePackages"

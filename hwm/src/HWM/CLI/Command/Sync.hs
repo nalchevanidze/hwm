@@ -26,7 +26,8 @@ sync tag = do
     ]
   sectionConfig
     [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
-      ("hie.yaml", syncHie $> chalk Green "✓")
+      ("hie.yaml", syncHie $> chalk Green "✓"),
+      ("flake.nix", syncNixFile $> chalk Green "✓")
     ]
   syncPackages
-  syncNixFile
+  
