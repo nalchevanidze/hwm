@@ -30,4 +30,3 @@ sync tag = do
       ("flake.nix", syncNixFile $> chalk Green "✓")
     ]
   syncPackages
-  
