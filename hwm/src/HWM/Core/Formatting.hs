@@ -30,6 +30,7 @@ module HWM.Core.Formatting
     formatList,
     monadStatus,
     formatTemplate,
+    toCamelCase,
   )
 where
 
@@ -252,3 +253,13 @@ formatTable deps = sort $ map (printRow (getSizes table)) table
 
 formatList :: (Format a) => Text -> [a] -> Text
 formatList x = T.intercalate x . map format
+
+toCamelCase :: Text -> Text
+toCamelCase txt = T.concat $ capitalizeLs $ T.splitOn "-" $ T.replace "_" "-" txt
+  where
+    capitalizeLs (x : xs) = x : map capitalize xs
+    capitalizeLs [] = []
+    capitalize t =
+      case T.uncons t of
+        Nothing -> ""
+        Just (c, rest) -> T.toUpper (T.singleton c) <> rest

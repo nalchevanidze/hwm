@@ -14,6 +14,9 @@ module HWM.Core.Version
     dropPatch,
     parseGHCVersion,
     VersionChange (..),
+    formatNixGhc,
+    selectEra,
+    Era (..),
   )
 where
 
@@ -22,6 +25,7 @@ import Data.Aeson
     ToJSON (..),
     Value (..),
   )
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import GHC.Show (Show (..))
 import HWM.Core.Formatting (Format (..), formatList)
@@ -38,6 +42,9 @@ data Version = Version
     ( Generic,
       Eq
     )
+
+formatNixGhc :: Version -> Text
+formatNixGhc Version {..} = "ghc" <> T.concat (map (T.pack . show) [major, minor])
 
 askVersion :: (MonadReader env m, Has env Version) => m Version
 askVersion = asks obtain
@@ -148,3 +155,23 @@ instance Parse VersionChange where
   parse x
     | isBump x = BumpVersion <$> parse x
     | otherwise = FixedVersion <$> parse x
+
+data Era = Era
+  { eraVersion :: Version,
+    eraStackageResolverName :: Text,
+    eraNixpkgs :: Text
+  }
+  deriving (Show, Eq)
+
+historicalEras :: NonEmpty Era
+historicalEras =
+  Era (Version 9 10 []) "nightly" "nixos-unstable"
+    :| [ Era (Version 9 8 []) "lts-23.0" "nixos-24.05",
+         Era (Version 9 6 []) "lts-22.43" "nixos-24.05",
+         Era (Version 9 4 []) "lts-21.25" "nixos-23.11",
+         Era (Version 9 2 []) "lts-20.26" "nixos-23.05",
+         Era (Version 8 10 []) "lts-18.28" "nixos-22.05"
+       ]
+
+selectEra :: Version -> Era
+selectEra version = fromMaybe (NE.last historicalEras) $ find (\era -> eraVersion era <= version) historicalEras
