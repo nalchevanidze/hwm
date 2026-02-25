@@ -8,10 +8,10 @@
 
 HWM is an **active workspace maintainer** that provides:
 
-* **The Universal Translator:** Write one `hwm.yaml`. HWM automatically derives and generates flawless `cabal.project`, `stack.yaml`, `flake.nix`, and `.cabal` files based on your active profile.
+* **The Universal Translator:** Write one `hwm.yaml`. HWM automatically derives and generates `cabal.project`, `stack.yaml`,`hie.yaml`, `flake.nix`, and `.cabal` files.
 * **Zero Lock-in:** HWM materializes standard configuration files directly at your project root. You can uninstall HWM at any time, and your repository will still build perfectly using standard native tools.
 * **Smart Bounds Synchronization:** Maintain a beautifully aligned, single-source-of-truth dependency registry. HWM automatically injects these bounds across your entire monorepo.
-* **Flawless IDE Support:** Because standard files are generated at the root, Haskell Language Server (HLS) works instantly with zero configuration.
+* **IDE Support:** Because standard files are generated at the root, Haskell Language Server (HLS) works instantly with zero configuration.
 
 ---
 
@@ -66,7 +66,7 @@ cabal install hwm
 Convert any existing repository into an HWM workspace in seconds.
 
 ```bash
-# 1. Generate hwm.yaml. HWM automatically discovers packages and infers dependencies.
+# 1. Generate hwm.yaml. HWM automatically discovers packages and infers dependencies (for now only for stack based projects).
 hwm init
 
 # 2. Sync configuration (Generates cabal.project, stack.yaml, and package files)
@@ -114,7 +114,6 @@ Managing monorepos with dozens of packages is finally clean. HWM uses `prefix` g
 ```bash
 # Interactively or directly scaffold a new package in a specific group
 hwm workspace add libs
-
 ```
 
 <p align="center">
@@ -157,12 +156,11 @@ environments:
 
 ```
 
-**Run Your Matrix Locally:**
+**Run Your Matrix Locally (for now only for stack, nix will be suported):**
 
 ```bash
 # Test across all defined environments (Stable, Legacy, etc.)
 hwm test --env=all
-
 ```
 
 <p align="center">
