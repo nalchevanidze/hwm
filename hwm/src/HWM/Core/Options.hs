@@ -19,7 +19,8 @@ data Options = Options
   { optionsHie :: FilePath,
     optionsHwm :: FilePath,
     optionsStack :: FilePath,
-    optionsQuiet :: Bool
+    optionsQuiet :: Bool,
+    optionsCabal :: FilePath
   }
 
 defaultOptions :: Options
@@ -28,7 +29,8 @@ defaultOptions =
     { optionsHwm = "./hwm.yaml",
       optionsHie = "./hie.yaml",
       optionsStack = "./stack.yaml",
-      optionsQuiet = False
+      optionsQuiet = False,
+      optionsCabal = "./cabal.project"
     }
 
 whenCI :: (MonadIO m) => m () -> m ()

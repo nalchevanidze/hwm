@@ -14,6 +14,7 @@ import HWM.Integrations.Toolchain.Stack (syncStackYaml)
 import HWM.Runtime.Cache (Registry (..), updateRegistry)
 import HWM.Runtime.UI (sectionConfig, sectionTableM)
 import Relude
+import HWM.Integrations.Toolchain.Cabal (syncCabalProject)
 
 sync :: Maybe Name -> ConfigT ()
 sync tag = do
@@ -27,6 +28,7 @@ sync tag = do
   sectionConfig
     [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
       ("hie.yaml", syncHie $> chalk Green "✓"),
-      ("flake.nix", syncNixFile $> chalk Green "✓")
+      ("flake.nix", syncNixFile $> chalk Green "✓"),
+      ("cabal.project", syncCabalProject $> chalk Green "✓")
     ]
   syncPackages
