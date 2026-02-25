@@ -1,2 +1,4 @@
-with-compiler: ghc-9.6.3 packages:
+with-compiler: ghc-9.6.3
+packages:
   hwm
+
