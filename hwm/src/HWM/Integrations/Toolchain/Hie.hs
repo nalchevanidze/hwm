@@ -81,4 +81,4 @@ syncHie = do
   Options {..} <- askOptions
   pkgs <- allPackages
   components <- concat <$> traverse genComponents pkgs
-  rewrite_ hie (const $ pure $ packHie Components {stackYaml = stack, components})
+  rewrite_ optionsHie (const $ pure $ packHie Components {stackYaml = optionsStack, components})

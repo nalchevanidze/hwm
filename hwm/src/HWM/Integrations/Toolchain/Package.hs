@@ -30,7 +30,8 @@ import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity
 import HWM.Core.Version (Version)
 import HWM.Domain.Config (getRule)
 import HWM.Domain.ConfigT (ConfigT, Env (config, pkgs), askVersion)
-import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), externalRegistry, normalizeDependencies, singleDeps, toDependencyList)
+import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), normalizeDependencies, singleDeps, toDependencyList)
+import HWM.Domain.Registry (Registry, initRegistry)
 import HWM.Domain.Workspace (forWorkspaceCore)
 import HWM.Integrations.Toolchain.Cabal (syncCabal)
 import HWM.Integrations.Toolchain.Lib
@@ -181,11 +182,11 @@ collectPackageDependencies Package {..} =
     collectLibraries Nothing = []
     collectLibraries (Just libs) = concatMap (collectLibrary . Just) (Map.elems libs)
 
-deriveRegistry :: (Monad m, MonadError Issue m, MonadIO m) => [Pkg] -> m (Dependencies, DependencyGraph)
+deriveRegistry :: (Monad m, MonadError Issue m, MonadIO m) => [Pkg] -> m (Registry, DependencyGraph)
 deriveRegistry pkgs = do
   packages <- traverse (readYaml . pkgYamlPath) pkgs
   let graph = deriveDependencyGraph packages
-  let deps = externalRegistry (map pkgName pkgs) $ concatMap collectPackageDependencies packages
+  let deps = initRegistry (map pkgName pkgs) $ concatMap collectPackageDependencies packages
   pure (deps, graph)
 
 collectCriticalDependencies :: Package -> [Dependency]

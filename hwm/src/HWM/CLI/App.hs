@@ -111,7 +111,7 @@ main = do
   if v
     then putStrLn ("HWM v" ++ currentVersion)
     else case cmd of
-      Just c -> runCommand c (defaultOptions {quiet = q})
+      Just c -> runCommand c (defaultOptions {optionsQuiet = q})
       Nothing -> do
         putStrLn "HWM: Missing command.\nTry 'hwm --help' for usage."
         exitFailure

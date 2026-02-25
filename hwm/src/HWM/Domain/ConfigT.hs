@@ -90,8 +90,8 @@ instance Has (Env m) Signature where
 
 instance MonadUI ConfigT where
   uiWrite txt = do
-    Options {quiet} <- asks options
-    unless quiet $ liftIO $ putStr (toString txt)
+    Options {optionsQuiet} <- asks options
+    unless optionsQuiet $ liftIO $ putStr (toString txt)
   uiIndentLevel = ConfigT $ lift uiIndentLevel
   uiWithIndent f (ConfigT (ReaderT action)) = ConfigT $ ReaderT (uiWithIndent f . action)
 
@@ -108,12 +108,12 @@ checkConfig = do
   cfg <- asks config
   ops <- asks options
   check cfg
-  debug $ "save " <> format (hwm ops)
+  debug $ "save " <> format (optionsHwm ops)
   saveConfig cfg ops
 
 saveConfig :: (MonadError Issue m, MonadIO m) => Config -> Options -> m ()
 saveConfig config ops = do
-  let file = hwm ops
+  let file = optionsHwm ops
   rewrite_ file (const $ pure config)
   addHash file (environmentHash (cfgEnvironments config))
 
@@ -124,9 +124,9 @@ updateConfig f m = do
 
 runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
-  config <- resolveResultTSilent (readYaml hwm)
+  config <- resolveResultTSilent (readYaml optionsHwm)
   cache <- loadCache (envDefault (cfgEnvironments config))
-  fileSignature <- getFileSignature hwm
+  fileSignature <- getFileSignature optionsHwm
   let currentSignature = environmentHash (cfgEnvironments config)
   pkgs <- resolveResultTSilent (pkgRegistry (cfgWorkspace config))
   let env = Env {options = opts, config, cache, pkgs, fileSignature}

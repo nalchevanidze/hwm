@@ -24,8 +24,8 @@ import HWM.Core.Pkg
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (Bounds, versionBounds)
-import HWM.Domain.Dependencies (Dependencies, getBounds)
 import HWM.Domain.Environments (Environments (..))
+import HWM.Domain.Registry (Registry (..), getBounds)
 import HWM.Domain.Release (Release)
 import HWM.Domain.Workspace (PkgRegistry, Workspace)
 import HWM.Runtime.Cache (Cache)
@@ -39,7 +39,7 @@ data Config = Config
     cfgBounds :: Maybe Bounds,
     cfgWorkspace :: Workspace,
     cfgEnvironments :: Environments,
-    cfgRegistry :: Dependencies,
+    cfgRegistry :: Registry,
     cfgScripts :: Map Name Text,
     cfgRelease :: Maybe Release
   }
