@@ -22,13 +22,13 @@ import HWM.Core.Formatting
     statusIcon,
   )
 import HWM.Core.Parsing (ParseCLI (..))
-import HWM.Core.Pkg (Pkg (..), pkgId)
+import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue, Severity (..), maxSeverity)
 import HWM.Domain.Config (Config (cfgRelease))
 import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
 import HWM.Domain.Dependencies (sortByDependencyHierarchy)
 import HWM.Domain.Release (Release (..))
-import HWM.Domain.Workspace (WsPkgs, allPackages, resolveWsPkgs)
+import HWM.Domain.Workspace (WsPkgs, allPackages, printPkgWSRef, resolveWsPkgs)
 import HWM.Integrations.Toolchain.Package (deriveRegistry)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM)
@@ -79,10 +79,10 @@ runPublish PublishOptions {..} = do
     ]
 
   pkgs <- arrangePackageRelease (concatMap snd wgs)
-  let size = genMaxLen (map pkgId pkgs)
+  let size = genMaxLen (map printPkgWSRef pkgs)
   section "publishing plan (topological sort)" $ do
     for_ (zip pkgs [1 ..] :: [(Pkg, Int)]) $ \(pkg, idx) -> do
-      putLine $ "└── " <> padDots size (pkgId pkg) <> show idx
+      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx
 
   issues <- traverse sdist (concatMap snd wgs)
   failIssues (concat issues)
@@ -90,5 +90,5 @@ runPublish PublishOptions {..} = do
   section "publishing" $ do
     for_ pkgs $ \pkg -> do
       (status, publishIssues) <- upload pkg
-      putLine $ "└── " <> padDots size (pkgId pkg) <> statusIcon status
+      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> statusIcon status
       failIssues publishIssues

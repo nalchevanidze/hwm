@@ -3,19 +3,24 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Integrations.Toolchain.Cabal
-  ( syncCabal,
+  ( syncCabalPackage,
     validateHackage,
+    syncCabalProject,
   )
 where
 
 import Data.Foldable (Foldable (..))
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.Verbosity (normal)
-import HWM.Core.Formatting (Status (..))
+import HWM.Core.Formatting (Format (..), Status (..))
+import HWM.Core.Options (Options (..))
 import HWM.Core.Pkg (Pkg (..), cabalFilePath, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
-import HWM.Domain.ConfigT (ConfigT)
+import HWM.Domain.ConfigT (ConfigT, Env (options))
+import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import HWM.Runtime.Files (remove)
 import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
 import qualified Hpack as H
@@ -50,8 +55,8 @@ validateHackage pkg path = do
       )
   pure (map toStatus ls)
 
-syncCabal :: Pkg -> ConfigT Status
-syncCabal pkg = do
+syncCabalPackage :: Pkg -> ConfigT Status
+syncCabalPackage pkg = do
   remove (cabalFilePath pkg)
   let programName = ProgramName $ toString $ pkgName pkg
   let ops = setTarget (pkgYamlPath pkg) $ setProgramName programName defaultOptions
@@ -62,3 +67,16 @@ syncCabal pkg = do
     H.OutputUnchanged -> pure Checked
     _ -> pure Updated
   pure $ maximum (s : ls)
+
+generateCabalProject :: [Pkg] -> Text -> Text
+generateCabalProject packagePaths ghcVersion =
+  T.unlines
+    [ "with-compiler: ghc-" <> ghcVersion,
+      "packages:\n" <> T.unlines (map (("  " <>) . format . pkgDirPath) packagePaths)
+    ]
+
+syncCabalProject :: ConfigT ()
+syncCabalProject = do
+  ops <- asks options
+  BuildEnvironment {..} <- getBuildEnvironment Nothing
+  liftIO $ TIO.writeFile (optionsCabal ops) (generateCabalProject buildPkgs (toText buildGHC))

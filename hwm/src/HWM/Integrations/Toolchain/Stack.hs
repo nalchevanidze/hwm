@@ -36,11 +36,12 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..), indentBlockNum, slugify)
 import HWM.Core.Options (Options (..), askOptions)
 import HWM.Core.Parsing (Parse (..))
-import HWM.Core.Pkg (Pkg (..), PkgName, pkgId, pkgYamlPath)
+import HWM.Core.Pkg (Pkg (..), PkgName, pkgYamlPath)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..), fromEither)
 import HWM.Core.Version (Version, parseGHCVersion)
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Domain.Environments (BuildEnvironment (..), EnviromentTarget (..), Environments (..), getBuildEnvironment, hkgRefs)
+import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environments (..), StackEnvironment (..), getBuildEnvironment, hkgRefs)
+import HWM.Domain.Workspace (toWorkspaceRef)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
 import HWM.Runtime.Logging (logIssue)
@@ -90,34 +91,38 @@ parseExtraDep entry = do
 
 syncStackYaml :: ConfigT ()
 syncStackYaml = do
-  stackYamlPath <- stack <$> askOptions
+  stackYamlPath <- optionsStack <$> askOptions
   rewrite_ stackYamlPath $ const $ do
-    BuildEnvironment {buildPkgs, buildEnv = EnviromentTarget {..}} <- getBuildEnvironment Nothing
+    BuildEnvironment {..} <- getBuildEnvironment Nothing
     pure
       Stack
         { saveHackageCreds = Just False,
-          extraDeps = map format . sort . hkgRefs <$> extraDeps,
+          extraDeps = map format . sort . hkgRefs <$> buildExtraDeps,
           packages = map pkgDirPath buildPkgs,
           compiler = Nothing,
+          resolver = buildResolver,
+          allowNewer = buildAllowNewer,
           ..
         }
 
 stackPath :: Maybe Name -> ConfigT FilePath
 stackPath (Just name) = pure $ ".hwm/matrix/stack-" <> toString name <> ".yaml"
-stackPath Nothing = stack <$> askOptions
+stackPath Nothing = optionsStack <$> askOptions
 
 createEnvYaml :: Name -> ConfigT ()
 createEnvYaml target = do
   path <- stackPath (Just target)
   liftIO $ createDirectoryIfMissing True ".hwm/matrix/"
   rewrite_ path $ const $ do
-    BuildEnvironment {buildEnv = EnviromentTarget {..}, ..} <- getBuildEnvironment (Just target)
+    BuildEnvironment {..} <- getBuildEnvironment Nothing
     pure
       Stack
         { saveHackageCreds = Just False,
           extraDeps = map format . sort . hkgRefs <$> buildExtraDeps,
           packages = map (("../../" <>) . pkgDirPath) buildPkgs,
           compiler = Nothing,
+          resolver = buildResolver,
+          allowNewer = buildAllowNewer,
           ..
         }
 
@@ -173,7 +178,7 @@ findIssue str =
 
 scanStackFiles :: (MonadIO m, MonadError Issue m) => Options -> FilePath -> m (NonEmpty (Name, Stack))
 scanStackFiles opts root = do
-  let defaultPath = root </> stack opts
+  let defaultPath = root </> optionsStack opts
   defaultExists <- liftIO $ doesFileExist defaultPath
   variantPaths <- liftIO $ globDir1 (compile "stack-*.yaml") root
   stacks <- traverse loadEnv ([defaultPath | defaultExists] <> variantPaths)
@@ -192,12 +197,12 @@ deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExte
 buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> NonEmpty (Name, Stack) -> m Environments
 buildMatrix pkgs (defaultEnv :| envs) = do
   environments <- sortOn (ghc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
-  pure Environments {envDefault = fst defaultEnv, envTargets = Map.fromList environments}
+  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments}
 
-inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m (Name, EnviromentTarget)
+inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m (Name, Enviroment)
 inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do
   ghc <- maybe (getSnapshotGHC resolver) (fromEither "GHC Parsing" . parseGHCVersion) compiler
   extraDeps <- parseExtraDeps (fromMaybe [] deps)
   let excludeList = filter ((`notElem` packages) . pkgDirPath) allPkgs
-      exclude = if null excludeList then Nothing else Just (map pkgId excludeList)
-  pure (name, EnviromentTarget {..})
+      exclude = if null excludeList then Nothing else Just (map toWorkspaceRef excludeList)
+  pure (name, Enviroment {stack = Just StackEnvironment {resolver = Just resolver, ..}, ..})

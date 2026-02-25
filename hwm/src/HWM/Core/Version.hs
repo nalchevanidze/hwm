@@ -17,6 +17,7 @@ module HWM.Core.Version
     formatNixGhc,
     selectEra,
     Era (..),
+    detectResolver,
   )
 where
 
@@ -175,3 +176,6 @@ historicalEras =
 
 selectEra :: Version -> Era
 selectEra version = fromMaybe (NE.last historicalEras) $ find (\era -> eraVersion era <= version) historicalEras
+
+detectResolver :: Version -> Text
+detectResolver version = eraStackageResolverName $ selectEra version

@@ -16,19 +16,23 @@ askOptions :: (MonadReader env m, Has env Options) => m Options
 askOptions = asks obtain
 
 data Options = Options
-  { hie :: FilePath,
-    hwm :: FilePath,
-    stack :: FilePath,
-    quiet :: Bool
+  { optionsHie :: FilePath,
+    optionsHwm :: FilePath,
+    optionsStack :: FilePath,
+    optionsQuiet :: Bool,
+    optionsCabal :: FilePath,
+    optionsNix :: FilePath
   }
 
 defaultOptions :: Options
 defaultOptions =
   Options
-    { hwm = "./hwm.yaml",
-      hie = "./hie.yaml",
-      stack = "./stack.yaml",
-      quiet = False
+    { optionsHwm = "./hwm.yaml",
+      optionsHie = "./hie.yaml",
+      optionsStack = "./stack.yaml",
+      optionsQuiet = False,
+      optionsCabal = "./cabal.project",
+      optionsNix = "./flake.nix"
     }
 
 whenCI :: (MonadIO m) => m () -> m ()

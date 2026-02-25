@@ -52,7 +52,7 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
   root <- liftIO getCurrentDirectory
   let cfgName = fromMaybe (deriveName root) projectName
   section "init" $ do
-    unless forceOverride $ forbidOverride (normalise (root </> hwm opts))
+    unless forceOverride $ forbidOverride (normalise (root </> optionsHwm opts))
     stacks <- scanStackFiles opts root
     scanning "stack.yaml" stacks
     pkgs <- scanPkgs root

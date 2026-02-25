@@ -14,7 +14,6 @@ module HWM.Core.Pkg
     makePkg,
     pkgFile,
     pkgYamlPath,
-    pkgId,
     scanPkgs,
     cabalFilePath,
     mkPkgDirPath,
@@ -72,9 +71,6 @@ pkgFile Pkg {..} file = normalise $ joinPath [pkgDirPath, file]
 
 cabalFilePath :: Pkg -> FilePath
 cabalFilePath Pkg {..} = normalise $ joinPath [pkgDirPath, toString pkgName <> ".cabal"]
-
-pkgId :: Pkg -> Text
-pkgId Pkg {pkgGroup, pkgMemberId} = pkgGroup <> "/" <> pkgMemberId
 
 toPkg :: PkgInfo -> Name -> Name -> FilePath -> Pkg
 toPkg PkgInfo {name, version} groupName memberName dir =

@@ -31,6 +31,7 @@ module HWM.Core.Formatting
     monadStatus,
     formatTemplate,
     toCamelCase,
+    formatTableRow,
   )
 where
 
@@ -246,8 +247,11 @@ printRow sizes ls =
     $ T.intercalate "  "
     $ zipWith (\item s -> T.justifyLeft s ' ' item) ls sizes
 
+formatTableRow :: Table -> Row -> Text
+formatTableRow table = printRow (getSizes table)
+
 formatTable :: [Text] -> [Text]
-formatTable deps = sort $ map (printRow (getSizes table)) table
+formatTable deps = sort $ map (formatTableRow table) table
   where
     table = map words deps
 

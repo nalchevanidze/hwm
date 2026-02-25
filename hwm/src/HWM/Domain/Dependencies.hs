@@ -4,27 +4,22 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Dependencies
-  ( Dependencies,
+  ( Dependencies (..),
     Dependency (..),
-    getBounds,
-    mapDeps,
     toDependencyList,
     fromDependencyList,
     mergeDependencies,
     normalizeDependencies,
-    externalRegistry,
     DependencyGraph (..),
     sortByDependencyHierarchy,
-    mapWithName,
     singleDeps,
-    lookupBounds,
   )
 where
 
 import Control.Monad.Error.Class (MonadError (..))
 import Data.Aeson
   ( FromJSON (..),
-    ToJSON (toJSON),
+    ToJSON (..),
   )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -34,7 +29,6 @@ import HWM.Core.Parsing (Parse (..), firstWord)
 import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue (..), Severity (..))
 import HWM.Domain.Bounds (Bounds, boundsBetter, hasBounds)
-import HWM.Runtime.Files (select)
 import Relude hiding
   ( Undefined,
     break,
@@ -66,18 +60,6 @@ newtype Dependencies = Dependencies {unpackDeps :: Map PkgName Bounds}
 instance Semigroup Dependencies where
   (Dependencies a) <> (Dependencies b) = Dependencies (a <> b)
 
-lookupBounds :: PkgName -> Dependencies -> Maybe Bounds
-lookupBounds name (Dependencies m) = Map.lookup name m
-
-getBounds :: (MonadError Issue m) => PkgName -> Dependencies -> m Bounds
-getBounds name = select "Package " name . unpackDeps
-
-mapDeps :: (PkgName -> Bounds -> Bounds) -> Dependencies -> Dependencies
-mapDeps f (Dependencies xs) = Dependencies $ Map.mapWithKey f xs
-
-mapWithName :: (PkgName -> Bounds -> b) -> Dependencies -> [b]
-mapWithName f (Dependencies xs) = Map.elems $ Map.mapWithKey f xs
-
 singleDeps :: Dependency -> Dependencies
 singleDeps (Dependency name bounds) = Dependencies (Map.singleton name bounds)
 
@@ -107,14 +89,6 @@ mergeDependencies = Map.elems . foldl' step Map.empty
 
 normalizeDependencies :: [Dependency] -> [Dependency]
 normalizeDependencies = filter (hasBounds . bounds) . mergeDependencies
-
-externalRegistry :: [PkgName] -> [Dependency] -> Dependencies
-externalRegistry internalPkgs deps =
-  let externals = filter isExternal (normalizeDependencies deps)
-   in fromDependencyList (sortOn name externals)
-  where
-    internals = Set.fromList internalPkgs
-    isExternal dep = not (Set.member (name dep) internals)
 
 newtype DependencyGraph = DependencyGraph (Map PkgName [PkgName])
 

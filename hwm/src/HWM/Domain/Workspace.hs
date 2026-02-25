@@ -23,6 +23,10 @@ module HWM.Domain.Workspace
     allPackages,
     resolveWsPkgs,
     WsPkgs,
+    checkWorkspaceRefs,
+    isMember,
+    toWorkspaceRef,
+    printPkgWSRef,
   )
 where
 
@@ -44,7 +48,7 @@ import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (..), availableOptions, chalk, commonPrefix, genMaxLen, monadStatus, padDots, slugify, statusIcon, subPathSign)
 import HWM.Core.Has (Has (..), askEnv)
-import HWM.Core.Pkg (Pkg (..), PkgName, makePkg)
+import HWM.Core.Pkg (Pkg (..), PkgName (..), makePkg)
 import HWM.Core.Result
 import HWM.Domain.Dependencies (DependencyGraph, sortByDependencyHierarchy)
 import HWM.Runtime.Files (cleanRelativePath)
@@ -57,7 +61,30 @@ data WorkspaceRef = WorkspaceRef
   { wsRefGroupId :: Name,
     wsRefMemberId :: Maybe Name
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Generic, Ord)
+
+isMember :: WorkspaceRef -> Pkg -> Bool
+isMember (WorkspaceRef groupId Nothing) pkg = pkgGroup pkg == groupId
+isMember (WorkspaceRef groupId (Just memberId)) pkg = pkgGroup pkg == groupId && pkgMemberId pkg == memberId
+
+toWorkspaceRef :: Pkg -> WorkspaceRef
+toWorkspaceRef Pkg {pkgGroup, pkgMemberId} = WorkspaceRef pkgGroup (Just pkgMemberId)
+
+printPkgWSRef :: Pkg -> Text
+printPkgWSRef Pkg {pkgGroup, pkgMemberId} = pkgGroup <> "/" <> pkgMemberId
+
+checkWorkspaceRefs ::
+  ( MonadError Issue m,
+    MonadReader env m,
+    Has env Workspace,
+    MonadIO m
+  ) =>
+  [WorkspaceRef] ->
+  m ()
+checkWorkspaceRefs ls = do
+  pkgs <- allPackages
+  let unknown = filter (\ref -> not (any (isMember ref) pkgs)) ls
+  unless (null unknown) (throwError $ fromString ("unknown packages: " <> show unknown))
 
 instance FromJSON WorkspaceRef where
   parseJSON = withText "WorkspaceRef" $ pure . parseWorkspaceRef

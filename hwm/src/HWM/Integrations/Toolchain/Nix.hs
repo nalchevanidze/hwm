@@ -9,18 +9,20 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (format, toCamelCase)
+import HWM.Core.Options (Options (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Version (Era (eraNixpkgs), Version, formatNixGhc, selectEra)
 import HWM.Domain.Config (Config (Config, cfgName))
-import HWM.Domain.ConfigT (ConfigT, Env (config))
-import HWM.Domain.Environments (BuildEnvironment (..), EnviromentTarget (..), getBuildEnvironment)
+import HWM.Domain.ConfigT (ConfigT, Env (..))
+import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import Relude
 
 syncNixFile :: ConfigT ()
 syncNixFile = do
   Config {..} <- asks config
-  BuildEnvironment {buildPkgs, buildEnv = EnviromentTarget {..}} <- getBuildEnvironment Nothing
-  liftIO $ TIO.writeFile "flake.nix" (deriveFlakeNix cfgName ghc buildPkgs)
+  ops <- asks options
+  BuildEnvironment {buildPkgs, buildGHC} <- getBuildEnvironment Nothing
+  liftIO $ TIO.writeFile (optionsNix ops) (deriveFlakeNix cfgName buildGHC buildPkgs)
 
 renderNixName :: Text -> Text
 renderNixName name = toCamelCase name <> "WorkspacePackages"

@@ -10,9 +10,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Environments
-  ( EnviromentTarget (..),
+  ( Enviroment (..),
     Environments (..),
     BuildEnvironment (..),
+    StackEnvironment (..),
     getBuildEnvironments,
     getBuildEnvironment,
     hkgRefs,
@@ -33,7 +34,6 @@ import Data.Aeson
     genericToJSON,
   )
 import Data.Foldable (Foldable (..))
-import Data.List ((\\))
 import qualified Data.Map as M
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -44,11 +44,11 @@ import HWM.Core.Common
   )
 import HWM.Core.Formatting (Color (..), Format (..), availableOptions, chalk)
 import HWM.Core.Has (Has (..), HasAll, askEnv)
-import HWM.Core.Pkg (Pkg (..), PkgName, pkgId)
+import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue)
-import HWM.Core.Version (Version)
+import HWM.Core.Version (Era (..), Version, selectEra)
 import HWM.Domain.Bounds (TestedRange (..))
-import HWM.Domain.Workspace (Workspace, allPackages)
+import HWM.Domain.Workspace (Workspace, WorkspaceRef, allPackages, checkWorkspaceRefs, isMember)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
 import HWM.Runtime.Files (Signature, aesonYAMLOptions, aesonYAMLOptionsAdvanced, genSignature)
 import HWM.Runtime.UI (MonadUI, forTable_, sectionEnvironments)
@@ -58,26 +58,24 @@ type Extras = VersionMap
 
 data Environments = Environments
   { envDefault :: Name,
-    envTargets :: Map Name EnviromentTarget
+    envProfiles :: Map Name Enviroment
   }
   deriving
     ( Generic,
       Show
     )
 
-newEnv :: Version -> Name -> EnviromentTarget
-newEnv ghc resolver =
-  EnviromentTarget
+newEnv :: Version -> Enviroment
+newEnv ghc =
+  Enviroment
     { ghc = ghc,
-      resolver = resolver,
-      extraDeps = Nothing,
       exclude = Nothing,
-      allowNewer = Nothing
+      stack = Nothing
     }
 
 environmentHash :: Environments -> Signature
 environmentHash Environments {..} =
-  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe extraDeps (toList envTargets)
+  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< stack) (toList envProfiles)
   where
     toSig (pkg, v) = format pkg <> "-" <> format v
 
@@ -103,20 +101,20 @@ instance
   where
   check Environments {..} = do
     fileSig <- askEnv
-    traverse_ (checkTarget fileSig) envTargets
+    traverse_ (checkTarget fileSig) envProfiles
     where
       signature = environmentHash Environments {..}
-      checkTarget fileSig EnviromentTarget {..}
-        | fileSig == signature = checkPkgNames exclude
+      checkTarget fileSig Enviroment {..}
+        | fileSig == signature = checkExclude
         -- checking all hkgRefs is expensive, so we skip it if the signature matches
-        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs extraDeps), checkPkgNames exclude]
+        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs (extraDeps =<< stack)), checkExclude]
+        where
+          checkExclude = checkWorkspaceRefs (fromMaybe [] exclude)
 
-data EnviromentTarget = EnviromentTarget
+data Enviroment = Enviroment
   { ghc :: Version,
-    resolver :: Name,
-    extraDeps :: Maybe Extras,
-    exclude :: Maybe [Text],
-    allowNewer :: Maybe Bool
+    exclude :: Maybe [WorkspaceRef],
+    stack :: Maybe StackEnvironment
   }
   deriving
     ( Generic,
@@ -125,31 +123,32 @@ data EnviromentTarget = EnviromentTarget
       Eq
     )
 
-instance FromJSON EnviromentTarget where
+instance FromJSON Enviroment where
   parseJSON = genericParseJSON aesonYAMLOptions
 
-instance ToJSON EnviromentTarget where
+instance ToJSON Enviroment where
   toJSON = genericToJSON aesonYAMLOptions
 
-checkPkgNames ::
-  ( MonadError Issue m,
-    MonadReader env m,
-    Has env Workspace,
-    MonadIO m
-  ) =>
-  Maybe [Text] ->
-  m ()
-checkPkgNames ls = do
-  known <- map pkgId <$> allPackages
-  let unknown = fromMaybe [] ls \\ known
-  unless (null unknown) (throwError $ fromString ("unknown packages: " <> show unknown))
+data StackEnvironment = StackEnvironment
+  { resolver :: Maybe Name,
+    extraDeps :: Maybe Extras,
+    allowNewer :: Maybe Bool
+  }
+  deriving (Generic, Show, Ord, Eq)
+
+instance FromJSON StackEnvironment where
+  parseJSON = genericParseJSON aesonYAMLOptions
+
+instance ToJSON StackEnvironment where
+  toJSON = genericToJSON aesonYAMLOptions
 
 data BuildEnvironment = BuildEnvironment
-  { buildEnv :: EnviromentTarget,
+  { buildGHC :: Version,
     buildPkgs :: [Pkg],
     buildName :: Name,
     buildExtraDeps :: Maybe Extras,
-    buildResolver :: Name
+    buildResolver :: Name,
+    buildAllowNewer :: Maybe Bool
   }
   deriving
     ( Generic,
@@ -159,7 +158,7 @@ data BuildEnvironment = BuildEnvironment
     )
 
 instance Format BuildEnvironment where
-  format BuildEnvironment {..} = buildName <> " (" <> format (ghc buildEnv) <> ")"
+  format BuildEnvironment {..} = buildName <> " (" <> format buildGHC <> ")"
 
 getBuildEnvironments ::
   ( MonadReader env m,
@@ -170,19 +169,22 @@ getBuildEnvironments ::
   ) =>
   m [BuildEnvironment]
 getBuildEnvironments = do
-  envs <- envTargets <$> askEnv
+  envs <- envProfiles <$> askEnv
   for (Map.toList envs) $ \(name, env) -> do
     pkgs <- allPackages
     pure
       BuildEnvironment
-        { buildEnv = env,
-          buildPkgs = excludePkgs env pkgs,
+        { buildPkgs = excludePkgs env pkgs,
           buildName = name,
-          buildExtraDeps = extraDeps env,
-          buildResolver = resolver env
+          buildExtraDeps = extraDeps =<< stack env,
+          buildResolver = fromMaybe (eraStackageResolverName $ selectEra (ghc env)) (resolver =<< stack env),
+          buildGHC = ghc env,
+          buildAllowNewer = stack env >>= allowNewer
         }
   where
-    excludePkgs build = filter (\p -> pkgId p `notElem` fromMaybe [] (exclude build))
+    excludePkgs build pkgs =
+      let excluseion = fromMaybe [] (exclude build)
+       in filter (not . (\pkg -> any (`isMember` pkg) excluseion)) pkgs
 
 getBuildEnvironment ::
   ( MonadReader env m,
@@ -239,7 +241,7 @@ instance Format HkgRef where
 
 existsEnviroment :: (MonadReader env m, Has env Environments) => Name -> m Bool
 existsEnviroment n = do
-  envs <- envTargets <$> askEnv
+  envs <- envProfiles <$> askEnv
   pure $ isJust $ Map.lookup n envs
 
 printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env Workspace, Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
@@ -265,4 +267,4 @@ getTestedRange = do
 -- | Remove an environment from the matrix by name
 removeEnvironmentByName :: Name -> Environments -> Environments
 removeEnvironmentByName envName matrix =
-  matrix {envTargets = Map.delete envName (envTargets matrix)}
+  matrix {envProfiles = Map.delete envName (envProfiles matrix)}

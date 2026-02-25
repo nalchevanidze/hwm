@@ -11,8 +11,9 @@ import HWM.Core.Pkg (PkgName (..))
 import HWM.Domain.Bounds (deriveBounds)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
-import HWM.Domain.Dependencies (Dependency (Dependency), lookupBounds, singleDeps)
+import HWM.Domain.Dependencies (Dependency (Dependency), singleDeps)
 import HWM.Domain.Environments (getTestedRange)
+import HWM.Domain.Registry (addDependency, lookupBounds)
 import HWM.Domain.Workspace (forWorkspaceTuple, resolveWorkspaces)
 import HWM.Integrations.Toolchain.Package
 import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM)
@@ -45,7 +46,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
       bounds <- deriveBounds opsPkgName range
       let dependency = Dependency opsPkgName bounds
 
-      ((\cf -> pure cf {cfgRegistry = cfgRegistry cf <> singleDeps dependency}) `updateConfig`) $ do
+      ((\cf -> pure cf {cfgRegistry = addDependency dependency (cfgRegistry cf)}) `updateConfig`) $ do
         sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
         addDepToPackage workspaces dependency
     Just bounds -> do
