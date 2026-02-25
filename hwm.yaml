@@ -8,7 +8,7 @@ workspace:
     - hwm
 environments:
   default: stable
-  targets:
+  profiles:
     legacy:
       ghc: 8.10.7
       stack:

@@ -45,6 +45,6 @@ runEnvAdd EnvAddOptions {..} = do
       updateConfig
         ( \cfg@Config {..} -> do
             putLine $ padDots size "ghc" <> format envGHC
-            pure cfg {cfgEnvironments = cfgEnvironments {envTargets = Map.insert envName (newEnv envGHC) (envTargets cfgEnvironments)}}
+            pure cfg {cfgEnvironments = cfgEnvironments {envProfiles = Map.insert envName (newEnv envGHC) (envProfiles cfgEnvironments)}}
         )
         (pure ())

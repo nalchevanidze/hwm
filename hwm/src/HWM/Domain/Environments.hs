@@ -58,7 +58,7 @@ type Extras = VersionMap
 
 data Environments = Environments
   { envDefault :: Name,
-    envTargets :: Map Name Enviroment
+    envProfiles :: Map Name Enviroment
   }
   deriving
     ( Generic,
@@ -75,7 +75,7 @@ newEnv ghc =
 
 environmentHash :: Environments -> Signature
 environmentHash Environments {..} =
-  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< stack) (toList envTargets)
+  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< stack) (toList envProfiles)
   where
     toSig (pkg, v) = format pkg <> "-" <> format v
 
@@ -101,7 +101,7 @@ instance
   where
   check Environments {..} = do
     fileSig <- askEnv
-    traverse_ (checkTarget fileSig) envTargets
+    traverse_ (checkTarget fileSig) envProfiles
     where
       signature = environmentHash Environments {..}
       checkTarget fileSig Enviroment {..}
@@ -169,7 +169,7 @@ getBuildEnvironments ::
   ) =>
   m [BuildEnvironment]
 getBuildEnvironments = do
-  envs <- envTargets <$> askEnv
+  envs <- envProfiles <$> askEnv
   for (Map.toList envs) $ \(name, env) -> do
     pkgs <- allPackages
     pure
@@ -241,7 +241,7 @@ instance Format HkgRef where
 
 existsEnviroment :: (MonadReader env m, Has env Environments) => Name -> m Bool
 existsEnviroment n = do
-  envs <- envTargets <$> askEnv
+  envs <- envProfiles <$> askEnv
   pure $ isJust $ Map.lookup n envs
 
 printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env Workspace, Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
@@ -267,4 +267,4 @@ getTestedRange = do
 -- | Remove an environment from the matrix by name
 removeEnvironmentByName :: Name -> Environments -> Environments
 removeEnvironmentByName envName matrix =
-  matrix {envTargets = Map.delete envName (envTargets matrix)}
+  matrix {envProfiles = Map.delete envName (envProfiles matrix)}

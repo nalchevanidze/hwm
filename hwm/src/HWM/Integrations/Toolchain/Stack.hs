@@ -197,7 +197,7 @@ deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExte
 buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> NonEmpty (Name, Stack) -> m Environments
 buildMatrix pkgs (defaultEnv :| envs) = do
   environments <- sortOn (ghc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
-  pure Environments {envDefault = fst defaultEnv, envTargets = Map.fromList environments}
+  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments}
 
 inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m (Name, Enviroment)
 inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do
