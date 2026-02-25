@@ -1,1 +1,3 @@
-packages: ./hwm
+packages:
+  hwm
+ with-compiler: ghc-9.6.3
