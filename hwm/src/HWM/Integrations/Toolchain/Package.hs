@@ -33,7 +33,7 @@ import HWM.Domain.ConfigT (ConfigT, Env (config, pkgs), askVersion)
 import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyGraph (DependencyGraph), normalizeDependencies, singleDeps, toDependencyList)
 import HWM.Domain.Registry (Registry, initRegistry)
 import HWM.Domain.Workspace (forWorkspaceCore)
-import HWM.Integrations.Toolchain.Cabal (syncCabal)
+import HWM.Integrations.Toolchain.Cabal (syncCabalPackage)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
     Libraries,
@@ -145,7 +145,7 @@ updatePackage :: (Package -> ConfigT Package) -> Pkg -> ConfigT Text
 updatePackage f pkg = do
   let path = pkgYamlPath pkg
   package <- statusM path (rewrite_ path maybePackage)
-  cabal <- syncCabal pkg
+  cabal <- syncCabalPackage pkg
   pure $ displayStatus [("pkg", package), ("cabal", cabal)]
   where
     maybePackage Nothing =

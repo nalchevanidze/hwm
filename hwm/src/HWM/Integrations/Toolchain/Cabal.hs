@@ -3,7 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Integrations.Toolchain.Cabal
-  ( syncCabal,
+  ( syncCabalPackage,
     validateHackage,
   )
 where
@@ -50,8 +50,8 @@ validateHackage pkg path = do
       )
   pure (map toStatus ls)
 
-syncCabal :: Pkg -> ConfigT Status
-syncCabal pkg = do
+syncCabalPackage :: Pkg -> ConfigT Status
+syncCabalPackage pkg = do
   remove (cabalFilePath pkg)
   let programName = ProgramName $ toString $ pkgName pkg
   let ops = setTarget (pkgYamlPath pkg) $ setProgramName programName defaultOptions
