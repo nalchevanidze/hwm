@@ -70,7 +70,7 @@ syncCabalPackage pkg = do
 
 generateCabalProject :: [Pkg] -> Text -> Text
 generateCabalProject packagePaths ghcVersion =
-  T.unwords
+  T.unlines
     [ "with-compiler: ghc-" <> ghcVersion,
       "packages:\n" <> T.unlines (map (("  " <>) . format . pkgDirPath) packagePaths)
     ]
