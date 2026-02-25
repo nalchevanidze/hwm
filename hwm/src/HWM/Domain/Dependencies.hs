@@ -4,7 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Dependencies
-  ( Dependencies(..),
+  ( Dependencies (..),
     Dependency (..),
     toDependencyList,
     fromDependencyList,
@@ -89,8 +89,6 @@ mergeDependencies = Map.elems . foldl' step Map.empty
 
 normalizeDependencies :: [Dependency] -> [Dependency]
 normalizeDependencies = filter (hasBounds . bounds) . mergeDependencies
-
-
 
 newtype DependencyGraph = DependencyGraph (Map PkgName [PkgName])
 

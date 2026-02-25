@@ -13,7 +13,7 @@ import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
 import HWM.Domain.Dependencies (Dependency (Dependency), singleDeps)
 import HWM.Domain.Environments (getTestedRange)
-import HWM.Domain.Registry (lookupBounds, addDependency)
+import HWM.Domain.Registry (addDependency, lookupBounds)
 import HWM.Domain.Workspace (forWorkspaceTuple, resolveWorkspaces)
 import HWM.Integrations.Toolchain.Package
 import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM)

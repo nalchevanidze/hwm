@@ -57,7 +57,6 @@ instance ToJSON Registry where
       size = maximum $ map (T.length . format) $ Map.keys ms
       table = map (T.words . format) $ Map.elems ms
 
-
 getBounds :: (MonadError Issue m) => PkgName -> Registry -> m Bounds
 getBounds pkgName = select "Package " pkgName . unpackRegistry
 
