@@ -20,7 +20,8 @@ data Options = Options
     optionsHwm :: FilePath,
     optionsStack :: FilePath,
     optionsQuiet :: Bool,
-    optionsCabal :: FilePath
+    optionsCabal :: FilePath,
+    optionsNix :: FilePath
   }
 
 defaultOptions :: Options
@@ -30,7 +31,8 @@ defaultOptions =
       optionsHie = "./hie.yaml",
       optionsStack = "./stack.yaml",
       optionsQuiet = False,
-      optionsCabal = "./cabal.project"
+      optionsCabal = "./cabal.project",
+      optionsNix = "./flake.nix"
     }
 
 whenCI :: (MonadIO m) => m () -> m ()

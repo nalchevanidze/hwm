@@ -12,15 +12,17 @@ import HWM.Core.Formatting (format, toCamelCase)
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Version (Era (eraNixpkgs), Version, formatNixGhc, selectEra)
 import HWM.Domain.Config (Config (Config, cfgName))
-import HWM.Domain.ConfigT (ConfigT, Env (config))
+import HWM.Domain.ConfigT (ConfigT, Env (..))
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import Relude
+import HWM.Core.Options (Options(..))
 
 syncNixFile :: ConfigT ()
 syncNixFile = do
   Config {..} <- asks config
+  ops <- asks options
   BuildEnvironment {buildPkgs, buildGHC} <- getBuildEnvironment Nothing
-  liftIO $ TIO.writeFile "flake.nix" (deriveFlakeNix cfgName buildGHC buildPkgs)
+  liftIO $ TIO.writeFile (optionsNix ops) (deriveFlakeNix cfgName buildGHC buildPkgs)
 
 renderNixName :: Text -> Text
 renderNixName name = toCamelCase name <> "WorkspacePackages"
