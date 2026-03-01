@@ -51,12 +51,7 @@ packHie value = object [("cradle", object [("stack", toJSON value)])]
 genComponents :: Pkg -> ConfigT [Component]
 genComponents pkg = map comp <$> packageLibs pkg
   where
-    comp (tag, sourceDirs) =
-      Component
-          { path = "./" <> pkgFile pkg (toString sourceDirs),
-            component = tag
-          }
-      
+    comp (tag, sourceDirs) = Component {path = "./" <> pkgFile pkg (toString sourceDirs), component = tag}
 
 syncHie :: ConfigT ()
 syncHie = do
