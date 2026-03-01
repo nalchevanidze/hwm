@@ -14,8 +14,7 @@ module HWM.Integrations.Toolchain.Package
   )
 where
 
-import Control.Monad.Except (MonadError (..))
-import HWM.Core.Formatting (Format (..), Status (Checked), displayStatus)
+import HWM.Core.Formatting (Format (..), displayStatus)
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), pkgMemberId)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Config (getRule)
@@ -24,14 +23,14 @@ import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), Dependenc
 import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspaceCore)
 import HWM.Integrations.Toolchain.Cabal (readCabalPackage, syncCabalPackage)
-import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage, readHpackPackage)
+import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage, readHpackPackage, rewriteHpackFile)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
     MapDeps (..),
     getBoundsDiffs,
     updateDependencies,
   )
-import HWM.Runtime.Files (rewrite_, statusM)
+import HWM.Runtime.Files (rewrite_)
 import Relude
 import System.FilePath ((</>))
 
@@ -65,24 +64,10 @@ packageModifyDependencies f pkg = mapDeps (pkg, []) onlyMain
 addPkgDependency :: Dependency -> Pkg -> ConfigT Text
 addPkgDependency dependency pkg = updatePackage (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency)) pkg) pkg
 
-updateHpackFile :: (MonadIO m, MonadError Issue m) => (HpackPackage -> m HpackPackage) -> Pkg -> m Status
-updateHpackFile f pkg = do
-  maybe (pure Checked) (\path -> statusM path (rewrite_ path maybePackage)) (hpackFile pkg)
-  where
-    maybePackage Nothing =
-      throwError
-        $ Issue
-          { issueTopic = pkgMemberId pkg,
-            issueMessage = "could not find package file",
-            issueSeverity = SeverityWarning,
-            issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
-          }
-    maybePackage (Just package) = f package
-
 updatePackage :: (HpackPackage -> ConfigT HpackPackage) -> Pkg -> ConfigT Text
 updatePackage f pkg =
   displayStatus
-    [ ("pkg", updateHpackFile f pkg),
+    [ ("pkg", rewriteHpackFile f pkg),
       ("cabal", syncCabalPackage pkg)
     ]
 

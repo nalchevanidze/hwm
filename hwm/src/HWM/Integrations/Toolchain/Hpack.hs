@@ -4,11 +4,18 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Integrations.Toolchain.Hpack (HpackPackage (..), emptyPackage, readHpackPackage) where
+module HWM.Integrations.Toolchain.Hpack
+  ( HpackPackage (..),
+    emptyPackage,
+    readHpackPackage,
+    rewriteHpackFile,
+  )
+where
 
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (MonadError (..))
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
+import HWM.Core.Formatting (Status (Checked))
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Core.Version (Version)
@@ -18,7 +25,8 @@ import HWM.Integrations.Toolchain.Lib
     Library (..),
     MapDeps (..),
   )
-import HWM.Runtime.Files (aesonYAMLOptionsAdvanced, readYaml)
+import HWM.Runtime.Files (aesonYAMLOptionsAdvanced, readYaml, rewrite_, statusM)
+import Hpack ()
 import Relude
 
 data HpackPackage = HpackPackage
@@ -105,3 +113,17 @@ readHpackPackage pkg =
     )
     readYaml
     (hpackFile pkg)
+
+rewriteHpackFile :: (MonadIO m, MonadError Issue m) => (HpackPackage -> m HpackPackage) -> Pkg -> m Status
+rewriteHpackFile f pkg = do
+  maybe (pure Checked) (\path -> statusM path (rewrite_ path maybePackage)) (hpackFile pkg)
+  where
+    maybePackage Nothing =
+      throwError
+        $ Issue
+          { issueTopic = pkgMemberId pkg,
+            issueMessage = "could not find package file",
+            issueSeverity = SeverityWarning,
+            issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
+          }
+    maybePackage (Just package) = f package
