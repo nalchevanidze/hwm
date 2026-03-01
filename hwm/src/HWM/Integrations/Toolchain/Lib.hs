@@ -164,14 +164,14 @@ instance HasDependencies Library where
   collectDependencies scope (Library {..}) = collectDependencies scope dependencies
 
 class HasSourceDirs a where
-  getSourceDirs :: (Text, [Text]) -> a -> [(Text, Name)]
+  getSourceDirs :: [Text] -> a -> [(Text, Name)]
 
 instance (HasSourceDirs a) => HasSourceDirs (Maybe a) where
   getSourceDirs tag (Just l) = getSourceDirs tag l
   getSourceDirs _ Nothing = []
 
 instance (HasSourceDirs a) => HasSourceDirs (Map Text a) where
-  getSourceDirs (libType, tag) libs = concatMap (\(name, lib) -> getSourceDirs (libType, tag <> [name]) lib) (Map.toList libs)
+  getSourceDirs tags libs = concatMap (\(name, lib) -> getSourceDirs (tags <> [name]) lib) (Map.toList libs)
 
 instance HasSourceDirs Library where
-  getSourceDirs (libType, tags) Library {..} = [(T.intercalate ":" (libType : tags), sourceDirs)]
+  getSourceDirs tags Library {..} = [(T.intercalate ":" tags, sourceDirs)]

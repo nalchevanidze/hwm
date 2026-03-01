@@ -37,11 +37,11 @@ instance IsPkg HpackPackage where
   setVersion pkg version = pkg {hpackVersion = version}
 
 instance HasSourceDirs HpackPackage where
-  getSourceDirs _ HpackPackage {..} =
-    getSourceDirs ("lib", []) hpackLibrary
-      <> getSourceDirs ("test", []) hpackTests
-      <> getSourceDirs ("exe", []) hpackExecutables
-      <> getSourceDirs ("bench", []) hpackBenchmarks
+  getSourceDirs p HpackPackage {..} =
+    getSourceDirs (p <> ["lib"]) hpackLibrary
+      <> getSourceDirs (p <> ["test"]) hpackTests
+      <> getSourceDirs (p <> ["exe"]) hpackExecutables
+      <> getSourceDirs (p <> ["bench"]) hpackBenchmarks
 
 instance FromJSON HpackPackage where
   parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced "hpack")
