@@ -42,17 +42,13 @@ packageLibs pkg = getSourceDirs [format $ pkgName pkg] <$> readCabalPackage pkg
 
 newPackage :: FilePath -> PkgName -> ConfigT ()
 newPackage targetDir name = do
-  package <- mkPackage name
-  rewrite_ (targetDir </> "package.yaml") (const $ pure package)
-
-mkPackage :: PkgName -> ConfigT HpackPackage
-mkPackage name = do
   cfg <- asks config
   ps <- asks pkgs
   let baseName = PkgName "base"
   version <- askVersion
   base <- getRule baseName ps cfg
-  pure $ emptyPackage name version (M.singleDeps (Dependency baseName base))
+  let package = emptyPackage name version (M.singleDeps (Dependency baseName base))
+  rewrite_ (targetDir </> "package.yaml") (const $ pure package)
 
 packageDiffs :: (HasDependencies a) => Pkg -> a -> ConfigT [BoundsDiff]
 packageDiffs pkg package = concat <$> traverse (getBoundsDiffs pkg) (collectDependencies [] package)
