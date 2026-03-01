@@ -31,7 +31,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting
 import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Result (Issue)
-import HWM.Core.Version (Version, fromCabalVersion)
+import HWM.Core.Version (Version, fromCabalVersion, toCabalVersion)
 import HWM.Runtime.Files (cleanRelativePath)
 import Relude hiding (Undefined, intercalate)
 import System.Directory (listDirectory)
@@ -64,13 +64,12 @@ class IsPkg a where
 instance IsPkg GenericPackageDescription where
   getPkgName = PkgName . toText . unPackageName . packageName . package . packageDescription
   getPkgVersion = fromCabalVersion . pkgVersion . package . packageDescription
-
--- setVersion version gpd =
---   let pd = packageDescription gpd
---       pid = package pd
---       newPid = pid {pkgVersion = fromCabalVersion version}
---       newPd = pd {package = newPid}
---    in gpd {packageDescription = newPd}
+  setVersion version gpd =
+    let pd = packageDescription gpd
+        pid = package pd
+        newPid = pid {pkgVersion = toCabalVersion version}
+        newPd = pd {package = newPid}
+     in gpd {packageDescription = newPd}
 
 pkgFile :: Pkg -> FilePath -> FilePath
 pkgFile Pkg {..} file = normalise $ joinPath [pkgDirPath, file]

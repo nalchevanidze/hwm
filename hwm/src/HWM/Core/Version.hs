@@ -19,6 +19,7 @@ module HWM.Core.Version
     Era (..),
     detectResolver,
     fromCabalVersion,
+    toCabalVersion,
   )
 where
 
@@ -50,6 +51,9 @@ fromCabalVersion :: Cabal.Version -> Version
 fromCabalVersion v = case fromSeries $ Cabal.versionNumbers v of
   Left err -> error $ "Invalid Cabal version: " <> err
   Right version -> version
+
+toCabalVersion :: Version -> Cabal.Version
+toCabalVersion version = Cabal.mkVersion (toSeries version)
 
 formatNixGhc :: Version -> Text
 formatNixGhc Version {..} = "ghc" <> T.concat (map (T.pack . show) [major, minor])
