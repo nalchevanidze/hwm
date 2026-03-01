@@ -56,7 +56,7 @@ genComponents pkg = concatMap comp <$> packageLibs pkg
     comp (tag, sourceDirs) =
       [ Component
           { path = "./" <> pkgFile pkg (toString sourceDirs),
-            component = T.intercalate ":" [format $ pkgName pkg, tag]
+            component = tag
           }
       ]
 

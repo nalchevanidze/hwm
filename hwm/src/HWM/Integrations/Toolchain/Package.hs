@@ -54,7 +54,7 @@ readPkg pkg =
     (hpackFile pkg)
 
 packageLibs :: Pkg -> ConfigT [(Text, Name)]
-packageLibs pkg = getSourceDirs ("", []) <$> readPkg pkg
+packageLibs pkg = getSourceDirs (format $ pkgName pkg, []) <$> readPkg pkg
 
 newPackage :: FilePath -> PkgName -> ConfigT ()
 newPackage targetDir name = do
