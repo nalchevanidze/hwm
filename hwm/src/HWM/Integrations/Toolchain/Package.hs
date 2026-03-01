@@ -23,7 +23,8 @@ import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), pkgMemberId)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Config (getRule)
 import HWM.Domain.ConfigT (ConfigT, Env (config, pkgs), askVersion)
-import HWM.Domain.Dependencies (Dependencies, Dependency, DependencyMap (..), HasDependencies (..), buildDependencyGraph, singleDeps, toDependencyList)
+import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyMap (..), HasDependencies (..), buildDependencyGraph, singleDeps, toDependencyList)
+import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspaceCore)
 import HWM.Integrations.Toolchain.Cabal (syncCabalPackage)
 import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage)
@@ -64,10 +65,10 @@ mkPackage :: PkgName -> ConfigT HpackPackage
 mkPackage name = do
   cfg <- asks config
   ps <- asks pkgs
-  let basename = PkgName "base"
+  let baseName = PkgName "base"
   version <- askVersion
-  base <- getRule basename ps cfg
-  pure $ emptyPackage name version
+  base <- getRule baseName ps cfg
+  pure $ emptyPackage name version (M.singleDeps (Dependency baseName base))
 
 packageDiffs :: (HasDependencies a) => Pkg -> a -> ConfigT [BoundsDiff]
 packageDiffs pkg package = concat <$> traverse (getBoundsDiffs pkg) (collectDependencies [] package)

@@ -6,13 +6,11 @@
 module HWM.Integrations.Toolchain.Hpack (HpackPackage (..), emptyPackage) where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
-import qualified Data.Map as M
 import HWM.Core.Pkg (IsPkg (..), PkgName (..))
 import HWM.Core.Version (Version)
-import HWM.Domain.Dependencies (Dependencies (Dependencies), HasDependencies (..))
+import HWM.Domain.Dependencies (HasDependencies (..), Dependencies)
 import HWM.Integrations.Toolchain.Lib
   ( HasSourceDirs (..),
-    LibPath,
     Libraries,
     Library (..),
     MapDeps (..),
@@ -84,12 +82,12 @@ instance HasDependencies HpackPackage where
         collectDependencies (xs <> ["foreign"]) hpackForeignLibraries
       ]
 
-emptyPackage :: PkgName -> Version -> HpackPackage
-emptyPackage name version =
+emptyPackage :: PkgName -> Version -> Dependencies -> HpackPackage
+emptyPackage name version dependencies =
   HpackPackage
     { hpackName = name,
       hpackVersion = version,
-      hpackLibrary = Just Library {sourceDirs = "src", dependencies = Just $ Dependencies M.empty, __unknownFields = Nothing},
+      hpackLibrary = Just Library {sourceDirs = "src", dependencies = Just dependencies, __unknownFields = Nothing},
       hpackDependencies = Nothing,
       hpackTests = Nothing,
       hpackExecutables = Nothing,
