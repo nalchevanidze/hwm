@@ -17,7 +17,6 @@ module HWM.Integrations.Toolchain.Lib
     Libraries,
     MapDeps (..),
     LibPath,
-    HasSourceDirs (..),
   )
 where
 
@@ -162,16 +161,3 @@ instance (MapDeps a) => MapDeps (Maybe a) where
 
 instance HasDependencies Library where
   collectDependencies scope (Library {..}) = collectDependencies scope dependencies
-
-class HasSourceDirs a where
-  getSourceDirs :: [Text] -> a -> [(Text, Name)]
-
-instance (HasSourceDirs a) => HasSourceDirs (Maybe a) where
-  getSourceDirs tag (Just l) = getSourceDirs tag l
-  getSourceDirs _ Nothing = []
-
-instance (HasSourceDirs a) => HasSourceDirs (Map Text a) where
-  getSourceDirs tags libs = concatMap (\(name, lib) -> getSourceDirs (tags <> [name]) lib) (Map.toList libs)
-
-instance HasSourceDirs Library where
-  getSourceDirs tags Library {..} = [(T.intercalate ":" tags, sourceDirs)]

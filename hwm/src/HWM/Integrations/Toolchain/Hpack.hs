@@ -10,7 +10,7 @@ import HWM.Core.Pkg (IsPkg (..), PkgName (..))
 import HWM.Core.Version (Version)
 import HWM.Domain.Dependencies (Dependencies, HasDependencies (..))
 import HWM.Integrations.Toolchain.Lib
-  ( HasSourceDirs (..),
+  ( 
     Libraries,
     Library (..),
     MapDeps (..),
@@ -36,12 +36,12 @@ instance IsPkg HpackPackage where
   getPkgVersion = hpackVersion
   setVersion pkg version = pkg {hpackVersion = version}
 
-instance HasSourceDirs HpackPackage where
-  getSourceDirs p HpackPackage {..} =
-    getSourceDirs (p <> ["lib"]) hpackLibrary
-      <> getSourceDirs (p <> ["test"]) hpackTests
-      <> getSourceDirs (p <> ["exe"]) hpackExecutables
-      <> getSourceDirs (p <> ["bench"]) hpackBenchmarks
+-- instance HasSourceDirs HpackPackage where
+--   getSourceDirs p HpackPackage {..} =
+--     getSourceDirs (p <> ["lib"]) hpackLibrary
+--       <> getSourceDirs (p <> ["test"]) hpackTests
+--       <> getSourceDirs (p <> ["exe"]) hpackExecutables
+--       <> getSourceDirs (p <> ["bench"]) hpackBenchmarks
 
 instance FromJSON HpackPackage where
   parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced "hpack")

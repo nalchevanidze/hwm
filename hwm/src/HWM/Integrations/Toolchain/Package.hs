@@ -26,11 +26,10 @@ import HWM.Domain.ConfigT (ConfigT, Env (config, pkgs), askVersion)
 import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyMap (..), HasDependencies (..), buildDependencyGraph, singleDeps, toDependencyList)
 import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspaceCore)
-import HWM.Integrations.Toolchain.Cabal (syncCabalPackage)
+import HWM.Integrations.Toolchain.Cabal (readCabalPackage, syncCabalPackage, HasSourceDirs (getSourceDirs))
 import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
-    HasSourceDirs (getSourceDirs),
     MapDeps (..),
     getBoundsDiffs,
     updateDependencies,
@@ -54,7 +53,7 @@ readPkg pkg =
     (hpackFile pkg)
 
 packageLibs :: Pkg -> ConfigT [(Text, Name)]
-packageLibs pkg = getSourceDirs [format $ pkgName pkg] <$> readPkg pkg
+packageLibs pkg = getSourceDirs [format $ pkgName pkg] <$> readCabalPackage pkg
 
 newPackage :: FilePath -> PkgName -> ConfigT ()
 newPackage targetDir name = do
