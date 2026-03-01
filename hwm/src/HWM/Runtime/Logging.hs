@@ -6,13 +6,13 @@ module HWM.Runtime.Logging (logIssue, debug) where
 
 import Data.Time (getCurrentTime)
 import HWM.Core.Common (Name)
+import HWM.Core.Formatting (Color (Cyan), chalk)
 import HWM.Core.Options (whenCI, whenDebug)
 import HWM.Core.Result (Severity)
 import HWM.Runtime.Files (prepareDir)
 import HWM.Runtime.UI (MonadUI, putLine)
 import Relude
 import qualified System.IO as TIO
-import HWM.Core.Formatting (chalk, Color (Cyan))
 
 logRoot :: FilePath
 logRoot = ".hwm/logs"
