@@ -10,10 +10,10 @@ module HWM.Core.Pkg
     PkgName (..),
     makePkg,
     pkgFile,
-    cabalFilePath,
     mkPkgDirPath,
     resolvePrefix,
     IsPkg (..),
+    scanPkgs,
   )
 where
 
@@ -21,6 +21,7 @@ import Control.Monad.Except
 import Data.Aeson (FromJSON (..), ToJSONKey)
 import Data.Aeson.Types (FromJSONKey)
 import Data.Text (intercalate)
+import Data.Traversable (for)
 import Data.Yaml.Aeson (ToJSON)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting
@@ -31,6 +32,7 @@ import HWM.Runtime.Files (cleanRelativePath)
 import Relude hiding (Undefined, intercalate)
 import System.Directory (listDirectory)
 import System.FilePath
+import System.FilePath.Glob (glob)
 
 -- |
 --  Represents a reference to a package within the workspace.
@@ -42,38 +44,47 @@ data Pkg = Pkg
   { pkgName :: PkgName,
     pkgGroup :: Name,
     pkgMemberId :: Name,
-    pkgDirPath :: FilePath
+    pkgDirPath :: FilePath,
+    cabalFile :: FilePath,
+    hpackFile :: Maybe FilePath
   }
   deriving (Show, Ord, Eq)
 
 class IsPkg a where
   getPkgName :: a -> PkgName
+  -- version
   getPkgVersion :: a -> Version
-
+  setVersion :: a -> Version -> a
 
 pkgFile :: Pkg -> FilePath -> FilePath
 pkgFile Pkg {..} file = normalise $ joinPath [pkgDirPath, file]
 
-cabalFilePath :: Pkg -> FilePath
-cabalFilePath Pkg {..} = normalise $ joinPath [pkgDirPath, toString pkgName <> ".cabal"]
-
 mkPkgDirPath :: Maybe String -> Maybe Text -> Text -> FilePath
 mkPkgDirPath root prefix memberName = resolvePath root (resolvePrefix prefix memberName)
 
-findCabalFile :: (MonadIO m) => FilePath -> m PkgName
-findCabalFile dir = liftIO $ do
-  contents <- listDirectory dir
-  let ls = [name | name <- contents, takeExtension name == ".cabal"]
-  case ls of
-    [cabalFile] -> pure $ PkgName (toText $ dropExtension cabalFile)
-    [] -> fail $ "No .cabal file found in directory: " <> dir
-    _ -> fail $ "Multiple .cabal files found in directory: " <> dir
+pickCabalFile :: (MonadError Issue m) => [FilePath] -> m FilePath
+pickCabalFile [] = throwError "No .cabal file found in directory"
+pickCabalFile [cabalFile] = pure cabalFile
+pickCabalFile _ = throwError "Multiple .cabal files found in directory"
 
 makePkg :: (MonadIO m, MonadError Issue m) => Text -> Maybe FilePath -> Maybe Name -> Name -> m Pkg
 makePkg pkgGroup root prefix memberName = do
   let pkgDirPath = mkPkgDirPath root prefix memberName
-  pkgName <- findCabalFile pkgDirPath
+  files <- liftIO $ listDirectory pkgDirPath
+  cabal <- pickCabalFile [file | file <- files, takeExtension file == ".cabal"]
+  let cabalFile = joinPath [pkgDirPath, cabal]
+  let hpackFile = if "package.yaml" `elem` files then Just (joinPath [pkgDirPath, "package.yaml"]) else Nothing
+  let pkgName = PkgName (toText $ dropExtension cabal)
   pure $ Pkg {pkgMemberId = if memberName == "." then "(root)" else memberName, ..}
+
+scanPkgs :: (MonadIO m, MonadError Issue m) => FilePath -> m [Pkg]
+scanPkgs root = do
+  paths <- map (makeRelative root) <$> liftIO (glob "./**/**/*.cabal")
+  for paths $ \path -> do
+    let pkgDir = takeDirectory path
+    let groupDir = cleanRelativePath (Just (takeDirectory pkgDir))
+    let memberName = toText $ takeFileName pkgDir
+    makePkg (maybe "" toText groupDir) groupDir Nothing memberName
 
 resolvePrefix :: Maybe Text -> Text -> Text
 resolvePrefix prefix name = intercalate "-" (maybeToList prefix <> [name | name /= "."])

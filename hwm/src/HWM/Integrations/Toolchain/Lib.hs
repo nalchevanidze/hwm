@@ -17,6 +17,7 @@ module HWM.Integrations.Toolchain.Lib
     Libraries,
     MapDeps (..),
     LibPath,
+    HasSourceDirs (..),
   )
 where
 
@@ -43,7 +44,7 @@ import qualified Data.Text as T
 import GHC.Generics (Generic (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
-import HWM.Core.Pkg (Pkg (pkgMemberId), PkgName)
+import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Bounds (Bounds)
 import HWM.Domain.Config (getRule)
@@ -55,7 +56,6 @@ import HWM.Domain.Dependencies
     fromDependencyList,
     toDependencyList,
   )
-import HWM.Integrations.Toolchain.Stack (pkgYamlPath)
 import HWM.Runtime.Files (aesonYAMLOptions)
 import Relude
 
@@ -110,7 +110,7 @@ processDependencies pkg path deps processor = go [] [] (toDependencyList deps)
             { issueTopic = pkgMemberId pkg,
               issueMessage = show (length issues) <> " dependency issue(s) in " <> scope,
               issueSeverity = SeverityWarning,
-              issueDetails = Just DependencyIssue {issueDependencies = issues, issueFile = pkgYamlPath pkg}
+              issueDetails = Just DependencyIssue {issueDependencies = issues, issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
             }
       pure (reverse results)
     go results issues (dep@(Dependency depName depBounds) : rest) = do
@@ -162,3 +162,16 @@ instance (MapDeps a) => MapDeps (Maybe a) where
 
 instance HasDependencies Library where
   collectDependencies scope (Library {..}) = collectDependencies scope dependencies
+
+class HasSourceDirs a where
+  getSourceDirs :: (Text, [Text]) -> a -> [(Text, Name)]
+
+instance (HasSourceDirs a) => HasSourceDirs (Maybe a) where
+  getSourceDirs tag (Just l) = getSourceDirs tag l
+  getSourceDirs _ Nothing = []
+
+instance (HasSourceDirs a) => HasSourceDirs (Map Text a) where
+  getSourceDirs (libType, tag) libs = concatMap (\(name, lib) -> getSourceDirs (libType, tag <> [name]) lib) (Map.toList libs)
+
+instance HasSourceDirs Library where
+  getSourceDirs (libType, tags) Library {..} = [(T.intercalate ":" (libType : tags), sourceDirs)]

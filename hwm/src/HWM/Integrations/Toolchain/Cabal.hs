@@ -10,7 +10,6 @@ module HWM.Integrations.Toolchain.Cabal
     syncCabalProject,
     fromCabal,
     parseCabal,
-    scanPkgs,
   )
 where
 
@@ -39,23 +38,20 @@ import qualified Distribution.Version as Cabal
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
-import HWM.Core.Pkg (Pkg (Pkg), PkgName (..), cabalFilePath)
+import HWM.Core.Pkg (Pkg (Pkg, hpackFile), PkgName (..))
 import qualified HWM.Core.Pkg as P
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..), fromEither)
 import HWM.Core.Version (Version, fromCabalVersion)
 import HWM.Domain.Bounds (Bound (Bound), Bounds (..), Restriction (Max, Min))
 import HWM.Domain.ConfigT (ConfigT, Env (options))
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
-import HWM.Runtime.Files (cleanRelativePath, remove)
+import HWM.Runtime.Files (remove)
 import HWM.Runtime.Logging (debug)
-import HWM.Runtime.UI
 import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
-import System.FilePath (makeRelative, takeDirectory, takeFileName)
-import System.FilePath.Glob (glob)
-import HWM.Integrations.Toolchain.Stack (pkgYamlPath)
+import System.FilePath (takeDirectory)
 
 -- | Translate Cabal warnings into formatting status for downstream reporting.
 toStatus :: PackageCheck -> Status
@@ -85,19 +81,23 @@ validateHackage pkg path = do
       )
   pure (map toStatus ls)
 
-syncCabalPackage :: Pkg -> ConfigT Status
-syncCabalPackage pkg = do
-  cbl <- parseCabal (cabalFilePath pkg)
-  remove (cabalFilePath pkg)
+hpackSync :: Pkg -> ConfigT Status
+hpackSync Pkg {hpackFile = Nothing} = pure Checked
+hpackSync pkg@Pkg {hpackFile = Just path} = do
+  remove (P.cabalFile pkg)
   let programName = ProgramName $ toString $ P.pkgName pkg
-  debug (show cbl)
-  let ops = setTarget (pkgYamlPath pkg) $ setProgramName programName defaultOptions
+  let ops = setTarget path $ setProgramName programName defaultOptions
   Result {..} <- liftIO $ hpackResult ops
-  ls <- validateHackage pkg resultCabalFile
-
-  s <- case resultStatus of
+  case resultStatus of
     H.OutputUnchanged -> pure Checked
     _ -> pure Updated
+
+syncCabalPackage :: Pkg -> ConfigT Status
+syncCabalPackage pkg = do
+  cbl <- parseCabal (P.cabalFile pkg)
+  debug (show cbl)
+  s <- hpackSync pkg
+  ls <- validateHackage pkg (P.cabalFile pkg)
   pure $ maximum (s : ls)
 
 generateCabalProject :: [Pkg] -> Text -> Text
@@ -192,14 +192,3 @@ toMinMax range = do
       case (viaNonEmpty head intervals', viaNonEmpty last intervals') of
         (Just x, Just y) -> pure $ Bounds (Just x) (Just y)
         (_, _) -> pure $ Bounds Nothing Nothing
-
-scanPkgs :: (MonadIO m, MonadError Issue m, MonadUI m) => FilePath -> m [Pkg]
-scanPkgs root = do
-  paths <- map (makeRelative root) <$> liftIO (glob "./**/**/*.cabal")
-  infos <- traverse parseCabal paths
-  for infos $ \WorkspacePackage {..} -> do
-    let pkgDir = directory
-    debug $ "Found package.yaml at: " <> format pkgDir
-    let memberName = toText $ takeFileName pkgDir
-    let groupName = maybe "" toText $ cleanRelativePath (Just (takeDirectory pkgDir))
-    pure $ Pkg name groupName memberName pkgDir
