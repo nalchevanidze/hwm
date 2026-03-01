@@ -28,8 +28,8 @@ import HWM.Domain.Config (Config (cfgRelease))
 import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
 import HWM.Domain.Dependencies (sortByDependencyHierarchy)
 import HWM.Domain.Release (Release (..))
-import HWM.Domain.Workspace (WsPkgs, allPackages, printPkgWSRef, resolveWsPkgs)
-import HWM.Integrations.Toolchain.Package (deriveRegistry)
+import HWM.Domain.Workspace (WsPkgs, printPkgWSRef, resolveWsPkgs)
+import HWM.Integrations.Toolchain.Package (deriveDependencyGraph)
 import HWM.Integrations.Toolchain.Stack (sdist, upload)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, metavar, str)
@@ -53,7 +53,7 @@ instance ParseCLI PublishOptions where
 
 arrangePackageRelease :: [Pkg] -> ConfigT [Pkg]
 arrangePackageRelease pkgs = do
-  (_, graph) <- allPackages >>= deriveRegistry
+  graph <- deriveDependencyGraph
   sortByDependencyHierarchy graph pkgs
 
 collectGroups :: Maybe Name -> ConfigT WsPkgs

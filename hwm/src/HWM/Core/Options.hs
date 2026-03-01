@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -6,6 +7,7 @@ module HWM.Core.Options
     defaultOptions,
     askOptions,
     whenCI,
+    whenDebug,
   )
 where
 
@@ -21,7 +23,8 @@ data Options = Options
     optionsStack :: FilePath,
     optionsQuiet :: Bool,
     optionsCabal :: FilePath,
-    optionsNix :: FilePath
+    optionsNix :: FilePath,
+    optionDebug :: Bool
   }
 
 defaultOptions :: Options
@@ -32,10 +35,16 @@ defaultOptions =
       optionsStack = "./stack.yaml",
       optionsQuiet = False,
       optionsCabal = "./cabal.project",
-      optionsNix = "./flake.nix"
+      optionsNix = "./flake.nix",
+      optionDebug = False
     }
 
 whenCI :: (MonadIO m) => m () -> m ()
 whenCI action = do
   ci <- liftIO $ isJust <$> lookupEnv "CI"
   when ci action
+
+whenDebug :: (MonadIO m) => m () -> m ()
+whenDebug action = do
+  debug <- liftIO $ (Just "true" ==) <$> lookupEnv "DEBUG"
+  when debug action

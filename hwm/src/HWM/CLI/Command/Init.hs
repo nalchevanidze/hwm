@@ -13,13 +13,15 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (Cyan), Format (format), chalk, padDots)
 import HWM.Core.Options (Options (..))
 import HWM.Core.Parsing (ParseCLI (..), flag)
-import HWM.Core.Pkg (Pkg (..), scanPkgs)
+import HWM.Core.Pkg (IsPkg (..))
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Config (Config (..), defaultScripts)
 import HWM.Domain.ConfigT (resolveResultUI, saveConfig)
+import HWM.Domain.Registry (deriveRegistry)
 import HWM.Domain.Workspace (buildWorkspace)
-import HWM.Integrations.Toolchain.Package (deriveRegistry)
+import HWM.Integrations.Toolchain.Cabal (scanPkgs)
+import HWM.Integrations.Toolchain.Package (resolvePackages)
 import HWM.Integrations.Toolchain.Stack (buildMatrix, scanStackFiles)
 import HWM.Runtime.Files (forbidOverride)
 import HWM.Runtime.UI (MonadUI, putLine, runUI, section)
@@ -57,17 +59,22 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
     scanning "stack.yaml" stacks
     pkgs <- scanPkgs root
     scanning "packages" pkgs
-    when (null pkgs) $ throwError "No packages listed in stack.yaml. Add at least one package before running 'hwm init'"
-    (cfgRegistry, graph) <- deriveRegistry pkgs
-    cfgVersion <- deriveVersion (map pkgVersion pkgs)
+    when (null pkgs)
+      $ throwError
+        "No Haskell packages detected in the current directory.\n\
+        \Please ensure you are in the project's root and that your packages are discoverable.\n\
+        \Try running 'hwm init' from the root directory containing your package sources."
+    packages <- resolvePackages pkgs
+    cfgVersion <- deriveVersion (map getPkgVersion packages)
     cfgEnvironments <- buildMatrix pkgs stacks
-    cfgWorkspace <- buildWorkspace graph pkgs
+    cfgWorkspace <- buildWorkspace pkgs
     saveConfig
       Config
         { cfgGithub = Nothing,
           cfgBounds = Nothing,
           cfgScripts = defaultScripts,
           cfgRelease = Nothing,
+          cfgRegistry = deriveRegistry packages,
           ..
         }
       opts

@@ -11,7 +11,7 @@ import HWM.Core.Pkg (PkgName (..))
 import HWM.Domain.Bounds (deriveBounds)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
-import HWM.Domain.Dependencies (Dependency (Dependency), singleDeps)
+import HWM.Domain.Dependencies (Dependency (Dependency))
 import HWM.Domain.Environments (getTestedRange)
 import HWM.Domain.Registry (addDependency, lookupBounds)
 import HWM.Domain.Workspace (forWorkspaceTuple, resolveWorkspaces)
@@ -54,7 +54,4 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
         putLine $ padDots 16 "registry" <> format bounds <> " (already registered)"
       addDepToPackage workspaces (Dependency opsPkgName bounds)
   where
-    addDepToPackage ws dependency =
-      unless (null ws)
-        $ forWorkspaceTuple ws
-        $ \pkg -> updatePackage (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency))) pkg
+    addDepToPackage ws dependency = unless (null ws) $ forWorkspaceTuple ws $ addPkgDependency dependency

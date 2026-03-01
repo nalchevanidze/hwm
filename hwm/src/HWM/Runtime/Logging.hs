@@ -2,16 +2,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Runtime.Logging (logIssue) where
+module HWM.Runtime.Logging (logIssue, debug) where
 
 import Data.Time (getCurrentTime)
 import HWM.Core.Common (Name)
-import HWM.Core.Options (whenCI)
+import HWM.Core.Options (whenCI, whenDebug)
 import HWM.Core.Result (Severity)
-import HWM.Runtime.Cache (prepareDir)
+import HWM.Runtime.Files (prepareDir)
 import HWM.Runtime.UI (MonadUI, putLine)
 import Relude
 import qualified System.IO as TIO
+import HWM.Core.Formatting (chalk, Color (Cyan))
 
 logRoot :: FilePath
 logRoot = ".hwm/logs"
@@ -32,3 +33,6 @@ logIssue name severity table content = do
   liftIO $ TIO.appendFile path (toString header)
   whenCI $ putLine content
   pure path
+
+debug :: (MonadIO m, MonadUI m) => Text -> m ()
+debug msg = whenDebug $ putLine $ chalk Cyan "[DEBUG] " <> msg

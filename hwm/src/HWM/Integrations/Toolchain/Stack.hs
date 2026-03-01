@@ -19,6 +19,7 @@ module HWM.Integrations.Toolchain.Stack
     buildMatrix,
     runStack,
     stackGenBinary,
+    pkgYamlPath,
   )
 where
 
@@ -36,7 +37,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..), indentBlockNum, slugify)
 import HWM.Core.Options (Options (..), askOptions)
 import HWM.Core.Parsing (Parse (..))
-import HWM.Core.Pkg (Pkg (..), PkgName, pkgYamlPath)
+import HWM.Core.Pkg (Pkg (..), PkgName, pkgFile)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..), fromEither)
 import HWM.Core.Version (Version, parseGHCVersion)
 import HWM.Domain.ConfigT (ConfigT)
@@ -51,6 +52,12 @@ import System.Directory (createDirectoryIfMissing, doesFileExist)
 import System.FilePath (dropExtension, (</>))
 import System.FilePath.Glob (compile, globDir1)
 import System.FilePath.Posix (takeFileName)
+
+packageYamlFileName :: String
+packageYamlFileName = "package.yaml"
+
+pkgYamlPath :: Pkg -> FilePath
+pkgYamlPath pkg = pkgFile pkg packageYamlFileName
 
 data Stack = Stack
   { packages :: [FilePath],

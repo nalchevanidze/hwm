@@ -18,6 +18,7 @@ module HWM.Runtime.Files
     genSignature,
     Signature,
     getFileSignature,
+    prepareDir,
   )
 where
 
@@ -45,7 +46,7 @@ import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNul
 import HWM.Core.Formatting
 import HWM.Core.Result (Issue)
 import Relude hiding (readFile, writeFile)
-import System.Directory (doesFileExist, removeFile)
+import System.Directory (createDirectoryIfMissing, doesFileExist, removeFile)
 import System.FilePath (joinPath, splitDirectories)
 import System.IO.Error (isDoesNotExistError)
 
@@ -236,3 +237,6 @@ cleanRelativePath (Just name) =
     $ joinPath
     $ splitDirectories
     $ fromMaybe name (stripPrefix "./" name)
+
+prepareDir :: (MonadIO m) => FilePath -> m ()
+prepareDir dir = liftIO $ createDirectoryIfMissing True dir

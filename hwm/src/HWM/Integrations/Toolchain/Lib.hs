@@ -2,21 +2,21 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Integrations.Toolchain.Lib
   ( Library (..),
     updateDependencies,
-    updateLibrary,
-    updateLibraries,
-    checkDependencies,
-    checkLibrary,
-    checkLibraries,
+    getBoundsDiffs,
     BoundsDiff,
     Libraries,
+    MapDeps (..),
+    LibPath,
   )
 where
 
@@ -39,21 +39,31 @@ import Data.Aeson.Types
     withObject,
   )
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import GHC.Generics (Generic (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
-import HWM.Core.Pkg (Pkg (pkgMemberId), PkgName, pkgYamlPath)
+import HWM.Core.Pkg (Pkg (pkgMemberId), PkgName)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Bounds (Bounds)
 import HWM.Domain.Config (getRule)
 import HWM.Domain.ConfigT (ConfigT, config, pkgs)
-import HWM.Domain.Dependencies (Dependencies, Dependency (..), fromDependencyList, toDependencyList)
+import HWM.Domain.Dependencies
+  ( Dependencies,
+    Dependency (..),
+    HasDependencies (..),
+    fromDependencyList,
+    toDependencyList,
+  )
+import HWM.Integrations.Toolchain.Stack (pkgYamlPath)
 import HWM.Runtime.Files (aesonYAMLOptions)
 import Relude
 
 type Libraries = Map Name Library
 
 type BoundsDiff = (Text, PkgName, Bounds, Bounds)
+
+type LibPath = (Name, [Name])
 
 data Library = Library
   { sourceDirs :: Name,
@@ -88,9 +98,10 @@ updateDependency name = do
   getRule name pkgs cfg
 
 -- | Process dependencies with error handling - shared logic for both check and update
-processDependencies :: Pkg -> Text -> Dependencies -> (Dependency -> Maybe Bounds -> Maybe a) -> ConfigT [a]
-processDependencies pkg scope deps processor = go [] [] (toDependencyList deps)
+processDependencies :: Pkg -> [Text] -> Dependencies -> (Dependency -> Maybe Bounds -> Maybe a) -> ConfigT [a]
+processDependencies pkg path deps processor = go [] [] (toDependencyList deps)
   where
+    scope = T.intercalate ":" path
     go results issues [] = do
       -- Inject accumulated dependency issues at the end
       unless (null issues)
@@ -99,12 +110,7 @@ processDependencies pkg scope deps processor = go [] [] (toDependencyList deps)
             { issueTopic = pkgMemberId pkg,
               issueMessage = show (length issues) <> " dependency issue(s) in " <> scope,
               issueSeverity = SeverityWarning,
-              issueDetails =
-                Just
-                  DependencyIssue
-                    { issueDependencies = issues,
-                      issueFile = pkgYamlPath pkg
-                    }
+              issueDetails = Just DependencyIssue {issueDependencies = issues, issueFile = pkgYamlPath pkg}
             }
       pure (reverse results)
     go results issues (dep@(Dependency depName depBounds) : rest) = do
@@ -116,42 +122,43 @@ processDependencies pkg scope deps processor = go [] [] (toDependencyList deps)
         Nothing -> go results newIssues rest
         Just item -> go (item : results) newIssues rest
 
-updateDependencies :: Pkg -> Text -> Dependencies -> ConfigT Dependencies
-updateDependencies pkg scope deps = do
-  updated <- processDependencies pkg scope deps $ \(Dependency depName depBounds) maybeExpected ->
+updateDependencies :: (Pkg, [Text]) -> Dependencies -> ConfigT Dependencies
+updateDependencies (pkg, path) deps = do
+  updated <- processDependencies pkg path deps $ \(Dependency depName depBounds) maybeExpected ->
     case maybeExpected of
       Nothing -> Just (Dependency depName depBounds) -- Preserve original when lookup fails
       Just expected -> Just (Dependency depName expected)
   -- Return updated dependencies using fromDependencyList
   pure $ fromDependencyList updated
 
-checkDependencies :: Pkg -> Text -> Dependencies -> ConfigT [BoundsDiff]
-checkDependencies pkg scope deps =
-  processDependencies pkg scope deps $ \(Dependency depName depBounds) maybeExpected ->
+getBoundsDiffs :: Pkg -> ([Text], Dependencies) -> ConfigT [BoundsDiff]
+getBoundsDiffs pkg (path, deps) =
+  processDependencies pkg path deps $ \(Dependency depName depBounds) maybeExpected ->
     case maybeExpected of
       Nothing -> Nothing -- Skip unknown dependencies in diff
       Just expected ->
         if depBounds == expected
           then Nothing
-          else Just (scope, depName, depBounds, expected)
+          else Just (T.intercalate ":" path, depName, depBounds, expected)
 
-updateLibrary :: Pkg -> Text -> Library -> ConfigT Library
-updateLibrary pkg scope Library {..} = do
-  newDependencies <- traverse (updateDependencies pkg scope) dependencies
-  pure $ Library {dependencies = newDependencies, ..}
+type DepsCtx = (Pkg, [Text])
 
-checkLibrary :: Pkg -> Text -> Library -> ConfigT [BoundsDiff]
-checkLibrary _ _ Library {dependencies = Nothing} = pure []
-checkLibrary pkg scope Library {dependencies = Just deps} =
-  checkDependencies pkg scope deps
+class MapDeps a where
+  mapDeps :: DepsCtx -> (DepsCtx -> Dependencies -> ConfigT Dependencies) -> a -> ConfigT a
 
-updateLibraries :: Pkg -> Text -> Maybe Libraries -> ConfigT (Maybe Libraries)
-updateLibraries _ _ Nothing = pure Nothing
-updateLibraries pkg scope (Just libs) = do
-  updated <- traverse (\(name, lib) -> (name,) <$> updateLibrary pkg (scope <> ":" <> name) lib) (Map.toList libs)
-  pure $ Just $ Map.fromList updated
+instance MapDeps Dependencies where
+  mapDeps ctx f = f ctx
 
-checkLibraries :: Pkg -> Text -> Libraries -> ConfigT [BoundsDiff]
-checkLibraries pkg scope libs = concat <$> traverse step (Map.toList libs)
-  where
-    step (name, lib) = checkLibrary pkg (scope <> ":" <> name) lib
+instance MapDeps Library where
+  mapDeps ctx f Library {..} = do
+    newDependencies <- traverse (f ctx) dependencies
+    pure $ Library {dependencies = newDependencies, ..}
+
+instance (MapDeps a) => MapDeps (Map Text a) where
+  mapDeps (pkg, path) f = Map.traverseWithKey (\name lib -> mapDeps (pkg, path <> [name]) f lib)
+
+instance (MapDeps a) => MapDeps (Maybe a) where
+  mapDeps ctx f = maybe (pure Nothing) (fmap Just . mapDeps ctx f)
+
+instance HasDependencies Library where
+  collectDependencies scope (Library {..}) = collectDependencies scope dependencies

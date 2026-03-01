@@ -6,7 +6,7 @@ module HWM.Integrations.Scaffold (scaffoldPackage) where
 import qualified Data.Text as T
 import HWM.Core.Pkg (PkgName)
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Integrations.Toolchain.Package (newPackage, savePackage)
+import HWM.Integrations.Toolchain.Package (newPackage)
 import Relude
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
@@ -23,6 +23,5 @@ libHsTemplate =
 scaffoldPackage :: FilePath -> PkgName -> ConfigT ()
 scaffoldPackage targetDir pkgName = do
   liftIO $ createDirectoryIfMissing True (targetDir </> "src")
-  package <- newPackage pkgName
-  savePackage (targetDir </> "package.yaml") package
+  newPackage targetDir pkgName
   liftIO $ writeFile (targetDir </> "src/Lib.hs") (T.unpack libHsTemplate)
