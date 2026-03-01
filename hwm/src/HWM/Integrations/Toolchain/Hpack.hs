@@ -1,21 +1,24 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Integrations.Toolchain.Hpack (HpackPackage (..), emptyPackage) where
+module HWM.Integrations.Toolchain.Hpack (HpackPackage (..), emptyPackage, readHpackPackage) where
 
+import Control.Monad.Error.Class (MonadError)
+import Control.Monad.Except (MonadError (..))
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
-import HWM.Core.Pkg (IsPkg (..), PkgName (..))
+import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (..))
+import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Core.Version (Version)
 import HWM.Domain.Dependencies (Dependencies, HasDependencies (..))
 import HWM.Integrations.Toolchain.Lib
-  ( 
-    Libraries,
+  ( Libraries,
     Library (..),
     MapDeps (..),
   )
-import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
+import HWM.Runtime.Files (aesonYAMLOptionsAdvanced, readYaml)
 import Relude
 
 data HpackPackage = HpackPackage
@@ -95,3 +98,17 @@ emptyPackage name version dependencies =
       hpackInternalLibraries = Nothing,
       hpackForeignLibraries = Nothing
     }
+
+readHpackPackage :: (Monad m, MonadError Issue m, MonadIO m) => Pkg -> m HpackPackage
+readHpackPackage pkg =
+  maybe
+    ( throwError
+        $ Issue
+          { issueTopic = pkgMemberId pkg,
+            issueMessage = "pkg does not support hpack or could not find package file",
+            issueSeverity = SeverityWarning,
+            issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
+          }
+    )
+    readYaml
+    (hpackFile pkg)

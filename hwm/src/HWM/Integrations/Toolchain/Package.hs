@@ -26,8 +26,8 @@ import HWM.Domain.ConfigT (ConfigT, Env (config, pkgs), askVersion)
 import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyMap (..), HasDependencies (..), buildDependencyGraph, singleDeps, toDependencyList)
 import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspaceCore)
-import HWM.Integrations.Toolchain.Cabal (readCabalPackage, syncCabalPackage, HasSourceDirs (getSourceDirs))
-import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage)
+import HWM.Integrations.Toolchain.Cabal (HasSourceDirs (getSourceDirs), readCabalPackage, syncCabalPackage)
+import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage, readHpackPackage)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
     MapDeps (..),
@@ -37,20 +37,6 @@ import HWM.Integrations.Toolchain.Lib
 import HWM.Runtime.Files (readYaml, rewrite_, statusM)
 import Relude
 import System.FilePath ((</>))
-
-readPkg :: (Monad m, MonadError Issue m, MonadIO m) => Pkg -> m HpackPackage
-readPkg pkg =
-  maybe
-    ( throwError
-        $ Issue
-          { issueTopic = pkgMemberId pkg,
-            issueMessage = "pkg does not support hpack or could not find package file",
-            issueSeverity = SeverityWarning,
-            issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
-          }
-    )
-    readYaml
-    (hpackFile pkg)
 
 packageLibs :: Pkg -> ConfigT [(Text, Name)]
 packageLibs pkg = getSourceDirs [format $ pkgName pkg] <$> readCabalPackage pkg
@@ -113,7 +99,7 @@ savePackage :: FilePath -> HpackPackage -> ConfigT ()
 savePackage pkg package = rewrite_ pkg (const $ pure package)
 
 resolvePackages :: (Monad m, MonadError Issue m, MonadIO m) => [Pkg] -> m [HpackPackage]
-resolvePackages = traverse readPkg
+resolvePackages = traverse readHpackPackage
 
 deriveDependencyGraph :: ConfigT DependencyMap
 deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= resolvePackages)
