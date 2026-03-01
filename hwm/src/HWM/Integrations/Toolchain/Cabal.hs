@@ -19,35 +19,24 @@ import Data.Foldable (Foldable (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import Data.Traversable (for)
-import Distribution.Package (Dependency (..), unPackageName)
-import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, ignoreConditions, packageDescription)
+import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), TestSuite (..), UnqualComponentName, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Parsec
-import Distribution.Simple (VersionInterval (..))
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.Types.BuildInfo (BuildInfo (..))
 import Distribution.Types.CondTree (CondTree (..))
 import Distribution.Types.Library (Library (..))
 import Distribution.Utils.Path (getSymbolicPath)
 import Distribution.Verbosity (normal)
-import Distribution.Version
-  ( LowerBound (..),
-    UpperBound (..),
-    VersionRange,
-    asVersionIntervals,
-  )
-import qualified Distribution.Version as Cabal
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
-import HWM.Core.Pkg (IsPkg (..), Pkg (Pkg, hpackFile), PkgName (..))
+import HWM.Core.Pkg (IsPkg (..), Pkg (Pkg, hpackFile))
 import qualified HWM.Core.Pkg as P
-import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..), fromEither)
-import HWM.Core.Version (Version, fromCabalVersion)
-import HWM.Domain.Bounds (Bound (Bound), Bounds (..), Restriction (Max, Min))
+import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Domain.ConfigT (ConfigT)
 import qualified HWM.Domain.ConfigT as CT
+import HWM.Domain.Dependencies (HasDependencies (..))
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import HWM.Runtime.Files (remove)
 import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
@@ -114,23 +103,8 @@ syncCabalProject = do
   BuildEnvironment {..} <- getBuildEnvironment Nothing
   liftIO $ TIO.writeFile (optionsCabal ops) (generateCabalProject buildPkgs (toText buildGHC))
 
--- Helper to extract Haskell dependencies from a CondTree
--- It flattens the tree ignoring conditions (standard approach for workspace analysis)
-flattenDeps :: (Semigroup a) => CondTree v [Dependency] a -> [Dependency]
-flattenDeps condTree = snd $ ignoreConditions condTree
-
-convertName :: Dependency -> Name
-convertName (Dependency pkgName _ _) = T.pack $ unPackageName pkgName
-
--- | Extracts the VersionRange from a Dependency
-convertBounds :: (MonadFail m) => Dependency -> m Bounds
-convertBounds (Dependency _ bounds _) = toMinMax bounds
-
 data CabalPackage = CabalPackage
-  { cbName :: PkgName,
-    cbVersion :: Version,
-    cbDirectory :: FilePath,
-    cbDependencies :: Map Name Bounds,
+  { cbDirectory :: FilePath,
     cbOriginal :: GenericPackageDescription
   }
   deriving (Show)
@@ -147,45 +121,11 @@ readCabalFile pkg = do
 readCabalPackage :: (MonadIO m, MonadError Issue m) => Pkg -> m CabalPackage
 readCabalPackage pkg = do
   gpd <- readCabalFile pkg
-  let pd = packageDescription gpd
-  let pid = package pd
-  let version = fromCabalVersion $ pkgVersion pid
-  let libDeps = maybe [] flattenDeps (condLibrary gpd)
-  let subLibDeps = concatMap (flattenDeps . snd) (condSubLibraries gpd)
-  let exeDeps = concatMap (flattenDeps . snd) (condExecutables gpd)
-  let testDeps = concatMap (flattenDeps . snd) (condTestSuites gpd)
-
-  let allDeps = libDeps ++ subLibDeps ++ exeDeps ++ testDeps
-  depMap <- fmap Map.fromList $ for allDeps $ \d -> do
-    bounds <- fromEither "" (convertBounds d)
-    pure (convertName d, bounds)
-
   pure
     CabalPackage
-      { cbName = PkgName . toText . unPackageName $ pkgName pid,
-        cbVersion = version, -- Assuming your Version type matches
-        cbDependencies = depMap,
-        cbDirectory = takeDirectory (P.cabalFile pkg),
+      { cbDirectory = takeDirectory (P.cabalFile pkg),
         cbOriginal = gpd
       }
-
-isInclusive :: Cabal.Bound -> Bool
-isInclusive Cabal.InclusiveBound = True
-isInclusive Cabal.ExclusiveBound = False
-
-toBounds :: VersionInterval -> [Bound]
-toBounds (VersionInterval (LowerBound v lb) NoUpperBound) = [Bound Min (isInclusive lb) $ fromCabalVersion v]
-toBounds (VersionInterval (LowerBound v lb) (UpperBound v2 ub)) = [Bound Min (isInclusive lb) $ fromCabalVersion v, Bound Max (isInclusive ub) $ fromCabalVersion v2]
-
-toMinMax :: (MonadFail m) => VersionRange -> m Bounds
-toMinMax range = do
-  let intervals = map toBounds (asVersionIntervals range)
-  case sort (concat intervals) of
-    [] -> pure $ Bounds Nothing Nothing -- -none or empty range
-    intervals' ->
-      case (viaNonEmpty head intervals', viaNonEmpty last intervals') of
-        (Just x, Just y) -> pure $ Bounds (Just x) (Just y)
-        (_, _) -> pure $ Bounds Nothing Nothing
 
 class HasSourceDirs a where
   getSourceDirs :: [Text] -> a -> [(Text, Name)]
@@ -231,6 +171,9 @@ instance HasSourceDirs BuildInfo where
       withKey dir = (T.intercalate ":" path, format dir)
 
 instance IsPkg CabalPackage where
-  getPkgName = cbName
-  getPkgVersion = cbVersion
+  getPkgName = getPkgName . cbOriginal
+  getPkgVersion = getPkgVersion . cbOriginal
   setVersion version pkg = pkg {cbOriginal = setVersion version (cbOriginal pkg)}
+
+instance HasDependencies CabalPackage where
+  collectDependencies xs gpd = collectDependencies xs (cbOriginal gpd)
