@@ -8,7 +8,7 @@ module HWM.Integrations.Toolchain.Hpack (HpackPackage (..), emptyPackage) where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import HWM.Core.Pkg (IsPkg (..), PkgName (..))
 import HWM.Core.Version (Version)
-import HWM.Domain.Dependencies (HasDependencies (..), Dependencies)
+import HWM.Domain.Dependencies (Dependencies, HasDependencies (..))
 import HWM.Integrations.Toolchain.Lib
   ( HasSourceDirs (..),
     Libraries,
