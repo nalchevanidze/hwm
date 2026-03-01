@@ -14,9 +14,7 @@ module HWM.Integrations.Toolchain.Hie
 where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
-import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Format (..))
 import HWM.Core.Options (Options (..), askOptions)
 import HWM.Core.Pkg (Pkg (..), pkgFile)
 import HWM.Domain.ConfigT (ConfigT)
@@ -51,14 +49,14 @@ packHie :: Components -> Value
 packHie value = object [("cradle", object [("stack", toJSON value)])]
 
 genComponents :: Pkg -> ConfigT [Component]
-genComponents pkg = concatMap comp <$> packageLibs pkg
+genComponents pkg = map comp <$> packageLibs pkg
   where
     comp (tag, sourceDirs) =
-      [ Component
+      Component
           { path = "./" <> pkgFile pkg (toString sourceDirs),
             component = tag
           }
-      ]
+      
 
 syncHie :: ConfigT ()
 syncHie = do
