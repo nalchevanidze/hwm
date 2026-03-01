@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Integrations.Toolchain.Hpack (HpackPackage (..), emptyPackage) where
+module HWM.Integrations.Toolchain.Hpack (HpackPackage (..), emptyPackage, readHpackPackage) where
 
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (MonadError (..))

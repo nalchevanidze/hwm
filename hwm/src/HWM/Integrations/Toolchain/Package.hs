@@ -24,14 +24,14 @@ import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), Dependenc
 import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspaceCore)
 import HWM.Integrations.Toolchain.Cabal (readCabalPackage, syncCabalPackage)
-import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage)
+import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage, readHpackPackage)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
     MapDeps (..),
     getBoundsDiffs,
     updateDependencies,
   )
-import HWM.Runtime.Files (readYaml, rewrite_, statusM)
+import HWM.Runtime.Files (rewrite_, statusM)
 import Relude
 import System.FilePath ((</>))
 
@@ -92,8 +92,7 @@ deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd)
 
 validatePackage :: Pkg -> ConfigT ()
 validatePackage pkg = do
-  let path = fromMaybe (cabalFile pkg) (hpackFile pkg)
-  currentPkg <- readYaml path :: ConfigT HpackPackage
+  currentPkg <- readHpackPackage pkg
   expectedVersion <- askVersion
   let currentVersion = getPkgVersion currentPkg
       versionMatch = currentVersion == expectedVersion
@@ -104,7 +103,7 @@ validatePackage pkg = do
         { issueTopic = pkgMemberId pkg,
           issueMessage = "version mismatch: " <> format currentVersion <> " → " <> format expectedVersion,
           issueSeverity = SeverityWarning,
-          issueDetails = Just GenericIssue {issueFile = path}
+          issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
         }
   unless (null diffs)
     $ injectIssue
@@ -123,6 +122,6 @@ validatePackage pkg = do
             Just
               DependencyIssue
                 { issueDependencies = map (\(scope, depName, actual, expected) -> (scope, format depName, format actual, format expected)) diffs,
-                  issueFile = path
+                  issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)
                 }
         }
