@@ -41,7 +41,7 @@ import qualified Distribution.Version as Cabal
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
-import HWM.Core.Pkg (Pkg (Pkg, hpackFile), PkgName (..))
+import HWM.Core.Pkg (IsPkg (..), Pkg (Pkg, hpackFile), PkgName (..))
 import qualified HWM.Core.Pkg as P
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..), fromEither)
 import HWM.Core.Version (Version, fromCabalVersion)
@@ -149,7 +149,7 @@ readCabalPackage pkg = do
   gpd <- readCabalFile pkg
   let pd = packageDescription gpd
   let pid = package pd
-  version <- fromEither "" (fromCabalVersion $ pkgVersion pid)
+  let version = fromCabalVersion $ pkgVersion pid
   let libDeps = maybe [] flattenDeps (condLibrary gpd)
   let subLibDeps = concatMap (flattenDeps . snd) (condSubLibraries gpd)
   let exeDeps = concatMap (flattenDeps . snd) (condExecutables gpd)
@@ -173,13 +173,13 @@ isInclusive :: Cabal.Bound -> Bool
 isInclusive Cabal.InclusiveBound = True
 isInclusive Cabal.ExclusiveBound = False
 
-toBounds :: (MonadFail m) => VersionInterval -> m [Bound]
-toBounds (VersionInterval (LowerBound v lb) NoUpperBound) = sequence [Bound Min (isInclusive lb) <$> fromCabalVersion v]
-toBounds (VersionInterval (LowerBound v lb) (UpperBound v2 ub)) = sequence [Bound Min (isInclusive lb) <$> fromCabalVersion v, Bound Max (isInclusive ub) <$> fromCabalVersion v2]
+toBounds :: VersionInterval -> [Bound]
+toBounds (VersionInterval (LowerBound v lb) NoUpperBound) = [Bound Min (isInclusive lb) $ fromCabalVersion v]
+toBounds (VersionInterval (LowerBound v lb) (UpperBound v2 ub)) = [Bound Min (isInclusive lb) $ fromCabalVersion v, Bound Max (isInclusive ub) $ fromCabalVersion v2]
 
 toMinMax :: (MonadFail m) => VersionRange -> m Bounds
 toMinMax range = do
-  intervals <- traverse toBounds (asVersionIntervals range)
+  let intervals = map toBounds (asVersionIntervals range)
   case sort (concat intervals) of
     [] -> pure $ Bounds Nothing Nothing -- -none or empty range
     intervals' ->
@@ -229,3 +229,8 @@ instance HasSourceDirs BuildInfo where
   getSourceDirs path buildInfo = map (withKey . getSymbolicPath) (hsSourceDirs buildInfo)
     where
       withKey dir = (T.intercalate ":" path, format dir)
+
+instance IsPkg CabalPackage where
+  getPkgName = cbName
+  getPkgVersion = cbVersion
+  setVersion version pkg = pkg {cbOriginal = setVersion version (cbOriginal pkg)}

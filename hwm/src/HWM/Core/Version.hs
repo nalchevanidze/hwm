@@ -46,8 +46,10 @@ data Version = Version
       Eq
     )
 
-fromCabalVersion :: (MonadFail m) => Cabal.Version -> m Version
-fromCabalVersion = fromSeries . Cabal.versionNumbers
+fromCabalVersion :: Cabal.Version -> Version
+fromCabalVersion v = case fromSeries $ Cabal.versionNumbers v of
+  Left err -> error $ "Invalid Cabal version: " <> err
+  Right version -> version
 
 formatNixGhc :: Version -> Text
 formatNixGhc Version {..} = "ghc" <> T.concat (map (T.pack . show) [major, minor])

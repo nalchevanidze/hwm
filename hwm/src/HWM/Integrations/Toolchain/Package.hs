@@ -64,7 +64,7 @@ syncPackages = forWorkspaceCore $ \pkg -> updatePackage (mapPackage pkg) pkg
 mapPackage :: (MapDeps a, IsPkg a) => Pkg -> a -> ConfigT a
 mapPackage pkg package = do
   result <- mapDeps (pkg, []) updateDependencies package
-  setVersion result <$> askVersion
+  (`setVersion` result) <$> askVersion
 
 packageModifyDependencies :: (MapDeps a) => (Dependencies -> ConfigT Dependencies) -> Pkg -> a -> ConfigT a
 packageModifyDependencies f pkg = mapDeps (pkg, []) onlyMain
