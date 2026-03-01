@@ -26,7 +26,7 @@ import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), Dependenc
 import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspaceCore)
 import HWM.Integrations.Toolchain.Cabal (HasSourceDirs (getSourceDirs), readCabalPackage, syncCabalPackage)
-import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage, readHpackPackage)
+import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
     MapDeps (..),
@@ -98,7 +98,7 @@ savePackage :: FilePath -> HpackPackage -> ConfigT ()
 savePackage pkg package = rewrite_ pkg (const $ pure package)
 
 deriveDependencyGraph :: ConfigT DependencyMap
-deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readHpackPackage)
+deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readCabalPackage)
   where
     libDependencies = filter (\x -> fst x == ["library"] || fst x == ["dependencies"]) . collectDependencies []
 
