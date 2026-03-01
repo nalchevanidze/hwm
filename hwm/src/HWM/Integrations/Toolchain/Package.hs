@@ -43,7 +43,7 @@ packageLibs pkg = getSourceDirs [format $ pkgName pkg] <$> readCabalPackage pkg
 newPackage :: FilePath -> PkgName -> ConfigT ()
 newPackage targetDir name = do
   package <- mkPackage name
-  savePackage (targetDir </> "package.yaml") package
+  rewrite_ (targetDir </> "package.yaml") (const $ pure package)
 
 mkPackage :: PkgName -> ConfigT HpackPackage
 mkPackage name = do
@@ -93,9 +93,6 @@ updatePackage f pkg = do
   package <- updateHpackFile f pkg
   cabal <- syncCabalPackage pkg
   pure $ displayStatus [("pkg", package), ("cabal", cabal)]
-
-savePackage :: FilePath -> HpackPackage -> ConfigT ()
-savePackage pkg package = rewrite_ pkg (const $ pure package)
 
 deriveDependencyGraph :: ConfigT DependencyMap
 deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readCabalPackage)
