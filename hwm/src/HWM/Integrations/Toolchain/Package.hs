@@ -11,14 +11,10 @@ module HWM.Integrations.Toolchain.Package
     addPkgDependency,
     newPackage,
     deriveDependencyGraph,
-    packageLibs,
-    resolvePackages,
   )
 where
 
-import Control.Monad.Except (MonadError (..))
-import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Format (..), Status (Checked), displayStatus)
+import HWM.Core.Formatting (Format (..), displayStatus)
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), pkgMemberId)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Config (getRule)
@@ -26,49 +22,27 @@ import HWM.Domain.ConfigT (ConfigT, Env (config, pkgs), askVersion)
 import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyMap (..), HasDependencies (..), buildDependencyGraph, singleDeps, toDependencyList)
 import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspaceCore)
-import HWM.Integrations.Toolchain.Cabal (syncCabalPackage)
-import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage)
+import HWM.Integrations.Toolchain.Cabal (readCabalPackage, syncCabalPackage)
+import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage, readHpackPackage, rewriteHpackFile)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
-    HasSourceDirs (getSourceDirs),
     MapDeps (..),
     getBoundsDiffs,
     updateDependencies,
   )
-import HWM.Runtime.Files (readYaml, rewrite_, statusM)
+import HWM.Runtime.Files (rewrite_)
 import Relude
 import System.FilePath ((</>))
 
-readPkg :: (Monad m, MonadError Issue m, MonadIO m) => Pkg -> m HpackPackage
-readPkg pkg =
-  maybe
-    ( throwError
-        $ Issue
-          { issueTopic = pkgMemberId pkg,
-            issueMessage = "pkg does not support hpack or could not find package file",
-            issueSeverity = SeverityWarning,
-            issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
-          }
-    )
-    readYaml
-    (hpackFile pkg)
-
-packageLibs :: Pkg -> ConfigT [(Text, Name)]
-packageLibs pkg = getSourceDirs ("", []) <$> readPkg pkg
-
 newPackage :: FilePath -> PkgName -> ConfigT ()
 newPackage targetDir name = do
-  package <- mkPackage name
-  savePackage (targetDir </> "package.yaml") package
-
-mkPackage :: PkgName -> ConfigT HpackPackage
-mkPackage name = do
   cfg <- asks config
   ps <- asks pkgs
   let baseName = PkgName "base"
   version <- askVersion
   base <- getRule baseName ps cfg
-  pure $ emptyPackage name version (M.singleDeps (Dependency baseName base))
+  let package = emptyPackage name version (M.singleDeps (Dependency baseName base))
+  rewrite_ (targetDir </> "package.yaml") (const $ pure package)
 
 packageDiffs :: (HasDependencies a) => Pkg -> a -> ConfigT [BoundsDiff]
 packageDiffs pkg package = concat <$> traverse (getBoundsDiffs pkg) (collectDependencies [] package)
@@ -79,7 +53,7 @@ syncPackages = forWorkspaceCore $ \pkg -> updatePackage (mapPackage pkg) pkg
 mapPackage :: (MapDeps a, IsPkg a) => Pkg -> a -> ConfigT a
 mapPackage pkg package = do
   result <- mapDeps (pkg, []) updateDependencies package
-  setVersion result <$> askVersion
+  (`setVersion` result) <$> askVersion
 
 packageModifyDependencies :: (MapDeps a) => (Dependencies -> ConfigT Dependencies) -> Pkg -> a -> ConfigT a
 packageModifyDependencies f pkg = mapDeps (pkg, []) onlyMain
@@ -90,42 +64,21 @@ packageModifyDependencies f pkg = mapDeps (pkg, []) onlyMain
 addPkgDependency :: Dependency -> Pkg -> ConfigT Text
 addPkgDependency dependency pkg = updatePackage (packageModifyDependencies (\deps -> pure (deps <> singleDeps dependency)) pkg) pkg
 
-updateHpackFile :: (MonadIO m, MonadError Issue m) => (HpackPackage -> m HpackPackage) -> Pkg -> m Status
-updateHpackFile f pkg = do
-  maybe (pure Checked) (\path -> statusM path (rewrite_ path maybePackage)) (hpackFile pkg)
-  where
-    maybePackage Nothing =
-      throwError
-        $ Issue
-          { issueTopic = pkgMemberId pkg,
-            issueMessage = "could not find package file",
-            issueSeverity = SeverityWarning,
-            issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
-          }
-    maybePackage (Just package) = f package
-
 updatePackage :: (HpackPackage -> ConfigT HpackPackage) -> Pkg -> ConfigT Text
-updatePackage f pkg = do
-  package <- updateHpackFile f pkg
-  cabal <- syncCabalPackage pkg
-  pure $ displayStatus [("pkg", package), ("cabal", cabal)]
-
-savePackage :: FilePath -> HpackPackage -> ConfigT ()
-savePackage pkg package = rewrite_ pkg (const $ pure package)
-
-resolvePackages :: (Monad m, MonadError Issue m, MonadIO m) => [Pkg] -> m [HpackPackage]
-resolvePackages = traverse readPkg
+updatePackage f pkg =
+  displayStatus
+    [ ("pkg", rewriteHpackFile f pkg),
+      ("cabal", syncCabalPackage pkg)
+    ]
 
 deriveDependencyGraph :: ConfigT DependencyMap
-deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= resolvePackages)
+deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readCabalPackage)
   where
-    libDependencies = filter (\x -> fst x == ["library"] || fst x == ["dependencies"]) . collectDependencies []
+    libDependencies = filter (\x -> fst x == ["library"]) . collectDependencies []
 
--- | Validate package against expected version and configuration
 validatePackage :: Pkg -> ConfigT ()
 validatePackage pkg = do
-  let path = fromMaybe (cabalFile pkg) (hpackFile pkg)
-  currentPkg <- readYaml path :: ConfigT HpackPackage
+  currentPkg <- readHpackPackage pkg
   expectedVersion <- askVersion
   let currentVersion = getPkgVersion currentPkg
       versionMatch = currentVersion == expectedVersion
@@ -136,7 +89,7 @@ validatePackage pkg = do
         { issueTopic = pkgMemberId pkg,
           issueMessage = "version mismatch: " <> format currentVersion <> " → " <> format expectedVersion,
           issueSeverity = SeverityWarning,
-          issueDetails = Just GenericIssue {issueFile = path}
+          issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
         }
   unless (null diffs)
     $ injectIssue
@@ -155,6 +108,6 @@ validatePackage pkg = do
             Just
               DependencyIssue
                 { issueDependencies = map (\(scope, depName, actual, expected) -> (scope, format depName, format actual, format expected)) diffs,
-                  issueFile = path
+                  issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)
                 }
         }

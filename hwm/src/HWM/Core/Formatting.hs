@@ -41,6 +41,7 @@ import Data.Foldable (maximum)
 import qualified Data.List as List
 import Data.Text (pack)
 import qualified Data.Text as T
+import Distribution.PackageDescription (UnqualComponentName, unUnqualComponentName)
 import HWM.Core.Result (MonadIssue (catchIssues), Severity (..))
 import Relude
 
@@ -102,10 +103,11 @@ statusFromSeverity Nothing = Checked
 monadStatus :: (Functor m, MonadIssue m) => m b -> m Status
 monadStatus x = statusFromSeverity . fst <$> catchIssues x
 
-displayStatus :: [(Text, Status)] -> Text
-displayStatus ls =
-  let status = deriveStatus (map snd ls)
-   in if isOk status then statusIcon status else formatStatus ls
+displayStatus :: (Monad m) => [(Text, m Status)] -> m Text
+displayStatus ls = do
+  statuses <- mapM snd ls
+  let status = deriveStatus statuses
+  if isOk status then return (statusIcon status) else return (formatStatus (zip (map fst ls) statuses))
 
 formatTemplate :: [(Text, Text)] -> Text -> Text
 formatTemplate vars template =
@@ -160,6 +162,9 @@ instance Format Text where
 
 instance Format Value where
   format = format . unpack . encode
+
+instance Format UnqualComponentName where
+  format = pack . unUnqualComponentName
 
 availableOptions :: (Format a) => [a] -> Text
 availableOptions xs = "Available options: " <> T.intercalate ", " (map format xs)

@@ -49,7 +49,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId Noth
       let ws = Map.insert groupId (WorkGroup opsWorkspaceDir [] opsPrefix) wss
       updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ sectionWorkspace $ do
         putLine ""
-        putLine $ "• " <> chalk Bold groupId <> " " <> displayStatus [("added", Checked)]
+        displayStatus [("added", pure Checked)] >>= putLine . (("• " <> chalk Bold groupId <> " ") <>)
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Just memberId), ..}) = do
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
@@ -60,7 +60,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Jus
     $ do
       putLine ""
       putLine $ "• " <> chalk Bold groupId
-      putLine $ subPathSign <> padDots 16 memberId <> displayStatus [("added", Checked)]
+      displayStatus [("added", pure Checked)] >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
       sectionConfig
         [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
           ("hie.yaml", syncHie $> chalk Green "✓")

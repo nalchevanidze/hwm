@@ -28,11 +28,19 @@ import Data.Aeson
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
+import Distribution.PackageDescription (Benchmark (..), BuildInfo (..), Executable (..), GenericPackageDescription, Library (..), TestSuite (..), UnqualComponentName)
+import qualified Distribution.PackageDescription as Cabal
+import Distribution.Simple (UpperBound (..), VersionRange, asVersionIntervals)
+import Distribution.Types.CondTree
+import Distribution.Types.GenericPackageDescription (GenericPackageDescription (..))
+import Distribution.Version (LowerBound (..), VersionInterval (..))
+import qualified Distribution.Version as Cabal
 import HWM.Core.Formatting (Format (..), formatTable, subPathSign)
 import HWM.Core.Parsing (Parse (..), firstWord)
-import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName)
+import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (..))
 import HWM.Core.Result (Issue (..), Severity (..))
-import HWM.Domain.Bounds (Bounds, boundsBetter, hasBounds)
+import HWM.Core.Version (fromCabalVersion)
+import HWM.Domain.Bounds (Bound (..), Bounds (..), Restriction (..), boundsBetter, hasBounds)
 import Relude hiding
   ( Undefined,
     break,
@@ -191,3 +199,66 @@ instance (HasDependencies a) => HasDependencies (Maybe a) where
 
 collectNormalizedDependencies :: (HasDependencies a) => a -> [Dependency]
 collectNormalizedDependencies package = normalizeDependencies (concatMap (toDependencyList . snd) $ collectDependencies [] package)
+
+instance HasDependencies GenericPackageDescription where
+  collectDependencies xs GenericPackageDescription {..} =
+    concat
+      [ collectDependencies (xs <> ["library"]) condLibrary,
+        collectDependencies (xs <> ["tests"]) condTestSuites,
+        collectDependencies (xs <> ["executables"]) condExecutables,
+        collectDependencies (xs <> ["benchmarks"]) condBenchmarks
+      ]
+
+instance (HasDependencies deps, HasDependencies lib) => HasDependencies (CondTree v deps lib) where
+  collectDependencies path condTree =
+    collectDependencies path (condTreeConstraints condTree)
+      <> concatMap (collectDependencies path) (condTreeComponents condTree)
+
+instance (HasDependencies a) => HasDependencies [(UnqualComponentName, a)] where
+  collectDependencies path = concatMap (\(name, info) -> collectDependencies (path <> [format name]) info)
+
+instance (HasDependencies a) => HasDependencies (CondBranch v d a) where
+  collectDependencies path = concatMap (collectDependencies path)
+
+fromCabalDependency :: Cabal.Dependency -> Dependency
+fromCabalDependency (Cabal.Dependency pkgName versionRange _) =
+  Dependency (PkgName (format $ Cabal.unPackageName pkgName)) (toMinMax versionRange)
+
+fromCabalDependencies :: [Cabal.Dependency] -> Dependencies
+fromCabalDependencies = fromDependencyList . map fromCabalDependency
+
+instance HasDependencies [Cabal.Dependency] where
+  collectDependencies path deps = [(path, fromCabalDependencies deps)]
+
+instance HasDependencies Library where
+  collectDependencies path deps = collectDependencies path (libBuildInfo deps)
+
+instance HasDependencies TestSuite where
+  collectDependencies path deps = collectDependencies path (testBuildInfo deps)
+
+instance HasDependencies Executable where
+  collectDependencies path deps = collectDependencies path (buildInfo deps)
+
+instance HasDependencies Benchmark where
+  collectDependencies path buildInfo = collectDependencies path (benchmarkBuildInfo buildInfo)
+
+instance HasDependencies Cabal.BuildInfo where
+  collectDependencies path buildInfo = collectDependencies path (fromCabalDependencies (targetBuildDepends buildInfo))
+
+isInclusive :: Cabal.Bound -> Bool
+isInclusive Cabal.InclusiveBound = True
+isInclusive Cabal.ExclusiveBound = False
+
+toBounds :: VersionInterval -> [Bound]
+toBounds (VersionInterval (LowerBound v lb) NoUpperBound) = [Bound Min (isInclusive lb) $ fromCabalVersion v]
+toBounds (VersionInterval (LowerBound v lb) (UpperBound v2 ub)) = [Bound Min (isInclusive lb) $ fromCabalVersion v, Bound Max (isInclusive ub) $ fromCabalVersion v2]
+
+toMinMax :: VersionRange -> Bounds
+toMinMax range = do
+  let intervals = map toBounds (asVersionIntervals range)
+  case sort (concat intervals) of
+    [] -> Bounds Nothing Nothing -- -none or empty range
+    intervals' ->
+      case (viaNonEmpty head intervals', viaNonEmpty last intervals') of
+        (Just x, Just y) -> Bounds (Just x) (Just y)
+        (_, _) -> Bounds Nothing Nothing
