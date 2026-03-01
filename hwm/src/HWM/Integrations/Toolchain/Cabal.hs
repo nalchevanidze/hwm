@@ -21,7 +21,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Traversable (for)
 import Distribution.Package (Dependency (..), unPackageName)
-import Distribution.PackageDescription (GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), ignoreConditions, packageDescription)
+import Distribution.PackageDescription (Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), UnqualComponentName, ignoreConditions, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Parsec
 import Distribution.Simple (VersionInterval (..))
@@ -203,12 +203,19 @@ instance HasSourceDirs CabalPackage where
 instance HasSourceDirs GenericPackageDescription where
   getSourceDirs p GenericPackageDescription {..} =
     getSourceDirs (p <> ["lib"]) condLibrary
+      <> getSourceDirs (p <> ["exe"]) condExecutables
 
 instance (HasSourceDirs a) => HasSourceDirs (CondTree v c a) where
   getSourceDirs path condTree = getSourceDirs path (condTreeData condTree)
 
+instance (HasSourceDirs a) => HasSourceDirs [(UnqualComponentName, a)] where
+  getSourceDirs path = concatMap (\(name, info) -> getSourceDirs (path <> [format name]) info)
+
 instance HasSourceDirs Library where
   getSourceDirs path Library {..} = getSourceDirs path libBuildInfo
+
+instance HasSourceDirs Executable where
+  getSourceDirs path Executable {..} = getSourceDirs path buildInfo
 
 instance HasSourceDirs BuildInfo where
   getSourceDirs path buildInfo = map (withKey . getSymbolicPath) (hsSourceDirs buildInfo)

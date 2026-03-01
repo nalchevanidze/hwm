@@ -41,6 +41,7 @@ import Data.Foldable (maximum)
 import qualified Data.List as List
 import Data.Text (pack)
 import qualified Data.Text as T
+import Distribution.PackageDescription (UnqualComponentName, unUnqualComponentName)
 import HWM.Core.Result (MonadIssue (catchIssues), Severity (..))
 import Relude
 
@@ -160,6 +161,9 @@ instance Format Text where
 
 instance Format Value where
   format = format . unpack . encode
+
+instance Format UnqualComponentName where
+  format = pack . unUnqualComponentName
 
 availableOptions :: (Format a) => [a] -> Text
 availableOptions xs = "Available options: " <> T.intercalate ", " (map format xs)
