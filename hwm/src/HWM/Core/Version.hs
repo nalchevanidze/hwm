@@ -18,6 +18,7 @@ module HWM.Core.Version
     selectEra,
     Era (..),
     detectResolver,
+    fromCabalVersion,
   )
 where
 
@@ -28,6 +29,7 @@ import Data.Aeson
   )
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
+import qualified Distribution.Simple as Cabal
 import GHC.Show (Show (..))
 import HWM.Core.Formatting (Format (..), formatList)
 import HWM.Core.Has (Has (obtain))
@@ -43,6 +45,9 @@ data Version = Version
     ( Generic,
       Eq
     )
+
+fromCabalVersion :: (MonadFail m) => Cabal.Version -> m Version
+fromCabalVersion = fromSeries . Cabal.versionNumbers
 
 formatNixGhc :: Version -> Text
 formatNixGhc Version {..} = "ghc" <> T.concat (map (T.pack . show) [major, minor])

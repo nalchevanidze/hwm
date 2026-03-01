@@ -50,7 +50,6 @@ import HWM.Core.Formatting (Color (..), availableOptions, chalk, commonPrefix, g
 import HWM.Core.Has (Has (..), askEnv)
 import HWM.Core.Pkg (Pkg (..), PkgName (..), makePkg)
 import HWM.Core.Result
-import HWM.Domain.Dependencies (DependencyGraph, sortByDependencyHierarchy)
 import HWM.Runtime.Files (cleanRelativePath)
 import HWM.Runtime.UI (MonadUI, putLine, sectionWorkspace)
 import Relude
@@ -171,14 +170,13 @@ resolveT pkgs (Just target) =
     Just p -> pure [p]
     Nothing -> throwError $ fromString $ toString $ "Target not found: " <> target
 
-buildWorkspace :: (Monad m, MonadError Issue m) => DependencyGraph -> [Pkg] -> m Workspace
-buildWorkspace graph = fmap (Map.fromList . concat) . traverse groupToWorkspace . groupBy sameGroup . sortOn pkgGroup
+buildWorkspace :: (Monad m, MonadError Issue m) => [Pkg] -> m Workspace
+buildWorkspace = fmap (Map.fromList . concat) . traverse groupToWorkspace . groupBy sameGroup . sortOn pkgGroup
   where
     sameGroup left right = pkgGroup left == pkgGroup right
     groupToWorkspace [] = pure []
     groupToWorkspace (pkg : pkgs) = do
-      sortPkgs <- sortByDependencyHierarchy graph (pkg : pkgs)
-      let (prefix, members) = commonPrefix (map pkgMemberId sortPkgs)
+      let (prefix, members) = commonPrefix (map pkgMemberId (pkg : pkgs))
       pure
         [ ( if T.null (pkgGroup pkg) then "libs" else slugify (pkgGroup pkg),
             WorkGroup

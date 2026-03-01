@@ -14,16 +14,17 @@ module HWM.Integrations.Toolchain.Hie
 where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
-import qualified Data.Map as M
+import qualified Data.Map as Map
+import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Options (Options (..), askOptions)
-import HWM.Core.Pkg (Pkg (..), PkgName, pkgFile, pkgYamlPath)
+import HWM.Core.Pkg (Pkg (..), pkgFile)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Workspace (allPackages)
-import HWM.Integrations.Toolchain.Lib (Libraries, Library (..))
-import HWM.Integrations.Toolchain.Package (Package (..))
-import HWM.Runtime.Files (readYaml, rewrite_)
+import HWM.Integrations.Toolchain.Lib (Library (..))
+import HWM.Integrations.Toolchain.Package (packageLibs)
+import HWM.Runtime.Files (rewrite_)
 import Relude
 
 data Component = Component
@@ -51,30 +52,15 @@ data Components = Components
 packHie :: Components -> Value
 packHie value = object [("cradle", object [("stack", toJSON value)])]
 
-(<:>) :: (Semigroup a, IsString a) => a -> a -> a
-(<:>) name tag = name <> ":" <> tag
-
 genComponents :: Pkg -> ConfigT [Component]
-genComponents path = do
-  Package {..} <- readYaml (pkgYamlPath path)
-  pure
-    $ comp name "lib" library
-    <> compGroup name "test" tests
-    <> compGroup name "exe" executables
-    <> compGroup name "bench" benchmarks
+genComponents pkg = concatMap comp . Map.toList <$> packageLibs pkg
   where
-    compGroup :: PkgName -> Text -> Maybe Libraries -> [Component]
-    compGroup name tag = concatMap mkComp . concatMap M.toList . maybeToList
-      where
-        mkComp (k, lib) = comp name (tag <:> k) (Just lib)
-    comp :: PkgName -> Text -> Maybe Library -> [Component]
-    comp name tag (Just Library {sourceDirs}) =
+    comp ((global, tags), Library {sourceDirs}) =
       [ Component
-          { path = "./" <> pkgFile path (toString sourceDirs),
-            component = format name <:> tag
+          { path = "./" <> pkgFile pkg (toString sourceDirs),
+            component = T.intercalate ":" ([format $ pkgName pkg, global] <> tags)
           }
       ]
-    comp _ _ _ = []
 
 syncHie :: ConfigT ()
 syncHie = do

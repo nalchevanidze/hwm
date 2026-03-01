@@ -2,7 +2,7 @@ cradle:
   stack:
     stackYaml: ./stack.yaml
     components:
-    - path: ./hwm/src
-      component: hwm:lib
     - path: ./hwm/app
       component: hwm:exe:hwm
+    - path: ./hwm/src
+      component: hwm:lib

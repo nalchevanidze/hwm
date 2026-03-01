@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -10,9 +11,12 @@ module HWM.Domain.Dependencies
     fromDependencyList,
     mergeDependencies,
     normalizeDependencies,
-    DependencyGraph (..),
+    DependencyMap (..),
     sortByDependencyHierarchy,
     singleDeps,
+    HasDependencies (..),
+    collectNormalizedDependencies,
+    buildDependencyGraph,
   )
 where
 
@@ -26,7 +30,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import HWM.Core.Formatting (Format (..), formatTable, subPathSign)
 import HWM.Core.Parsing (Parse (..), firstWord)
-import HWM.Core.Pkg (Pkg (..), PkgName)
+import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName)
 import HWM.Core.Result (Issue (..), Severity (..))
 import HWM.Domain.Bounds (Bounds, boundsBetter, hasBounds)
 import Relude hiding
@@ -90,9 +94,18 @@ mergeDependencies = Map.elems . foldl' step Map.empty
 normalizeDependencies :: [Dependency] -> [Dependency]
 normalizeDependencies = filter (hasBounds . bounds) . mergeDependencies
 
-newtype DependencyGraph = DependencyGraph (Map PkgName [PkgName])
+newtype DependencyMap = DependencyMap (Map PkgName [PkgName])
 
-instance Format DependencyGraph where
+buildDependencyGraph :: (IsPkg a) => (a -> [Dependency]) -> [a] -> DependencyMap
+buildDependencyGraph collectDeps packages = DependencyMap $ Map.fromList [(getPkgName pkg, internalDeps pkg) | pkg <- packages]
+  where
+    internalNames = Set.fromList (map getPkgName packages)
+    internalDeps pkg = mapMaybe selectInternal (collectDeps pkg)
+      where
+        selectInternal (Dependency depName _) =
+          if Set.member depName internalNames then Just depName else Nothing
+
+instance Format DependencyMap where
   format graph = T.intercalate "\n" (map (formatTree 0) (toTree graph))
 
 formatTree :: Int -> Tree -> Text
@@ -103,8 +116,8 @@ formatTree depth (Node pkg deps) = newLine <> format pkg <> children
 
 data Tree = Node PkgName [Tree]
 
-toTree :: DependencyGraph -> [Tree]
-toTree (DependencyGraph graph) =
+toTree :: DependencyMap -> [Tree]
+toTree (DependencyMap graph) =
   let allPkgs = Map.keysSet graph <> foldMap Set.fromList (Map.elems graph)
       dependentPkgs = foldMap Set.fromList (Map.elems graph)
       rootPkgs = Set.toList (Set.difference allPkgs dependentPkgs)
@@ -120,8 +133,8 @@ buildTree graph visited pkg =
           childTrees = map (buildTree graph newVisited) deps
        in Node pkg childTrees
 
-topologicalSort :: DependencyGraph -> Either [PkgName] [PkgName]
-topologicalSort (DependencyGraph graph) = goFunc [] initialZero indegreeMap
+topologicalSort :: DependencyMap -> Either [PkgName] [PkgName]
+topologicalSort (DependencyMap graph) = goFunc [] initialZero indegreeMap
   where
     nodes = Map.keysSet graph <> foldMap Set.fromList (Map.elems graph)
     indegreeMap = foldl' updateIndegree baseIndegree (Map.toList graph)
@@ -147,7 +160,7 @@ topologicalSort (DependencyGraph graph) = goFunc [] initialZero indegreeMap
           updatedZeros = if deg == 0 then Set.insert neighbour zeros else zeros
        in (updatedZeros, updatedIndegrees)
 
-sortByDependencyHierarchy :: (MonadError Issue m) => DependencyGraph -> [Pkg] -> m [Pkg]
+sortByDependencyHierarchy :: (MonadError Issue m) => DependencyMap -> [Pkg] -> m [Pkg]
 sortByDependencyHierarchy graph ns = do
   case topologicalSort graph of
     Left depCycle ->
@@ -163,3 +176,18 @@ sortByDependencyHierarchy graph ns = do
       let indexes = Map.fromList (zip sortedNames [0 ..] :: [(PkgName, Int)])
           findIndex pkg = Map.findWithDefault maxBound (pkgName pkg) indexes
        in pure $ sortOn (Down . findIndex) ns
+
+class HasDependencies a where
+  collectDependencies :: [Text] -> a -> [([Text], Dependencies)]
+
+instance HasDependencies Dependencies where
+  collectDependencies scope lib = [(scope, lib)]
+
+instance (HasDependencies a) => HasDependencies (Map Text a) where
+  collectDependencies scope libs = concatMap (\(name, lib) -> collectDependencies (scope <> [name]) lib) (Map.toList libs)
+
+instance (HasDependencies a) => HasDependencies (Maybe a) where
+  collectDependencies scope = maybe [] (collectDependencies scope)
+
+collectNormalizedDependencies :: (HasDependencies a) => a -> [Dependency]
+collectNormalizedDependencies package = normalizeDependencies (concatMap (toDependencyList . snd) $ collectDependencies [] package)

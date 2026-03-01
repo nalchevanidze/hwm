@@ -8,7 +8,7 @@ module HWM.Domain.Registry
     getDependencies,
     lookupBounds,
     addDependency,
-    initRegistry,
+    deriveRegistry,
     mapWithName,
     mapDeps,
   )
@@ -25,10 +25,10 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import HWM.Core.Formatting (Format (..), formatTableRow)
-import HWM.Core.Pkg (PkgName)
+import HWM.Core.Pkg (IsPkg (..), PkgName)
 import HWM.Core.Result (Issue)
 import HWM.Domain.Bounds (Bounds)
-import HWM.Domain.Dependencies (Dependency (..), fromDependencyList, normalizeDependencies, unpackDeps)
+import HWM.Domain.Dependencies (Dependency (..), HasDependencies, collectNormalizedDependencies, fromDependencyList, normalizeDependencies, unpackDeps)
 import HWM.Runtime.Files (select)
 import Relude hiding
   ( Undefined,
@@ -69,12 +69,13 @@ getDependencies (Registry m) = map (uncurry Dependency) $ Map.toList m
 addDependency :: Dependency -> Registry -> Registry
 addDependency (Dependency n b) (Registry m) = Registry $ Map.insert n b m
 
-initRegistry :: [PkgName] -> [Dependency] -> Registry
-initRegistry internalPkgs deps =
-  let externals = filter isExternal (normalizeDependencies deps)
+deriveRegistry :: (HasDependencies a, IsPkg a) => [a] -> Registry
+deriveRegistry packages =
+  let deps = concatMap collectNormalizedDependencies packages
+      externals = filter isExternal (normalizeDependencies deps)
    in Registry . unpackDeps . fromDependencyList $ sortOn name externals
   where
-    internals = Set.fromList internalPkgs
+    internals = Set.fromList (map getPkgName packages)
     isExternal dep = not (Set.member (name dep) internals)
 
 mapWithName :: (PkgName -> Bounds -> b) -> Registry -> [b]

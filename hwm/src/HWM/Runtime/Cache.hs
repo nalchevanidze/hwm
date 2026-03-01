@@ -18,7 +18,6 @@ module HWM.Runtime.Cache
     getVersions,
     Versions,
     VersionMap,
-    prepareDir,
     getSnapshotGHC,
     Snapshot (..),
     getSnapshot,
@@ -139,8 +138,6 @@ getVersions name = do
       modifyCache (Cache tvar) (\reg -> reg {versions = Map.singleton name vs <> versions reg})
       pure vs
 
-prepareDir :: (MonadIO m) => FilePath -> m ()
-prepareDir dir = liftIO $ createDirectoryIfMissing True dir
 
 data Snapshot = Snapshot {snapshotCompiler :: Version, snapshotPackages :: Map PkgName Version}
   deriving (Show)
