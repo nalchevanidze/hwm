@@ -138,7 +138,6 @@ getVersions name = do
       modifyCache (Cache tvar) (\reg -> reg {versions = Map.singleton name vs <> versions reg})
       pure vs
 
-
 data Snapshot = Snapshot {snapshotCompiler :: Version, snapshotPackages :: Map PkgName Version}
   deriving (Show)
 

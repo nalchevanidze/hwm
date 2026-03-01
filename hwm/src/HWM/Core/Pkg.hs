@@ -52,6 +52,7 @@ data Pkg = Pkg
 
 class IsPkg a where
   getPkgName :: a -> PkgName
+
   -- version
   getPkgVersion :: a -> Version
   setVersion :: a -> Version -> a
