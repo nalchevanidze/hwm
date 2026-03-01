@@ -11,12 +11,10 @@ module HWM.Integrations.Toolchain.Package
     addPkgDependency,
     newPackage,
     deriveDependencyGraph,
-    packageLibs,
   )
 where
 
 import Control.Monad.Except (MonadError (..))
-import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (Checked), displayStatus)
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), pkgMemberId)
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
@@ -25,7 +23,7 @@ import HWM.Domain.ConfigT (ConfigT, Env (config, pkgs), askVersion)
 import HWM.Domain.Dependencies (Dependencies, Dependency (Dependency), DependencyMap (..), HasDependencies (..), buildDependencyGraph, singleDeps, toDependencyList)
 import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspaceCore)
-import HWM.Integrations.Toolchain.Cabal (HasSourceDirs (getSourceDirs), readCabalPackage, syncCabalPackage)
+import HWM.Integrations.Toolchain.Cabal (readCabalPackage, syncCabalPackage)
 import HWM.Integrations.Toolchain.Hpack (HpackPackage, emptyPackage)
 import HWM.Integrations.Toolchain.Lib
   ( BoundsDiff,
@@ -36,9 +34,6 @@ import HWM.Integrations.Toolchain.Lib
 import HWM.Runtime.Files (readYaml, rewrite_, statusM)
 import Relude
 import System.FilePath ((</>))
-
-packageLibs :: Pkg -> ConfigT [(Text, Name)]
-packageLibs pkg = getSourceDirs [format $ pkgName pkg] <$> readCabalPackage pkg
 
 newPackage :: FilePath -> PkgName -> ConfigT ()
 newPackage targetDir name = do
@@ -95,7 +90,6 @@ deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd)
   where
     libDependencies = filter (\x -> fst x == ["library"] || fst x == ["dependencies"]) . collectDependencies []
 
--- | Validate package against expected version and configuration
 validatePackage :: Pkg -> ConfigT ()
 validatePackage pkg = do
   let path = fromMaybe (cabalFile pkg) (hpackFile pkg)
