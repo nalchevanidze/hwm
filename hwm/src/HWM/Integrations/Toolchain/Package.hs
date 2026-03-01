@@ -88,7 +88,7 @@ updatePackage f pkg = do
 deriveDependencyGraph :: ConfigT DependencyMap
 deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readCabalPackage)
   where
-    libDependencies = filter (\x -> fst x == ["library"] || fst x == ["dependencies"]) . collectDependencies []
+    libDependencies = filter (\x -> fst x == ["library"]) . collectDependencies []
 
 validatePackage :: Pkg -> ConfigT ()
 validatePackage pkg = do
