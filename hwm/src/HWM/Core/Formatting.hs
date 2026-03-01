@@ -103,10 +103,11 @@ statusFromSeverity Nothing = Checked
 monadStatus :: (Functor m, MonadIssue m) => m b -> m Status
 monadStatus x = statusFromSeverity . fst <$> catchIssues x
 
-displayStatus :: [(Text, Status)] -> Text
-displayStatus ls =
-  let status = deriveStatus (map snd ls)
-   in if isOk status then statusIcon status else formatStatus ls
+displayStatus :: (Monad m) => [(Text, m Status)] -> m Text
+displayStatus ls = do
+  statuses <- mapM snd ls
+  let status = deriveStatus statuses
+  if isOk status then return (statusIcon status) else return (formatStatus (zip (map fst ls) statuses))
 
 formatTemplate :: [(Text, Text)] -> Text -> Text
 formatTemplate vars template =

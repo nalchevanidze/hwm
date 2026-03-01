@@ -80,10 +80,11 @@ updateHpackFile f pkg = do
     maybePackage (Just package) = f package
 
 updatePackage :: (HpackPackage -> ConfigT HpackPackage) -> Pkg -> ConfigT Text
-updatePackage f pkg = do
-  package <- updateHpackFile f pkg
-  cabal <- syncCabalPackage pkg
-  pure $ displayStatus [("pkg", package), ("cabal", cabal)]
+updatePackage f pkg =
+  displayStatus
+    [ ("pkg", updateHpackFile f pkg),
+      ("cabal", syncCabalPackage pkg)
+    ]
 
 deriveDependencyGraph :: ConfigT DependencyMap
 deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readCabalPackage)
