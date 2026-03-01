@@ -12,7 +12,6 @@ module HWM.Integrations.Toolchain.Package
     newPackage,
     deriveDependencyGraph,
     packageLibs,
-    resolvePackages,
   )
 where
 
@@ -98,11 +97,8 @@ updatePackage f pkg = do
 savePackage :: FilePath -> HpackPackage -> ConfigT ()
 savePackage pkg package = rewrite_ pkg (const $ pure package)
 
-resolvePackages :: (Monad m, MonadError Issue m, MonadIO m) => [Pkg] -> m [HpackPackage]
-resolvePackages = traverse readHpackPackage
-
 deriveDependencyGraph :: ConfigT DependencyMap
-deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= resolvePackages)
+deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readHpackPackage)
   where
     libDependencies = filter (\x -> fst x == ["library"] || fst x == ["dependencies"]) . collectDependencies []
 
