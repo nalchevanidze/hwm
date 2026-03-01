@@ -21,7 +21,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Traversable (for)
 import Distribution.Package (Dependency (..), unPackageName)
-import Distribution.PackageDescription (Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), UnqualComponentName, ignoreConditions, packageDescription)
+import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, ignoreConditions, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Parsec
 import Distribution.Simple (VersionInterval (..))
@@ -204,6 +204,8 @@ instance HasSourceDirs GenericPackageDescription where
   getSourceDirs p GenericPackageDescription {..} =
     getSourceDirs (p <> ["lib"]) condLibrary
       <> getSourceDirs (p <> ["exe"]) condExecutables
+      <> getSourceDirs (p <> ["test"]) condTestSuites
+      <> getSourceDirs (p <> ["bench"]) condBenchmarks
 
 instance (HasSourceDirs a) => HasSourceDirs (CondTree v c a) where
   getSourceDirs path condTree = getSourceDirs path (condTreeData condTree)
@@ -217,11 +219,13 @@ instance HasSourceDirs Library where
 instance HasSourceDirs Executable where
   getSourceDirs path Executable {..} = getSourceDirs path buildInfo
 
+instance HasSourceDirs TestSuite where
+  getSourceDirs path TestSuite {..} = getSourceDirs path testBuildInfo
+
+instance HasSourceDirs Benchmark where
+  getSourceDirs path Benchmark {..} = getSourceDirs path benchmarkBuildInfo
+
 instance HasSourceDirs BuildInfo where
   getSourceDirs path buildInfo = map (withKey . getSymbolicPath) (hsSourceDirs buildInfo)
     where
       withKey dir = (T.intercalate ":" path, format dir)
-
--- <> condLibs (p <> ["test"]) condTestSuites
--- <> condLibs (p <> ["exe"]) condExecutables
--- <> condLibs (p <> ["bench"]) condBenchmarks
