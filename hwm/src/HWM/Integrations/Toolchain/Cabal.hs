@@ -195,9 +195,7 @@ newCabalPackage dir name version deps = do
 
 emptyPackage :: PkgName -> Version -> Dependencies -> GenericPackageDescription
 emptyPackage (P.PkgName name) version dependencies =
-  let buildInfo = emptyBuildInfo {targetBuildDepends = mempty}
-      buildInfo' = buildInfo {targetBuildDepends = map mkCabalDependency (toDependencyList dependencies)}
-      lib = emptyLibrary {libBuildInfo = buildInfo'}
+  let lib = emptyLibrary {libBuildInfo = emptyBuildInfo {targetBuildDepends = map mkCabalDependency (toDependencyList dependencies)}}
    in GenericPackageDescription
         { packageDescription =
             emptyPackageDescription
