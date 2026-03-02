@@ -10,7 +10,7 @@
 
 module HWM.Domain.Config
   ( Config (..),
-    getRule,
+    getRegistryBounds,
     defaultScripts,
   )
 where
@@ -19,13 +19,13 @@ import Control.Monad.Except (MonadError)
 import Data.Aeson (FromJSON (..), ToJSON (toJSON), genericParseJSON, genericToJSON)
 import qualified Data.Map as Map
 import HWM.Core.Common (Check (..), Name)
-import HWM.Core.Has (Has)
+import HWM.Core.Has (Has, askEnv)
 import HWM.Core.Pkg
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
 import HWM.Domain.Bounds (Bounds, versionBounds)
 import HWM.Domain.Environments (Environments (..))
-import HWM.Domain.Registry (Registry (..), getBounds)
+import HWM.Domain.Registry (Registry (..), lookupBounds)
 import HWM.Domain.Release (Release)
 import HWM.Domain.Workspace (PkgRegistry, Workspace)
 import HWM.Runtime.Cache (Cache)
@@ -48,10 +48,16 @@ data Config = Config
       Show
     )
 
-getRule :: (MonadError Issue m) => PkgName -> PkgRegistry -> Config -> m Bounds
-getRule depName ps Config {..}
-  | Map.member depName ps = pure (fromMaybe (versionBounds cfgVersion) cfgBounds)
-  | otherwise = getBounds depName cfgRegistry
+getRegistryBounds :: (MonadReader env m, Has env Config, Has env PkgRegistry) => PkgName -> m (Maybe Bounds)
+getRegistryBounds name = do
+  cfg <- askEnv
+  ps <- askEnv
+  pure $ getRule' name ps cfg
+
+getRule' :: PkgName -> PkgRegistry -> Config -> Maybe Bounds
+getRule' depName ps Config {..}
+  | Map.member depName ps = Just (fromMaybe (versionBounds cfgVersion) cfgBounds)
+  | otherwise = lookupBounds depName cfgRegistry
 
 prefix :: String
 prefix = "cfg"
