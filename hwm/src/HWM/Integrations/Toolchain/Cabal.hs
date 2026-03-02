@@ -5,11 +5,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Integrations.Toolchain.Cabal
-  ( syncCabalPackage,
+  ( rewriteCabalPackage,
     validateHackage,
     syncCabalProject,
     readCabalPackage,
     HasSourceDirs (..),
+    CabalPackage,
+    newCabalPackage,
   )
 where
 
@@ -19,31 +21,32 @@ import Data.Foldable (Foldable (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), TestSuite (..), UnqualComponentName, packageDescription)
+import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Parsec
+import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.Types.BuildInfo (BuildInfo (..))
 import Distribution.Types.CondTree (CondTree (..))
 import Distribution.Types.Library (Library (..))
-import Distribution.Utils.Path (getSymbolicPath)
+import Distribution.Utils.Path (getSymbolicPath, unsafeMakeSymbolicPath)
 import Distribution.Verbosity (normal)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
-import HWM.Core.Pkg (IsPkg (..), Pkg (Pkg, hpackFile))
+import HWM.Core.Pkg (IsPkg (..), Pkg (Pkg, hpackFile), PkgName)
 import qualified HWM.Core.Pkg as P
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
+import HWM.Core.Version (Version, toCabalVersion)
 import HWM.Domain.ConfigT (ConfigT)
 import qualified HWM.Domain.ConfigT as CT
-import HWM.Domain.Dependencies (HasDependencies (..))
+import HWM.Domain.Dependencies (Dependencies (..), HasDependencies (..), MapDeps (..), mkCabalDependency, toDependencyList)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
-import HWM.Runtime.Files (remove)
 import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
-import System.FilePath (takeDirectory)
+import System.FilePath (takeDirectory, (</>))
 
 -- | Translate Cabal warnings into formatting status for downstream reporting.
 toStatus :: PackageCheck -> Status
@@ -76,7 +79,6 @@ validateHackage pkg path = do
 hpackSync :: Pkg -> ConfigT Status
 hpackSync Pkg {hpackFile = Nothing} = pure Checked
 hpackSync pkg@Pkg {hpackFile = Just path} = do
-  remove (P.cabalFile pkg)
   let programName = ProgramName $ toString $ P.pkgName pkg
   let ops = setTarget path $ setProgramName programName defaultOptions
   Result {..} <- liftIO $ hpackResult ops
@@ -84,10 +86,13 @@ hpackSync pkg@Pkg {hpackFile = Just path} = do
     H.OutputUnchanged -> pure Checked
     _ -> pure Updated
 
-syncCabalPackage :: Pkg -> ConfigT Status
-syncCabalPackage pkg = do
+rewriteCabalPackage :: (CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Status
+rewriteCabalPackage mapCabal pkg = do
   s <- hpackSync pkg
   ls <- validateHackage pkg (P.cabalFile pkg)
+  cabalP <- readCabalPackage pkg
+  newpackage <- mapCabal cabalP
+  liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
   pure $ maximum (s : ls)
 
 generateCabalProject :: [Pkg] -> Text -> Text
@@ -177,3 +182,39 @@ instance IsPkg CabalPackage where
 
 instance HasDependencies CabalPackage where
   collectDependencies xs gpd = collectDependencies xs (cbOriginal gpd)
+
+instance MapDeps CabalPackage where
+  mapDeps ctx f cabalPkg = do
+    newGpd <- mapDeps ctx f (cbOriginal cabalPkg)
+    pure cabalPkg {cbOriginal = newGpd}
+
+newCabalPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Version -> Dependencies -> m ()
+newCabalPackage dir name version deps = do
+  let package = emptyPackage name version deps
+  liftIO $ writeGenericPackageDescription (dir </> (toString name <> ".cabal")) package
+
+emptyPackage :: PkgName -> Version -> Dependencies -> GenericPackageDescription
+emptyPackage (P.PkgName name) version dependencies =
+  let lib =
+        emptyLibrary
+          { libBuildInfo =
+              emptyBuildInfo
+                { targetBuildDepends = map mkCabalDependency (toDependencyList dependencies),
+                  hsSourceDirs = [unsafeMakeSymbolicPath "src"]
+                }
+          }
+   in GenericPackageDescription
+        { packageDescription =
+            emptyPackageDescription
+              { package = PackageIdentifier (mkPackageName (toString name)) (toCabalVersion version),
+                library = Just lib
+              },
+          condLibrary = Just (CondNode lib [] []),
+          condExecutables = [],
+          condTestSuites = [],
+          condBenchmarks = [],
+          gpdScannedVersion = Nothing,
+          genPackageFlags = [],
+          condSubLibraries = [],
+          condForeignLibs = []
+        }

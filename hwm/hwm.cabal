@@ -73,7 +73,6 @@ library
       HWM.Integrations.Toolchain.Github
       HWM.Integrations.Toolchain.Hie
       HWM.Integrations.Toolchain.Hpack
-      HWM.Integrations.Toolchain.Lib
       HWM.Integrations.Toolchain.Nix
       HWM.Integrations.Toolchain.Package
       HWM.Integrations.Toolchain.Stack

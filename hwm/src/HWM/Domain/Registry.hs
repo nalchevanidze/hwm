@@ -1,10 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Registry
   ( Registry (..),
-    getBounds,
     getDependencies,
     lookupBounds,
     addDependency,
@@ -14,7 +14,6 @@ module HWM.Domain.Registry
   )
 where
 
-import Control.Monad.Error.Class (MonadError)
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (..),
@@ -26,10 +25,8 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import HWM.Core.Formatting (Format (..), formatTableRow)
 import HWM.Core.Pkg (IsPkg (..), PkgName)
-import HWM.Core.Result (Issue)
 import HWM.Domain.Bounds (Bounds)
 import HWM.Domain.Dependencies (Dependency (..), HasDependencies, collectNormalizedDependencies, fromDependencyList, normalizeDependencies, unpackDeps)
-import HWM.Runtime.Files (select)
 import Relude hiding
   ( Undefined,
     break,
@@ -57,9 +54,6 @@ instance ToJSON Registry where
       size = maximum $ map (T.length . format) $ Map.keys ms
       table = map (T.words . format) $ Map.elems ms
 
-getBounds :: (MonadError Issue m) => PkgName -> Registry -> m Bounds
-getBounds pkgName = select "Package " pkgName . unpackRegistry
-
 lookupBounds :: PkgName -> Registry -> Maybe Bounds
 lookupBounds pkgName registry = Map.lookup pkgName (unpackRegistry registry)
 
@@ -67,16 +61,16 @@ getDependencies :: Registry -> [Dependency]
 getDependencies (Registry m) = map (uncurry Dependency) $ Map.toList m
 
 addDependency :: Dependency -> Registry -> Registry
-addDependency (Dependency n b) (Registry m) = Registry $ Map.insert n b m
+addDependency Dependency {..} (Registry m) = Registry $ Map.insert hwmDepName hwmDepBounds m
 
 deriveRegistry :: (HasDependencies a, IsPkg a) => [a] -> Registry
 deriveRegistry packages =
   let deps = concatMap collectNormalizedDependencies packages
       externals = filter isExternal (normalizeDependencies deps)
-   in Registry . unpackDeps . fromDependencyList $ sortOn name externals
+   in Registry . unpackDeps . fromDependencyList $ sortOn hwmDepName externals
   where
     internals = Set.fromList (map getPkgName packages)
-    isExternal dep = not (Set.member (name dep) internals)
+    isExternal dep = not (Set.member (hwmDepName dep) internals)
 
 mapWithName :: (PkgName -> Bounds -> b) -> Registry -> [b]
 mapWithName f (Registry xs) = Map.elems $ Map.mapWithKey f xs

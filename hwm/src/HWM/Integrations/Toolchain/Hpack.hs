@@ -6,28 +6,65 @@
 
 module HWM.Integrations.Toolchain.Hpack
   ( HpackPackage (..),
-    emptyPackage,
     readHpackPackage,
-    rewriteHpackFile,
+    rewriteHpackPackage,
+    newHpackPackage,
   )
 where
 
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (MonadError (..))
-import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
+import Data.Aeson (FromJSON (..), GFromJSON, ToJSON (..), Value (..), genericParseJSON, genericToJSON, withObject)
+import Data.Aeson.KeyMap (delete)
+import Data.Aeson.Types (Object, Zero)
+import Data.Yaml.Aeson (Parser)
+import GHC.Generics (Generic (..))
+import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Status (Checked))
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Core.Version (Version)
-import HWM.Domain.Dependencies (Dependencies, HasDependencies (..))
-import HWM.Integrations.Toolchain.Lib
-  ( Libraries,
-    Library (..),
-    MapDeps (..),
-  )
-import HWM.Runtime.Files (aesonYAMLOptionsAdvanced, readYaml, rewrite_, statusM)
+import HWM.Domain.Dependencies (Dependencies, HasDependencies (..), MapDeps (..))
+import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced, readYaml, rewrite_, statusM)
 import Hpack ()
 import Relude
+import System.FilePath ((</>))
+
+type Libraries = Map Name Library
+
+data Library = Library
+  { sourceDirs :: Name,
+    dependencies :: Maybe Dependencies,
+    __unknownFields :: Maybe Object
+  }
+  deriving
+    ( Show,
+      Generic
+    )
+
+instance FromJSON Library where
+  parseJSON = fromObject (\t o -> t {__unknownFields = o})
+
+instance ToJSON Library where
+  toJSON t = Object (toObject (genericToJSON aesonYAMLOptions t) <> fromMaybe mempty (__unknownFields t))
+
+instance MapDeps Library where
+  mapDeps ctx f Library {..} = do
+    newDependencies <- traverse (f ctx) dependencies
+    pure $ Library {dependencies = newDependencies, ..}
+
+fromObject :: (Generic a, GFromJSON Zero (Rep a)) => (a -> Maybe Object -> a) -> Value -> Parser a
+fromObject f v = do
+  t <- genericParseJSON aesonYAMLOptions v
+  o <- withObject "Lib" pure v
+  pure (f t (Just o))
+
+toObject :: Value -> Object
+toObject (Object x) = delete "__unknown-fields" x
+toObject _ = mempty
+
+instance HasDependencies Library where
+  collectDependencies scope (Library {..}) = collectDependencies scope dependencies
 
 data HpackPackage = HpackPackage
   { hpackName :: PkgName,
@@ -108,14 +145,14 @@ readHpackPackage pkg =
           { issueTopic = pkgMemberId pkg,
             issueMessage = "pkg does not support hpack or could not find package file",
             issueSeverity = SeverityWarning,
-            issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
+            issueDetails = Just GenericIssue {issueFile = cabalFile pkg}
           }
     )
     readYaml
     (hpackFile pkg)
 
-rewriteHpackFile :: (MonadIO m, MonadError Issue m) => (HpackPackage -> m HpackPackage) -> Pkg -> m Status
-rewriteHpackFile f pkg = do
+rewriteHpackPackage :: (MonadIO m, MonadError Issue m) => (HpackPackage -> m HpackPackage) -> Pkg -> m Status
+rewriteHpackPackage f pkg = do
   maybe (pure Checked) (\path -> statusM path (rewrite_ path maybePackage)) (hpackFile pkg)
   where
     maybePackage Nothing =
@@ -124,6 +161,11 @@ rewriteHpackFile f pkg = do
           { issueTopic = pkgMemberId pkg,
             issueMessage = "could not find package file",
             issueSeverity = SeverityWarning,
-            issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
+            issueDetails = Just GenericIssue {issueFile = cabalFile pkg}
           }
     maybePackage (Just package) = f package
+
+newHpackPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Version -> Dependencies -> m ()
+newHpackPackage dir name version deps = do
+  let package = emptyPackage name version deps
+  rewrite_ (dir </> "package.yaml") (const $ pure package)
