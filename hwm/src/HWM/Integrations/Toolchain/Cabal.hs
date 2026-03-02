@@ -195,27 +195,26 @@ newCabalPackage dir name version deps = do
 
 emptyPackage :: PkgName -> Version -> Dependencies -> GenericPackageDescription
 emptyPackage (P.PkgName name) version dependencies =
-  GenericPackageDescription
-    { packageDescription =
-        emptyPackageDescription
-          { package = PackageIdentifier (mkPackageName (toString name)) (toCabalVersion version),
-            library =
-              Just
-                ( emptyLibrary
-                    { libBuildInfo =
-                        emptyBuildInfo
-                          { targetBuildDepends = map mkCabalDependency (toDependencyList dependencies),
-                            hsSourceDirs = [unsafeMakeSymbolicPath "src"]
-                          }
-                    }
-                )
-          },
-      condLibrary = Nothing,
-      condExecutables = [],
-      condTestSuites = [],
-      condBenchmarks = [],
-      gpdScannedVersion = Nothing,
-      genPackageFlags = [],
-      condSubLibraries = [],
-      condForeignLibs = []
-    }
+  let lib =
+        emptyLibrary
+          { libBuildInfo =
+              emptyBuildInfo
+                { targetBuildDepends = map mkCabalDependency (toDependencyList dependencies),
+                  hsSourceDirs = [unsafeMakeSymbolicPath "src"]
+                }
+          }
+   in GenericPackageDescription
+        { packageDescription =
+            emptyPackageDescription
+              { package = PackageIdentifier (mkPackageName (toString name)) (toCabalVersion version),
+                library = Just lib
+              },
+          condLibrary = Just (CondNode lib [] []),
+          condExecutables = [],
+          condTestSuites = [],
+          condBenchmarks = [],
+          gpdScannedVersion = Nothing,
+          genPackageFlags = [],
+          condSubLibraries = [],
+          condForeignLibs = []
+        }
