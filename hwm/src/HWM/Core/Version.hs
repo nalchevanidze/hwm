@@ -20,6 +20,7 @@ module HWM.Core.Version
     detectResolver,
     fromCabalVersion,
     toCabalVersion,
+    latestGHCVersion,
   )
 where
 
@@ -190,3 +191,6 @@ selectEra version = fromMaybe (NE.last historicalEras) $ find (\era -> eraVersio
 
 detectResolver :: Version -> Text
 detectResolver version = eraStackageResolverName $ selectEra version
+
+latestGHCVersion :: Version
+latestGHCVersion = eraVersion $ head historicalEras

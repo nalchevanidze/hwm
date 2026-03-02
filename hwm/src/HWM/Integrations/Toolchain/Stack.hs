@@ -38,7 +38,7 @@ import HWM.Core.Options (Options (..), askOptions)
 import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..), fromEither)
-import HWM.Core.Version (Version, parseGHCVersion)
+import HWM.Core.Version (Version, latestGHCVersion, parseGHCVersion)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environments (..), StackEnvironment (..), getBuildEnvironment, hkgRefs)
 import HWM.Domain.Workspace (toWorkspaceRef)
@@ -176,15 +176,12 @@ findIssue str =
           Just _ -> Just SeverityWarning
           Nothing -> Nothing
 
-scanStackFiles :: (MonadIO m, MonadError Issue m) => Options -> FilePath -> m (NonEmpty (Name, Stack))
+scanStackFiles :: (MonadIO m, MonadError Issue m) => Options -> FilePath -> m [(Name, Stack)]
 scanStackFiles opts root = do
   let defaultPath = root </> optionsStack opts
   defaultExists <- liftIO $ doesFileExist defaultPath
   variantPaths <- liftIO $ globDir1 (compile "stack-*.yaml") root
-  stacks <- traverse loadEnv ([defaultPath | defaultExists] <> variantPaths)
-  case stacks of
-    [] -> throwError "No stack.yaml found in current directory. Run 'stack init' first or ensure you're in a Stack project"
-    (defaultEnv : envs) -> pure (defaultEnv :| envs)
+  traverse loadEnv ([defaultPath | defaultExists] <> variantPaths)
   where
     loadEnv path = do
       seConfig <- readYaml path
@@ -194,10 +191,24 @@ scanStackFiles opts root = do
 deriveEnviromentName :: FilePath -> Maybe Text
 deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExtension (takeFileName path)))
 
-buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> NonEmpty (Name, Stack) -> m Environments
-buildMatrix pkgs (defaultEnv :| envs) = do
+buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> [(Name, Stack)] -> m Environments
+buildMatrix pkgs (defaultEnv : envs) = do
   environments <- sortOn (ghc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
   pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments}
+buildMatrix _ [] = do
+  let defaultEnv = mkDefaultEnv
+  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv]}
+
+mkDefaultEnv :: (Name, Enviroment)
+mkDefaultEnv =
+  ( "default",
+    Enviroment
+      { stack = Nothing,
+        exclude = Nothing,
+        ghc = latestGHCVersion,
+        ..
+      }
+  )
 
 inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m (Name, Enviroment)
 inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do
