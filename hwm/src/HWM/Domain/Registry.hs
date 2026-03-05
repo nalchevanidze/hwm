@@ -11,6 +11,7 @@ module HWM.Domain.Registry
     deriveRegistry,
     mapWithName,
     mapDeps,
+    askRegistry,
   )
 where
 
@@ -24,6 +25,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import HWM.Core.Formatting (Format (..), formatTableRow)
+import HWM.Core.Has (Has (obtain))
 import HWM.Core.Pkg (IsPkg (..), PkgName)
 import HWM.Domain.Bounds (Bounds)
 import HWM.Domain.Dependencies (Dependency (..), HasDependencies, collectNormalizedDependencies, fromDependencyList, normalizeDependencies, unpackDeps)
@@ -38,8 +40,17 @@ import Relude hiding
     toList,
   )
 
+askRegistry :: (MonadReader env m, Has env Registry) => m Registry
+askRegistry = asks obtain
+
 newtype Registry = Registry {unpackRegistry :: Map PkgName Bounds}
   deriving (Show)
+
+instance Semigroup Registry where
+  Registry a <> Registry b = Registry (a <> b)
+
+instance Monoid Registry where
+  mempty = Registry mempty
 
 instance FromJSON Registry where
   parseJSON (Array xs) = Registry . unpackDeps <$> parseJSON (Array xs)

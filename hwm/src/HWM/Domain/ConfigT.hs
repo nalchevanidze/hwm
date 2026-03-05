@@ -35,6 +35,7 @@ import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runRe
 import HWM.Core.Version (Version, askVersion)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.Environments (Environments (..), environmentHash)
+import HWM.Domain.Registry (Registry)
 import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, Workspace, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
@@ -84,6 +85,9 @@ instance Has (Env m) Version where
 
 instance Has (Env m) PkgRegistry where
   obtain = pkgs
+
+instance Has (Env m) Registry where
+  obtain Env {config} = fromMaybe mempty (cfgRegistry config)
 
 instance Has (Env m) Signature where
   obtain = fileSignature

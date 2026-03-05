@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "*.ansi": "ansi"
+  },
+  "ansi.preview.autoOpen": true // If you use the Render ANSI extension
+}

@@ -36,7 +36,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
     [ ("package", pure $ chalk Magenta (format opsPkgName)),
       ("target", pure $ chalk Cyan (if null opsWorkspace then "none (registry only)" else T.intercalate ", " opsWorkspace))
     ]
-  registered <- asks (lookupBounds opsPkgName . cfgRegistry . config)
+  registered <- asks (lookupBounds opsPkgName . fromMaybe mempty . cfgRegistry . config)
   case registered of
     Nothing -> do
       range <- getTestedRange
@@ -46,7 +46,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
       bounds <- deriveBounds opsPkgName range
       let dependency = Dependency opsPkgName bounds
 
-      ((\cf -> pure cf {cfgRegistry = addDependency dependency (cfgRegistry cf)}) `updateConfig`) $ do
+      ((\cf -> pure cf {cfgRegistry = Just $ addDependency dependency (fromMaybe mempty (cfgRegistry cf))}) `updateConfig`) $ do
         sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
         addDepToPackage workspaces dependency
     Just bounds -> do

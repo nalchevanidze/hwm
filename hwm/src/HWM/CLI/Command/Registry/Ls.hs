@@ -7,9 +7,8 @@ module HWM.CLI.Command.Registry.Ls (runRegistryLs, RegistryLsOptions (..)) where
 import qualified Data.Text as T
 import HWM.Core.Formatting (Format (..), formatTable)
 import HWM.Core.Parsing (ParseCLI (..))
-import HWM.Domain.Config (Config (..))
-import HWM.Domain.ConfigT (ConfigT, config)
-import HWM.Domain.Registry (getDependencies)
+import HWM.Domain.ConfigT (ConfigT)
+import HWM.Domain.Registry (askRegistry, getDependencies)
 import HWM.Runtime.UI (putLine, section)
 import Options.Applicative (help, long, metavar, short, strOption)
 import Relude
@@ -21,6 +20,6 @@ instance ParseCLI RegistryLsOptions where
 
 runRegistryLs :: RegistryLsOptions -> ConfigT ()
 runRegistryLs RegistryLsOptions {regSearch} = do
-  deps <- asks (getDependencies . cfgRegistry . config)
+  deps <- getDependencies <$> askRegistry
   let filtered = maybe deps (\s -> filter (T.isInfixOf s . format) deps) regSearch
   section "registry" $ forM_ (formatTable (map format filtered)) putLine
