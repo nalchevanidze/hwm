@@ -47,7 +47,7 @@ import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
 import HWM.Runtime.Logging (logIssue)
 import HWM.Runtime.Process (exec)
 import Relude hiding (head, tail)
-import System.Directory (createDirectoryIfMissing, doesFileExist)
+import System.Directory (createDirectoryIfMissing, doesFileExist, makeAbsolute)
 import System.FilePath (dropExtension, (</>))
 import System.FilePath.Glob (compile, globDir1)
 import System.FilePath.Posix (takeFileName)
@@ -106,8 +106,10 @@ syncStackYaml = do
         }
 
 stackPath :: Maybe Name -> ConfigT FilePath
-stackPath (Just name) = pure $ ".hwm/matrix/stack-" <> toString name <> ".yaml"
-stackPath Nothing = optionsStack <$> askOptions
+stackPath (Just name) = liftIO $ makeAbsolute $ ".hwm/matrix/stack-" <> toString name <> ".yaml"
+stackPath Nothing = do
+  options <- askOptions
+  liftIO $ makeAbsolute $ optionsStack options
 
 createEnvYaml :: Name -> ConfigT ()
 createEnvYaml target = do

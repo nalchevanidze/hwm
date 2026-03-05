@@ -39,8 +39,8 @@ data Config = Config
     cfgBounds :: Maybe Bounds,
     cfgWorkspace :: Workspace,
     cfgEnvironments :: Environments,
-    cfgRegistry :: Registry,
-    cfgScripts :: Map Name Text,
+    cfgRegistry :: Maybe Registry,
+    cfgScripts :: Maybe (Map Name Text),
     cfgRelease :: Maybe Release
   }
   deriving
@@ -57,7 +57,7 @@ getRegistryBounds name = do
 getRule' :: PkgName -> PkgRegistry -> Config -> Maybe Bounds
 getRule' depName ps Config {..}
   | Map.member depName ps = Just (fromMaybe (versionBounds cfgVersion) cfgBounds)
-  | otherwise = lookupBounds depName cfgRegistry
+  | otherwise = lookupBounds depName (fromMaybe mempty cfgRegistry)
 
 prefix :: String
 prefix = "cfg"

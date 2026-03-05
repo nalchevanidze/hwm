@@ -71,9 +71,9 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
       Config
         { cfgGithub = Nothing,
           cfgBounds = Nothing,
-          cfgScripts = defaultScripts,
+          cfgScripts = Just defaultScripts,
           cfgRelease = Nothing,
-          cfgRegistry = deriveRegistry packages,
+          cfgRegistry = Just (deriveRegistry packages),
           ..
         }
       opts

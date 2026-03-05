@@ -9,9 +9,9 @@ import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, auditHasAny, formatAudit, updateDepBounds)
 import HWM.Domain.Config (Config (..))
-import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
+import HWM.Domain.ConfigT (ConfigT, updateConfig)
 import HWM.Domain.Environments (getTestedRange)
-import HWM.Domain.Registry (mapDeps, mapWithName)
+import HWM.Domain.Registry (askRegistry, mapDeps, mapWithName)
 import HWM.Integrations.Toolchain.Package (syncPackages)
 import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
 import Options.Applicative
@@ -27,7 +27,7 @@ instance ParseCLI RegistryAuditOptions where
 
 runRegistryAudit :: RegistryAuditOptions -> ConfigT ()
 runRegistryAudit RegistryAuditOptions {..} = do
-  originalRegistry <- asks (cfgRegistry . config)
+  originalRegistry <- askRegistry
   range <- getTestedRange
   sectionTableM "audit" [("mode", pure (if auditFix then if auditForce then chalk Yellow "fix (force)" else chalk Cyan "fix" else "check"))]
 
@@ -40,7 +40,7 @@ runRegistryAudit RegistryAuditOptions {..} = do
       indent 1 $ putLine "all dependencies are up to date."
     else do
       if auditFix
-        then ((\cf -> pure $ cf {cfgRegistry = mapDeps (updateDepBounds auditForce range) originalRegistry}) `updateConfig`) $ do
+        then ((\cf -> pure $ cf {cfgRegistry = Just $ mapDeps (updateDepBounds auditForce range) originalRegistry}) `updateConfig`) $ do
           sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
           syncPackages
         else do

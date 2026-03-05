@@ -59,7 +59,7 @@ getEnvs names = for names (getBuildEnvironment . Just)
 runScript :: Name -> ScriptOptions -> ConfigT ()
 runScript scriptName ScriptOptions {..} = do
   cfg <- asks config
-  case M.lookup scriptName (cfgScripts cfg) of
+  case cfgScripts cfg >>= M.lookup scriptName of
     Just script -> do
       envs <- getEnvs scriptEnvs
       targets <- concatMap snd <$> resolveWorkspaces scriptTargets

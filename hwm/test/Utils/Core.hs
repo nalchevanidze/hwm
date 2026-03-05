@@ -1,0 +1,76 @@
+{-# LANGUAGE TupleSections #-}
+
+module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyDir, inWorkDir, diff, runHWM) where
+
+import Control.Concurrent (threadDelay)
+import Control.Monad (unless)
+import qualified GHC.IO.Exception as System.Exit
+import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, setCurrentDirectory)
+import System.Directory.Internal.Prelude (bracket)
+import System.FilePath (takeExtension, (</>))
+import System.IO.Temp (withSystemTempDirectory)
+import System.Process (callCommand, readCreateProcessWithExitCode, shell)
+import Test.Hspec (Expectation, expectationFailure, shouldBe)
+
+assertNotModified :: FilePath -> IO () -> Expectation
+assertNotModified path action = do
+  oldTime <- getModificationTime path
+  threadDelay 1100000
+  action
+  newTime <- getModificationTime path
+  newTime `shouldBe` oldTime
+
+assertWorkspaceNotModified :: FilePath -> IO a -> Expectation
+assertWorkspaceNotModified root action = do
+  managedFiles <- findManagedFiles root
+  oldTimes <- mapM (\p -> (p,) <$> getModificationTime p) managedFiles
+  threadDelay 1100000
+  _ <- action
+  newTimes <- mapM (\p -> (p,) <$> getModificationTime p) managedFiles
+  newTimes `shouldBe` oldTimes
+
+-- | Helper to find files HWM cares about (.cabal, .yaml, .nix, .project)
+findManagedFiles :: FilePath -> IO [FilePath]
+findManagedFiles dir = do
+  contents <- listDirectory dir
+  paths <- mapM (\path -> let p = dir </> path in (p,) <$> doesDirectoryExist p) contents
+  let files = [p | (p, isDir) <- paths, not isDir, isManagedExtension p]
+  subDirFiles <- concat <$> mapM (\(p, isDir) -> if isDir then findManagedFiles p else return []) paths
+  return $ files ++ subDirFiles
+  where
+    isManagedExtension p = takeExtension p `elem` [".cabal", ".yaml", ".nix", ".project"]
+
+copyDir :: FilePath -> FilePath -> IO ()
+copyDir src dst = do
+  createDirectoryIfMissing True dst
+  callCommand $ "cp -r " <> src <> " " <> dst
+
+inWorkDir :: FilePath -> IO a -> IO a
+inWorkDir scenarioDir m = do
+  withSystemTempDirectory "hwm-golden" $ \tmpDir -> do
+    let workDir = tmpDir </> "work"
+    copyDir (scenarioDir </> "input/.") workDir
+    bracket getCurrentDirectory setCurrentDirectory $ \_ -> do
+      setCurrentDirectory workDir
+      m
+
+diff :: FilePath -> [FilePath] -> IO ()
+diff expectedDir ignoreList = do
+  let ignoreFlags = unwords ["-x " ++ p | p <- ignoreList]
+  (diffCode, diffOut, _) <-
+    readCreateProcessWithExitCode
+      (shell $ "diff -ruN " ++ ignoreFlags ++ " " ++ expectedDir ++ " .")
+      ""
+  unless (diffCode == System.Exit.ExitSuccess) $
+    expectationFailure $
+      "File diff failed:\n" <> diffOut
+
+runHWM :: String -> IO String
+runHWM cmd = do
+  (exitCode, stdout, stderr) <-
+    readCreateProcessWithExitCode
+      (shell $ "stack exec hwm -- " <> cmd)
+      ""
+  unless (exitCode == System.Exit.ExitSuccess) $
+    expectationFailure ("Command failed with stderr: " <> stderr)
+  return stdout
