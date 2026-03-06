@@ -12,12 +12,7 @@ HWM is an **active workspace maintainer** that provides:
 - **Zero Lock-in:** HWM materializes standard configuration files directly at your project root. You can uninstall HWM at any time, and your repository will still build perfectly using standard native tools.
 - **Smart Bounds Synchronization:** Maintain a beautifully aligned, single-source-of-truth dependency registry. HWM automatically injects these bounds across your entire monorepo.
 - **Zero-Overhead IDE Support:** Because standard files are generated at the root, Haskell Language Server (HLS) works instantly. HWM automatically generates `hie.yaml` tailored to your active toolchains.
-
----
-
-## 🚀 New in v0.2.0: The "Silent & Visual" Update
-
-- **Flexible Toolchain Toggles:** You are in total control. Explicitly enable or disable `stack`, `nix`, `hie`, and `cabal` globally, or toggle them on a per-profile basis.
+- **Flexible Toolchain Toggles(v0.2.0):** You are in total control. Explicitly enable or disable `stack`, `nix` globally, or toggle them on a per-profile basis.
 
 <p align="center">
 <img src="images/status.png" alt="HWM Status Output" width="600">
@@ -173,9 +168,9 @@ hwm test --env=all
 **Switching Environments:**
 
 ```bash
-# Instantly overwrites the root configs (stack.yaml, cabal.project, flake.nix) 
+# Instantly overwrites the root configs (stack.yaml, cabal.project, flake.nix)
 # to match the 'legacy' GHC 8.10.7 profile.
-hwm sync legacy 
+hwm sync legacy
 ```
 
 ### 4. Task Runner & Scripts
