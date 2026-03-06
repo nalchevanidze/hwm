@@ -6,7 +6,7 @@ import System.Directory (makeAbsolute, removePathForcibly)
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (copyDir, diff, inWorkDir, runHWM)
+import Utils.Core (copyLocalFiles, diff, inWorkDir, runHWM)
 
 data Golden = Golden
   { cmd :: String,
@@ -28,7 +28,7 @@ goldenTest Golden {..} = do
     if updateMode
       then do
         removePathForcibly expectedDir
-        copyDir "." expectedDir
+        copyLocalFiles expectedDir
         writeFile stdoutFile stdout
       else do
         diff expectedDir [".hwm", ".stack-work", "dist-newstyle", "*.log"]

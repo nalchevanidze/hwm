@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 
-module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyDir, inWorkDir, diff, runHWM) where
+module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyLocalFiles, inWorkDir, diff, runHWM) where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad (unless)
@@ -39,6 +39,9 @@ findManagedFiles dir = do
   return $ files ++ subDirFiles
   where
     isManagedExtension p = takeExtension p `elem` [".cabal", ".yaml", ".nix", ".project"]
+
+copyLocalFiles :: FilePath -> IO ()
+copyLocalFiles = copyDir "."
 
 copyDir :: FilePath -> FilePath -> IO ()
 copyDir src dst = do
