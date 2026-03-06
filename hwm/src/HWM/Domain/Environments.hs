@@ -24,6 +24,7 @@ module HWM.Domain.Environments
     existsEnviroment,
     environmentHash,
     NixEnvironment (..),
+    Feature (..),
   )
 where
 

@@ -208,6 +208,7 @@ mkDefaultEnv =
       { stack = Nothing,
         exclude = Nothing,
         ghc = latestGHCVersion,
+        nix = Nothing,
         ..
       }
   )
@@ -218,4 +219,4 @@ inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do
   extraDeps <- parseExtraDeps (fromMaybe [] deps)
   let excludeList = filter ((`notElem` packages) . pkgDirPath) allPkgs
       exclude = if null excludeList then Nothing else Just (map toWorkspaceRef excludeList)
-  pure (name, Enviroment {stack = Just StackEnvironment {resolver = Just resolver, ..}, ..})
+  pure (name, Enviroment {stack = Just (Enabled StackEnvironment {resolver = Just resolver, ..}), ..})
