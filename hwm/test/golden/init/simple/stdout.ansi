@@ -1,50 +1,28 @@
 
-• [1msync[0m
-  enviroment [2m........[0m [36mfoo (8.10.7)[0m
-  resolver [2m..........[0m lts-18.28
+• [1minit[0m
+  scan (stack.yaml) [2m.......[0m 0 found
+  scan (packages) [2m.........[0m 2 found
+  save (config) [2m...........[0m [36mhwm.yaml[0m
 
-• [1mconfig[0m
-  cabal.project [2m.....[0m [32m✓[0m
-  stack.yaml [2m........[0m [32m✓[0m
-  flake.nix [2m.........[0m [32m✓[0m
-  hie.yaml [2m..........[0m [32m✓[0m
+• [1mproject[0m
+  name [2m..............[0m [95mwork[0m
+  version [2m...........[0m [32m0.1.2[0m
+
+• [1menvironments[2m (default: [0m[95mdefault[0m[2m)[0m[0m
+  default (9.10) [2m....[0m [36mnightly (active)[0m
 
 ./ [1mworkspace[0m
   
   • [1mlibs[0m
-  [2m└─- [0mfoo [2m....[0m [33m![0m [33mcabal[0m[2m [0m[36m⟳[0m [2mhpack[0m
-  [2m└─- [0mbar [2m....[0m [33m![0m [33mcabal[0m[2m [0m[36m⟳[0m [2mhpack[0m
+  [2m└─- [0mfoo [2m....[0m [33m![0m
+  [2m└─- [0mbar [2m....[0m [33m![0m
 
 [1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
 
   [2m• [0m[1mbar[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: library does not expose any modules[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mbase: [2m>= 4.7 && <  5.0 → unknown[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mbase: [2m>= 4.7 && <  5.0 → unknown[0m
+  [2m└─- [0m[2m• [0m[33mversion mismatch: 0.1.0 → 0.1.2[0m
+      [2m└─- [0m[2mfile: bar/package.yaml[0m
   [2m• [0m[1mfoo[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: library does not expose any modules[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mbase: [2m>= 4.7 && <  5.0 → unknown[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mbase: [2m>= 4.7 && <  5.0 → unknown[0m
+  [2m└─- [0m[2m• [0m[33mversion mismatch: 0.1.0 → 0.1.2[0m
+      [2m└─- [0m[2mfile: foo/package.yaml[0m
 
