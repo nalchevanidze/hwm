@@ -1,10 +1,10 @@
-module Commands.Sync (spec) where
+module Commands.Sync (testSync) where
 
-import Test.Hspec
+import Test.Hspec ( describe, it, Spec )
 import Utils.Golden (Golden (..), goldenTest)
 
-spec :: Spec
-spec = describe "hwm sync" $ do
+testSync :: Spec
+testSync = describe "sync" $ do
   it "syncs a simple workspace" $
     goldenTest
       Golden
