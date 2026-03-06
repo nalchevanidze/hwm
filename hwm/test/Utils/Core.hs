@@ -1,10 +1,12 @@
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyLocalFiles, inWorkDir, diff, runHWM) where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad (unless)
+import qualified Data.List as S
 import qualified GHC.IO.Exception as System.Exit
+import Relude
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
 import System.FilePath (takeExtension, (</>))
@@ -48,7 +50,7 @@ copyDir src dst = do
   createDirectoryIfMissing True dst
   callCommand $ "cp -r " <> src <> " " <> dst
 
-inWorkDir :: FilePath -> IO a -> IO a
+inWorkDir :: FilePath -> IO a -> IO ()
 inWorkDir project m = do
   projectDir <- makeAbsolute ("test/projects/" </> project)
   withSystemTempDirectory "hwm-golden" $ \tmpDir -> do
@@ -56,25 +58,26 @@ inWorkDir project m = do
     copyDir (projectDir <> "/.") workDir
     bracket getCurrentDirectory setCurrentDirectory $ \_ -> do
       setCurrentDirectory workDir
-      m
+      m $> ()
 
 diff :: FilePath -> [FilePath] -> IO ()
 diff expectedDir ignoreList = do
-  let ignoreFlags = unwords ["-x " ++ p | p <- ignoreList]
+  let ignoreFlags = S.unwords ["-x " ++ p | p <- ignoreList]
   (diffCode, diffOut, _) <-
     readCreateProcessWithExitCode
       (shell $ "diff -ruN " ++ ignoreFlags ++ " " ++ expectedDir ++ " .")
       ""
-  unless (diffCode == System.Exit.ExitSuccess) $
-    expectationFailure $
-      "File diff failed:\n" <> diffOut
+  unless (diffCode == System.Exit.ExitSuccess)
+    $ expectationFailure
+    $ "File diff failed:\n"
+    <> diffOut
 
 runHWM :: String -> IO String
 runHWM cmd = do
-  (exitCode, stdout, stderr) <-
+  (exitCode, out, err) <-
     readCreateProcessWithExitCode
       (shell $ "stack exec hwm -- " <> cmd)
       ""
-  unless (exitCode == System.Exit.ExitSuccess) $
-    expectationFailure ("Command failed with stderr: " <> stderr)
-  return stdout
+  unless (exitCode == System.Exit.ExitSuccess)
+    $ expectationFailure ("Command failed with stderr: " <> err)
+  return out
