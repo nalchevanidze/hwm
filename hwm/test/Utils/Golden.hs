@@ -25,7 +25,7 @@ goldenTest Golden {..} = do
   let expectedDir = scenarioDir </> "expected"
   let stdoutFile = scenarioDir </> "stdout.ansi"
   updateMode <- isUpdateMode
-  inWorkDir project $ do
+  inWorkDir project scenarioDir $ do
     out <- runHWM cmd
     if updateMode
       then do

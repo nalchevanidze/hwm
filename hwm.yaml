@@ -74,5 +74,5 @@ scripts:
   lint:
     curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
-  test: stack test
-  test:update: GOLDEN_UPDATE=1 stack test
+  test: stack test --fast
+  test:update: GOLDEN_UPDATE=1 stack test --fast
