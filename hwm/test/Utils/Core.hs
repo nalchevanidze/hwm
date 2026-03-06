@@ -84,5 +84,5 @@ runHWM cmd = do
       (shell $ "stack exec hwm -- " <> cmd)
       ""
   unless (exitCode == System.Exit.ExitSuccess)
-    $ expectationFailure ("Command failed with stderr: " <> err)
+    $ expectationFailure ("Command failed with stdout: " <> out <> "stderr: " <> err)
   return out

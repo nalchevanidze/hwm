@@ -22,19 +22,8 @@ environments:
   nix: true
   default: stable
   profiles:
-    latest:
-      ghc: 9.10.3
-      exclude:
-        - examples/scotty-fraxl
-        - examples/scotty-freer-simple
     legacy:
       ghc: 8.4.4
-      exclude:
-        - examples/subscription-extpubsub
-    maintenance:
-      ghc: 8.10.7
-      exclude:
-        - examples/subscription-extpubsub
     stable:
       ghc: 9.6.6
 registry:
