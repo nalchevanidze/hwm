@@ -26,3 +26,10 @@ spec = describe "hwm sync" $ do
           project = "morpheus",
           scenario = "sync/nix"
         }
+  it "syncs a stack workspace" $
+    goldenTest
+      Golden
+        { cmd = "sync",
+          project = "morpheus",
+          scenario = "sync/stack"
+        }
