@@ -4,10 +4,9 @@
   resolver [2m..........[0m lts-22.43
 
 • [1mconfig[0m
-  stack.yaml [2m........[0m [32m✓[0m
-  hie.yaml [2m..........[0m [32m✓[0m
-  flake.nix [2m.........[0m [32m✓[0m
   cabal.project [2m.....[0m [32m✓[0m
+  flake.nix [2m.........[0m [32m✓[0m
+  hie.yaml [2m..........[0m [32m✓[0m
 
 ./ [1mworkspace[0m
   
