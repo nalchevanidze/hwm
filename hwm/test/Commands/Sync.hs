@@ -1,6 +1,6 @@
 module Commands.Sync (testSync) where
 
-import Test.Hspec ( describe, it, Spec )
+import Test.Hspec (Spec, describe, it)
 import Utils.Golden (Golden (..), goldenTest)
 
 testSync :: Spec

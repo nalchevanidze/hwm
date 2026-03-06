@@ -1,6 +1,6 @@
 module Commands.Init (testInit) where
 
-import Test.Hspec ( describe, it, Spec )
+import Test.Hspec (Spec, describe, it)
 import Utils.Golden (Golden (..), goldenTest)
 
 testInit :: Spec
