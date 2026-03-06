@@ -58,6 +58,8 @@ type Extras = VersionMap
 
 data Environments = Environments
   { envDefault :: Name,
+    envNix :: Maybe Bool,
+    envStack :: Maybe Bool,
     envProfiles :: Map Name Enviroment
   }
   deriving
