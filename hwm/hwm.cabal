@@ -160,11 +160,10 @@ executable hwm
 
 test-suite hwm-golden-sync
   type: exitcode-stdio-1.0
-  main-is: HWM/CLI/Command/Sync/GoldenSpec.hs
+  main-is: Main.hs
   other-modules:
       Commands.Init
       Commands.Sync
-      Main
       Utils.Core
       Utils.Golden
       Paths_hwm
