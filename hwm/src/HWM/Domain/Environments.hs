@@ -185,7 +185,7 @@ getBuildEnvironments = do
           buildResolver = fromMaybe (eraStackageResolverName $ selectEra (ghc env)) (resolver =<< stack env),
           buildGHC = ghc env,
           buildAllowNewer = stack env >>= allowNewer,
-          buildStack = fromMaybe False (envStack globalEnv),
+          buildStack = fromMaybe False (envStack globalEnv) || isJust (stack env),
           buildNix = isJust (envNix globalEnv)
         }
   where
