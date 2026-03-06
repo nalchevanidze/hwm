@@ -7,6 +7,8 @@ workspace:
     members:
       - hwm
 environments:
+  nix: true
+  stack: true
   default: stable
   profiles:
     legacy:
