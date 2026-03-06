@@ -26,9 +26,10 @@ sync tag = do
       ("resolver", pure $ buildResolver env)
     ]
   sectionConfig
-    [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
-      ("hie.yaml", syncHie $> chalk Green "✓"),
-      ("flake.nix", syncNixFile $> chalk Green "✓"),
-      ("cabal.project", syncCabalProject $> chalk Green "✓")
-    ]
+    ( [("stack.yaml", syncStackYaml $> chalk Green "✓") | buildStack env]
+        <> [("flake.nix", syncNixFile $> chalk Green "✓") | buildNix env]
+        <> [ ("hie.yaml", syncHie $> chalk Green "✓"),
+             ("cabal.project", syncCabalProject $> chalk Green "✓")
+           ]
+    )
   syncPackages

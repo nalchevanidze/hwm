@@ -150,7 +150,9 @@ data BuildEnvironment = BuildEnvironment
     buildName :: Name,
     buildExtraDeps :: Maybe Extras,
     buildResolver :: Name,
-    buildAllowNewer :: Maybe Bool
+    buildAllowNewer :: Maybe Bool,
+    buildStack :: Bool,
+    buildNix :: Bool
   }
   deriving
     ( Generic,
@@ -171,6 +173,7 @@ getBuildEnvironments ::
   ) =>
   m [BuildEnvironment]
 getBuildEnvironments = do
+  globalEnv <- askEnv
   envs <- envProfiles <$> askEnv
   for (Map.toList envs) $ \(name, env) -> do
     pkgs <- allPackages
@@ -181,7 +184,9 @@ getBuildEnvironments = do
           buildExtraDeps = extraDeps =<< stack env,
           buildResolver = fromMaybe (eraStackageResolverName $ selectEra (ghc env)) (resolver =<< stack env),
           buildGHC = ghc env,
-          buildAllowNewer = stack env >>= allowNewer
+          buildAllowNewer = stack env >>= allowNewer,
+          buildStack = fromMaybe False (envStack globalEnv),
+          buildNix = isJust (envNix globalEnv)
         }
   where
     excludePkgs build pkgs =
