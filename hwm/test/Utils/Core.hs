@@ -5,7 +5,7 @@ module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyDir, inWor
 import Control.Concurrent (threadDelay)
 import Control.Monad (unless)
 import qualified GHC.IO.Exception as System.Exit
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, setCurrentDirectory)
+import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
 import System.FilePath (takeExtension, (</>))
 import System.IO.Temp (withSystemTempDirectory)
@@ -46,10 +46,11 @@ copyDir src dst = do
   callCommand $ "cp -r " <> src <> " " <> dst
 
 inWorkDir :: FilePath -> IO a -> IO a
-inWorkDir scenarioDir m = do
+inWorkDir project m = do
+  projectDir <- makeAbsolute ("test/projects/" </> project)
   withSystemTempDirectory "hwm-golden" $ \tmpDir -> do
     let workDir = tmpDir </> "work"
-    copyDir (scenarioDir </> "input/.") workDir
+    copyDir (projectDir <> "/.") workDir
     bracket getCurrentDirectory setCurrentDirectory $ \_ -> do
       setCurrentDirectory workDir
       m

@@ -10,7 +10,8 @@ import Utils.Core (copyDir, diff, inWorkDir, runHWM)
 
 data Golden = Golden
   { cmd :: String,
-    scenario :: String
+    scenario :: FilePath,
+    project :: FilePath
   }
 
 isUpdateMode :: IO Bool
@@ -22,7 +23,7 @@ goldenTest Golden {..} = do
   let expectedDir = scenarioDir </> "expected"
   let stdoutFile = scenarioDir </> "stdout.ansi"
   updateMode <- isUpdateMode
-  inWorkDir scenarioDir $ do
+  inWorkDir project $ do
     stdout <- runHWM cmd
     if updateMode
       then do
