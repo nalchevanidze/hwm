@@ -60,7 +60,7 @@ inWorkDir project scenario m = do
   withSystemTempDirectory "hwm-golden" $ \tmpDir -> do
     let workDir = tmpDir </> "work"
     copyFrom projectDir workDir
-    copyFrom overridesDir workDir
+    whenM (doesDirectoryExist overridesDir) $ copyFrom overridesDir workDir
     bracket getCurrentDirectory setCurrentDirectory $ \_ -> do
       setCurrentDirectory workDir
       m $> ()
