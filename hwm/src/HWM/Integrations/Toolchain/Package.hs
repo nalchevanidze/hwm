@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Integrations.Toolchain.Package
@@ -16,7 +15,7 @@ module HWM.Integrations.Toolchain.Package
 where
 
 import qualified Data.Text as T
-import HWM.Core.Formatting (Status, displayStatus)
+import HWM.Core.Formatting (Status, StatusM, monadStatus)
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), PkgSource (..), cabalSource, checkVersion, hpackSource)
 import HWM.Domain.Bounds (Bounds (Bounds))
 import HWM.Domain.Config (getRegistryBounds)
@@ -35,7 +34,7 @@ import HWM.Domain.Dependencies
     toDependencyList,
   )
 import qualified HWM.Domain.Dependencies as M
-import HWM.Domain.Workspace (allPackages, forWorkspace, forWorkspaceCore)
+import HWM.Domain.Workspace (allPackages, forWorkspace)
 import HWM.Integrations.Toolchain.Cabal (CabalPackage, newCabalPackage, readCabalPackage, rewriteCabalPackage)
 import HWM.Integrations.Toolchain.Hpack (HpackPackage, newHpackPackage, readHpackPackage, rewriteHpackPackage)
 import Relude
@@ -51,7 +50,7 @@ newPackage targetDir name = do
   pure [("hpack", hpack), ("cabal", cabal)]
 
 syncPackages :: ConfigT ()
-syncPackages = forWorkspaceCore $ updatePackage syncPackage syncPackage
+syncPackages = forWorkspace $ updatePackage syncPackage syncPackage
 
 syncPackage :: (MapDeps a, IsPkg a) => PkgSource -> a -> ConfigT a
 syncPackage pkg package = do
@@ -74,15 +73,13 @@ addDeps dependency pkg = mapDeps (pkg, []) onlyMain
     onlyMain (_, ["dependencies"]) deps = pure (deps <> singleDeps dependency)
     onlyMain _ deps = pure deps
 
-addPkgDependency :: Dependency -> Pkg -> ConfigT Text
+addPkgDependency :: Dependency -> Pkg -> StatusM ConfigT
 addPkgDependency dep = updatePackage (addDeps dep) (addDeps dep)
 
-updatePackage :: (PkgSource -> HpackPackage -> ConfigT HpackPackage) -> (PkgSource -> CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Text
+updatePackage :: (PkgSource -> HpackPackage -> ConfigT HpackPackage) -> (PkgSource -> CabalPackage -> ConfigT CabalPackage) -> Pkg -> StatusM ConfigT
 updatePackage mapHpack mapCabal pkg =
-  displayStatus
-    ( map (\s -> ("hpack", rewriteHpackPackage (mapHpack s) pkg)) (maybeToList $ hpackSource pkg)
-        <> [("cabal", rewriteCabalPackage (mapCabal (cabalSource pkg)) pkg)]
-    )
+  map (\s -> ("hpack", rewriteHpackPackage (mapHpack s) pkg)) (maybeToList $ hpackSource pkg)
+    <> [("cabal", rewriteCabalPackage (mapCabal (cabalSource pkg)) pkg)]
 
 deriveDependencyGraph :: ConfigT DependencyMap
 deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readCabalPackage)
@@ -90,17 +87,26 @@ deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd)
     libDependencies = filter (\x -> fst x == ["library"]) . collectDependencies []
 
 validatePackages :: ConfigT ()
-validatePackages = forWorkspace $ \pkg -> do
-  cabal <- readCabalPackage pkg
-  hpack <- traverse (\x -> (x,) <$> readHpackPackage pkg) (maybeToList $ hpackSource pkg)
-  validatePackage (cabalSource pkg, cabal)
-  for_ hpack validatePackage
+validatePackages = forWorkspace $ \pkg -> map (hpack pkg) (maybeToList $ hpackSource pkg) <> [cabalTask pkg]
+  where
+    hpack pkg src =
+      ( "hpack",
+        do
+          h <- readHpackPackage pkg
+          validatePackage (src, h)
+      )
+    cabalTask pkg =
+      ( "cabal",
+        do
+          cabal <- readCabalPackage pkg
+          validatePackage (cabalSource pkg, cabal)
+      )
 
-validatePackage :: (IsPkg a, HasDependencies a) => (PkgSource, a) -> ConfigT ()
+validatePackage :: (IsPkg a, HasDependencies a) => (PkgSource, a) -> ConfigT Status
 validatePackage (source, package) = do
   checkVersion source package
   diffs <- concat <$> traverse checkForDependencyIssues (collectDependencies [] package)
-  reportDependencyIssues source diffs
+  monadStatus (reportDependencyIssues source diffs)
   where
     checkForDependencyIssues (path, deps) = concat <$> traverse (getIssue path) (toDependencyList deps)
     getIssue path dep = detectDependencyIssue path dep <$> getRegistryBounds (hwmDepName dep)

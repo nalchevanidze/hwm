@@ -1,9 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Eta reduce" #-}
 
 module HWM.Core.Formatting
   ( Color (..),
@@ -16,7 +13,6 @@ module HWM.Core.Formatting
     deriveStatus,
     statusFromSeverity,
     statusIcon,
-    isOk,
     displayStatus,
     Format (..),
     availableOptions,
@@ -32,6 +28,7 @@ module HWM.Core.Formatting
     formatTemplate,
     toCamelCase,
     formatTableRow,
+    StatusM,
   )
 where
 
@@ -42,6 +39,7 @@ import qualified Data.List as List
 import Data.Text (pack)
 import qualified Data.Text as T
 import Distribution.PackageDescription (UnqualComponentName, unUnqualComponentName)
+import HWM.Core.Common (Name)
 import HWM.Core.Result (MonadIssue (catchIssues), Severity (..))
 import Relude
 
@@ -87,6 +85,8 @@ colorCode White = 37
 chalk :: Color -> Text -> Text
 chalk c x = toColor c <> x <> toColor None
 
+type StatusM m = [(Name, m Status)]
+
 data Status = Checked | Updated | Warning | Invalid
   deriving (Show, Eq, Ord)
 
@@ -103,11 +103,11 @@ statusFromSeverity Nothing = Checked
 monadStatus :: (Functor m, MonadIssue m) => m b -> m Status
 monadStatus x = statusFromSeverity . fst <$> catchIssues x
 
-displayStatus :: (Monad m) => [(Text, m Status)] -> m Text
+displayStatus :: (Monad m) => StatusM m -> m Text
 displayStatus ls = do
   statuses <- mapM snd ls
   let status = deriveStatus statuses
-  if isOk status then return (statusIcon status) else return (formatStatus (zip (map fst ls) statuses))
+  if status == Checked then return (statusIcon status) else return (formatStatus (zip (map fst ls) statuses))
 
 formatTemplate :: [(Text, Text)] -> Text -> Text
 formatTemplate vars template =
@@ -118,11 +118,6 @@ formatTemplate vars template =
 
 padDots :: Int -> Text -> Text
 padDots width s = s <> " " <> chalk Dim (T.replicate (max 0 (width - T.length s)) ".") <> " "
-
-isOk :: Status -> Bool
-isOk Checked = True
-isOk Updated = True
-isOk _ = False
 
 labelColor :: Status -> Color
 labelColor Checked = Dim

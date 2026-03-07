@@ -18,7 +18,6 @@ module HWM.Domain.Workspace
     forWorkspace,
     forWorkspaceTuple,
     parseWorkspaceRef,
-    forWorkspaceCore,
     addWorkgroupMember,
     allPackages,
     resolveWsPkgs,
@@ -46,7 +45,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as S
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (..), availableOptions, chalk, commonPrefix, genMaxLen, monadStatus, padDots, slugify, statusIcon, subPathSign)
+import HWM.Core.Formatting (Color (..), StatusM, availableOptions, chalk, commonPrefix, displayStatus, genMaxLen, padDots, slugify, subPathSign)
 import HWM.Core.Has (Has (..), askEnv)
 import HWM.Core.Pkg (Pkg (..), PkgName (..), makePkg)
 import HWM.Core.Result
@@ -192,13 +191,8 @@ compareMembers "." _ = GT
 compareMembers _ "." = LT
 compareMembers x y = compare x y
 
-forWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => (Pkg -> m ()) -> m ()
-forWorkspace f = forWorkspaceCore $ \pkg -> do
-  status <- monadStatus (f pkg)
-  pure $ statusIcon status
-
-forWorkspaceCore :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => (Pkg -> m Text) -> m ()
-forWorkspaceCore f = do
+forWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => (Pkg -> StatusM m) -> m ()
+forWorkspace f = do
   gs <- Map.toList <$> askWorkspace
   sectionWorkspace
     $ for_ gs
@@ -208,17 +202,17 @@ forWorkspaceCore f = do
       pkgs <- memberPkgs (name, wg)
       let maxLen = genMaxLen (map pkgMemberId pkgs)
       for_ pkgs $ \pkg -> do
-        status <- f pkg
+        status <- displayStatus (f pkg)
         putLine $ subPathSign <> padDots maxLen (pkgMemberId pkg) <> status
 
-forWorkspaceTuple :: (MonadUI m) => [(Text, [Pkg])] -> (Pkg -> m Text) -> m ()
+forWorkspaceTuple :: (MonadUI m) => [(Text, [Pkg])] -> (Pkg -> StatusM m) -> m ()
 forWorkspaceTuple ws f = sectionWorkspace $ do
   let maxLen = genMaxLen (map pkgMemberId $ concatMap snd ws)
   for_ ws $ \(name, pkgs) -> do
     putLine ""
     putLine $ "• " <> chalk Bold name
     for_ pkgs $ \pkg -> do
-      status <- f pkg
+      status <- displayStatus (f pkg)
       putLine (subPathSign <> padDots maxLen (pkgMemberId pkg) <> status)
 
 addWorkgroupMember :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => Name -> Name -> m (Workspace, WorkGroup)
