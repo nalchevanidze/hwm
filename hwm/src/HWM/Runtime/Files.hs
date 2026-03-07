@@ -116,9 +116,12 @@ withThrow x = x >>= either (throwError . fromString) pure
 
 rewrite_ :: (MonadError Issue m, MonadIO m, FromJSON t, ToJSON t) => FilePath -> (Maybe t -> m t) -> m Status
 rewrite_ pkg f = do
-  original <- safeRead pkg
-  yaml <- fromEither original >>= mapYaml f
-  withThrow (safeWrite pkg (serializeYaml yaml)) $> Checked
+  prevYaml <- safeRead pkg >>= fromEither
+  nextYaml <- mapYaml f prevYaml
+  let hasChange = Just (rawValue nextYaml) == (rawValue <$> prevYaml)
+  if hasChange
+    then withThrow (safeWrite pkg (serializeYaml nextYaml)) $> Updated
+    else pure Checked
 
 statusM :: (MonadIO m) => FilePath -> m t -> m Status
 statusM pkg m = do
