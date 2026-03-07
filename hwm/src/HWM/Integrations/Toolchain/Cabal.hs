@@ -20,9 +20,8 @@ import qualified Data.ByteString as BS
 import Data.Foldable (Foldable (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
 import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
-import Distribution.PackageDescription.Check (CheckPackageContentOps (..), PackageCheck (..), checkPackage)
+import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Parsec
 import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
@@ -42,11 +41,11 @@ import HWM.Domain.ConfigT (ConfigT)
 import qualified HWM.Domain.ConfigT as CT
 import HWM.Domain.Dependencies (Dependencies (..), HasDependencies (..), MapDeps (..), mkCabalDependency, toDependencyList)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
+import HWM.Runtime.Files (syncFile)
 import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
-import qualified System.Directory as D
 import System.FilePath (takeDirectory, (</>))
 
 -- | Translate Cabal warnings into formatting status for downstream reporting.
@@ -114,16 +113,8 @@ generateCabalProject packagePaths ghcVersion =
 syncCabalProject :: ConfigT Status
 syncCabalProject = do
   cabalFilePath <- asks (optionsCabal . CT.options)
-  exist <- liftIO $ D.doesFileExist cabalFilePath
-  old <-
-    if exist
-      then Just <$> liftIO (TIO.readFile cabalFilePath)
-      else pure Nothing
   BuildEnvironment {..} <- getBuildEnvironment Nothing
-  let newFile = generateCabalProject buildPkgs (toText buildGHC)
-  if old == Just newFile
-    then pure Checked
-    else liftIO $ TIO.writeFile cabalFilePath newFile $> Updated
+  syncFile cabalFilePath (generateCabalProject buildPkgs (toText buildGHC))
 
 data CabalPackage = CabalPackage
   { cbDirectory :: FilePath,

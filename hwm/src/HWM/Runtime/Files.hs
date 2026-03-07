@@ -19,6 +19,7 @@ module HWM.Runtime.Files
     Signature,
     getFileSignature,
     prepareDir,
+    syncFile,
   )
 where
 
@@ -41,6 +42,7 @@ import Data.Map (lookup)
 import Data.Text (toTitle)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.IO as TIO
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import HWM.Core.Formatting (Format (..), Status (..))
@@ -243,3 +245,14 @@ cleanRelativePath (Just name) =
 
 prepareDir :: (MonadIO m) => FilePath -> m ()
 prepareDir dir = liftIO $ createDirectoryIfMissing True dir
+
+syncFile :: (MonadIO m) => FilePath -> Text -> m Status
+syncFile path newFile = do
+  exist <- liftIO $ doesFileExist path
+  old <-
+    if exist
+      then Just <$> liftIO (TIO.readFile path)
+      else pure Nothing
+  if old == Just newFile
+    then pure Checked
+    else liftIO $ TIO.writeFile path newFile $> Updated
