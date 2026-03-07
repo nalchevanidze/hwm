@@ -4,7 +4,7 @@
   resolver [2m..........[0m lts-18.28
 
 • [1mconfig[0m
-  cabal.project [2m.....[0m [32m✓[0m
+  cabal.project [2m.....[0m [36m⟳[0m
   stack.yaml [2m........[0m [36m⟳[0m
   flake.nix [2m.........[0m [32m✓[0m
   hie.yaml [2m..........[0m [36m⟳[0m
