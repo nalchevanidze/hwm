@@ -189,10 +189,11 @@ instance MapDeps CabalPackage where
     newGpd <- mapDeps ctx f (cbOriginal cabalPkg)
     pure cabalPkg {cbOriginal = newGpd}
 
-newCabalPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Version -> Dependencies -> m ()
+newCabalPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Version -> Dependencies -> m Status
 newCabalPackage dir name version deps = do
   let package = emptyPackage name version deps
   liftIO $ writeGenericPackageDescription (dir </> (toString name <> ".cabal")) package
+  pure Checked
 
 emptyPackage :: PkgName -> Version -> Dependencies -> GenericPackageDescription
 emptyPackage (P.PkgName name) version dependencies =

@@ -23,5 +23,5 @@ libHsTemplate =
 scaffoldPackage :: FilePath -> PkgName -> ConfigT ()
 scaffoldPackage targetDir pkgName = do
   liftIO $ createDirectoryIfMissing True (targetDir </> "src")
-  newPackage targetDir pkgName
+  xs <- newPackage targetDir pkgName
   liftIO $ writeFile (targetDir </> "src/Lib.hs") (T.unpack libHsTemplate)

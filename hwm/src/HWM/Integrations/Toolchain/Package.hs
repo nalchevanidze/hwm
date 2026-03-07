@@ -16,7 +16,7 @@ module HWM.Integrations.Toolchain.Package
 where
 
 import qualified Data.Text as T
-import HWM.Core.Formatting (displayStatus)
+import HWM.Core.Formatting (displayStatus, Status)
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), PkgSource (..), cabalSource, checkVersion, hpackSource)
 import HWM.Domain.Bounds (Bounds (Bounds))
 import HWM.Domain.Config (getRegistryBounds)
@@ -40,14 +40,15 @@ import HWM.Integrations.Toolchain.Cabal (CabalPackage, newCabalPackage, readCaba
 import HWM.Integrations.Toolchain.Hpack (HpackPackage, newHpackPackage, readHpackPackage, rewriteHpackPackage)
 import Relude
 
-newPackage :: FilePath -> PkgName -> ConfigT ()
+newPackage :: FilePath -> PkgName -> ConfigT [(Text, Status)]
 newPackage targetDir name = do
   let baseName = PkgName "base"
   version <- askVersion
   base <- fromMaybe (Bounds Nothing Nothing) <$> getRegistryBounds baseName
   let deps = M.singleDeps (Dependency baseName base)
-  newHpackPackage targetDir name version deps
-  newCabalPackage targetDir name version deps
+  hpack <- newHpackPackage targetDir name version deps
+  cabal <- newCabalPackage targetDir name version deps
+  pure [("hpack", hpack), ("cabal", cabal)]
 
 syncPackages :: ConfigT ()
 syncPackages = forWorkspaceCore $ updatePackage syncPackage syncPackage
