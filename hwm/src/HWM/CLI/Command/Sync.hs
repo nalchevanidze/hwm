@@ -4,7 +4,7 @@
 module HWM.CLI.Command.Sync (sync) where
 
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (..), Format (..), Status (Checked), chalk)
+import HWM.Core.Formatting (Color (..), Format (..))
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import HWM.Integrations.Toolchain.Cabal (syncCabalProject)

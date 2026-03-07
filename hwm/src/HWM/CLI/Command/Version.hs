@@ -15,7 +15,7 @@ import HWM.Core.Version (VersionChange (..), nextVersion)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, config, updateConfig)
 import HWM.Integrations.Toolchain.Package (syncPackages)
-import HWM.Runtime.UI (putLine, sectionConfig, sectionTableM)
+import HWM.Runtime.UI (putLine, sectionTableM)
 import Options.Applicative (argument, help, metavar)
 import Options.Applicative.Builder (str)
 import Relude
