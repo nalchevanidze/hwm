@@ -90,20 +90,12 @@ validatePackages :: ConfigT ()
 validatePackages = forWorkspace $ \pkg -> map (hpack pkg) (maybeToList $ hpackSource pkg) <> [cabalTask pkg]
   where
     hpack pkg src =
-      ( "hpack",
-        do
-          h <- readHpackPackage pkg
-          validatePackage (src, h)
-      )
+      ("hpack", readHpackPackage pkg >>= validatePackage src)
     cabalTask pkg =
-      ( "cabal",
-        do
-          cabal <- readCabalPackage pkg
-          validatePackage (cabalSource pkg, cabal)
-      )
+      ("cabal", readCabalPackage pkg >>= validatePackage (cabalSource pkg))
 
-validatePackage :: (IsPkg a, HasDependencies a) => (PkgSource, a) -> ConfigT Status
-validatePackage (source, package) = monadStatus $ do
+validatePackage :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT Status
+validatePackage source package = monadStatus $ do
   checkVersion source package
   diffs <- concat <$> traverse checkForDependencyIssues (collectDependencies [] package)
   reportDependencyIssues source diffs
