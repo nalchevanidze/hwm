@@ -54,9 +54,7 @@ bumpVersion (FixedVersion version') Config {..} = do
   pure Config {cfgVersion = version', ..}
 
 runVersion :: VersionOptions -> ConfigT ()
-runVersion (VersionOptions (Just bump)) = (bumpVersion bump `updateConfig`) $ do
-  sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
-  syncPackages
+runVersion (VersionOptions (Just bump)) = bumpVersion bump `updateConfig` syncPackages
 runVersion (VersionOptions Nothing) = do
   putLine . format . cfgVersion =<< asks config
   exitSuccess
