@@ -19,6 +19,7 @@ workspace:
       - .
     prefix: morpheus-graphql
 environments:
+  stack: true
   default: stable
   profiles:
     latest:

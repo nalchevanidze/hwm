@@ -1,16 +1,19 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Utils.Golden (Golden (..), goldenTest) where
 
+import Relude
 import System.Directory (makeAbsolute, removePathForcibly)
-import System.Environment (lookupEnv)
 import System.FilePath ((</>))
+import qualified System.IO as IO
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (copyDir, diff, inWorkDir, runHWM)
+import Utils.Core (copyLocalFiles, diff, inWorkDir, runHWM)
 
 data Golden = Golden
   { cmd :: String,
-    scenario :: String
+    scenario :: FilePath,
+    project :: FilePath
   }
 
 isUpdateMode :: IO Bool
@@ -22,14 +25,14 @@ goldenTest Golden {..} = do
   let expectedDir = scenarioDir </> "expected"
   let stdoutFile = scenarioDir </> "stdout.ansi"
   updateMode <- isUpdateMode
-  inWorkDir scenarioDir $ do
-    stdout <- runHWM cmd
+  inWorkDir project scenarioDir $ do
+    out <- runHWM cmd
     if updateMode
       then do
         removePathForcibly expectedDir
-        copyDir "." expectedDir
-        writeFile stdoutFile stdout
+        copyLocalFiles expectedDir
+        IO.writeFile stdoutFile out
       else do
         diff expectedDir [".hwm", ".stack-work", "dist-newstyle", "*.log"]
-        expectedStdout <- readFile stdoutFile
-        stdout `shouldBe` expectedStdout
+        expectedStdout <- IO.readFile stdoutFile
+        out `shouldBe` expectedStdout

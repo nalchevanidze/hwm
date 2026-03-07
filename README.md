@@ -8,17 +8,11 @@
 
 HWM is an **active workspace maintainer** that provides:
 
-* **The Universal Translator:** Write one `hwm.yaml`. HWM automatically derives and generates `cabal.project`, `stack.yaml`,`hie.yaml`, `flake.nix`, and `.cabal` files.
-* **Zero Lock-in:** HWM materializes standard configuration files directly at your project root. You can uninstall HWM at any time, and your repository will still build perfectly using standard native tools.
-* **Smart Bounds Synchronization:** Maintain a beautifully aligned, single-source-of-truth dependency registry. HWM automatically injects these bounds across your entire monorepo.
-* **IDE Support:** Because standard files are generated at the root, Haskell Language Server (HLS) works instantly with zero configuration.
-
----
-
-### ✅ The Solution: A Single Source of Truth
-
-Define your workspace architecture in a single, visually clean file: `hwm.yaml`.
-HWM handles the boilerplate and implementation details for whatever build system your team prefers.
+- **The Universal Translator:** Write one `hwm.yaml`. HWM automatically derives and generates `cabal.project`, `stack.yaml`, `hie.yaml`, `flake.nix`, and `.cabal` files.
+- **Zero Lock-in:** HWM materializes standard configuration files directly at your project root. You can uninstall HWM at any time, and your repository will still build perfectly using standard native tools.
+- **Smart Bounds Synchronization:** Maintain a beautifully aligned, single-source-of-truth dependency registry. HWM automatically injects these bounds across your entire monorepo.
+- **Zero-Overhead IDE Support:** Because standard files are generated at the root, Haskell Language Server (HLS) works instantly. HWM automatically generates `hie.yaml` tailored to your active toolchains.
+- **Flexible Toolchain Toggles(v0.2.0):** You are in total control. Explicitly enable or disable `stack`, `nix` globally, or toggle them on a per-profile basis.
 
 <p align="center">
 <img src="images/status.png" alt="HWM Status Output" width="600">
@@ -32,10 +26,11 @@ HWM sits one layer above your toolchain. It separates your **workspace intent** 
 graph TD
     HWM[hwm.yaml] ===>|Single Source of Truth| Engine((HWM Engine))
 
-    subgraph "Native Configurations (Auto-Generated)"
+    subgraph "Native Configurations (Managed & Idempotent)"
     Engine --> Cabal[cabal.project & *.cabal]
     Engine --> Nix[flake.nix]
     Engine --> Stack[stack.yaml]
+    Engine --> HLS[hie.yaml]
     end
 
     subgraph "Your Build Tools"
@@ -55,9 +50,9 @@ graph TD
 ### Installation
 
 ```bash
-stack install hwm
-# or
 cabal install hwm
+# or
+stack install hwm
 
 ```
 
@@ -66,14 +61,14 @@ cabal install hwm
 Convert any existing repository into an HWM workspace in seconds.
 
 ```bash
-# 1. Generate hwm.yaml. HWM automatically discovers packages and infers dependencies (for now only for stack based projects).
+# 1. Generate hwm.yaml. HWM automatically discovers packages and infers dependencies.
 hwm init
 
-# 2. Sync configuration (Generates cabal.project, stack.yaml, and package files)
-hwm generate
+# 2. Sync configuration (Generates cabal.project, stack.yaml, flake.nix, hie.yaml)
+hwm sync
 
-# 3. Build using your favorite tool!
-cabal build all
+# 3. View the visual dashboard of your workspace
+hwm status
 
 ```
 
@@ -89,10 +84,9 @@ HWM uses a gorgeous, tabular dictionary to manage your dependencies. You define 
 
 ```yaml
 registry:
-  Cabal:                '>= 3.8      && <= 3.16.1.0'
-  aeson:                '>= 1.5.6.0  && <= 2.2.3.0'
-  mtl:                  '>  2.0.0    && <  2.6.0'
-
+  Cabal: ">= 3.8      && <= 3.16.1.0"
+  aeson: ">= 1.5.6.0  && <= 2.2.3.0"
+  mtl: ">  2.0.0    && <  2.6.0"
 ```
 
 **Audit & Fix:**
@@ -128,32 +122,36 @@ workspace:
       - core
       - client
       - server
-
 ```
 
-*When HWM generates your `cabal.project`, it automatically builds the exact relative paths (`morpheus-graphql-core`, `morpheus-graphql-client`), saving you from writing out bloated package names over and over.*
+_When HWM generates your configs, it automatically builds the exact relative paths (`morpheus-graphql-core`), saving you from writing out bloated package names over and over._
 
-### 3. Multi-Mode Profiles
+### 3. Multi-Mode Profiles & Toolchain Toggles
 
-Bring the power of CI matrices to your local development environment. Define your environments purely by GHC version, and isolate tool-specific overrides in their own namespaces.
+Bring the power of CI matrices to your local development environment. Define your environments purely by GHC version, and globally or locally toggle the toolchains (`stack`, `nix`, `cabal`, `hie`) you want to support.
 
 ```yaml
 environments:
   default: stable
+  # Global: Enable these for all profiles by default
+  stack: true
+  nix: true
+
   profiles:
     legacy:
       ghc: 8.10.7
-      # Tool-specific escapes live cleanly under their own blocks
+      # event if stack is globally disabled, this profile will still generate a stack.yaml with the specified resolver and extra-deps.
       stack:
+        resolver: lts-18.28
         extra-deps:
           base-orphans: 0.8.1
           fastsum: 0.1.0.0
     stable:
-      ghc: 9.6.3
+      ghc: 9.6.6
       stack:
+        resolver: lts-22.43
         extra-deps:
           fastsum: 0.1.1.1
-
 ```
 
 **Run Your Matrix Locally (for now only for stack, nix will be suported):**
@@ -170,9 +168,9 @@ hwm test --env=all
 **Switching Environments:**
 
 ```bash
-# Instantly overwrites the root configs (stack.yaml, cabal.project, flake.nix) 
+# Instantly overwrites the root configs (stack.yaml, cabal.project, flake.nix)
 # to match the 'legacy' GHC 8.10.7 profile.
-hwm sync legacy 
+hwm sync legacy
 ```
 
 ### 4. Task Runner & Scripts
@@ -181,17 +179,16 @@ HWM includes a lightweight, pass-through task runner. Define simple aliases for 
 
 ```yaml
 scripts:
-  build: stack build
-  clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
-  test:  stack test
-
+  build: cabal build all
+  clean: find . -name "*.cabal" -exec rm -rf {} \; && cabal clean
+  test: cabal test all
 ```
 
 Pass arguments seamlessly to your underlying tools:
 
 ```bash
-# Translates to: stack test morpheus-graphql-core --fast
-hwm run test -- morpheus-graphql-core --fast
+# Translates to: cabal test morpheus-graphql-core --test-show-details=direct
+hwm run test -- morpheus-graphql-core --test-show-details=direct
 
 ```
 
@@ -207,7 +204,6 @@ Transform raw binaries into hashed, compressed distribution units.
 release:
   artifacts:
     hwm: libs/hwm:hwm
-
 ```
 
 #### 🚢 Publication Trains
@@ -219,7 +215,6 @@ release:
   publish:
     main:
       - libs
-
 ```
 
 **Usage:**
@@ -229,7 +224,7 @@ release:
 hwm version minor
 
 # Build local binaries and hashes
-hwm release artifacts 
+hwm release artifacts
 
 # Push a specific train to Hackage
 hwm release publish main
@@ -242,15 +237,16 @@ hwm release publish main
 
 ## ⚖️ The Haskell Tooling Landscape
 
-| Feature | Standard Setup | Nix / Bazel | 🚀 HWM |
-| --- | --- | --- | --- |
-| **Config Source** | Decentralized | Centralized | **Centralized (`hwm.yaml`)** |
-| **Build System Support** | Single Tool | High Friction | **✅ Agnostic (Nix, Cabal, Stack)** |
-| **Bound Management** | Manual Edits | Fixed Hashes | **✅ Smart Auto-Syncing** |
-| **Lock-in** | High | Extreme | **✅ Zero Lock-in** |
+| Feature                  | Standard Setup    | Nix / Bazel   | 🚀 HWM v0.2.0                       |
+| ------------------------ | ----------------- | ------------- | ----------------------------------- |
+| **Config Source**        | Decentralized     | Centralized   | **Centralized (`hwm.yaml`)**        |
+| **Build System Support** | Single Tool       | High Friction | **✅ Agnostic (Nix, Cabal, Stack)** |
+| **Idempotency**          | Manual Edits      | Varies        | **✅ Silent Writes (mtime-safe)**   |
+| **IDE Setup**            | Manual `hie.yaml` | Complex       | **✅ Auto-Generated (Smart)**       |
+| **Lock-in**              | High              | Extreme       | **✅ Zero Lock-in**                 |
 
 ## 🧬 Status
 
-HWM is currently in **v0.1.0 (Beta)**. It was built to solve the orchestration needs of the **[Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql)** ecosystem, where it successfully synchronizes 15+ packages across legacy and modern GHC profiles.
+HWM is currently in **v0.2.0 (Beta)**. It was built to solve the orchestration needs of the **[Morpheus GraphQL](https://github.com/morpheusgraphql/morpheus-graphql)** ecosystem, where it successfully synchronizes 15+ packages across legacy and modern GHC profiles.
 
 Your feedback is highly valued! Please [open an issue](https://github.com/nalchevanidze/hwm/issues) if you encounter bugs or want to share how you are using HWM.

@@ -1,9 +1,35 @@
-module Commands.Sync (spec) where
+module Commands.Sync (testSync) where
 
-import Test.Hspec
+import Test.Hspec (Spec, describe, it)
 import Utils.Golden (Golden (..), goldenTest)
 
-spec :: Spec
-spec = describe "hwm sync (golden tests)" $ do
-  it "syncs a simple workspace correctly" $ goldenTest Golden {cmd = "sync", scenario = "sync/simple"}
-  it "syncs a cabal-only workspace correctly" $ goldenTest Golden {cmd = "sync", scenario = "sync/cabal-only"}
+testSync :: Spec
+testSync = describe "sync" $ do
+  it "syncs a simple workspace" $
+    goldenTest
+      Golden
+        { cmd = "sync",
+          project = "simple",
+          scenario = "sync/simple"
+        }
+  it "syncs a cabal-only workspace" $
+    goldenTest
+      Golden
+        { cmd = "sync",
+          project = "morpheus",
+          scenario = "sync/cabal"
+        }
+  it "syncs a nix workspace" $
+    goldenTest
+      Golden
+        { cmd = "sync",
+          project = "morpheus",
+          scenario = "sync/nix"
+        }
+  it "syncs a stack workspace" $
+    goldenTest
+      Golden
+        { cmd = "sync",
+          project = "morpheus",
+          scenario = "sync/stack"
+        }

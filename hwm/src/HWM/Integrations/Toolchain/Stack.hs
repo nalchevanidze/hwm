@@ -40,7 +40,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..), fromEither)
 import HWM.Core.Version (Version, latestGHCVersion, parseGHCVersion)
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environments (..), StackEnvironment (..), getBuildEnvironment, hkgRefs)
+import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environments (..), Feature (..), StackEnvironment (..), getBuildEnvironment, hkgRefs)
 import HWM.Domain.Workspace (toWorkspaceRef)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
@@ -196,10 +196,10 @@ deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExte
 buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> [(Name, Stack)] -> m Environments
 buildMatrix pkgs (defaultEnv : envs) = do
   environments <- sortOn (ghc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
-  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments}
+  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments, envStack = Just True, envNix = Nothing}
 buildMatrix _ [] = do
   let defaultEnv = mkDefaultEnv
-  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv]}
+  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv], envStack = Nothing, envNix = Nothing}
 
 mkDefaultEnv :: (Name, Enviroment)
 mkDefaultEnv =
@@ -208,6 +208,7 @@ mkDefaultEnv =
       { stack = Nothing,
         exclude = Nothing,
         ghc = latestGHCVersion,
+        nix = Nothing,
         ..
       }
   )
@@ -218,4 +219,4 @@ inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do
   extraDeps <- parseExtraDeps (fromMaybe [] deps)
   let excludeList = filter ((`notElem` packages) . pkgDirPath) allPkgs
       exclude = if null excludeList then Nothing else Just (map toWorkspaceRef excludeList)
-  pure (name, Enviroment {stack = Just StackEnvironment {resolver = Just resolver, ..}, ..})
+  pure (name, Enviroment {stack = Just (Enabled StackEnvironment {resolver = Just resolver, ..}), nix = Nothing, ..})

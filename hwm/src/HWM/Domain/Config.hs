@@ -34,11 +34,11 @@ import Relude
 
 data Config = Config
   { cfgName :: Name,
-    cfgGithub :: Maybe Text,
     cfgVersion :: Version,
-    cfgBounds :: Maybe Bounds,
     cfgWorkspace :: Workspace,
     cfgEnvironments :: Environments,
+    cfgGithub :: Maybe Text,
+    cfgBounds :: Maybe Bounds,
     cfgRegistry :: Maybe Registry,
     cfgScripts :: Maybe (Map Name Text),
     cfgRelease :: Maybe Release

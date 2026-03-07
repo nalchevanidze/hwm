@@ -6,6 +6,8 @@ workspace:
       - foo
       - bar
 environments:
+  nix: true
+  stack: true
   default: foo
   profiles:
     foo:

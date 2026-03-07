@@ -1,7 +1,10 @@
 module Main (main) where
 
-import qualified Commands.Sync
-import Test.Hspec
+import Commands.Init (testInit)
+import Commands.Sync (testSync)
+import Test.Hspec (hspec)
 
 main :: IO ()
-main = hspec Commands.Sync.spec
+main = hspec $ do
+  testInit
+  testSync

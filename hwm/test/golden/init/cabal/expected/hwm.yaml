@@ -1,0 +1,66 @@
+# hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+name: work
+version: 0.28.4
+workspace:
+  helpers:
+    dir: helpers
+    members:
+    - benchmarks
+  libs:
+    members:
+    - app
+    - client
+    - code-gen
+    - code-gen-utils
+    - core
+    - server
+    - subscriptions
+    - tests
+    - .
+    prefix: morpheus-graphql
+environments:
+  default: default
+  profiles:
+    default:
+      ghc: '9.10'
+registry:
+  aeson: '               >=  1.4.4     &&  <  3.0.0'
+  attoparsec-aeson: '    >=  2.1.0.0   &&  <  3.0.0'
+  base: '                >=  4.7.0     &&  <  5.0.0'
+  bytestring: '          >=  0.10.4    &&  <  1.0.0'
+  containers: '          >=  0.4.2.1   &&  <  1.0.0'
+  criterion: '           >=  1.0       &&  <  2.0.0'
+  directory: '           >=  1.0.0     &&  <  2.0.0'
+  file-embed: '          >=  0.0.10    &&  <  1.0.0'
+  filepath: '            >=  1.1.0     &&  <  2.0.0'
+  Glob: '                >=  0.7.0     &&  <  1.0.0'
+  graphql: '             >=  0.5       &&  <  2.0.0'
+  hashable: '            >=  1.0.0     &&  <  2.0.0'
+  megaparsec: '          >=  7.0.0     &&  <  10.0.0'
+  modern-uri: '          >=  0.1.0.0   &&  <  1.0.0'
+  mtl: '                 >=  2.0.0     &&  <  3.0.0'
+  optparse-applicative: '>=  0.12.0    &&  <  1.0.0'
+  prettyprinter: '       >=  1.7.0     &&  <  2.0.0'
+  relude: '              >=  0.3.0     &&  <  2.0.0'
+  req: '                 >=  3.0.0     &&  <  4.0.0'
+  scientific: '          >=  0.3.6.2   &&  <  0.4.0'
+  tasty: '               >=  0.1.0     &&  <  2.0.0'
+  tasty-hunit: '         >=  0.1.0     &&  <  1.0.0'
+  template-haskell: '    >=  2.0.0     &&  <  3.0.0'
+  text: '                >=  1.2.3     &&  <  3.0.0'
+  th-lift-instances: '   >=  0.1.1     &&  <  1.0.0'
+  transformers: '        >=  0.3.0     &&  <  1.0.0'
+  unliftio-core: '       >=  0.0.1     &&  <  1.0.0'
+  unordered-containers: '>=  0.2.8     &&  <  1.0.0'
+  uuid: '                >=  1.0.0     &&  <  2.0.0'
+  vector: '              >=  0.12.0.1  &&  <  1.0.0'
+  websockets: '          >=  0.12.6.0  &&  <  1.0.0'
+  wuss: '                >=  1.0.0     &&  <  3.0.0'
+  yaml: '                >=  0.8.32    &&  <  1.0.0'
+scripts:
+  build: stack build --fast
+  clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
+  install: stack install
+  lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
+    -s .
+  test: stack test {TARGET} --fast

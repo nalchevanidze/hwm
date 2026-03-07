@@ -23,16 +23,14 @@ module HWM.Domain.Environments
     newEnv,
     existsEnviroment,
     environmentHash,
+    NixEnvironment (..),
+    Feature (..),
   )
 where
 
 import Control.Monad.Except (MonadError (..))
-import Data.Aeson
-  ( FromJSON (..),
-    ToJSON (toJSON),
-    genericParseJSON,
-    genericToJSON,
-  )
+import Data.Aeson (FromJSON (..), ToJSON (toJSON), genericParseJSON, genericToJSON, object)
+import Data.Aeson.Types (Value (..))
 import Data.Foldable (Foldable (..))
 import qualified Data.Map as M
 import qualified Data.Map as Map
@@ -58,6 +56,8 @@ type Extras = VersionMap
 
 data Environments = Environments
   { envDefault :: Name,
+    envNix :: Maybe Bool,
+    envStack :: Maybe Bool,
     envProfiles :: Map Name Enviroment
   }
   deriving
@@ -70,12 +70,13 @@ newEnv ghc =
   Enviroment
     { ghc = ghc,
       exclude = Nothing,
-      stack = Nothing
+      stack = Nothing,
+      nix = Nothing
     }
 
 environmentHash :: Environments -> Signature
 environmentHash Environments {..} =
-  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< stack) (toList envProfiles)
+  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< unfeature <=< stack) (toList envProfiles)
   where
     toSig (pkg, v) = format pkg <> "-" <> format v
 
@@ -107,14 +108,47 @@ instance
       checkTarget fileSig Enviroment {..}
         | fileSig == signature = checkExclude
         -- checking all hkgRefs is expensive, so we skip it if the signature matches
-        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs (extraDeps =<< stack)), checkExclude]
+        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs (extraDeps =<< unfeature =<< stack)), checkExclude]
         where
           checkExclude = checkWorkspaceRefs (fromMaybe [] exclude)
+
+data Feature a = Enabled a | Disabled deriving (Generic, Show, Ord, Eq)
+
+unfeature :: Feature a -> Maybe a
+unfeature (Enabled a) = Just a
+unfeature Disabled = Nothing
+
+isEnabled :: Maybe Bool -> Maybe (Feature a) -> Bool
+isEnabled _ (Just (Enabled _)) = True
+isEnabled _ (Just Disabled) = False
+isEnabled global Nothing = fromMaybe False global
+
+instance FromJSON (Feature StackEnvironment) where
+  parseJSON (Bool b) = pure $ if b then Enabled (StackEnvironment Nothing Nothing Nothing) else Disabled
+  parseJSON v = Enabled <$> parseJSON v
+
+instance FromJSON (Feature NixEnvironment) where
+  parseJSON (Bool b) = pure $ if b then Enabled NixEnvironment else Disabled
+  parseJSON v = Enabled <$> parseJSON v
+
+instance (ToJSON a) => ToJSON (Feature a) where
+  toJSON (Enabled se) = toJSON se
+  toJSON Disabled = Bool False
+
+data NixEnvironment = NixEnvironment deriving (Generic, Show, Ord, Eq)
+
+instance ToJSON NixEnvironment where
+  toJSON NixEnvironment = object []
+
+instance FromJSON NixEnvironment where
+  parseJSON (Object _) = pure NixEnvironment
+  parseJSON _ = fail "Invalid Nix environment configuration. Expected an object or a boolean."
 
 data Enviroment = Enviroment
   { ghc :: Version,
     exclude :: Maybe [WorkspaceRef],
-    stack :: Maybe StackEnvironment
+    stack :: Maybe (Feature StackEnvironment),
+    nix :: Maybe (Feature NixEnvironment)
   }
   deriving
     ( Generic,
@@ -148,7 +182,9 @@ data BuildEnvironment = BuildEnvironment
     buildName :: Name,
     buildExtraDeps :: Maybe Extras,
     buildResolver :: Name,
-    buildAllowNewer :: Maybe Bool
+    buildAllowNewer :: Maybe Bool,
+    buildStack :: Bool,
+    buildNix :: Bool
   }
   deriving
     ( Generic,
@@ -169,6 +205,7 @@ getBuildEnvironments ::
   ) =>
   m [BuildEnvironment]
 getBuildEnvironments = do
+  globalEnv <- askEnv
   envs <- envProfiles <$> askEnv
   for (Map.toList envs) $ \(name, env) -> do
     pkgs <- allPackages
@@ -176,10 +213,12 @@ getBuildEnvironments = do
       BuildEnvironment
         { buildPkgs = excludePkgs env pkgs,
           buildName = name,
-          buildExtraDeps = extraDeps =<< stack env,
-          buildResolver = fromMaybe (eraStackageResolverName $ selectEra (ghc env)) (resolver =<< stack env),
+          buildExtraDeps = extraDeps =<< unfeature =<< stack env,
+          buildResolver = fromMaybe (eraStackageResolverName $ selectEra (ghc env)) (resolver =<< unfeature =<< stack env),
           buildGHC = ghc env,
-          buildAllowNewer = stack env >>= allowNewer
+          buildAllowNewer = stack env >>= unfeature >>= allowNewer,
+          buildStack = isEnabled (envStack globalEnv) (stack env),
+          buildNix = isEnabled (envNix globalEnv) (nix env)
         }
   where
     excludePkgs build pkgs =
