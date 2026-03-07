@@ -28,6 +28,12 @@ assertNotModified path action = do
   newTime <- getModificationTime path
   newTime `shouldBe` oldTime
 
+ignored :: [String]
+ignored = [".hwm", ".stack-work", "dist-newstyle", "*.log"]
+
+managed :: [String]
+managed = [".cabal", ".yaml", ".nix", ".project"]
+
 -- | Helper to find files HWM cares about (.cabal, .yaml, .nix, .project)
 findManagedFiles :: FilePath -> IO [FilePath]
 findManagedFiles dir = do
@@ -37,7 +43,7 @@ findManagedFiles dir = do
   subDirFiles <- concat <$> mapM (\(p, isDir) -> if isDir then findManagedFiles p else return []) paths
   return $ files ++ subDirFiles
   where
-    isManagedExtension p = takeExtension p `elem` [".cabal", ".yaml", ".nix", ".project"]
+    isManagedExtension p = takeExtension p `elem` managed
 
 copyLocalFiles :: FilePath -> IO ()
 copyLocalFiles = copyDir "."
@@ -62,9 +68,9 @@ inWorkDir project scenario m = do
       setCurrentDirectory workDir
       m $> ()
 
-diff :: FilePath -> [FilePath] -> IO ()
-diff expectedDir ignoreList = do
-  let ignoreFlags = S.unwords ["-x " ++ p | p <- ignoreList]
+diff :: FilePath -> IO ()
+diff expectedDir = do
+  let ignoreFlags = S.unwords ["-x " ++ p | p <- ignored]
   (diffCode, diffOut, _) <-
     readCreateProcessWithExitCode
       (shell $ "diff -ruN " ++ ignoreFlags ++ " " ++ expectedDir ++ " .")

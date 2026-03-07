@@ -40,4 +40,4 @@ goldenTest Golden {..} = do
         out `shouldBe` expectedStdout
         expectedDelta <- LBS.readFile deltaFile
         expectedDelta `shouldBe` encode changes
-        diff expectedDir [".hwm", ".stack-work", "dist-newstyle", "*.log"]
+        diff expectedDir
