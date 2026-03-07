@@ -8,7 +8,7 @@ import System.Directory (makeAbsolute)
 import System.FilePath ((</>))
 import qualified System.IO as IO
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (copySnapshot, diff, inWorkDir, runHWM)
+import Utils.Core (diff, inWorkDir, runHWM, saveSnapshot)
 
 data Golden = Golden
   { cmd :: String,
@@ -29,7 +29,7 @@ goldenTest Golden {..} = do
     out <- runHWM cmd
     if updateMode
       then do
-        copySnapshot expectedDir
+        saveSnapshot expectedDir
         IO.writeFile stdoutFile out
       else do
         diff expectedDir [".hwm", ".stack-work", "dist-newstyle", "*.log"]

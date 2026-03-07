@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyLocalFiles, inWorkDir, diff, runHWM, copySnapshot) where
+module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
 import qualified Data.List as S
@@ -87,7 +87,7 @@ runHWM cmd = do
     $ expectationFailure ("Command failed with stdout: " <> out <> "stderr: " <> err)
   return out
 
-copySnapshot :: FilePath -> IO ()
-copySnapshot dst = do
+saveSnapshot :: FilePath -> IO ()
+saveSnapshot dst = do
   removePathForcibly dst
   copyLocalFiles dst
