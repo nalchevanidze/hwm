@@ -9,8 +9,8 @@
 ./ [1mworkspace[0m
   
   • [1mlibs[0m
-  [2m└─- [0mbar [2m....[0m [33m![0m [33mhpack[0m
-  [2m└─- [0mfoo [2m....[0m [33m![0m [33mhpack[0m
+  [2m└─- [0mbar [2m....[0m [33m![0m [33mhpack[0m[2m [0m[33m![0m [33mcabal[0m
+  [2m└─- [0mfoo [2m....[0m [33m![0m [33mhpack[0m[2m [0m[33m![0m [33mcabal[0m
 
 [1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
 
@@ -21,6 +21,8 @@
       [2m└─- [0m[2mfile: bar/package.yaml[0m
       [2m└─- [0m[2m• [0m[2mdependencies[0m
           [2m└─- [0mbase: [2m → >= 4.7 && <  5.0[0m
+  [2m└─- [0m[2m• [0m[33mversion mismatch: 0.1.0 → 0.1.2[0m
+      [2m└─- [0m[2mfile: bar/bar.cabal[0m
   [2m• [0m[1mfoo[0m
   [2m└─- [0m[2m• [0m[33mversion mismatch: 0.1.0 → 0.1.2[0m
       [2m└─- [0m[2mfile: foo/package.yaml[0m
@@ -28,4 +30,6 @@
       [2m└─- [0m[2mfile: foo/package.yaml[0m
       [2m└─- [0m[2m• [0m[2mdependencies[0m
           [2m└─- [0mbase: [2m → >= 4.7 && <  5.0[0m
+  [2m└─- [0m[2m• [0m[33mversion mismatch: 0.1.0 → 0.1.2[0m
+      [2m└─- [0m[2mfile: foo/foo.cabal[0m
 
