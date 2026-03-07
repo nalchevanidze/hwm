@@ -4,7 +4,7 @@
 module HWM.CLI.Command.Sync (sync) where
 
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (..), Format (..), chalk)
+import HWM.Core.Formatting (Color (..), Format (..), Status (Checked), chalk)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import HWM.Integrations.Toolchain.Cabal (syncCabalProject)
@@ -26,9 +26,9 @@ sync tag = do
       ("resolver", pure $ buildResolver env)
     ]
   sectionConfig
-    ( [("cabal.project", syncCabalProject $> chalk Green "✓")]
-        <> [("stack.yaml", syncStackYaml $> chalk Green "✓") | buildStack env]
-        <> [("flake.nix", syncNixFile $> chalk Green "✓") | buildNix env]
-        <> [("hie.yaml", syncHie $> chalk Green "✓")]
+    ( [("cabal.project", syncCabalProject)]
+        <> [("stack.yaml", syncStackYaml) | buildStack env]
+        <> [("flake.nix", syncNixFile) | buildNix env]
+        <> [("hie.yaml", syncHie)]
     )
   syncPackages

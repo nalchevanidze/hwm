@@ -102,11 +102,12 @@ generateCabalProject packagePaths ghcVersion =
       "packages:\n" <> T.unlines (map (("  " <>) . format . P.pkgDirPath) packagePaths)
     ]
 
-syncCabalProject :: ConfigT ()
+syncCabalProject :: ConfigT Status
 syncCabalProject = do
   ops <- asks CT.options
   BuildEnvironment {..} <- getBuildEnvironment Nothing
   liftIO $ TIO.writeFile (optionsCabal ops) (generateCabalProject buildPkgs (toText buildGHC))
+  pure Checked
 
 data CabalPackage = CabalPackage
   { cbDirectory :: FilePath,

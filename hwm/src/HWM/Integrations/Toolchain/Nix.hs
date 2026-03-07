@@ -8,7 +8,7 @@ module HWM.Integrations.Toolchain.Nix (syncNixFile) where
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (format, toCamelCase)
+import HWM.Core.Formatting (Status (Checked), format, toCamelCase)
 import HWM.Core.Options (Options (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Version (Era (eraNixpkgs), Version, formatNixGhc, selectEra)
@@ -17,12 +17,13 @@ import HWM.Domain.ConfigT (ConfigT, Env (..))
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import Relude
 
-syncNixFile :: ConfigT ()
+syncNixFile :: ConfigT Status
 syncNixFile = do
   Config {..} <- asks config
   ops <- asks options
   BuildEnvironment {buildPkgs, buildGHC} <- getBuildEnvironment Nothing
   liftIO $ TIO.writeFile (optionsNix ops) (deriveFlakeNix cfgName buildGHC buildPkgs)
+  pure Checked
 
 renderNixName :: Text -> Text
 renderNixName name = toCamelCase name <> "WorkspacePackages"
