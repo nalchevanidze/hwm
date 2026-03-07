@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralisedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -18,6 +19,7 @@ module HWM.Core.Pkg
     cabalSource,
     hpackSource,
     getVersionIssues,
+    ModifyPackage (..),
   )
 where
 
@@ -73,6 +75,9 @@ class IsPkg a where
   -- version
   getPkgVersion :: a -> Version
   setVersion :: Version -> a -> a
+
+class ModifyPackage a m where
+  rewrite :: (a -> m (Maybe a)) -> Pkg -> m Status
 
 instance IsPkg GenericPackageDescription where
   getPkgName = PkgName . toText . unPackageName . packageName . package . packageDescription

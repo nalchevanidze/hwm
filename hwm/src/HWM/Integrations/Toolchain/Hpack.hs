@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -7,7 +8,6 @@
 module HWM.Integrations.Toolchain.Hpack
   ( HpackPackage (..),
     readHpackPackage,
-    rewriteHpackPackage,
     newHpackPackage,
   )
 where
@@ -21,11 +21,12 @@ import Data.Yaml.Aeson (Parser)
 import GHC.Generics (Generic (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Status (Checked))
-import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (..))
+import HWM.Core.Pkg (IsPkg (..), ModifyPackage (..), Pkg (..), PkgName (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Core.Version (Version)
+import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Dependencies (Dependencies, HasDependencies (..), MapDeps (..))
-import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced, readYaml, rewrite_, statusM)
+import HWM.Runtime.Files (aesonYAMLOptions, aesonYAMLOptionsAdvanced, readYaml, rewriteMaybe_, rewrite_, statusM)
 import Hpack ()
 import Relude
 import System.FilePath ((</>))
@@ -151,9 +152,9 @@ readHpackPackage pkg =
     readYaml
     (hpackFile pkg)
 
-rewriteHpackPackage :: (MonadIO m, MonadError Issue m) => (HpackPackage -> m HpackPackage) -> Pkg -> m Status
+rewriteHpackPackage :: (MonadIO m, MonadError Issue m) => (HpackPackage -> m (Maybe HpackPackage)) -> Pkg -> m Status
 rewriteHpackPackage f pkg = do
-  maybe (pure Checked) (\path -> statusM path (rewrite_ path maybePackage)) (hpackFile pkg)
+  maybe (pure Checked) (\path -> statusM path (rewriteMaybe_ path maybePackage)) (hpackFile pkg)
   where
     maybePackage Nothing =
       throwError
@@ -169,3 +170,6 @@ newHpackPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Ver
 newHpackPackage dir name version deps = do
   let package = emptyPackage name version deps
   rewrite_ (dir </> "package.yaml") (const $ pure package)
+
+instance ModifyPackage HpackPackage ConfigT where
+  rewrite = rewriteHpackPackage

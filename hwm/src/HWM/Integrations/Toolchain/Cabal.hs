@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Integrations.Toolchain.Cabal
-  ( rewriteCabalPackage,
-    validateHackage,
+  ( validateHackage,
     syncCabalProject,
     readCabalPackage,
     HasSourceDirs (..),
@@ -33,7 +33,7 @@ import Distribution.Verbosity (normal)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
-import HWM.Core.Pkg (IsPkg (..), Pkg (Pkg, hpackFile), PkgName)
+import HWM.Core.Pkg (IsPkg (..), ModifyPackage, Pkg (Pkg, hpackFile), PkgName)
 import qualified HWM.Core.Pkg as P
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version, toCabalVersion)
@@ -86,17 +86,23 @@ hpackSync pkg@Pkg {hpackFile = Just path} = do
     H.OutputUnchanged -> pure Checked
     _ -> pure Updated
 
-cabalSync :: (CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Status
+cabalSync :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
 cabalSync mapCabal pkg = do
   cabalP <- readCabalPackage pkg
-  newpackage <- mapCabal cabalP
-  if cbOriginal newpackage == cbOriginal cabalP
-    then pure Checked
-    else do
-      liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
-      pure Updated
+  changes <- mapCabal cabalP
+  case changes of
+    Nothing -> pure Checked
+    Just newpackage ->
+      if cbOriginal newpackage == cbOriginal cabalP
+        then pure Checked
+        else do
+          liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
+          pure Updated
 
-rewriteCabalPackage :: (CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Status
+instance ModifyPackage CabalPackage ConfigT where
+  rewrite = rewriteCabalPackage
+
+rewriteCabalPackage :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
 rewriteCabalPackage mapCabal pkg = do
   s <- hpackSync pkg
   ls <- validateHackage pkg (P.cabalFile pkg)
