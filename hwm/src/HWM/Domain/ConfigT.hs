@@ -28,7 +28,7 @@ where
 
 import Control.Monad.Error.Class
 import HWM.Core.Common (Check (..), Name)
-import HWM.Core.Formatting (Format (..))
+import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Has (Has (..))
 import HWM.Core.Options (Options (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runResultT)
@@ -40,7 +40,7 @@ import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, Workspace, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
 import HWM.Runtime.Files (Signature, addHash, getFileSignature, readYaml, rewrite_)
-import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
+import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI, sectionConfig)
 import Relude
 
 data Env (m :: Type -> Type) = Env
@@ -123,6 +123,7 @@ saveConfig config ops = do
 
 updateConfig :: (Config -> ConfigT Config) -> ConfigT b -> ConfigT b
 updateConfig f m = do
+  sectionConfig [("hwm.yaml", pure Checked)]
   config' <- asks config >>= f
   local (\e -> e {config = config'}) (checkConfig >> m)
 

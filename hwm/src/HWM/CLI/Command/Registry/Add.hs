@@ -16,7 +16,7 @@ import HWM.Domain.Environments (getTestedRange)
 import HWM.Domain.Registry (addDependency, lookupBounds)
 import HWM.Domain.Workspace (forWorkspaceTuple, resolveWorkspaces)
 import HWM.Integrations.Toolchain.Package
-import HWM.Runtime.UI (putLine, section, sectionConfig, sectionTableM)
+import HWM.Runtime.UI (putLine, section, sectionTableM)
 import Options.Applicative (argument, help, long, metavar, short, str)
 import Relude
 
@@ -46,9 +46,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
       bounds <- deriveBounds opsPkgName range
       let dependency = Dependency opsPkgName bounds
 
-      ((\cf -> pure cf {cfgRegistry = Just $ addDependency dependency (fromMaybe mempty (cfgRegistry cf))}) `updateConfig`) $ do
-        sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
-        addDepToPackage workspaces dependency
+      ((\cf -> pure cf {cfgRegistry = Just $ addDependency dependency (fromMaybe mempty (cfgRegistry cf))}) `updateConfig`) $ addDepToPackage workspaces dependency
     Just bounds -> do
       section "discovery" $ do
         putLine $ padDots 16 "registry" <> format bounds <> " (already registered)"

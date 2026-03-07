@@ -4,7 +4,7 @@
 
 module HWM.CLI.Command.Registry.Audit (runRegistryAudit, RegistryAuditOptions (..)) where
 
-import HWM.Core.Formatting (Color (..), chalk)
+import HWM.Core.Formatting (Color (..), Status (..), chalk)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, auditHasAny, formatAudit, updateDepBounds)
@@ -41,7 +41,6 @@ runRegistryAudit RegistryAuditOptions {..} = do
     else do
       if auditFix
         then ((\cf -> pure $ cf {cfgRegistry = Just $ mapDeps (updateDepBounds auditForce range) originalRegistry}) `updateConfig`) $ do
-          sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
           syncPackages
         else do
           injectIssue
