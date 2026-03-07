@@ -4,11 +4,11 @@
 module Utils.Golden (Golden (..), goldenTest) where
 
 import Relude
-import System.Directory (makeAbsolute, removePathForcibly)
+import System.Directory (makeAbsolute)
 import System.FilePath ((</>))
 import qualified System.IO as IO
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (copyLocalFiles, diff, inWorkDir, runHWM)
+import Utils.Core (copySnapshot, diff, inWorkDir, runHWM)
 
 data Golden = Golden
   { cmd :: String,
@@ -18,11 +18,6 @@ data Golden = Golden
 
 isUpdateMode :: IO Bool
 isUpdateMode = (== Just "1") <$> lookupEnv "GOLDEN_UPDATE"
-
-copySnapshot :: FilePath -> IO ()
-copySnapshot dst = do
-  removePathForcibly dst
-  copyLocalFiles dst
 
 goldenTest :: Golden -> Expectation
 goldenTest Golden {..} = do

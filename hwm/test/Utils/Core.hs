@@ -1,13 +1,13 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyLocalFiles, inWorkDir, diff, runHWM) where
+module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyLocalFiles, inWorkDir, diff, runHWM, copySnapshot) where
 
 import Control.Concurrent (threadDelay)
 import qualified Data.List as S
 import qualified GHC.IO.Exception as System.Exit
 import Relude
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, setCurrentDirectory)
+import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
 import System.FilePath (takeExtension, (</>))
 import System.IO.Temp (withSystemTempDirectory)
@@ -86,3 +86,8 @@ runHWM cmd = do
   unless (exitCode == System.Exit.ExitSuccess)
     $ expectationFailure ("Command failed with stdout: " <> out <> "stderr: " <> err)
   return out
+
+copySnapshot :: FilePath -> IO ()
+copySnapshot dst = do
+  removePathForcibly dst
+  copyLocalFiles dst
