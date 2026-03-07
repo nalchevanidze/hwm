@@ -105,7 +105,8 @@ validatePackages = forWorkspace $ forFormats hpack cabal
 hasNoIssues :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT Bool
 hasNoIssues source pkg = do
   (issues, depIssues) <- collectIssues source pkg
-  pure (null issues && null depIssues)
+  let depIssues' = filter (isJust . depIssueRegistryBounds) depIssues
+  pure (null issues && null depIssues')
 
 collectIssues :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT ([Issue], [DependencyBoundsIssue])
 collectIssues source pkg = do
