@@ -2,20 +2,26 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-module Utils.Core (assertNotModified, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
+{-# HLINT ignore "Use fewer imports" #-}
+
+module Utils.Core (assertNotModified, diffChanges, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
+import Control.Monad (forM_)
 import Data.Aeson (ToJSON)
 import Data.Aeson.Types (FromJSON)
+import qualified Data.ByteString as BS
 import qualified Data.List as S
 import qualified Data.Map.Strict as Map
 import Data.Time.Clock (UTCTime)
+import Distribution.Compat.Directory (doesPathExist)
 import qualified GHC.IO.Exception as System.Exit
 import Relude
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
-import System.FilePath (takeExtension, (</>))
+import System.FilePath (takeDirectory, takeExtension, (</>))
 import System.IO.Temp (withSystemTempDirectory)
 import System.Process (callCommand, readCreateProcessWithExitCode, shell)
 import Test.Hspec (Expectation, expectationFailure, shouldBe)
@@ -90,11 +96,6 @@ runHWM cmd = do
     $ expectationFailure ("Command failed with stdout: " <> out <> "stderr: " <> err)
   return out
 
-saveSnapshot :: FilePath -> IO ()
-saveSnapshot dst = do
-  removePathForcibly dst
-  copyLocalFiles dst
-
 data ChangeReport = ChangeReport
   { addedFiles :: [FilePath],
     deletedFiles :: [FilePath],
@@ -122,3 +123,43 @@ trackChanges action = do
   afterFiles <- findManagedFiles "."
   newTimes <- mapM (\p -> (p,) <$> getModificationTime p) afterFiles
   pure (buildChangeReport oldTimes newTimes, a)
+
+saveSnapshot :: ChangeReport -> FilePath -> IO ()
+saveSnapshot (ChangeReport added _ modified) dst = do
+  removePathForcibly dst
+  createDirectoryIfMissing True dst
+  let filesToUpdate = added ++ modified
+  forM_ filesToUpdate $ \f -> do
+    let srcPath = f
+    let dstPath = dst </> f
+    createDirectoryIfMissing True (takeDirectory dstPath)
+    copyFile srcPath dstPath
+
+diffChanges :: FilePath -> ChangeReport -> IO ()
+diffChanges expectedDir (ChangeReport added deleted modified) = do
+  let filesToCompare = added ++ modified
+  forM_ filesToCompare $ \f -> do
+    let expectedFile = expectedDir </> f
+    let actualFile = f
+
+    -- 1. Instantly read both files into memory
+    expectedContent <- BS.readFile expectedFile
+    actualContent <- BS.readFile actualFile
+
+    -- 2. Compare in memory first (Lightning fast)
+    when (expectedContent /= actualContent) $ do
+      -- 3. ONLY spawn the 'diff' process if they don't match!
+      (_, diffOut, _) <-
+        readCreateProcessWithExitCode
+          (shell $ "diff -u " ++ expectedFile ++ " " ++ actualFile)
+          ""
+
+      expectationFailure $ "Content mismatch in " ++ f ++ ":\n" ++ diffOut
+
+  -- Check deleted files (also instantaneous)
+  forM_ deleted $ \f -> do
+    exists <- doesPathExist f
+    when exists
+      $ expectationFailure
+      $ "Idempotency failure: File should have been deleted but still exists: "
+      ++ f

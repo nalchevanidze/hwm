@@ -10,7 +10,7 @@ import System.Directory (makeAbsolute)
 import System.FilePath ((</>))
 import qualified System.IO as IO
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (diff, inWorkDir, runHWM, saveSnapshot, trackChanges)
+import Utils.Core (diff, inWorkDir, runHWM, saveSnapshot, trackChanges, diffChanges)
 
 data Golden = Golden
   { cmd :: String,
@@ -32,7 +32,7 @@ goldenTest Golden {..} = do
     (changes, out) <- trackChanges (runHWM cmd)
     if updateMode
       then do
-        saveSnapshot expectedDir
+        saveSnapshot changes expectedDir
         IO.writeFile stdoutFile out
         LBS.writeFile deltaFile (encode changes)
       else do
@@ -40,4 +40,4 @@ goldenTest Golden {..} = do
         out `shouldBe` expectedStdout
         expectedDelta <- decode <$> LBS.readFile deltaFile
         expectedDelta `shouldBe` Just changes
-        diff expectedDir
+        diffChanges expectedDir changes
