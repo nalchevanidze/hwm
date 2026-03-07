@@ -16,7 +16,8 @@ where
 
 import qualified Data.Text as T
 import HWM.Core.Formatting (Status, StatusM, monadStatus)
-import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), PkgSource (..), cabalSource, checkVersion, hpackSource)
+import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), PkgSource (..), cabalSource, getVersionIssues, hpackSource)
+import HWM.Core.Result (MonadIssue (injectIssue))
 import HWM.Domain.Bounds (Bounds (Bounds))
 import HWM.Domain.Config (getRegistryBounds)
 import HWM.Domain.ConfigT (ConfigT, askVersion)
@@ -97,7 +98,8 @@ validatePackages = forWorkspace $ forFormats hpack cabal
 
 validatePackage :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT Status
 validatePackage source package = monadStatus $ do
-  checkVersion source package
+  issues <- getVersionIssues source package
+  traverse_ injectIssue issues
   diffs <- concat <$> traverse checkForDependencyIssues (collectDependencies [] package)
   reportDependencyIssues source diffs
   where

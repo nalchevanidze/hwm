@@ -17,7 +17,7 @@ module HWM.Core.Pkg
     PkgSource (..),
     cabalSource,
     hpackSource,
-    checkVersion,
+    getVersionIssues,
   )
 where
 
@@ -35,7 +35,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting
 import HWM.Core.Has (Has)
 import HWM.Core.Parsing (Parse (..))
-import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
+import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Core.Version (Version, askVersion, fromCabalVersion, toCabalVersion)
 import HWM.Runtime.Files (cleanRelativePath)
 import Relude hiding (Undefined, intercalate)
@@ -138,15 +138,18 @@ instance Format PkgName where
 instance Parse PkgName where
   parse = pure . PkgName
 
-checkVersion :: (IsPkg a, MonadReader env m, Has env Version, MonadIssue m) => PkgSource -> a -> m ()
-checkVersion source pkg = do
+getVersionIssues :: (MonadReader env m, Has env Version, IsPkg p) => PkgSource -> p -> m [Issue]
+getVersionIssues source pkg = do
   expectedVersion <- askVersion
   let version = getPkgVersion pkg
-  unless (version == expectedVersion)
-    $ injectIssue
-      Issue
-        { issueTopic = pkgSourceName source,
-          issueMessage = "version mismatch: " <> format version <> " → " <> format expectedVersion,
-          issueSeverity = SeverityWarning,
-          issueDetails = Just GenericIssue {issueFile = pkgSourceFile source}
-        }
+  if version == expectedVersion
+    then pure []
+    else
+      pure
+        [ Issue
+            { issueTopic = pkgSourceName source,
+              issueMessage = "version mismatch: " <> format version <> " → " <> format expectedVersion,
+              issueSeverity = SeverityWarning,
+              issueDetails = Just GenericIssue {issueFile = pkgSourceFile source}
+            }
+        ]
