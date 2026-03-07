@@ -1,0 +1,34 @@
+
+• [1msync[0m
+  enviroment [2m........[0m [36mfoo (8.10.7)[0m
+  resolver [2m..........[0m lts-18.28
+
+• [1mconfig[0m
+  cabal.project [2m.....[0m [36m⟳[0m
+  stack.yaml [2m........[0m [36m⟳[0m
+  flake.nix [2m.........[0m [36m⟳[0m
+  hie.yaml [2m..........[0m [36m⟳[0m
+
+./ [1mworkspace[0m
+  
+  • [1mlibs[0m
+  [2m└─- [0mfoo [2m....[0m [33m![0m [33mcabal[0m
+  [2m└─- [0mbar [2m....[0m [33m![0m [33mcabal[0m
+
+[1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
+
+  [2m• [0m[1mbar[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: library does not expose any modules[0m
+      [2m└─- [0m[2mfile: bar/bar.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
+      [2m└─- [0m[2mfile: bar/bar.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
+      [2m└─- [0m[2mfile: bar/bar.cabal[0m
+  [2m• [0m[1mfoo[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: library does not expose any modules[0m
+      [2m└─- [0m[2mfile: foo/foo.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
+      [2m└─- [0m[2mfile: foo/foo.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
+      [2m└─- [0m[2mfile: foo/foo.cabal[0m
+

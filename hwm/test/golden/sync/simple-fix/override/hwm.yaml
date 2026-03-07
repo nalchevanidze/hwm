@@ -1,0 +1,16 @@
+version: 1
+name: simple
+workspace:
+  libs:
+    members:
+      - foo
+      - bar
+environments:
+  nix: true
+  stack: true
+  default: foo
+  profiles:
+    foo:
+      ghc: 8.10.7
+registry:
+  base: '>=  4.7  &&  <  5.0'
