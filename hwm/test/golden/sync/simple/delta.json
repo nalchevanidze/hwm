@@ -1,0 +1,15 @@
+{
+  "addedFiles": [
+    "./cabal.project",
+    "./flake.nix",
+    "./hie.yaml",
+    "./stack.yaml"
+  ],
+  "deletedFiles": [],
+  "modifiedFiles": [
+    "./bar/bar.cabal",
+    "./bar/package.yaml",
+    "./foo/foo.cabal",
+    "./foo/package.yaml"
+  ]
+}

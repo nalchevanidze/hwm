@@ -30,15 +30,14 @@ goldenTest Golden {..} = do
   updateMode <- isUpdateMode
   inWorkDir project scenarioDir $ do
     (changes, out) <- trackChanges (runHWM cmd)
-    print changes
     if updateMode
       then do
         saveSnapshot expectedDir
         IO.writeFile stdoutFile out
         LBS.writeFile deltaFile (encode changes)
       else do
-        diff expectedDir [".hwm", ".stack-work", "dist-newstyle", "*.log"]
         expectedStdout <- IO.readFile stdoutFile
         out `shouldBe` expectedStdout
         expectedDelta <- LBS.readFile deltaFile
         expectedDelta `shouldBe` encode changes
+        diff expectedDir [".hwm", ".stack-work", "dist-newstyle", "*.log"]
