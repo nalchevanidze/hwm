@@ -19,6 +19,7 @@ module HWM.Runtime.Files
     Signature,
     getFileSignature,
     prepareDir,
+    syncFile,
   )
 where
 
@@ -41,9 +42,10 @@ import Data.Map (lookup)
 import Data.Text (toTitle)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.IO as TIO
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
-import HWM.Core.Formatting
+import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Result (Issue)
 import Relude hiding (readFile, writeFile)
 import System.Directory (createDirectoryIfMissing, doesFileExist, removeFile)
@@ -114,11 +116,14 @@ fromEither = either (const $ pure Nothing) (fmap Just . liftIO . decodeThrow)
 withThrow :: (MonadError Issue m) => m (Either String a) -> m a
 withThrow x = x >>= either (throwError . fromString) pure
 
-rewrite_ :: (MonadError Issue m, MonadIO m, FromJSON t, ToJSON t) => FilePath -> (Maybe t -> m t) -> m ()
+rewrite_ :: (MonadError Issue m, MonadIO m, FromJSON t, ToJSON t) => FilePath -> (Maybe t -> m t) -> m Status
 rewrite_ pkg f = do
-  original <- safeRead pkg
-  yaml <- fromEither original >>= mapYaml f
-  withThrow (safeWrite pkg (serializeYaml yaml))
+  prevYaml <- safeRead pkg >>= fromEither
+  nextYaml <- mapYaml f prevYaml
+  let same = Just (toJSON nextYaml) == (toJSON <$> prevYaml)
+  if same
+    then pure Checked
+    else withThrow (safeWrite pkg (serializeYaml nextYaml)) $> Updated
 
 statusM :: (MonadIO m) => FilePath -> m t -> m Status
 statusM pkg m = do
@@ -240,3 +245,14 @@ cleanRelativePath (Just name) =
 
 prepareDir :: (MonadIO m) => FilePath -> m ()
 prepareDir dir = liftIO $ createDirectoryIfMissing True dir
+
+syncFile :: (MonadIO m) => FilePath -> Text -> m Status
+syncFile path newFile = do
+  exist <- liftIO $ doesFileExist path
+  old <-
+    if exist
+      then Just <$> liftIO (TIO.readFile path)
+      else pure Nothing
+  if old == Just newFile
+    then pure Checked
+    else liftIO $ TIO.writeFile path newFile $> Updated

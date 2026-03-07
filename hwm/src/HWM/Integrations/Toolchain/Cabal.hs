@@ -20,7 +20,6 @@ import qualified Data.ByteString as BS
 import Data.Foldable (Foldable (..))
 import qualified Data.Map as Map
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
 import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Parsec
@@ -42,6 +41,7 @@ import HWM.Domain.ConfigT (ConfigT)
 import qualified HWM.Domain.ConfigT as CT
 import HWM.Domain.Dependencies (Dependencies (..), HasDependencies (..), MapDeps (..), mkCabalDependency, toDependencyList)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
+import HWM.Runtime.Files (syncFile)
 import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
@@ -86,14 +86,22 @@ hpackSync pkg@Pkg {hpackFile = Just path} = do
     H.OutputUnchanged -> pure Checked
     _ -> pure Updated
 
+cabalSync :: (CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Status
+cabalSync mapCabal pkg = do
+  cabalP <- readCabalPackage pkg
+  newpackage <- mapCabal cabalP
+  if cbOriginal newpackage == cbOriginal cabalP
+    then pure Checked
+    else do
+      liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
+      pure Updated
+
 rewriteCabalPackage :: (CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Status
 rewriteCabalPackage mapCabal pkg = do
   s <- hpackSync pkg
   ls <- validateHackage pkg (P.cabalFile pkg)
-  cabalP <- readCabalPackage pkg
-  newpackage <- mapCabal cabalP
-  liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
-  pure $ maximum (s : ls)
+  cs <- cabalSync mapCabal pkg
+  pure $ maximum (s : ls <> [cs])
 
 generateCabalProject :: [Pkg] -> Text -> Text
 generateCabalProject packagePaths ghcVersion =
@@ -102,11 +110,11 @@ generateCabalProject packagePaths ghcVersion =
       "packages:\n" <> T.unlines (map (("  " <>) . format . P.pkgDirPath) packagePaths)
     ]
 
-syncCabalProject :: ConfigT ()
+syncCabalProject :: ConfigT Status
 syncCabalProject = do
-  ops <- asks CT.options
+  cabalFilePath <- asks (optionsCabal . CT.options)
   BuildEnvironment {..} <- getBuildEnvironment Nothing
-  liftIO $ TIO.writeFile (optionsCabal ops) (generateCabalProject buildPkgs (toText buildGHC))
+  syncFile cabalFilePath (generateCabalProject buildPkgs (toText buildGHC))
 
 data CabalPackage = CabalPackage
   { cbDirectory :: FilePath,
@@ -188,10 +196,11 @@ instance MapDeps CabalPackage where
     newGpd <- mapDeps ctx f (cbOriginal cabalPkg)
     pure cabalPkg {cbOriginal = newGpd}
 
-newCabalPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Version -> Dependencies -> m ()
+newCabalPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Version -> Dependencies -> m Status
 newCabalPackage dir name version deps = do
   let package = emptyPackage name version deps
   liftIO $ writeGenericPackageDescription (dir </> (toString name <> ".cabal")) package
+  pure Checked
 
 emptyPackage :: PkgName -> Version -> Dependencies -> GenericPackageDescription
 emptyPackage (P.PkgName name) version dependencies =

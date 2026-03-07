@@ -15,7 +15,7 @@ where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Format (format))
+import HWM.Core.Formatting (Format (format), Status (..))
 import HWM.Core.Options (Options (..), askOptions)
 import HWM.Core.Pkg (Pkg (..), pkgFile)
 import HWM.Domain.ConfigT (ConfigT)
@@ -54,7 +54,7 @@ genComponents pkg = map comp . getSourceDirs [format $ pkgName pkg] <$> readCaba
   where
     comp (tag, sourceDirs) = Component {path = "./" <> pkgFile pkg (toString sourceDirs), component = tag}
 
-syncHie :: ConfigT ()
+syncHie :: ConfigT Status
 syncHie = do
   Options {..} <- askOptions
   pkgs <- allPackages

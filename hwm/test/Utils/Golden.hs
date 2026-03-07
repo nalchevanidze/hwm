@@ -3,12 +3,14 @@
 
 module Utils.Golden (Golden (..), goldenTest) where
 
+import Data.Aeson (decode, encode)
+import qualified Data.ByteString.Lazy as LBS
 import Relude
-import System.Directory (makeAbsolute, removePathForcibly)
+import System.Directory (makeAbsolute)
 import System.FilePath ((</>))
 import qualified System.IO as IO
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (copyLocalFiles, diff, inWorkDir, runHWM)
+import Utils.Core (diffChanges, inWorkDir, runHWM, saveSnapshot, trackChanges)
 
 data Golden = Golden
   { cmd :: String,
@@ -24,15 +26,18 @@ goldenTest Golden {..} = do
   scenarioDir <- makeAbsolute $ "test/golden/" </> scenario
   let expectedDir = scenarioDir </> "expected"
   let stdoutFile = scenarioDir </> "stdout.ansi"
+  let deltaFile = scenarioDir </> "delta.json"
   updateMode <- isUpdateMode
   inWorkDir project scenarioDir $ do
-    out <- runHWM cmd
+    (changes, out) <- trackChanges (runHWM cmd)
     if updateMode
       then do
-        removePathForcibly expectedDir
-        copyLocalFiles expectedDir
+        saveSnapshot changes expectedDir
         IO.writeFile stdoutFile out
+        LBS.writeFile deltaFile (encode changes)
       else do
-        diff expectedDir [".hwm", ".stack-work", "dist-newstyle", "*.log"]
         expectedStdout <- IO.readFile stdoutFile
         out `shouldBe` expectedStdout
+        expectedDelta <- decode <$> LBS.readFile deltaFile
+        Just changes `shouldBe` expectedDelta
+        diffChanges expectedDir changes

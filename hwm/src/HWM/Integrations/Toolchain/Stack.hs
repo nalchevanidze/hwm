@@ -89,7 +89,7 @@ parseExtraDep entry = do
   version <- fromEither ("Invalid version: " <> versionPart) (parse versionPart)
   pure (pkgName, version)
 
-syncStackYaml :: ConfigT ()
+syncStackYaml :: ConfigT Status
 syncStackYaml = do
   stackYamlPath <- optionsStack <$> askOptions
   rewrite_ stackYamlPath $ const $ do
@@ -115,7 +115,7 @@ createEnvYaml :: Name -> ConfigT ()
 createEnvYaml target = do
   path <- stackPath (Just target)
   liftIO $ createDirectoryIfMissing True ".hwm/matrix/"
-  rewrite_ path $ const $ do
+  _ <- rewrite_ path $ const $ do
     BuildEnvironment {..} <- getBuildEnvironment Nothing
     pure
       Stack
@@ -127,6 +127,7 @@ createEnvYaml target = do
           allowNewer = buildAllowNewer,
           ..
         }
+  pure ()
 
 stackGenBinary :: PkgName -> FilePath -> [Text] -> ConfigT ()
 stackGenBinary pkgName dirPath args = do

@@ -28,7 +28,7 @@ where
 
 import Control.Monad.Error.Class
 import HWM.Core.Common (Check (..), Name)
-import HWM.Core.Formatting (Format (..))
+import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Has (Has (..))
 import HWM.Core.Options (Options (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runResultT)
@@ -40,7 +40,7 @@ import HWM.Domain.Release (ArtifactConfig, Release (..))
 import HWM.Domain.Workspace (PkgRegistry, Workspace, pkgRegistry)
 import HWM.Runtime.Cache (Cache, VersionMap, loadCache, saveCache)
 import HWM.Runtime.Files (Signature, addHash, getFileSignature, readYaml, rewrite_)
-import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI)
+import HWM.Runtime.UI (MonadUI (..), UIT, printSummary, runUI, sectionConfig)
 import Relude
 
 data Env (m :: Type -> Type) = Env
@@ -118,11 +118,14 @@ checkConfig = do
 saveConfig :: (MonadError Issue m, MonadIO m) => Config -> Options -> m ()
 saveConfig config ops = do
   let file = optionsHwm ops
-  rewrite_ file (const $ pure config)
-  addHash file (environmentHash (cfgEnvironments config))
+  status <- rewrite_ file (const $ pure config)
+  case status of
+    Updated -> addHash file (environmentHash (cfgEnvironments config))
+    _ -> pure ()
 
 updateConfig :: (Config -> ConfigT Config) -> ConfigT b -> ConfigT b
 updateConfig f m = do
+  sectionConfig [("hwm.yaml", pure Checked)]
   config' <- asks config >>= f
   local (\e -> e {config = config'}) (checkConfig >> m)
 

@@ -13,7 +13,7 @@ import HWM.Domain.ConfigT (ConfigT, updateConfig)
 import HWM.Domain.Environments (getTestedRange)
 import HWM.Domain.Registry (askRegistry, mapDeps, mapWithName)
 import HWM.Integrations.Toolchain.Package (syncPackages)
-import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
+import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionTableM)
 import Options.Applicative
 import Relude
 
@@ -41,7 +41,6 @@ runRegistryAudit RegistryAuditOptions {..} = do
     else do
       if auditFix
         then ((\cf -> pure $ cf {cfgRegistry = Just $ mapDeps (updateDepBounds auditForce range) originalRegistry}) `updateConfig`) $ do
-          sectionConfig [("hwm.yaml", pure $ chalk Green "✓")]
           syncPackages
         else do
           injectIssue

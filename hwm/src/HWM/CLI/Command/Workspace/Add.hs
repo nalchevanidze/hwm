@@ -61,10 +61,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Jus
       putLine ""
       putLine $ "• " <> chalk Bold groupId
       displayStatus [("added", pure Checked)] >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
-      sectionConfig
-        [ ("stack.yaml", syncStackYaml $> chalk Green "✓"),
-          ("hie.yaml", syncHie $> chalk Green "✓")
-        ]
+      sectionConfig [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)]
   pure ()
   where
     noEffect label =
