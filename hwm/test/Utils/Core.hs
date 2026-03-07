@@ -1,10 +1,12 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Core (assertNotModified, assertWorkspaceNotModified, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
+module Utils.Core (assertNotModified, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
 import qualified Data.List as S
+import qualified Data.Map.Strict as Map
+import Data.Time.Clock (UTCTime)
 import qualified GHC.IO.Exception as System.Exit
 import Relude
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
@@ -21,15 +23,6 @@ assertNotModified path action = do
   action
   newTime <- getModificationTime path
   newTime `shouldBe` oldTime
-
-assertWorkspaceNotModified :: FilePath -> IO a -> Expectation
-assertWorkspaceNotModified root action = do
-  managedFiles <- findManagedFiles root
-  oldTimes <- mapM (\p -> (p,) <$> getModificationTime p) managedFiles
-  threadDelay 1100000
-  _ <- action
-  newTimes <- mapM (\p -> (p,) <$> getModificationTime p) managedFiles
-  newTimes `shouldBe` oldTimes
 
 -- | Helper to find files HWM cares about (.cabal, .yaml, .nix, .project)
 findManagedFiles :: FilePath -> IO [FilePath]
@@ -91,3 +84,31 @@ saveSnapshot :: FilePath -> IO ()
 saveSnapshot dst = do
   removePathForcibly dst
   copyLocalFiles dst
+
+data ChangeReport = ChangeReport
+  { addedFiles :: [FilePath],
+    deletedFiles :: [FilePath],
+    modifiedFiles :: [FilePath]
+  }
+  deriving (Show, Eq)
+
+buildChangeReport :: [(FilePath, UTCTime)] -> [(FilePath, UTCTime)] -> ChangeReport
+buildChangeReport oldState newState =
+  let oldMap = Map.fromList oldState
+      newMap = Map.fromList newState
+      added = Map.keys $ Map.difference newMap oldMap
+      deleted = Map.keys $ Map.difference oldMap newMap
+      common = Map.intersectionWith (,) oldMap newMap
+      modified = Map.keys $ Map.filter (uncurry (/=)) common
+   in ChangeReport added deleted modified
+
+trackChanges :: IO a -> IO (ChangeReport, a)
+trackChanges action = do
+  beforeFiles <- findManagedFiles "."
+  oldTimes <- mapM (\p -> (p,) <$> getModificationTime p) beforeFiles
+  threadDelay 1100000
+
+  a <- action
+  afterFiles <- findManagedFiles "."
+  newTimes <- mapM (\p -> (p,) <$> getModificationTime p) afterFiles
+  pure (buildChangeReport oldTimes newTimes, a)

@@ -8,7 +8,7 @@ import System.Directory (makeAbsolute)
 import System.FilePath ((</>))
 import qualified System.IO as IO
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (diff, inWorkDir, runHWM, saveSnapshot)
+import Utils.Core (diff, inWorkDir, runHWM, saveSnapshot, trackChanges)
 
 data Golden = Golden
   { cmd :: String,
@@ -26,7 +26,8 @@ goldenTest Golden {..} = do
   let stdoutFile = scenarioDir </> "stdout.ansi"
   updateMode <- isUpdateMode
   inWorkDir project scenarioDir $ do
-    out <- runHWM cmd
+    (changes, out) <- trackChanges (runHWM cmd)
+    print changes
     if updateMode
       then do
         saveSnapshot expectedDir
