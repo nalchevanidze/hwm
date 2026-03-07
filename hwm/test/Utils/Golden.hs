@@ -10,7 +10,7 @@ import System.Directory (makeAbsolute)
 import System.FilePath ((</>))
 import qualified System.IO as IO
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (diff, inWorkDir, runHWM, saveSnapshot, trackChanges, diffChanges)
+import Utils.Core (diffChanges, inWorkDir, runHWM, saveSnapshot, trackChanges)
 
 data Golden = Golden
   { cmd :: String,
