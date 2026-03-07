@@ -17,13 +17,14 @@ where
 import qualified Data.Text as T
 import HWM.Core.Formatting (Status, StatusM, monadStatus)
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), PkgSource (..), cabalSource, getVersionIssues, hpackSource)
-import HWM.Core.Result (MonadIssue (injectIssue))
+import HWM.Core.Result (Issue, MonadIssue (injectIssue))
 import HWM.Domain.Bounds (Bounds (Bounds))
 import HWM.Domain.Config (getRegistryBounds)
 import HWM.Domain.ConfigT (ConfigT, askVersion)
 import HWM.Domain.Dependencies
   ( Dependencies,
     Dependency (..),
+    DependencyIssue,
     DependencyMap (..),
     HasDependencies (..),
     MapDeps (..),
@@ -96,12 +97,17 @@ validatePackages = forWorkspace $ forFormats hpack cabal
     hpack src pkg = readHpackPackage pkg >>= validatePackage src
     cabal _ pkg = readCabalPackage pkg >>= validatePackage (cabalSource pkg)
 
-validatePackage :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT Status
-validatePackage source package = monadStatus $ do
-  issues <- getVersionIssues source package
-  traverse_ injectIssue issues
-  diffs <- concat <$> traverse checkForDependencyIssues (collectDependencies [] package)
-  reportDependencyIssues source diffs
+collectIssues :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT ([Issue], [DependencyIssue])
+collectIssues source pkg = do
+  versionIssues <- getVersionIssues source pkg
+  depIssues <- concat <$> traverse checkForDependencyIssues (collectDependencies [] pkg)
+  pure (versionIssues, depIssues)
   where
     checkForDependencyIssues (path, deps) = concat <$> traverse (getIssue path) (toDependencyList deps)
     getIssue path dep = detectDependencyIssue path dep <$> getRegistryBounds (hwmDepName dep)
+
+validatePackage :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT Status
+validatePackage source package = monadStatus $ do
+  (issues, depIssues) <- collectIssues source package
+  traverse_ injectIssue issues
+  reportDependencyIssues source depIssues
