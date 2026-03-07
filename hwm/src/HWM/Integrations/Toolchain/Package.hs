@@ -16,7 +16,7 @@ module HWM.Integrations.Toolchain.Package
 where
 
 import qualified Data.Text as T
-import HWM.Core.Formatting (displayStatus, Status)
+import HWM.Core.Formatting (Status, displayStatus)
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (PkgName), PkgSource (..), cabalSource, checkVersion, hpackSource)
 import HWM.Domain.Bounds (Bounds (Bounds))
 import HWM.Domain.Config (getRegistryBounds)
