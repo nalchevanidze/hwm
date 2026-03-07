@@ -19,6 +19,11 @@ data Golden = Golden
 isUpdateMode :: IO Bool
 isUpdateMode = (== Just "1") <$> lookupEnv "GOLDEN_UPDATE"
 
+copySnapshot :: FilePath -> IO ()
+copySnapshot dst = do
+  removePathForcibly dst
+  copyLocalFiles dst
+
 goldenTest :: Golden -> Expectation
 goldenTest Golden {..} = do
   scenarioDir <- makeAbsolute $ "test/golden/" </> scenario
@@ -29,8 +34,7 @@ goldenTest Golden {..} = do
     out <- runHWM cmd
     if updateMode
       then do
-        removePathForcibly expectedDir
-        copyLocalFiles expectedDir
+        copySnapshot expectedDir
         IO.writeFile stdoutFile out
       else do
         diff expectedDir [".hwm", ".stack-work", "dist-newstyle", "*.log"]
