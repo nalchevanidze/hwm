@@ -86,14 +86,22 @@ hpackSync pkg@Pkg {hpackFile = Just path} = do
     H.OutputUnchanged -> pure Checked
     _ -> pure Updated
 
+cabalSync :: (CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Status
+cabalSync mapCabal pkg = do
+  cabalP <- readCabalPackage pkg
+  newpackage <- mapCabal cabalP
+  if cbOriginal newpackage == cbOriginal cabalP
+    then pure Checked
+    else do
+      liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
+      pure Updated
+
 rewriteCabalPackage :: (CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Status
 rewriteCabalPackage mapCabal pkg = do
   s <- hpackSync pkg
   ls <- validateHackage pkg (P.cabalFile pkg)
-  cabalP <- readCabalPackage pkg
-  newpackage <- mapCabal cabalP
-  liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
-  pure $ maximum (s : ls)
+  cs <- cabalSync mapCabal pkg
+  pure $ maximum (s : ls <> [cs])
 
 generateCabalProject :: [Pkg] -> Text -> Text
 generateCabalProject packagePaths ghcVersion =

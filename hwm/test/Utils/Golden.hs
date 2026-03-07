@@ -39,5 +39,5 @@ goldenTest Golden {..} = do
         expectedStdout <- IO.readFile stdoutFile
         out `shouldBe` expectedStdout
         expectedDelta <- decode <$> LBS.readFile deltaFile
-        expectedDelta `shouldBe` Just changes
+        Just changes `shouldBe` expectedDelta
         diffChanges expectedDir changes
