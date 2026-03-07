@@ -56,8 +56,8 @@ syncPackages = forWorkspace $ updatePackage syncPackage syncPackage
 
 syncPackage :: (MapDeps a, IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT (Maybe a)
 syncPackage pkg package = do
-  issues <- hasNoIssues pkg package
-  if not issues
+  noIssues <- hasNoIssues pkg package
+  if noIssues
     then pure Nothing
     else
       Just <$> do
