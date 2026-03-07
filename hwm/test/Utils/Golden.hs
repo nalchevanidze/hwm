@@ -3,7 +3,7 @@
 
 module Utils.Golden (Golden (..), goldenTest) where
 
-import Data.Aeson (encode)
+import Data.Aeson (decode, encode)
 import qualified Data.ByteString.Lazy as LBS
 import Relude
 import System.Directory (makeAbsolute)
@@ -38,6 +38,6 @@ goldenTest Golden {..} = do
       else do
         expectedStdout <- IO.readFile stdoutFile
         out `shouldBe` expectedStdout
-        expectedDelta <- LBS.readFile deltaFile
-        expectedDelta `shouldBe` encode changes
+        expectedDelta <- decode <$> LBS.readFile deltaFile
+        expectedDelta `shouldBe` Just changes
         diff expectedDir
