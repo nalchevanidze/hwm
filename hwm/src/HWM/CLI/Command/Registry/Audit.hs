@@ -4,7 +4,7 @@
 
 module HWM.CLI.Command.Registry.Audit (runRegistryAudit, RegistryAuditOptions (..)) where
 
-import HWM.Core.Formatting (Color (..), Status (..), chalk)
+import HWM.Core.Formatting (Color (..), chalk)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
 import HWM.Domain.Bounds (BoundCompliance (..), auditBounds, auditHasAny, formatAudit, updateDepBounds)
@@ -13,7 +13,7 @@ import HWM.Domain.ConfigT (ConfigT, updateConfig)
 import HWM.Domain.Environments (getTestedRange)
 import HWM.Domain.Registry (askRegistry, mapDeps, mapWithName)
 import HWM.Integrations.Toolchain.Package (syncPackages)
-import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionConfig, sectionTableM)
+import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionTableM)
 import Options.Applicative
 import Relude
 
