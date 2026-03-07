@@ -2,14 +2,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use fewer imports" #-}
 
 module Utils.Core (assertNotModified, diffChanges, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad (forM_)
 import Data.Aeson (ToJSON)
 import Data.Aeson.Types (FromJSON)
 import qualified Data.ByteString as BS
@@ -141,22 +137,14 @@ diffChanges expectedDir (ChangeReport added deleted modified) = do
   forM_ filesToCompare $ \f -> do
     let expectedFile = expectedDir </> f
     let actualFile = f
-
-    -- 1. Instantly read both files into memory
     expectedContent <- BS.readFile expectedFile
     actualContent <- BS.readFile actualFile
-
-    -- 2. Compare in memory first (Lightning fast)
     when (expectedContent /= actualContent) $ do
-      -- 3. ONLY spawn the 'diff' process if they don't match!
       (_, diffOut, _) <-
         readCreateProcessWithExitCode
           (shell $ "diff -u " ++ expectedFile ++ " " ++ actualFile)
           ""
-
       expectationFailure $ "Content mismatch in " ++ f ++ ":\n" ++ diffOut
-
-  -- Check deleted files (also instantaneous)
   forM_ deleted $ \f -> do
     exists <- doesPathExist f
     when exists
