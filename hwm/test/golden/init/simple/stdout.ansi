@@ -14,8 +14,8 @@
 ./ [1mworkspace[0m
   
   • [1mlibs[0m
-  [2m└─- [0mbar [2m....[0m [33m![0m
-  [2m└─- [0mfoo [2m....[0m [33m![0m
+  [2m└─- [0mbar [2m....[0m [33m![0m [33mhpack[0m
+  [2m└─- [0mfoo [2m....[0m [33m![0m [33mhpack[0m
 
 [1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
 

@@ -103,10 +103,10 @@ validatePackages = forWorkspace $ \pkg -> map (hpack pkg) (maybeToList $ hpackSo
       )
 
 validatePackage :: (IsPkg a, HasDependencies a) => (PkgSource, a) -> ConfigT Status
-validatePackage (source, package) = do
+validatePackage (source, package) = monadStatus $ do
   checkVersion source package
   diffs <- concat <$> traverse checkForDependencyIssues (collectDependencies [] package)
-  monadStatus (reportDependencyIssues source diffs)
+  reportDependencyIssues source diffs
   where
     checkForDependencyIssues (path, deps) = concat <$> traverse (getIssue path) (toDependencyList deps)
     getIssue path dep = detectDependencyIssue path dep <$> getRegistryBounds (hwmDepName dep)
