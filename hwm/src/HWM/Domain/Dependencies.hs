@@ -19,7 +19,7 @@ module HWM.Domain.Dependencies
     collectNormalizedDependencies,
     buildDependencyGraph,
     MapDeps (..),
-    DependencyIssue,
+    DependencyBoundsIssue (..),
     reportDependencyIssues,
     detectDependencyIssue,
     mkCabalDependency,
@@ -353,15 +353,20 @@ toRange :: Bound -> VersionRange
 toRange (Bound Min inc version) = if inc then Cabal.orLaterVersion (toCabalVersion version) else Cabal.laterVersion (toCabalVersion version)
 toRange (Bound Max inc version) = if inc then Cabal.orEarlierVersion (toCabalVersion version) else Cabal.earlierVersion (toCabalVersion version)
 
-type DependencyIssue = (Text, PkgName, Bounds, Maybe Bounds)
+data DependencyBoundsIssue = DependencyBoundsIssue
+  { depIssueScope :: Text,
+    depIssueName :: PkgName,
+    depIssueActual :: Bounds,
+    depIssueRegistryBounds :: Maybe Bounds
+  }
 
-collectDependencyIssues :: (Monad m, HasDependencies a) => (PkgName -> m (Maybe Bounds)) -> a -> m [DependencyIssue]
+collectDependencyIssues :: (Monad m, HasDependencies a) => (PkgName -> m (Maybe Bounds)) -> a -> m [DependencyBoundsIssue]
 collectDependencyIssues f pkg = concat <$> traverse checkForDependencyIssues (collectDependencies [] pkg)
   where
     checkForDependencyIssues (path, deps) = concat <$> traverse (getIssue path) (toDependencyList deps)
     getIssue path dep = detectDependencyIssue path dep <$> f (hwmDepName dep)
 
-reportDependencyIssues :: (MonadIssue m, Applicative m) => PkgSource -> [DependencyIssue] -> m ()
+reportDependencyIssues :: (MonadIssue m, Applicative m) => PkgSource -> [DependencyBoundsIssue] -> m ()
 reportDependencyIssues source diffs = do
   unless (null diffs)
     $ injectIssue
@@ -372,15 +377,15 @@ reportDependencyIssues source diffs = do
           issueDetails =
             Just
               DependencyIssue
-                { issueDependencies = map (\(scope, dName, actual, expected) -> (scope, format dName, format actual, maybe "unknown" format expected)) diffs,
+                { issueDependencies = map (\(DependencyBoundsIssue scope dName actual expected) -> (scope, format dName, format actual, maybe "unknown" format expected)) diffs,
                   issueFile = pkgSourceFile source
                 }
         }
 
-detectDependencyIssue :: [Text] -> Dependency -> Maybe Bounds -> [DependencyIssue]
+detectDependencyIssue :: [Text] -> Dependency -> Maybe Bounds -> [DependencyBoundsIssue]
 detectDependencyIssue path (Dependency dname depBounds) registryBounds = case registryBounds of
-  Nothing -> [(scope, dname, depBounds, Nothing)]
-  Just expected -> ([(scope, dname, depBounds, Just expected) | depBounds /= expected])
+  Nothing -> [DependencyBoundsIssue scope dname depBounds Nothing]
+  Just expected -> [DependencyBoundsIssue scope dname depBounds (Just expected) | depBounds /= expected]
   where
     scope = T.intercalate ":" path
 

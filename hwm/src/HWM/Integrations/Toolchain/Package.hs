@@ -24,13 +24,12 @@ import HWM.Domain.ConfigT (ConfigT, askVersion)
 import HWM.Domain.Dependencies
   ( Dependencies,
     Dependency (..),
-    DependencyIssue,
+    DependencyBoundsIssue (..),
     DependencyMap (..),
     HasDependencies (..),
     MapDeps (..),
     buildDependencyGraph,
     collectDependencyIssues,
-    detectDependencyIssue,
     fromDependencyList,
     reportDependencyIssues,
     singleDeps,
@@ -73,7 +72,7 @@ syncDeps (pkg, path) deps =
   where
     syncDep (Dependency depName depBounds) = do
       bounds <- getRegistryBounds depName
-      pure ([(T.intercalate ":" path, depName, depBounds, Nothing) | isNothing bounds], Dependency depName (fromMaybe depBounds bounds))
+      pure ([DependencyBoundsIssue (T.intercalate ":" path) depName depBounds Nothing | isNothing bounds], Dependency depName (fromMaybe depBounds bounds))
 
 addDeps :: (MapDeps a) => Dependency -> PkgSource -> a -> ConfigT (Maybe a)
 addDeps dependency pkg = fmap Just . mapDeps (pkg, []) onlyMain
@@ -108,7 +107,7 @@ hasNoIssues source pkg = do
   (issues, depIssues) <- collectIssues source pkg
   pure (null issues && null depIssues)
 
-collectIssues :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT ([Issue], [DependencyIssue])
+collectIssues :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT ([Issue], [DependencyBoundsIssue])
 collectIssues source pkg = do
   versionIssues <- getVersionIssues source pkg
   depIssues <- collectDependencyIssues getRegistryBounds pkg
