@@ -1,15 +1,14 @@
-# hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+version: 1
 name: simple
-version: '1.0'
 workspace:
   libs:
     members:
-    - foo
-    - bar
+      - foo
+      - bar
 environments:
-  default: foo
   nix: true
+  stack: true
+  default: foo
   profiles:
     foo:
       ghc: 8.10.7
-  stack: true

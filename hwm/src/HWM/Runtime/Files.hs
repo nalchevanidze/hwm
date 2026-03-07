@@ -118,10 +118,10 @@ rewrite_ :: (MonadError Issue m, MonadIO m, FromJSON t, ToJSON t) => FilePath ->
 rewrite_ pkg f = do
   prevYaml <- safeRead pkg >>= fromEither
   nextYaml <- mapYaml f prevYaml
-  let hasChange = Just (rawValue nextYaml) == (rawValue <$> prevYaml)
-  if hasChange
-    then withThrow (safeWrite pkg (serializeYaml nextYaml)) $> Updated
-    else pure Checked
+  let same = Just (toJSON nextYaml) == (toJSON <$> prevYaml)
+  if same
+    then pure Checked
+    else withThrow (safeWrite pkg (serializeYaml nextYaml)) $> Updated
 
 statusM :: (MonadIO m) => FilePath -> m t -> m Status
 statusM pkg m = do
