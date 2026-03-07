@@ -22,7 +22,7 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
-import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
+import Distribution.PackageDescription.Check (CheckPackageContentOps (..), PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Parsec
 import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
@@ -46,6 +46,7 @@ import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarge
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
+import qualified System.Directory as D
 import System.FilePath (takeDirectory, (</>))
 
 -- | Translate Cabal warnings into formatting status for downstream reporting.
@@ -112,10 +113,17 @@ generateCabalProject packagePaths ghcVersion =
 
 syncCabalProject :: ConfigT Status
 syncCabalProject = do
-  ops <- asks CT.options
+  cabalFilePath <- asks (optionsCabal . CT.options)
+  exist <- liftIO $ D.doesFileExist cabalFilePath
+  old <-
+    if exist
+      then Just <$> liftIO (TIO.readFile cabalFilePath)
+      else pure Nothing
   BuildEnvironment {..} <- getBuildEnvironment Nothing
-  liftIO $ TIO.writeFile (optionsCabal ops) (generateCabalProject buildPkgs (toText buildGHC))
-  pure Checked
+  let newFile = generateCabalProject buildPkgs (toText buildGHC)
+  if old == Just newFile
+    then pure Checked
+    else liftIO $ TIO.writeFile cabalFilePath newFile $> Updated
 
 data CabalPackage = CabalPackage
   { cbDirectory :: FilePath,
