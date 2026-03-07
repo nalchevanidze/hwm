@@ -29,6 +29,7 @@ import HWM.Domain.Dependencies
     HasDependencies (..),
     MapDeps (..),
     buildDependencyGraph,
+    collectDependencyIssues,
     detectDependencyIssue,
     fromDependencyList,
     reportDependencyIssues,
@@ -110,11 +111,8 @@ hasNoIssues source pkg = do
 collectIssues :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT ([Issue], [DependencyIssue])
 collectIssues source pkg = do
   versionIssues <- getVersionIssues source pkg
-  depIssues <- concat <$> traverse checkForDependencyIssues (collectDependencies [] pkg)
+  depIssues <- collectDependencyIssues getRegistryBounds pkg
   pure (versionIssues, depIssues)
-  where
-    checkForDependencyIssues (path, deps) = concat <$> traverse (getIssue path) (toDependencyList deps)
-    getIssue path dep = detectDependencyIssue path dep <$> getRegistryBounds (hwmDepName dep)
 
 validatePackage :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT Status
 validatePackage source package = monadStatus $ do

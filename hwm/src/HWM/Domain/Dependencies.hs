@@ -23,6 +23,7 @@ module HWM.Domain.Dependencies
     reportDependencyIssues,
     detectDependencyIssue,
     mkCabalDependency,
+    collectDependencyIssues,
   )
 where
 
@@ -353,6 +354,12 @@ toRange (Bound Min inc version) = if inc then Cabal.orLaterVersion (toCabalVersi
 toRange (Bound Max inc version) = if inc then Cabal.orEarlierVersion (toCabalVersion version) else Cabal.earlierVersion (toCabalVersion version)
 
 type DependencyIssue = (Text, PkgName, Bounds, Maybe Bounds)
+
+collectDependencyIssues :: (Monad m, HasDependencies a) => (PkgName -> m (Maybe Bounds)) -> a -> m [DependencyIssue]
+collectDependencyIssues f pkg = concat <$> traverse checkForDependencyIssues (collectDependencies [] pkg)
+  where
+    checkForDependencyIssues (path, deps) = concat <$> traverse (getIssue path) (toDependencyList deps)
+    getIssue path dep = detectDependencyIssue path dep <$> f (hwmDepName dep)
 
 reportDependencyIssues :: (MonadIssue m, Applicative m) => PkgSource -> [DependencyIssue] -> m ()
 reportDependencyIssues source diffs = do
