@@ -89,7 +89,7 @@ parseExtraDep entry = do
   version <- fromEither ("Invalid version: " <> versionPart) (parse versionPart)
   pure (pkgName, version)
 
-syncStackYaml :: ConfigT ()
+syncStackYaml :: ConfigT Status
 syncStackYaml = do
   stackYamlPath <- optionsStack <$> askOptions
   rewrite_ stackYamlPath $ const $ do
@@ -104,6 +104,7 @@ syncStackYaml = do
           allowNewer = buildAllowNewer,
           ..
         }
+  pure Checked
 
 stackPath :: Maybe Name -> ConfigT FilePath
 stackPath (Just name) = liftIO $ makeAbsolute $ ".hwm/matrix/stack-" <> toString name <> ".yaml"

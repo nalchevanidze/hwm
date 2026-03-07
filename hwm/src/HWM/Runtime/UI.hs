@@ -36,7 +36,7 @@ import Data.List (groupBy, maximum, (!!))
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (..), Format (..), Status (..), chalk, indentBlockNum, padDots, renderSummaryStatus, subPathSign)
+import HWM.Core.Formatting (Color (..), Format (..), Status (..), chalk, indentBlockNum, padDots, renderSummaryStatus, statusIcon, subPathSign)
 import HWM.Core.Result
   ( Issue (..),
     IssueDetails (..),
@@ -137,8 +137,10 @@ tableM_ rows = forHLTable rows (second ((,()) <$>)) $> ()
 sectionTableM :: (MonadUI m) => Text -> [(Text, m Text)] -> m ()
 sectionTableM title = section title . tableM_
 
-sectionConfig :: (MonadUI m) => [(Text, m Text)] -> m ()
-sectionConfig = section "config" . tableM_
+sectionConfig :: (MonadUI m) => [(Text, m Status)] -> m ()
+sectionConfig = section "config" . tableM_ . map (second render)
+  where
+    render s = statusIcon <$> s
 
 printGenTable :: (MonadUI m) => [[Text]] -> m ()
 printGenTable rows =
