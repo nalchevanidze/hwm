@@ -118,8 +118,10 @@ checkConfig = do
 saveConfig :: (MonadError Issue m, MonadIO m) => Config -> Options -> m ()
 saveConfig config ops = do
   let file = optionsHwm ops
-  rewrite_ file (const $ pure config)
-  addHash file (environmentHash (cfgEnvironments config))
+  status <- rewrite_ file (const $ pure config)
+  case status of
+    Updated -> addHash file (environmentHash (cfgEnvironments config))
+    _ -> pure ()
 
 updateConfig :: (Config -> ConfigT Config) -> ConfigT b -> ConfigT b
 updateConfig f m = do

@@ -60,4 +60,3 @@ syncHie = do
   pkgs <- allPackages
   components <- concat <$> traverse genComponents pkgs
   rewrite_ optionsHie (const $ pure $ packHie Components {stackYaml = optionsStack, components})
-  pure Checked
