@@ -61,7 +61,7 @@ copyFrom src = copyDir (src <> "/.")
 inWorkDir :: FilePath -> FilePath -> IO a -> IO ()
 inWorkDir project scenario m = do
   projectDir <- makeAbsolute ("test/projects/" </> project)
-  overridesDir <- makeAbsolute (scenario </> "overrides")
+  overridesDir <- makeAbsolute (scenario </> "override")
   withSystemTempDirectory "hwm-golden" $ \tmpDir -> do
     let workDir = tmpDir </> "work"
     copyFrom projectDir workDir

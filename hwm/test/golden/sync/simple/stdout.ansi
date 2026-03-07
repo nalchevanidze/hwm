@@ -12,8 +12,8 @@
 ./ [1mworkspace[0m
   
   • [1mlibs[0m
-  [2m└─- [0mfoo [2m....[0m [33m![0m [33mcabal[0m[2m [0m[36m⟳[0m [2mhpack[0m
-  [2m└─- [0mbar [2m....[0m [33m![0m [33mcabal[0m[2m [0m[36m⟳[0m [2mhpack[0m
+  [2m└─- [0mfoo [2m....[0m [33m![0m [33mcabal[0m
+  [2m└─- [0mbar [2m....[0m [33m![0m [33mcabal[0m
 
 [1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
 
@@ -24,14 +24,6 @@
       [2m└─- [0m[2mfile: bar/bar.cabal[0m
   [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
       [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mbase: [2m>= 4.7 && <  5.0 → unknown[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mbase: [2m>= 4.7 && <  5.0 → unknown[0m
   [2m• [0m[1mfoo[0m
   [2m└─- [0m[2m• [0m[33mInvalid package: library does not expose any modules[0m
       [2m└─- [0m[2mfile: foo/foo.cabal[0m
@@ -39,12 +31,4 @@
       [2m└─- [0m[2mfile: foo/foo.cabal[0m
   [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
       [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mbase: [2m>= 4.7 && <  5.0 → unknown[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mbase: [2m>= 4.7 && <  5.0 → unknown[0m
 

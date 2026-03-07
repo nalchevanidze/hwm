@@ -5,7 +5,7 @@ import Utils.Golden (Golden (..), goldenTest)
 
 testSync :: Spec
 testSync = describe "sync" $ do
-  it "syncs a simple workspace" $
+  it "syncs a simple workspace(no registry)" $
     goldenTest
       Golden
         { cmd = "sync",

@@ -163,6 +163,7 @@ test-suite hwm-golden-sync
   main-is: Main.hs
   other-modules:
       Commands.Init
+      Commands.Status
       Commands.Sync
       Utils.Core
       Utils.Golden

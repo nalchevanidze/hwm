@@ -1,9 +1,4 @@
 
-• [1minit[0m
-  scan (stack.yaml) [2m.......[0m 0 found
-  scan (packages) [2m.........[0m 2 found
-  save (config) [2m...........[0m [36mhwm.yaml[0m
-
 • [1mproject[0m
   name [2m..............[0m [95mwork[0m
   version [2m...........[0m [32m0.1.2[0m
