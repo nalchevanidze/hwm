@@ -1,15 +1,14 @@
 # hash: b0ee06f57dae0b996c4bbf36ac42e765ab795b7911c520377604a48d6c4d64c1
 name: hwm
-version: 0.1.2
+version: 0.2.0
 github: nalchevanidze/hwm
 workspace:
   libs:
     members:
-      - hwm
+    - hwm
 environments:
-  nix: true
-  stack: true
   default: stable
+  nix: true
   profiles:
     legacy:
       ghc: 8.10.7
@@ -31,48 +30,48 @@ environments:
           fastsum: 0.1.1.1
           list-extras: 0.4.1.6
           type-aligned: 0.9.6
+  stack: true
 registry:
-  aeson: "               >=  1.5.6.0     &&  <=  2.2.3.0"
-  ansi-terminal: "       >=  0.11.3      &&  <=  1.1.5"
-  async: "               >   2.2.3       &&  <=  2.2.6"
-  base: "                >=  4.7.0       &&  <   5.0.0"
-  base16-bytestring: "   >=  1.0.1.0     &&  <=  1.0.2.0"
-  bytestring: "          >=  0.10.4      &&  <=  0.12.2.0"
-  Cabal: "               >=  3.8         &&  <=  3.16.1.0"
-  containers: "          >=  0.4.2.1     &&  <=  0.8"
-  cryptohash-sha256: "   >=  0.11.102.0  &&  <=  0.11.102.1"
-  directory: "           >=  1.0         &&  <=  1.3.10.1"
-  filepath: "            >=  1.1.0       &&  <=  1.5.5.0"
-  Glob: "                >=  0.10.1      &&  <=  0.10.2"
-  hpack: "               >   0.34.4      &&  <=  0.39.1"
-  modern-uri: "          >=  0.3.4.1     &&  <=  0.3.6.1"
-  mtl: "                 >   2.0.0       &&  <   2.6.0"
-  optparse-applicative: ">=  0.16.1.0    &&  <=  0.19.0.0"
-  process: "             >=  1.0.0       &&  <   2.0.0"
-  relude: "              >=  0.7.0.0     &&  <=  1.2.2.2"
-  req: "                 >=  3.9.0       &&  <=  3.13.4"
-  stm: "                 >=  2.4         &&  <   2.6.0"
-  text: "                >=  1.2.3       &&  <   3.0.0"
-  time: "                >=  1.9.2       &&  <   2.0.0"
-  transformers: "        >=  0.5.6       &&  <   0.7.0"
-  typed-process: "       >=  0.2.6.1     &&  <=  0.2.13.0"
-  unordered-containers: ">=  0.2.14.0    &&  <=  0.2.21"
-  yaml: "                >=  0.11.5.0    &&  <=  0.11.11.2"
-  zip-archive: "         >=  0.4.1       &&  <=  0.4.3.2"
+  aeson: '               >=  1.5.6.0     &&  <=  2.2.3.0'
+  ansi-terminal: '       >=  0.11.3      &&  <=  1.1.5'
+  async: '               >   2.2.3       &&  <=  2.2.6'
+  base: '                >=  4.7.0       &&  <   5.0.0'
+  base16-bytestring: '   >=  1.0.1.0     &&  <=  1.0.2.0'
+  bytestring: '          >=  0.10.4      &&  <=  0.12.2.0'
+  Cabal: '               >=  3.8         &&  <=  3.16.1.0'
+  containers: '          >=  0.4.2.1     &&  <=  0.8'
+  cryptohash-sha256: '   >=  0.11.102.0  &&  <=  0.11.102.1'
+  directory: '           >=  1.0         &&  <=  1.3.10.1'
+  filepath: '            >=  1.1.0       &&  <=  1.5.5.0'
+  Glob: '                >=  0.10.1      &&  <=  0.10.2'
+  hpack: '               >   0.34.4      &&  <=  0.39.1'
+  modern-uri: '          >=  0.3.4.1     &&  <=  0.3.6.1'
+  mtl: '                 >   2.0.0       &&  <   2.6.0'
+  optparse-applicative: '>=  0.16.1.0    &&  <=  0.19.0.0'
+  process: '             >=  1.0.0       &&  <   2.0.0'
+  relude: '              >=  0.7.0.0     &&  <=  1.2.2.2'
+  req: '                 >=  3.9.0       &&  <=  3.13.4'
+  stm: '                 >=  2.4         &&  <   2.6.0'
+  text: '                >=  1.2.3       &&  <   3.0.0'
+  time: '                >=  1.9.2       &&  <   2.0.0'
+  transformers: '        >=  0.5.6       &&  <   0.7.0'
+  typed-process: '       >=  0.2.6.1     &&  <=  0.2.13.0'
+  unordered-containers: '>=  0.2.14.0    &&  <=  0.2.21'
+  yaml: '                >=  0.11.5.0    &&  <=  0.11.11.2'
+  zip-archive: '         >=  0.4.1       &&  <=  0.4.3.2'
 release:
   artifacts:
     hwm: libs/hwm:hwm
   publish:
     main:
-      - libs/hwm
+    - libs/hwm
 scripts:
   build: stack build --fast
   clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
   format: sh scripts/format.sh
   format:fix: sh scripts/format.sh --fix
   install: stack install
-  lint:
-    curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
+  lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
   test: stack test --fast
   test:update: GOLDEN_UPDATE=1 stack test --fast
