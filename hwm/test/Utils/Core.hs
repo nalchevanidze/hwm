@@ -1,9 +1,13 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Utils.Core (assertNotModified, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
+import Data.Aeson (ToJSON)
+import Data.Aeson.Types (FromJSON)
 import qualified Data.List as S
 import qualified Data.Map.Strict as Map
 import Data.Time.Clock (UTCTime)
@@ -90,7 +94,7 @@ data ChangeReport = ChangeReport
     deletedFiles :: [FilePath],
     modifiedFiles :: [FilePath]
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 buildChangeReport :: [(FilePath, UTCTime)] -> [(FilePath, UTCTime)] -> ChangeReport
 buildChangeReport oldState newState =
