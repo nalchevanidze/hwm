@@ -43,7 +43,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
-import HWM.Core.Formatting
+import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Result (Issue)
 import Relude hiding (readFile, writeFile)
 import System.Directory (createDirectoryIfMissing, doesFileExist, removeFile)
@@ -114,11 +114,11 @@ fromEither = either (const $ pure Nothing) (fmap Just . liftIO . decodeThrow)
 withThrow :: (MonadError Issue m) => m (Either String a) -> m a
 withThrow x = x >>= either (throwError . fromString) pure
 
-rewrite_ :: (MonadError Issue m, MonadIO m, FromJSON t, ToJSON t) => FilePath -> (Maybe t -> m t) -> m ()
+rewrite_ :: (MonadError Issue m, MonadIO m, FromJSON t, ToJSON t) => FilePath -> (Maybe t -> m t) -> m Status
 rewrite_ pkg f = do
   original <- safeRead pkg
   yaml <- fromEither original >>= mapYaml f
-  withThrow (safeWrite pkg (serializeYaml yaml))
+  withThrow (safeWrite pkg (serializeYaml yaml)) $> Checked
 
 statusM :: (MonadIO m) => FilePath -> m t -> m Status
 statusM pkg m = do

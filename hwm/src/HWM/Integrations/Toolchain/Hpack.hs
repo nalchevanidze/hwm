@@ -165,7 +165,7 @@ rewriteHpackPackage f pkg = do
           }
     maybePackage (Just package) = f package
 
-newHpackPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Version -> Dependencies -> m ()
+newHpackPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Version -> Dependencies -> m Status
 newHpackPackage dir name version deps = do
   let package = emptyPackage name version deps
   rewrite_ (dir </> "package.yaml") (const $ pure package)

@@ -104,7 +104,6 @@ syncStackYaml = do
           allowNewer = buildAllowNewer,
           ..
         }
-  pure Checked
 
 stackPath :: Maybe Name -> ConfigT FilePath
 stackPath (Just name) = liftIO $ makeAbsolute $ ".hwm/matrix/stack-" <> toString name <> ".yaml"
@@ -116,7 +115,7 @@ createEnvYaml :: Name -> ConfigT ()
 createEnvYaml target = do
   path <- stackPath (Just target)
   liftIO $ createDirectoryIfMissing True ".hwm/matrix/"
-  rewrite_ path $ const $ do
+  _ <- rewrite_ path $ const $ do
     BuildEnvironment {..} <- getBuildEnvironment Nothing
     pure
       Stack
@@ -128,6 +127,7 @@ createEnvYaml target = do
           allowNewer = buildAllowNewer,
           ..
         }
+  pure ()
 
 stackGenBinary :: PkgName -> FilePath -> [Text] -> ConfigT ()
 stackGenBinary pkgName dirPath args = do
