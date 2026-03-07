@@ -76,10 +76,13 @@ addDeps dependency pkg = mapDeps (pkg, []) onlyMain
 addPkgDependency :: Dependency -> Pkg -> StatusM ConfigT
 addPkgDependency dep = updatePackage (addDeps dep) (addDeps dep)
 
+forFormats :: (IsString a) => (PkgSource -> Pkg -> b) -> (PkgSource -> Pkg -> b) -> Pkg -> [(a, b)]
+forFormats hpack cabal pkg =
+  map (\s -> ("hpack", hpack s pkg)) (maybeToList $ hpackSource pkg)
+    <> [("cabal", cabal (cabalSource pkg) pkg)]
+
 updatePackage :: (PkgSource -> HpackPackage -> ConfigT HpackPackage) -> (PkgSource -> CabalPackage -> ConfigT CabalPackage) -> Pkg -> StatusM ConfigT
-updatePackage mapHpack mapCabal pkg =
-  map (\s -> ("hpack", rewriteHpackPackage (mapHpack s) pkg)) (maybeToList $ hpackSource pkg)
-    <> [("cabal", rewriteCabalPackage (mapCabal (cabalSource pkg)) pkg)]
+updatePackage mapHpack mapCabal = forFormats (rewriteHpackPackage . mapHpack) (rewriteCabalPackage . mapCabal)
 
 deriveDependencyGraph :: ConfigT DependencyMap
 deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readCabalPackage)
@@ -87,12 +90,10 @@ deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd)
     libDependencies = filter (\x -> fst x == ["library"]) . collectDependencies []
 
 validatePackages :: ConfigT ()
-validatePackages = forWorkspace $ \pkg -> map (hpack pkg) (maybeToList $ hpackSource pkg) <> [cabalTask pkg]
+validatePackages = forWorkspace $ forFormats hpack cabal
   where
-    hpack pkg src =
-      ("hpack", readHpackPackage pkg >>= validatePackage src)
-    cabalTask pkg =
-      ("cabal", readCabalPackage pkg >>= validatePackage (cabalSource pkg))
+    hpack src pkg = readHpackPackage pkg >>= validatePackage src
+    cabal _ pkg = readCabalPackage pkg >>= validatePackage (cabalSource pkg)
 
 validatePackage :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT Status
 validatePackage source package = monadStatus $ do
