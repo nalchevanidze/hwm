@@ -4,8 +4,8 @@ version: 0.1.2
 workspace:
   libs:
     members:
-    - foo
     - bar
+    - foo
 environments:
   default: default
   profiles:

@@ -8,15 +8,15 @@ workspace:
     - benchmarks
   libs:
     members:
+    - app
+    - client
     - code-gen
-    - tests
+    - code-gen-utils
+    - core
     - server
     - subscriptions
-    - code-gen-utils
+    - tests
     - .
-    - core
-    - client
-    - app
     prefix: morpheus-graphql
 environments:
   default: default

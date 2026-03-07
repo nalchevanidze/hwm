@@ -181,11 +181,16 @@ buildWorkspace = fmap (Map.fromList . concat) . traverse groupToWorkspace . grou
         [ ( if T.null (pkgGroup pkg) then "libs" else slugify (pkgGroup pkg),
             WorkGroup
               { dir = cleanRelativePath (Just $ toString (pkgGroup pkg)),
-                members,
+                members = sortBy compareMembers members,
                 prefix = prefix
               }
           )
         ]
+
+compareMembers :: Text -> Text -> Ordering
+compareMembers "." _ = GT
+compareMembers _ "." = LT
+compareMembers x y = compare x y
 
 forWorkspace :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => (Pkg -> m ()) -> m ()
 forWorkspace f = forWorkspaceCore $ \pkg -> do
