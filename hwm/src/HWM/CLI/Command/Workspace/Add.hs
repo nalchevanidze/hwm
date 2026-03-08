@@ -54,15 +54,15 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Jus
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
   (ws, w) <- addWorkgroupMember groupId memberId
-  scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
-  updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws})
-    $ sectionWorkspace
+
+  sectionWorkspace
     $ do
       putLine ""
       putLine $ "• " <> chalk Bold groupId
+      xs <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
       displayStatus [("added", pure Checked)] >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
-      sectionConfig [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)]
-  pure ()
+
+  updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ sectionConfig [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)]
   where
     noEffect label =
       Issue
