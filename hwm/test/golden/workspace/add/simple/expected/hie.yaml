@@ -6,3 +6,5 @@ cradle:
       component: foo:lib
     - path: ./bar/src
       component: bar:lib
+    - path: ./new/src
+      component: new:lib
