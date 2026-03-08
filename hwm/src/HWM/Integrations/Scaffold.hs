@@ -4,7 +4,7 @@
 module HWM.Integrations.Scaffold (scaffoldPackage) where
 
 import qualified Data.Text as T
-import HWM.Core.Formatting (Status, StatusM)
+import HWM.Core.Formatting (StatusM)
 import HWM.Core.Pkg (PkgName)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Integrations.Toolchain.Package (newPackage)
