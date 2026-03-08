@@ -8,3 +8,9 @@ cradle:
       component: hwm:exe:hwm
     - path: ./hwm/test
       component: hwm:test:hwm-golden-sync
+    - path: ./hwm-golden/src
+      component: hwm:lib
+    - path: ./hwm-golden/app
+      component: hwm:exe:hwm
+    - path: ./hwm-golden/test
+      component: hwm:test:hwm-golden-sync

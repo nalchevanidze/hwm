@@ -10,6 +10,7 @@
       haskellOverlay = final: prev: {
             hwmWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
               hwm = hfinal.callCabal2nix "hwm" ./hwm {};
+              hwm = hfinal.callCabal2nix "hwm" ./hwm-golden {};
             });
       };
     in
@@ -20,6 +21,7 @@
         in
         {
           hwm = pkgs.hwmWorkspacePackages.hwm;
+          hwm = pkgs.hwmWorkspacePackages.hwm;
           default = pkgs.hwmWorkspacePackages.hwm;
         });
       devShells = forAllSystems (system:
@@ -28,7 +30,7 @@
         in
         {
           default = pkgs.hwmWorkspacePackages.shellFor {
-            packages = p: [ p.hwm ];
+            packages = p: [ p.hwm p.hwm ];
             buildInputs = with pkgs.hwmWorkspacePackages; [
               cabal-install
               haskell-language-server

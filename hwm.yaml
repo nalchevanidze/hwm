@@ -6,6 +6,7 @@ workspace:
   libs:
     members:
     - hwm
+    - hwm-golden
 environments:
   default: stable
   nix: true
