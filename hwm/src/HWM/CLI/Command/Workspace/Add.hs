@@ -11,7 +11,7 @@ import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityError, SeverityWarning))
 import HWM.Domain.Config (Config (..))
-import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
+import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig, updateConfigM)
 import HWM.Domain.Workspace (WorkGroup (..), WorkspaceRef (..), addWorkgroupMember, parseWorkspaceRef)
 import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Integrations.Toolchain.Hie (syncHie)
@@ -62,7 +62,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Jus
       xs <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
       displayStatusM xs >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
 
-  updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ statusTableM [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)]
+  updateConfigM (\cfg -> pure $ cfg {cfgWorkspace = ws}) [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)] $ pure ()
   where
     noEffect label =
       Issue
