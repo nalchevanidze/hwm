@@ -22,7 +22,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (fromEither)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
-import HWM.Domain.Environments (Builder (..))
+import HWM.Domain.Environments (Builder (..), getBuildEnvironment)
 import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, selectedArtifacts)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
@@ -132,11 +132,12 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       putLine $ subPathSign <> format sha256Path
   where
     buildPkg (name, ArtifactConfig {..}) = do
+      env <- getBuildEnvironment Nothing
       binaryDir <- genBindaryDir name
       let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
       optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
       Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
-      genBinary StackBuilder pkgName binaryDir (ghcOptions arcGhcOptions)
+      genBinary (buildBuilder env) pkgName binaryDir (ghcOptions arcGhcOptions)
       pure $ (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
 
 genBinary :: Builder -> PkgName -> FilePath -> [Text] -> ConfigT ()
