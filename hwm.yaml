@@ -4,9 +4,10 @@ version: 0.2.0
 github: nalchevanidze/hwm
 workspace:
   libs:
+    prefix: hwm
     members:
-    - hwm
-    - hwm-golden
+      - golden
+      - .
 environments:
   default: stable
   nix: true
@@ -67,14 +68,15 @@ release:
     hwm: libs/hwm:hwm
   publish:
     main:
-    - libs/hwm
+      - libs/hwm
 scripts:
   build: stack build --fast
   clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
   format: sh scripts/format.sh
   format:fix: sh scripts/format.sh --fix
   install: stack install
-  lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
+  lint:
+    curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
   test: stack test --fast
   test:update: GOLDEN_UPDATE=1 stack test --fast
