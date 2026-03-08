@@ -68,7 +68,7 @@ release:
     hwm: libs/hwm:hwm
   publish:
     main:
-      - libs/hwm
+      - libs/(root)
 scripts:
   build: stack build --fast
   clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
