@@ -26,6 +26,7 @@ module HWM.Runtime.UI
     runSpinner,
     printGenTable,
     forTable,
+    statusTableM,
   )
 where
 
@@ -133,6 +134,11 @@ forTable_ rows f = tableM_ (map f rows)
 
 tableM_ :: (MonadUI m) => [(Text, m Text)] -> m ()
 tableM_ rows = forHLTable rows (second ((,()) <$>)) $> ()
+
+statusTableM :: (MonadUI m) => [(Text, m Status)] -> m ()
+statusTableM = tableM_ . map (second render)
+  where
+    render s = statusIcon <$> s
 
 sectionTableM :: (MonadUI m) => Text -> [(Text, m Text)] -> m ()
 sectionTableM title = section title . tableM_

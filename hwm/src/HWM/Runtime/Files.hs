@@ -20,6 +20,7 @@ module HWM.Runtime.Files
     getFileSignature,
     prepareDir,
     syncFile,
+    rewriteMaybe_,
   )
 where
 
@@ -124,6 +125,19 @@ rewrite_ pkg f = do
   if same
     then pure Checked
     else withThrow (safeWrite pkg (serializeYaml nextYaml)) $> Updated
+
+rewriteMaybe_ :: (MonadError Issue m, MonadIO m, FromJSON t, ToJSON t) => FilePath -> (Maybe t -> m (Maybe t)) -> m Status
+rewriteMaybe_ pkg f = do
+  prevYaml <- safeRead pkg >>= fromEither
+  maybeNext <- f (getData <$> prevYaml)
+  case maybeNext of
+    Nothing -> pure Checked -- nothing to change, so we consider it checked
+    Just next -> do
+      nextYaml <- mapYaml (const (pure next)) prevYaml
+      let same = Just (toJSON nextYaml) == (toJSON <$> prevYaml)
+      if same
+        then pure Checked
+        else withThrow (safeWrite pkg (serializeYaml nextYaml)) $> Updated
 
 statusM :: (MonadIO m) => FilePath -> m t -> m Status
 statusM pkg m = do

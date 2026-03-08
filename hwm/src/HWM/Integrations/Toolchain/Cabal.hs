@@ -1,17 +1,17 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Integrations.Toolchain.Cabal
-  ( rewriteCabalPackage,
-    validateHackage,
+  ( validateHackage,
     syncCabalProject,
-    readCabalPackage,
     HasSourceDirs (..),
     CabalPackage,
     newCabalPackage,
+    readCabalPackage,
   )
 where
 
@@ -33,7 +33,7 @@ import Distribution.Verbosity (normal)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
-import HWM.Core.Pkg (IsPkg (..), Pkg (Pkg, hpackFile), PkgName)
+import HWM.Core.Pkg (IsPkg (..), PackageIO, Pkg (Pkg, hpackFile), PkgName)
 import qualified HWM.Core.Pkg as P
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version, toCabalVersion)
@@ -61,9 +61,9 @@ isError PackageBuildWarning {} = False
 isError PackageDistSuspiciousWarn {} = False
 isError PackageDistSuspicious {} = False
 
-validateHackage :: Pkg -> FilePath -> ConfigT [Status]
-validateHackage pkg path = do
-  gpd <- liftIO $ readGenericPackageDescription normal path
+validateHackage :: Pkg -> ConfigT Status
+validateHackage pkg = do
+  gpd <- liftIO $ readGenericPackageDescription normal (P.cabalFile pkg)
   let ls = checkPackage gpd Nothing
   for_ ls $ \l -> do
     injectIssue
@@ -71,10 +71,10 @@ validateHackage pkg path = do
           { issueMessage = "Invalid package: " <> show l,
             issueSeverity = if isError l then SeverityError else SeverityWarning,
             issueTopic = P.pkgMemberId pkg,
-            issueDetails = Just GenericIssue {issueFile = path}
+            issueDetails = Just GenericIssue {issueFile = P.cabalFile pkg}
           }
       )
-  pure (map toStatus ls)
+  pure (maximum (Checked : map toStatus ls))
 
 hpackSync :: Pkg -> ConfigT Status
 hpackSync Pkg {hpackFile = Nothing} = pure Checked
@@ -86,22 +86,29 @@ hpackSync pkg@Pkg {hpackFile = Just path} = do
     H.OutputUnchanged -> pure Checked
     _ -> pure Updated
 
-cabalSync :: (CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Status
+cabalSync :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
 cabalSync mapCabal pkg = do
   cabalP <- readCabalPackage pkg
-  newpackage <- mapCabal cabalP
-  if cbOriginal newpackage == cbOriginal cabalP
-    then pure Checked
-    else do
-      liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
-      pure Updated
+  changes <- mapCabal cabalP
+  case changes of
+    Nothing -> pure Checked
+    Just newpackage ->
+      if cbOriginal newpackage == cbOriginal cabalP
+        then pure Checked
+        else do
+          liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
+          pure Updated
 
-rewriteCabalPackage :: (CabalPackage -> ConfigT CabalPackage) -> Pkg -> ConfigT Status
+instance PackageIO CabalPackage ConfigT where
+  rewritePackage = rewriteCabalPackage
+  readPackage = readCabalPackage
+
+rewriteCabalPackage :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
 rewriteCabalPackage mapCabal pkg = do
   s <- hpackSync pkg
-  ls <- validateHackage pkg (P.cabalFile pkg)
+  ls <- validateHackage pkg
   cs <- cabalSync mapCabal pkg
-  pure $ maximum (s : ls <> [cs])
+  pure $ maximum [s, ls, cs]
 
 generateCabalProject :: [Pkg] -> Text -> Text
 generateCabalProject packagePaths ghcVersion =
@@ -200,7 +207,7 @@ newCabalPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Ver
 newCabalPackage dir name version deps = do
   let package = emptyPackage name version deps
   liftIO $ writeGenericPackageDescription (dir </> (toString name <> ".cabal")) package
-  pure Checked
+  pure Updated
 
 emptyPackage :: PkgName -> Version -> Dependencies -> GenericPackageDescription
 emptyPackage (P.PkgName name) version dependencies =

@@ -1,6 +1,6 @@
 cabal-version:      1.12
 name:               foo
-version:            0.1.2
+version:            0.1.0
 license:            MIT
 license-file:       LICENSE
 synopsis:           Foo library

@@ -6,17 +6,17 @@ module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) wher
 
 import Control.Monad.Error.Class (MonadError (throwError))
 import qualified Data.Map as Map
-import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatus, padDots, subPathSign)
+import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatusM, padDots, subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityError, SeverityWarning))
 import HWM.Domain.Config (Config (..))
-import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig)
+import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig, updateConfigM)
 import HWM.Domain.Workspace (WorkGroup (..), WorkspaceRef (..), addWorkgroupMember, parseWorkspaceRef)
 import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Integrations.Toolchain.Hie (syncHie)
 import HWM.Integrations.Toolchain.Stack (syncStackYaml)
-import HWM.Runtime.UI (putLine, sectionConfig, sectionWorkspace)
+import HWM.Runtime.UI (putLine, sectionWorkspace)
 import Options.Applicative (help, long, metavar, strArgument, strOption)
 import Relude
 
@@ -47,22 +47,22 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId Noth
           }
     else do
       let ws = Map.insert groupId (WorkGroup opsWorkspaceDir [] opsPrefix) wss
-      updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ sectionWorkspace $ do
+      sectionWorkspace $ do
         putLine ""
-        displayStatus [("added", pure Checked)] >>= putLine . (("• " <> chalk Bold groupId <> " ") <>)
+        displayStatusM [("added", pure Checked)] >>= putLine . (("• " <> chalk Bold groupId <> " ") <>)
+      updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) (pure ())
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Just memberId), ..}) = do
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
   (ws, w) <- addWorkgroupMember groupId memberId
-  scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
-  updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws})
-    $ sectionWorkspace
+  sectionWorkspace
     $ do
       putLine ""
       putLine $ "• " <> chalk Bold groupId
-      displayStatus [("added", pure Checked)] >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
-      sectionConfig [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)]
-  pure ()
+      xs <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
+      displayStatusM xs >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
+
+  updateConfigM (\cfg -> pure $ cfg {cfgWorkspace = ws}) [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)] $ pure ()
   where
     noEffect label =
       Issue

@@ -1,0 +1,6 @@
+resolver: lts-18.28
+packages:
+- foo
+- bar
+- new
+save-hackage-creds: false

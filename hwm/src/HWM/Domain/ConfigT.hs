@@ -15,6 +15,7 @@ module HWM.Domain.ConfigT
     runConfigT,
     VersionMap,
     updateConfig,
+    updateConfigM,
     Env (..),
     unpackConfigT,
     askCache,
@@ -28,7 +29,7 @@ where
 
 import Control.Monad.Error.Class
 import HWM.Core.Common (Check (..), Name)
-import HWM.Core.Formatting (Format (..), Status (..))
+import HWM.Core.Formatting (Format (..), Status (..), StatusM)
 import HWM.Core.Has (Has (..))
 import HWM.Core.Options (Options (..))
 import HWM.Core.Result (Issue (..), MonadIssue (..), Result (..), ResultT, runResultT)
@@ -124,10 +125,12 @@ saveConfig config ops = do
     _ -> pure ()
 
 updateConfig :: (Config -> ConfigT Config) -> ConfigT b -> ConfigT b
-updateConfig f m = do
-  sectionConfig [("hwm.yaml", pure Checked)]
+updateConfig f = updateConfigM f []
+
+updateConfigM :: (Config -> ConfigT Config) -> StatusM ConfigT -> ConfigT b -> ConfigT b
+updateConfigM f xs m = do
   config' <- asks config >>= f
-  local (\e -> e {config = config'}) (checkConfig >> m)
+  local (\e -> e {config = config'}) (checkConfig >> sectionConfig (("hwm.yaml", pure Updated) : xs) >> m)
 
 runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
