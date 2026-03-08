@@ -111,7 +111,7 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
         ("builder", pure $ format builder)
       ]
 
-  plans <- forTable "build" cfgs (\x -> (fst x, buildPkg x))
+  plans <- forTable "build" cfgs (\x -> (fst x, buildPkg builder x))
 
   section "archive" $ pure ()
   artifacts <- for plans $ \(name, plan) -> do
@@ -132,13 +132,12 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       uploadToGitHub url sha256Path
       putLine $ subPathSign <> format sha256Path
   where
-    buildPkg (name, ArtifactConfig {..}) = do
-      env <- getBuildEnvironment Nothing
+    buildPkg builder (name, ArtifactConfig {..}) = do
       binaryDir <- genBindaryDir name
       let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
       optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
       Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
-      genBinary (buildBuilder env) pkgName binaryDir (ghcOptions arcGhcOptions)
+      genBinary builder pkgName binaryDir (ghcOptions arcGhcOptions)
       pure $ (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
 
 genBinary :: Builder -> PkgName -> FilePath -> [Text] -> ConfigT ()
