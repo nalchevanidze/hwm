@@ -39,7 +39,8 @@ data ReleaseArchiveOptions = ReleaseArchiveOptions
     outputDir :: FilePath,
     ovFormat :: Maybe [Text],
     ovGhcOptions :: Maybe [Text],
-    ovNameTemplate :: Maybe Text
+    ovNameTemplate :: Maybe Text,
+    opsBuilder :: Maybe Builder
   }
   deriving (Show)
 
@@ -58,6 +59,7 @@ instance ParseCLI ReleaseArchiveOptions where
       <*> optional (option (parseLS <$> str) (long "format" <> metavar "FORMAT" <> help "Override the archive format for the release target. Supported: zip, tar.gz."))
       <*> optional (option (parseLS <$> str) (long "ghc-options" <> metavar "GHC_OPTION" <> help "Override GHC options for the release target. Can be specified multiple times."))
       <*> optional (strOption (long "name-template" <> metavar "NAME_TEMPLATE" <> help "Override the name template for the release target. Use {name} and {version} as placeholders."))
+      <*> optional (option (str >>= parse) (long "builder" <> metavar "BUILDER" <> help "Override the builder for the release target. Supported: cabal, stack, nix."))
 
 genBindaryDir :: (MonadIO m, ToString a) => a -> m FilePath
 genBindaryDir name = do
@@ -100,7 +102,8 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   cfgs <- getArchiveConfigs >>= withOverrides ops
   ghTag <- if ghPublish then Just <$> ensureIsLatestTag version else pure Nothing
   uploadUrl <- maybe (pure Nothing) (fmap Just . getGHUploadUrl cfg) ghTag
-  builder <- buildBuilder <$> getBuildEnvironment Nothing
+  defaultBuilder <- buildBuilder <$> getBuildEnvironment Nothing
+  let builder = fromMaybe defaultBuilder opsBuilder
   sectionTableM
     "artifacts"
     [ ("destination", pure $ maybe (format outputDir) format uploadUrl),

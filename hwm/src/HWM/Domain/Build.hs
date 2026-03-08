@@ -14,6 +14,7 @@ import Control.Monad.Except (throwError)
 import Data.Aeson (FromJSON (..), ToJSON (toJSON))
 import Data.Aeson.Types (Value (..))
 import HWM.Core.Formatting (Format (..))
+import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (PkgName)
 import HWM.Core.Result (Issue)
 import HWM.Runtime.Process (exec)
@@ -28,10 +29,14 @@ data Builder
   deriving (Generic, Show, Ord, Eq)
 
 instance FromJSON Builder where
-  parseJSON (String "cabal") = pure CabalBuilder
-  parseJSON (String "stack") = pure StackBuilder
-  parseJSON (String "nix") = pure NixBuilder
+  parseJSON (String s) = parse s
   parseJSON _ = fail "Invalid builder. Expected 'cabal', 'stack', or 'nix'."
+
+instance Parse Builder where
+  parse "cabal" = pure CabalBuilder
+  parse "stack" = pure StackBuilder
+  parse "nix" = pure NixBuilder
+  parse _ = fail "Invalid builder. Expected 'cabal', 'stack', or 'nix'."
 
 instance ToJSON Builder where
   toJSON = String . format
