@@ -29,8 +29,8 @@ import HWM.Runtime.Process (exec)
 import HWM.Runtime.UI (forTable, indent, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, long, metavar, option, showDefault, str, strOption, switch, value)
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, emptyPermissions, pathIsSymbolicLink, removeFile, removePathForcibly, setOwnerExecutable, setPermissions)
-import System.FilePath (joinPath, takeDirectory, (</>))
+import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, doesPathExist, emptyPermissions, removeFile, removePathForcibly, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
+import System.FilePath (joinPath, (</>))
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions
@@ -101,12 +101,13 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   ghTag <- if ghPublish then Just <$> ensureIsLatestTag version else pure Nothing
   uploadUrl <- maybe (pure Nothing) (fmap Just . getGHUploadUrl cfg) ghTag
   builder <- buildBuilder <$> getBuildEnvironment Nothing
-  sectionTableM "artifacts"
-    $ [ ("destination", pure $ maybe (format outputDir) format uploadUrl),
-        ("version", pure $ format version <> maybe "" (\tag -> " (GitHub Release " <> tag <> ")") ghTag),
-        ("targets", pure $ formatList "," (map fst cfgs)),
-        ("builder", pure $ format builder)
-      ]
+  sectionTableM
+    "artifacts"
+    [ ("destination", pure $ maybe (format outputDir) format uploadUrl),
+      ("version", pure $ format version <> maybe "" (\tag -> " (GitHub Release " <> tag <> ")") ghTag),
+      ("targets", pure $ formatList "," (map fst cfgs)),
+      ("builder", pure $ format builder)
+    ]
 
   plans <- forTable "build" cfgs (\x -> (fst x, buildPkg builder x))
 
@@ -135,7 +136,7 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
       Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
       genBinary builder pkgName binaryDir (ghcOptions arcGhcOptions)
-      pure $ (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
+      pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
 
 genBinary :: Builder -> PkgName -> FilePath -> [Text] -> ConfigT ()
 genBinary builder pkgName dirPath args = do
@@ -157,26 +158,24 @@ genBinary builder pkgName dirPath args = do
             ]
           <> args
       NixBuilder ->
-        exec "nix" $ ["build", ".#" <> format pkgName, "--out-link", format dirPath <> "/result"] <> args
+        -- WARNING: We DO NOT append 'args' here.
+        -- Nix does not accept '--ghc-options' via CLI; it must be set in the flake.
+        exec "nix" ["build", ".#" <> format pkgName, "-o", format (dirPath </> "result")]
 
--- | Extracts a binary from a Nix 'result' symlink to a final destination.
--- This handles path discovery and symlink cleanup.
 extractNixArtifact :: PkgName -> FilePath -> ConfigT ()
 extractNixArtifact pkgName distDir = do
   let resultLink = distDir </> "result"
       finalDest = distDir </> toString pkgName
       pkgStr = toString (format pkgName)
 
-  -- 1. Ensure the parent directory exists (Nix fails if it doesn't)
-  liftIO $ createDirectoryIfMissing True (takeDirectory resultLink)
-
-  -- 2. Verify the symlink actually exists
-  isLink <- liftIO $ pathIsSymbolicLink resultLink
+  liftIO $ createDirectoryIfMissing True distDir
+  isLink <- liftIO $ doesPathExist resultLink
   unless isLink
     $ throwError
     $ fromString
-    $ "Nix build did not create a symlink at: "
+    $ "Nix build completed, but did not create an output at: "
     <> resultLink
+    <> "\n(This usually means the Nix derivation is empty or 'exec' hid a build failure.)"
 
   -- 3. Define potential binary locations within the Nix store path
   let searchPaths =
@@ -192,7 +191,12 @@ extractNixArtifact pkgName distDir = do
     Just sourcePath -> do
       liftIO $ copyFile sourcePath finalDest
       -- Ensure the user can execute it (Nix store is read-only)
-      liftIO $ setPermissions finalDest (setOwnerExecutable True emptyPermissions)
+      liftIO $ do
+        let properPerms =
+              setOwnerReadable True
+                $ setOwnerWritable True
+                $ setOwnerExecutable True emptyPermissions
+        setPermissions finalDest properPerms
       -- Cleanup: Remove the 'result' symlink to keep the folder clean
       liftIO $ removeFile resultLink
     Nothing ->
@@ -200,10 +204,8 @@ extractNixArtifact pkgName distDir = do
         $ fromString
         $ "Nix build succeeded, but binary '"
         <> pkgStr
-        <> "' not found in: "
-        <> resultLink
+        <> "' not found inside the Nix store path.\n"
 
--- Helper for finding the first existing file in a list
 findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
 findM _ [] = pure Nothing
 findM p (x : xs) = do
