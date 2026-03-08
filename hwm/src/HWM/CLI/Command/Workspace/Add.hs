@@ -48,8 +48,8 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId Noth
     else do
       let ws = Map.insert groupId (WorkGroup opsWorkspaceDir [] opsPrefix) wss
       sectionWorkspace $ do
-          putLine ""
-          displayStatusM [("added", pure Checked)] >>= putLine . (("• " <> chalk Bold groupId <> " ") <>)
+        putLine ""
+        displayStatusM [("added", pure Checked)] >>= putLine . (("• " <> chalk Bold groupId <> " ") <>)
       updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) (pure ())
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Just memberId), ..}) = do
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
