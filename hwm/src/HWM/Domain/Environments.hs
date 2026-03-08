@@ -68,9 +68,12 @@ instance FromJSON Builder where
   parseJSON _ = fail "Invalid builder. Expected 'cabal', 'stack', or 'nix'."
 
 instance ToJSON Builder where
-  toJSON CabalBuilder = String "cabal"
-  toJSON StackBuilder = String "stack"
-  toJSON NixBuilder = String "nix"
+  toJSON = String . format
+
+instance Format Builder where
+  format CabalBuilder = "cabal"
+  format StackBuilder = "stack"
+  format NixBuilder = "nix"
 
 data Environments = Environments
   { envBuilder :: Maybe Builder,

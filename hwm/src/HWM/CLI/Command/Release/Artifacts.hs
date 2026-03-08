@@ -22,7 +22,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (fromEither)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
-import HWM.Domain.Environments (Builder (..), getBuildEnvironment, BuildEnvironment (..))
+import HWM.Domain.Environments (BuildEnvironment (..), Builder (..), getBuildEnvironment)
 import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, selectedArtifacts)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
@@ -103,11 +103,12 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   cfgs <- getArchiveConfigs >>= withOverrides ops
   ghTag <- if ghPublish then Just <$> ensureIsLatestTag version else pure Nothing
   uploadUrl <- maybe (pure Nothing) (fmap Just . getGHUploadUrl cfg) ghTag
-
+  builder <- buildBuilder <$> getBuildEnvironment Nothing
   sectionTableM "artifacts"
     $ [ ("destination", pure $ maybe (format outputDir) format uploadUrl),
         ("version", pure $ format version <> maybe "" (\tag -> " (GitHub Release " <> tag <> ")") ghTag),
-        ("targets", pure $ formatList "," (map fst cfgs))
+        ("targets", pure $ formatList "," (map fst cfgs)),
+        ("builder", pure $ format builder)
       ]
 
   plans <- forTable "build" cfgs (\x -> (fst x, buildPkg x))
