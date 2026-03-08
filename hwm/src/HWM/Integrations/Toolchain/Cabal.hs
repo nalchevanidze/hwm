@@ -41,8 +41,8 @@ import HWM.Domain.ConfigT (ConfigT)
 import qualified HWM.Domain.ConfigT as CT
 import HWM.Domain.Dependencies (Dependencies (..), HasDependencies (..), MapDeps (..), mkCabalDependency, toDependencyList)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
-import HWM.Runtime.Files (remove, syncFile)
-import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
+import HWM.Runtime.Files (syncFile)
+import Hpack (Force (..), Options (..), Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
@@ -111,9 +111,8 @@ rewriteCabalPackage mapCabal pkg = do
 
 hpackForceUpdate :: (MonadIO m) => Pkg -> FilePath -> m Status
 hpackForceUpdate pkg path = do
-  remove (P.cabalFile pkg)
   let programName = ProgramName $ toString $ P.pkgName pkg
-  let ops = setTarget path $ setProgramName programName defaultOptions
+  let ops = setTarget path $ setProgramName programName defaultOptions {optionsForce = Force}
   Result {..} <- liftIO $ hpackResult ops
   case resultStatus of
     H.OutputUnchanged -> pure Checked
