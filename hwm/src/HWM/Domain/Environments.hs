@@ -51,7 +51,7 @@ import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNig
 import HWM.Runtime.Files (Signature, aesonYAMLOptions, aesonYAMLOptionsAdvanced, genSignature)
 import HWM.Runtime.UI (MonadUI, forTable_, sectionEnvironments)
 import Relude
-import HWM.Domain.Build (Builder)
+import HWM.Domain.Build (Builder (..))
 
 type Extras = VersionMap
 
