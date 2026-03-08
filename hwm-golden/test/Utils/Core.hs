@@ -12,10 +12,9 @@ import qualified Data.ByteString as BS
 import qualified Data.List as S
 import qualified Data.Map.Strict as Map
 import Data.Time.Clock (UTCTime)
-import Distribution.Compat.Directory (doesPathExist)
 import qualified GHC.IO.Exception as System.Exit
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
 import System.FilePath (takeDirectory, takeExtension, (</>))
 import System.IO.Temp (withSystemTempDirectory)

@@ -1,7 +1,8 @@
 {
   "pkgs": {
     "cli": "hwm",
-    "lib": "hwm"
+    "lib": "hwm",
+    "golden": "hwm-golden"
   },
   "project": {
     "type": "custom",

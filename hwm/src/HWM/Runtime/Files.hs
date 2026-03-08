@@ -10,7 +10,6 @@ module HWM.Runtime.Files
     statusM,
     aesonYAMLOptions,
     select,
-    remove,
     addHash,
     forbidOverride,
     cleanRelativePath,
@@ -24,7 +23,7 @@ module HWM.Runtime.Files
   )
 where
 
-import Control.Exception (catch, throwIO, tryJust)
+import Control.Exception (tryJust)
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Crypto.Hash.SHA256 as SHA256
 import Data.Aeson
@@ -49,9 +48,8 @@ import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNul
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Result (Issue)
 import Relude hiding (readFile, writeFile)
-import System.Directory (createDirectoryIfMissing, doesFileExist, removeFile)
+import System.Directory (createDirectoryIfMissing, doesFileExist)
 import System.FilePath (joinPath, splitDirectories)
-import System.IO.Error (isDoesNotExistError)
 
 data Signature = Signed Text | Unsigned
   deriving (Ord, Show)
@@ -75,9 +73,6 @@ printException = show
 
 safeIO :: IO a -> IO (Either String a)
 safeIO = tryJust (Just . printException)
-
-remove :: (MonadIO m) => FilePath -> m ()
-remove file = liftIO $ removeFile file `catch` (\e -> unless (isDoesNotExistError e) (throwIO e))
 
 safeRead :: (MonadIO m) => FilePath -> m (Either String ByteString)
 safeRead = liftIO . safeIO . readFile

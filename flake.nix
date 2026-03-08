@@ -9,6 +9,7 @@
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       haskellOverlay = final: prev: {
             hwmWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+              hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
               hwm = hfinal.callCabal2nix "hwm" ./hwm {};
             });
       };
@@ -19,6 +20,7 @@
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
         {
+          hwm-golden = pkgs.hwmWorkspacePackages.hwm-golden;
           hwm = pkgs.hwmWorkspacePackages.hwm;
           default = pkgs.hwmWorkspacePackages.hwm;
         });
@@ -28,7 +30,7 @@
         in
         {
           default = pkgs.hwmWorkspacePackages.shellFor {
-            packages = p: [ p.hwm ];
+            packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmWorkspacePackages; [
               cabal-install
               haskell-language-server

@@ -42,7 +42,7 @@ import qualified HWM.Domain.ConfigT as CT
 import HWM.Domain.Dependencies (Dependencies (..), HasDependencies (..), MapDeps (..), mkCabalDependency, toDependencyList)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import HWM.Runtime.Files (syncFile)
-import Hpack (Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
+import Hpack (Force (..), Options (..), Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
@@ -76,39 +76,47 @@ validateHackage pkg = do
       )
   pure (maximum (Checked : map toStatus ls))
 
-hpackSync :: Pkg -> ConfigT Status
-hpackSync Pkg {hpackFile = Nothing} = pure Checked
-hpackSync pkg@Pkg {hpackFile = Just path} = do
-  let programName = ProgramName $ toString $ P.pkgName pkg
-  let ops = setTarget path $ setProgramName programName defaultOptions
-  Result {..} <- liftIO $ hpackResult ops
-  case resultStatus of
-    H.OutputUnchanged -> pure Checked
-    _ -> pure Updated
-
-cabalSync :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
-cabalSync mapCabal pkg = do
-  cabalP <- readCabalPackage pkg
-  changes <- mapCabal cabalP
-  case changes of
-    Nothing -> pure Checked
-    Just newpackage ->
-      if cbOriginal newpackage == cbOriginal cabalP
-        then pure Checked
-        else do
-          liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
-          pure Updated
-
 instance PackageIO CabalPackage ConfigT where
   rewritePackage = rewriteCabalPackage
   readPackage = readCabalPackage
 
+getChanges :: Pkg -> (CabalPackage -> ConfigT (Maybe CabalPackage)) -> ConfigT (Maybe CabalPackage)
+getChanges pkg mapCabal = do
+  original <- readCabalPackage pkg
+  updated <- mapCabal original
+  case updated of
+    Nothing -> pure Nothing
+    Just newpackage ->
+      if cbContent newpackage == cbContent original
+        then pure Nothing
+        else pure (Just newpackage)
+
+forChanges :: (Applicative f) => Maybe t -> (t -> f a) -> f Status
+forChanges changes f = do
+  case changes of
+    Nothing -> pure Checked
+    Just newpackage -> f newpackage $> Updated
+
 rewriteCabalPackage :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
+rewriteCabalPackage mapCabal pkg@Pkg {hpackFile = Just path} = do
+  changes <- getChanges pkg mapCabal
+  update <- forChanges changes $ \_ -> hpackForceUpdate pkg path
+  validation <- validateHackage pkg
+  pure $ max validation update
 rewriteCabalPackage mapCabal pkg = do
-  s <- hpackSync pkg
-  ls <- validateHackage pkg
-  cs <- cabalSync mapCabal pkg
-  pure $ maximum [s, ls, cs]
+  changes <- getChanges pkg mapCabal
+  update <- forChanges changes $ \package -> liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbContent package)
+  validation <- validateHackage pkg
+  pure $ max validation update
+
+hpackForceUpdate :: (MonadIO m) => Pkg -> FilePath -> m Status
+hpackForceUpdate pkg path = do
+  let programName = ProgramName $ toString $ P.pkgName pkg
+  let ops = setTarget path $ setProgramName programName defaultOptions {optionsForce = Force}
+  Result {..} <- liftIO $ hpackResult ops
+  case resultStatus of
+    H.OutputUnchanged -> pure Checked
+    _ -> pure Updated
 
 generateCabalProject :: [Pkg] -> Text -> Text
 generateCabalProject packagePaths ghcVersion =
@@ -125,7 +133,7 @@ syncCabalProject = do
 
 data CabalPackage = CabalPackage
   { cbDirectory :: FilePath,
-    cbOriginal :: GenericPackageDescription
+    cbContent :: GenericPackageDescription
   }
   deriving (Show)
 
@@ -144,7 +152,7 @@ readCabalPackage pkg = do
   pure
     CabalPackage
       { cbDirectory = takeDirectory (P.cabalFile pkg),
-        cbOriginal = gpd
+        cbContent = gpd
       }
 
 class HasSourceDirs a where
@@ -158,7 +166,7 @@ instance (HasSourceDirs a) => HasSourceDirs (Map Text a) where
   getSourceDirs tags libs = concatMap (\(name, lib) -> getSourceDirs (tags <> [name]) lib) (Map.toList libs)
 
 instance HasSourceDirs CabalPackage where
-  getSourceDirs p CabalPackage {..} = getSourceDirs p cbOriginal
+  getSourceDirs p CabalPackage {..} = getSourceDirs p cbContent
 
 instance HasSourceDirs GenericPackageDescription where
   getSourceDirs p GenericPackageDescription {..} =
@@ -191,17 +199,17 @@ instance HasSourceDirs BuildInfo where
       withKey dir = (T.intercalate ":" path, format dir)
 
 instance IsPkg CabalPackage where
-  getPkgName = getPkgName . cbOriginal
-  getPkgVersion = getPkgVersion . cbOriginal
-  setVersion version pkg = pkg {cbOriginal = setVersion version (cbOriginal pkg)}
+  getPkgName = getPkgName . cbContent
+  getPkgVersion = getPkgVersion . cbContent
+  setVersion version pkg = pkg {cbContent = setVersion version (cbContent pkg)}
 
 instance HasDependencies CabalPackage where
-  collectDependencies xs gpd = collectDependencies xs (cbOriginal gpd)
+  collectDependencies xs gpd = collectDependencies xs (cbContent gpd)
 
 instance MapDeps CabalPackage where
   mapDeps ctx f cabalPkg = do
-    newGpd <- mapDeps ctx f (cbOriginal cabalPkg)
-    pure cabalPkg {cbOriginal = newGpd}
+    newGpd <- mapDeps ctx f (cbContent cabalPkg)
+    pure cabalPkg {cbContent = newGpd}
 
 newCabalPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Version -> Dependencies -> m Status
 newCabalPackage dir name version deps = do

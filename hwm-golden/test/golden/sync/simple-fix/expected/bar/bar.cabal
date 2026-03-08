@@ -1,0 +1,9 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.36.1.
+--
+-- see: https://github.com/sol/hpack
+
+name:           bar
+version:        1.0
+build-type:     Simple
