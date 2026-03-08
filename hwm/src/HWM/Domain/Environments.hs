@@ -25,6 +25,7 @@ module HWM.Domain.Environments
     environmentHash,
     NixEnvironment (..),
     Feature (..),
+    Builder (..),
   )
 where
 
@@ -53,6 +54,12 @@ import HWM.Runtime.UI (MonadUI, forTable_, sectionEnvironments)
 import Relude
 
 type Extras = VersionMap
+
+data Builder
+  = CabalBuilder
+  | StackBuilder
+  | NixBuilder
+  deriving (Generic, Show, Ord, Eq)
 
 data Environments = Environments
   { envDefault :: Name,

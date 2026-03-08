@@ -22,6 +22,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (fromEither)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
+import HWM.Domain.Environments (Builder (..))
 import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, selectedArtifacts)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
@@ -31,7 +32,7 @@ import HWM.Runtime.Process (exec)
 import HWM.Runtime.UI (forTable, indent, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, long, metavar, option, showDefault, str, strOption, switch, value)
 import Relude
-import System.Directory (createDirectoryIfMissing, removePathForcibly)
+import System.Directory (copyFile, createDirectoryIfMissing, removeFile, removePathForcibly)
 import System.FilePath (joinPath)
 
 -- | Options for 'hwm release archive'
@@ -135,10 +136,40 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
       optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
       Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
-      stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
+      genBinary StackBuilder pkgName binaryDir (ghcOptions arcGhcOptions)
       pure $ (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
 
-stackGenBinary :: PkgName -> FilePath -> [Text] -> ConfigT ()
-stackGenBinary pkgName dirPath args = do
-  (success, buildOut) <- exec "cabal" (["install", format pkgName, "--local-bin-path", format dirPath] <> args)
+genBinary :: Builder -> PkgName -> FilePath -> [Text] -> ConfigT ()
+genBinary builder pkgName dirPath args = do
+  (success, buildOut) <- command
   unless success $ throwError (fromString $ "Build failed: " <> buildOut)
+  when (builder == NixBuilder) extractNixBinary
+  where
+    command = case builder of
+      StackBuilder ->
+        exec "stack" $ ["install", format pkgName, "--local-bin-path", format dirPath] <> args
+      CabalBuilder ->
+        exec "cabal"
+          $ [ "install",
+              format pkgName,
+              "--install-method=copy",
+              "--installdir",
+              format dirPath,
+              "--overwrite-policy=always"
+            ]
+          <> args
+      NixBuilder ->
+        -- Nix outputs a symlink named 'result' into the target directory
+        exec "nix" $ ["build", ".#" <> format pkgName, "--out-link", format dirPath <> "/result"] <> args
+
+    -- Nix doesn't extract just the binary; it links the whole store path.
+    -- We need to copy the actual binary out and clean up the symlink.
+    extractNixBinary = do
+      let resultLink = format dirPath <> "/result"
+          binaryInStore = resultLink <> "/bin/" <> format pkgName
+          finalDest = format dirPath <> "/" <> format pkgName
+
+      -- Assuming ConfigT allows liftIO:
+      liftIO $ do
+        copyFile (toString binaryInStore) (toString finalDest)
+        removeFile (toString resultLink)
