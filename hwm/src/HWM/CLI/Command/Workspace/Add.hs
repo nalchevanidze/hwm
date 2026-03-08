@@ -16,7 +16,7 @@ import HWM.Domain.Workspace (WorkGroup (..), WorkspaceRef (..), addWorkgroupMemb
 import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Integrations.Toolchain.Hie (syncHie)
 import HWM.Integrations.Toolchain.Stack (syncStackYaml)
-import HWM.Runtime.UI (putLine, sectionConfig, sectionWorkspace)
+import HWM.Runtime.UI (putLine, sectionWorkspace, statusTableM)
 import Options.Applicative (help, long, metavar, strArgument, strOption)
 import Relude
 
@@ -62,7 +62,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Jus
       xs <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
       displayStatusM xs >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
 
-  updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ sectionConfig [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)]
+  updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ statusTableM [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)]
   where
     noEffect label =
       Issue
