@@ -19,7 +19,7 @@ module HWM.Core.Pkg
     cabalSource,
     hpackSource,
     getVersionIssues,
-    ModifyPackage (..),
+    PackageIO (..),
   )
 where
 
@@ -76,7 +76,7 @@ class IsPkg a where
   getPkgVersion :: a -> Version
   setVersion :: Version -> a -> a
 
-class ModifyPackage a m where
+class PackageIO a m where
   rewrite :: (a -> m (Maybe a)) -> Pkg -> m Status
 
 instance IsPkg GenericPackageDescription where

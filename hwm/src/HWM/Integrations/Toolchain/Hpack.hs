@@ -21,7 +21,7 @@ import Data.Yaml.Aeson (Parser)
 import GHC.Generics (Generic (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Status (Checked))
-import HWM.Core.Pkg (IsPkg (..), ModifyPackage (..), Pkg (..), PkgName (..))
+import HWM.Core.Pkg (IsPkg (..), PackageIO (..), Pkg (..), PkgName (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Core.Version (Version)
 import HWM.Domain.ConfigT (ConfigT)
@@ -171,5 +171,5 @@ newHpackPackage dir name version deps = do
   let package = emptyPackage name version deps
   rewrite_ (dir </> "package.yaml") (const $ pure package)
 
-instance ModifyPackage HpackPackage ConfigT where
+instance PackageIO HpackPackage ConfigT where
   rewrite = rewriteHpackPackage

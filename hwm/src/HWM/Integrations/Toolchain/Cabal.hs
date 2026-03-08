@@ -33,7 +33,7 @@ import Distribution.Verbosity (normal)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
-import HWM.Core.Pkg (IsPkg (..), ModifyPackage, Pkg (Pkg, hpackFile), PkgName)
+import HWM.Core.Pkg (IsPkg (..), PackageIO, Pkg (Pkg, hpackFile), PkgName)
 import qualified HWM.Core.Pkg as P
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version, toCabalVersion)
@@ -99,7 +99,7 @@ cabalSync mapCabal pkg = do
           liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbOriginal newpackage)
           pure Updated
 
-instance ModifyPackage CabalPackage ConfigT where
+instance PackageIO CabalPackage ConfigT where
   rewrite = rewriteCabalPackage
 
 rewriteCabalPackage :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
