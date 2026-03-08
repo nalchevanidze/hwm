@@ -9,6 +9,7 @@ workspace:
       - golden
       - .
 environments:
+  builder: stack
   default: stable
   nix: true
   profiles:

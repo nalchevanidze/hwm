@@ -176,15 +176,11 @@ extractNixArtifact pkgName distDir = do
     $ "Nix build completed, but did not create an output at: "
     <> resultLink
     <> "\n(This usually means the Nix derivation is empty or 'exec' hid a build failure.)"
-
-  -- 3. Define potential binary locations within the Nix store path
   let searchPaths =
         [ resultLink </> "bin" </> pkgStr, -- Standard Haskell (Cabal/Stack)
           resultLink </> pkgStr, -- Simple/Single-binary derivation
           resultLink -- Derivation is the binary itself
         ]
-
-  -- 4. Find the first path that actually exists
   maybeSource <- findM (liftIO . doesFileExist) searchPaths
 
   case maybeSource of
