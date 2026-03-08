@@ -77,7 +77,8 @@ class IsPkg a where
   setVersion :: Version -> a -> a
 
 class PackageIO a m where
-  rewrite :: (a -> m (Maybe a)) -> Pkg -> m Status
+  rewritePackage :: (a -> m (Maybe a)) -> Pkg -> m Status
+  readPackage :: Pkg -> m a
 
 instance IsPkg GenericPackageDescription where
   getPkgName = PkgName . toText . unPackageName . packageName . package . packageDescription

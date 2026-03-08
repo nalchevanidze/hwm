@@ -8,7 +8,6 @@
 module HWM.Integrations.Toolchain.Cabal
   ( validateHackage,
     syncCabalProject,
-    readCabalPackage,
     HasSourceDirs (..),
     CabalPackage,
     newCabalPackage,
@@ -100,7 +99,8 @@ cabalSync mapCabal pkg = do
           pure Updated
 
 instance PackageIO CabalPackage ConfigT where
-  rewrite = rewriteCabalPackage
+  rewritePackage = rewriteCabalPackage
+  readPackage = readCabalPackage
 
 rewriteCabalPackage :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
 rewriteCabalPackage mapCabal pkg = do
