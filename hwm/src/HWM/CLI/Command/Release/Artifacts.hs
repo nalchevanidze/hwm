@@ -1,9 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Redundant $" #-}
 
 module HWM.CLI.Command.Release.Artifacts
   ( ReleaseArchiveOptions (..),
@@ -32,8 +29,8 @@ import HWM.Runtime.Process (exec)
 import HWM.Runtime.UI (forTable, indent, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, long, metavar, option, showDefault, str, strOption, switch, value)
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, removeFile, removePathForcibly)
-import System.FilePath (joinPath)
+import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, emptyPermissions, pathIsSymbolicLink, removeFile, removePathForcibly, setOwnerExecutable, setPermissions)
+import System.FilePath (joinPath, takeDirectory, (</>))
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions
@@ -144,7 +141,7 @@ genBinary :: Builder -> PkgName -> FilePath -> [Text] -> ConfigT ()
 genBinary builder pkgName dirPath args = do
   (success, buildOut) <- command
   unless success $ throwError (fromString $ "Build failed: " <> buildOut)
-  when (builder == NixBuilder) extractNixBinary
+  when (builder == NixBuilder) (extractNixArtifact pkgName dirPath)
   where
     command = case builder of
       StackBuilder ->
@@ -160,17 +157,54 @@ genBinary builder pkgName dirPath args = do
             ]
           <> args
       NixBuilder ->
-        -- Nix outputs a symlink named 'result' into the target directory
         exec "nix" $ ["build", ".#" <> format pkgName, "--out-link", format dirPath <> "/result"] <> args
 
-    -- Nix doesn't extract just the binary; it links the whole store path.
-    -- We need to copy the actual binary out and clean up the symlink.
-    extractNixBinary = do
-      let resultLink = format dirPath <> "/result"
-          binaryInStore = resultLink <> "/bin/" <> format pkgName
-          finalDest = format dirPath <> "/" <> format pkgName
+-- | Extracts a binary from a Nix 'result' symlink to a final destination.
+-- This handles path discovery and symlink cleanup.
+extractNixArtifact :: PkgName -> FilePath -> ConfigT ()
+extractNixArtifact pkgName distDir = do
+  let resultLink = distDir </> "result"
+      finalDest = distDir </> toString pkgName
+      pkgStr = toString (format pkgName)
 
-      -- Assuming ConfigT allows liftIO:
-      liftIO $ do
-        copyFile (toString binaryInStore) (toString finalDest)
-        removeFile (toString resultLink)
+  -- 1. Ensure the parent directory exists (Nix fails if it doesn't)
+  liftIO $ createDirectoryIfMissing True (takeDirectory resultLink)
+
+  -- 2. Verify the symlink actually exists
+  isLink <- liftIO $ pathIsSymbolicLink resultLink
+  unless isLink
+    $ throwError
+    $ fromString
+    $ "Nix build did not create a symlink at: "
+    <> resultLink
+
+  -- 3. Define potential binary locations within the Nix store path
+  let searchPaths =
+        [ resultLink </> "bin" </> pkgStr, -- Standard Haskell (Cabal/Stack)
+          resultLink </> pkgStr, -- Simple/Single-binary derivation
+          resultLink -- Derivation is the binary itself
+        ]
+
+  -- 4. Find the first path that actually exists
+  maybeSource <- findM (liftIO . doesFileExist) searchPaths
+
+  case maybeSource of
+    Just sourcePath -> do
+      liftIO $ copyFile sourcePath finalDest
+      -- Ensure the user can execute it (Nix store is read-only)
+      liftIO $ setPermissions finalDest (setOwnerExecutable True emptyPermissions)
+      -- Cleanup: Remove the 'result' symlink to keep the folder clean
+      liftIO $ removeFile resultLink
+    Nothing ->
+      throwError
+        $ fromString
+        $ "Nix build succeeded, but binary '"
+        <> pkgStr
+        <> "' not found in: "
+        <> resultLink
+
+-- Helper for finding the first existing file in a list
+findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
+findM _ [] = pure Nothing
+findM p (x : xs) = do
+  ifM (p x) (pure $ Just x) (findM p xs)
