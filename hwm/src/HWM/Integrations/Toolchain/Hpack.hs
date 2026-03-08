@@ -8,6 +8,7 @@
 module HWM.Integrations.Toolchain.Hpack
   ( HpackPackage (..),
     newHpackPackage,
+    readHpackPackage,
   )
 where
 
@@ -158,15 +159,18 @@ newHpackPackage dir name version deps = do
 
 instance PackageIO HpackPackage ConfigT where
   rewritePackage = rewriteHpackPackage
-  readPackage pkg =
-    maybe
-      ( throwError
-          $ Issue
-            { issueTopic = pkgMemberId pkg,
-              issueMessage = "pkg does not support hpack or could not find package file",
-              issueSeverity = SeverityWarning,
-              issueDetails = Just GenericIssue {issueFile = cabalFile pkg}
-            }
-      )
-      readYaml
-      (hpackFile pkg)
+  readPackage = readHpackPackage
+
+readHpackPackage :: (MonadError Issue m, MonadIO m) => Pkg -> m HpackPackage
+readHpackPackage pkg =
+  maybe
+    ( throwError
+        $ Issue
+          { issueTopic = pkgMemberId pkg,
+            issueMessage = "pkg does not support hpack or could not find package file",
+            issueSeverity = SeverityWarning,
+            issueDetails = Just GenericIssue {issueFile = cabalFile pkg}
+          }
+    )
+    readYaml
+    (hpackFile pkg)

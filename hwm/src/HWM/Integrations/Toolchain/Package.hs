@@ -37,7 +37,7 @@ import HWM.Domain.Dependencies
   )
 import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspace)
-import HWM.Integrations.Toolchain.Cabal (CabalPackage, newCabalPackage, readCabalPackage)
+import HWM.Integrations.Toolchain.Cabal (CabalPackage, newCabalPackage, readCabalPackage, validateHackage)
 import HWM.Integrations.Toolchain.Hpack (HpackPackage, newHpackPackage, readHpackPackage)
 import Relude
 
@@ -89,7 +89,7 @@ forFormats hpack cabal pkg =
     <> [("cabal", cabal (cabalSource pkg) pkg)]
 
 updatePackage :: (PkgSource -> HpackPackage -> ConfigT (Maybe HpackPackage)) -> (PkgSource -> CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> StatusM ConfigT
-updatePackage mapHpack mapCabal = forFormats (rewrite . mapHpack) (rewrite . mapCabal)
+updatePackage mapHpack mapCabal = forFormats (rewritePackage . mapHpack) (rewritePackage . mapCabal)
 
 deriveDependencyGraph :: ConfigT DependencyMap
 deriveDependencyGraph = buildDependencyGraph (concatMap (toDependencyList . snd) . libDependencies) <$> (allPackages >>= traverse readCabalPackage)
@@ -100,7 +100,10 @@ validatePackages :: ConfigT ()
 validatePackages = forWorkspace $ forFormats hpack cabal
   where
     hpack src pkg = readHpackPackage pkg >>= validatePackage src
-    cabal _ pkg = readCabalPackage pkg >>= validatePackage (cabalSource pkg)
+    cabal _ pkg = do
+      s1 <- readCabalPackage pkg >>= validatePackage (cabalSource pkg)
+      s2 <- validateHackage pkg
+      pure (s1 <> s2)
 
 hasNoIssues :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT Bool
 hasNoIssues source pkg = do

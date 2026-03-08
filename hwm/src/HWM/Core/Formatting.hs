@@ -90,6 +90,9 @@ type StatusM m = [(Name, m Status)]
 data Status = Checked | Updated | Warning | Invalid
   deriving (Show, Eq, Ord)
 
+instance Semigroup Status where
+  a <> b = max a b
+
 deriveStatus :: [Status] -> Status
 deriveStatus [] = Checked
 deriveStatus statuses = maximum statuses

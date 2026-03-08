@@ -11,6 +11,7 @@ module HWM.Integrations.Toolchain.Cabal
     HasSourceDirs (..),
     CabalPackage,
     newCabalPackage,
+    readCabalPackage,
   )
 where
 
@@ -60,9 +61,9 @@ isError PackageBuildWarning {} = False
 isError PackageDistSuspiciousWarn {} = False
 isError PackageDistSuspicious {} = False
 
-validateHackage :: Pkg -> FilePath -> ConfigT [Status]
-validateHackage pkg path = do
-  gpd <- liftIO $ readGenericPackageDescription normal path
+validateHackage :: Pkg -> ConfigT Status
+validateHackage pkg = do
+  gpd <- liftIO $ readGenericPackageDescription normal (P.cabalFile pkg)
   let ls = checkPackage gpd Nothing
   for_ ls $ \l -> do
     injectIssue
@@ -70,10 +71,10 @@ validateHackage pkg path = do
           { issueMessage = "Invalid package: " <> show l,
             issueSeverity = if isError l then SeverityError else SeverityWarning,
             issueTopic = P.pkgMemberId pkg,
-            issueDetails = Just GenericIssue {issueFile = path}
+            issueDetails = Just GenericIssue {issueFile = P.cabalFile pkg}
           }
       )
-  pure (map toStatus ls)
+  pure (maximum (Checked : map toStatus ls))
 
 hpackSync :: Pkg -> ConfigT Status
 hpackSync Pkg {hpackFile = Nothing} = pure Checked
@@ -105,9 +106,9 @@ instance PackageIO CabalPackage ConfigT where
 rewriteCabalPackage :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
 rewriteCabalPackage mapCabal pkg = do
   s <- hpackSync pkg
-  ls <- validateHackage pkg (P.cabalFile pkg)
+  ls <- validateHackage pkg
   cs <- cabalSync mapCabal pkg
-  pure $ maximum (s : ls <> [cs])
+  pure $ maximum [s, ls, cs]
 
 generateCabalProject :: [Pkg] -> Text -> Text
 generateCabalProject packagePaths ghcVersion =
