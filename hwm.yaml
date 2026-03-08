@@ -65,7 +65,7 @@ registry:
   zip-archive: '         >=  0.4.1       &&  <=  0.4.3.2'
 release:
   artifacts:
-    hwm: libs/hwm:hwm
+    hwm: libs/(root):hwm
   publish:
     main:
       - libs/(root)
