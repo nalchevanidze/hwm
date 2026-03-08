@@ -17,7 +17,6 @@ module HWM.Integrations.Toolchain.Stack
     parseExtraDeps,
     scanStackFiles,
     buildMatrix,
-    runStack,
   )
 where
 
@@ -129,14 +128,11 @@ createEnvYaml target = do
         }
   pure ()
 
-runStack :: [Text] -> ConfigT (Bool, String)
-runStack = exec "stack"
-
 sdist :: Pkg -> ConfigT [Issue]
 sdist pkg = do
   let issueTopic = pkgMemberId pkg
       issueMessage = "stack sdist detected Issues. No packages were published."
-  (isSuccess, out) <- runStack ["sdist", format (pkgName pkg)]
+  (isSuccess, out) <- exec "stack" ["sdist", format (pkgName pkg)]
   let severity = if isSuccess then findIssue out else Just SeverityError
   case severity of
     Nothing -> pure []
@@ -147,7 +143,7 @@ sdist pkg = do
 
 upload :: Pkg -> ConfigT (Status, [Issue])
 upload pkg = do
-  (isSuccess, out) <- runStack ["upload", format (pkgName pkg)]
+  (isSuccess, out) <- exec "stack" ["upload", format (pkgName pkg)]
   ( if isSuccess
       then pure (Checked, [])
       else
