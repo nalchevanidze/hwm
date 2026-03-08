@@ -19,7 +19,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (fromEither)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
-import HWM.Domain.Environments (BuildEnvironment (..), Builder (..), getBuildEnvironment)
+import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, selectedArtifacts)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
@@ -31,6 +31,7 @@ import Options.Applicative (argument, help, long, metavar, option, showDefault, 
 import Relude
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, doesPathExist, emptyPermissions, removeFile, removePathForcibly, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import System.FilePath (joinPath, (</>))
+import HWM.Domain.Build (Builder(..))
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions

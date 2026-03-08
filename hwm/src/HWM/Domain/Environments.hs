@@ -25,7 +25,6 @@ module HWM.Domain.Environments
     environmentHash,
     NixEnvironment (..),
     Feature (..),
-    Builder (..),
   )
 where
 
@@ -52,28 +51,9 @@ import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNig
 import HWM.Runtime.Files (Signature, aesonYAMLOptions, aesonYAMLOptionsAdvanced, genSignature)
 import HWM.Runtime.UI (MonadUI, forTable_, sectionEnvironments)
 import Relude
+import HWM.Domain.Build (Builder)
 
 type Extras = VersionMap
-
-data Builder
-  = CabalBuilder
-  | StackBuilder
-  | NixBuilder
-  deriving (Generic, Show, Ord, Eq)
-
-instance FromJSON Builder where
-  parseJSON (String "cabal") = pure CabalBuilder
-  parseJSON (String "stack") = pure StackBuilder
-  parseJSON (String "nix") = pure NixBuilder
-  parseJSON _ = fail "Invalid builder. Expected 'cabal', 'stack', or 'nix'."
-
-instance ToJSON Builder where
-  toJSON = String . format
-
-instance Format Builder where
-  format CabalBuilder = "cabal"
-  format StackBuilder = "stack"
-  format NixBuilder = "nix"
 
 data Environments = Environments
   { envBuilder :: Maybe Builder,
