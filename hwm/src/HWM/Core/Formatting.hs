@@ -13,7 +13,7 @@ module HWM.Core.Formatting
     deriveStatus,
     statusFromSeverity,
     statusIcon,
-    displayStatus,
+    displayStatusM,
     Format (..),
     availableOptions,
     renderSummaryStatus,
@@ -106,8 +106,8 @@ statusFromSeverity Nothing = Checked
 monadStatus :: (Functor m, MonadIssue m) => m b -> m Status
 monadStatus x = statusFromSeverity . fst <$> catchIssues x
 
-displayStatus :: (Monad m) => StatusM m -> m Text
-displayStatus ls = do
+displayStatusM :: (Monad m) => StatusM m -> m Text
+displayStatusM ls = do
   statuses <- mapM snd ls
   let status = deriveStatus statuses
   if status == Checked then return (statusIcon status) else return (formatStatus (zip (map fst ls) statuses))

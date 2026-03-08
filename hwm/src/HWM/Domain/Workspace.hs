@@ -45,7 +45,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as S
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (..), StatusM, availableOptions, chalk, commonPrefix, displayStatus, genMaxLen, padDots, slugify, subPathSign)
+import HWM.Core.Formatting (Color (..), StatusM, availableOptions, chalk, commonPrefix, displayStatusM, genMaxLen, padDots, slugify, subPathSign)
 import HWM.Core.Has (Has (..), askEnv)
 import HWM.Core.Pkg (Pkg (..), PkgName (..), makePkg)
 import HWM.Core.Result
@@ -202,7 +202,7 @@ forWorkspace f = do
       pkgs <- memberPkgs (name, wg)
       let maxLen = genMaxLen (map pkgMemberId pkgs)
       for_ pkgs $ \pkg -> do
-        status <- displayStatus (f pkg)
+        status <- displayStatusM (f pkg)
         putLine $ subPathSign <> padDots maxLen (pkgMemberId pkg) <> status
 
 forWorkspaceTuple :: (MonadUI m) => [(Text, [Pkg])] -> (Pkg -> StatusM m) -> m ()
@@ -212,7 +212,7 @@ forWorkspaceTuple ws f = sectionWorkspace $ do
     putLine ""
     putLine $ "• " <> chalk Bold name
     for_ pkgs $ \pkg -> do
-      status <- displayStatus (f pkg)
+      status <- displayStatusM (f pkg)
       putLine (subPathSign <> padDots maxLen (pkgMemberId pkg) <> status)
 
 addWorkgroupMember :: (MonadIO m, MonadUI m, MonadIssue m, MonadError Issue m, MonadReader env m, Has env Workspace) => Name -> Name -> m (Workspace, WorkGroup)

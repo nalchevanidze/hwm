@@ -6,7 +6,7 @@ module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) wher
 
 import Control.Monad.Error.Class (MonadError (throwError))
 import qualified Data.Map as Map
-import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatus, padDots, subPathSign)
+import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatusM, padDots, subPathSign)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityError, SeverityWarning))
@@ -49,7 +49,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId Noth
       let ws = Map.insert groupId (WorkGroup opsWorkspaceDir [] opsPrefix) wss
       updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ sectionWorkspace $ do
         putLine ""
-        displayStatus [("added", pure Checked)] >>= putLine . (("• " <> chalk Bold groupId <> " ") <>)
+        displayStatusM [("added", pure Checked)] >>= putLine . (("• " <> chalk Bold groupId <> " ") <>)
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Just memberId), ..}) = do
   when (isJust opsPrefix) $ injectIssue (noEffect "prefix")
   when (isJust opsWorkspaceDir) $ injectIssue (noEffect "dir")
@@ -60,7 +60,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Jus
       putLine ""
       putLine $ "• " <> chalk Bold groupId
       xs <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
-      displayStatus [("added", pure Checked)] >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
+      displayStatusM xs >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
 
   updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) $ sectionConfig [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)]
   where
