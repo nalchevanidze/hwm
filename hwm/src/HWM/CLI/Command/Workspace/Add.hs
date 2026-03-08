@@ -16,7 +16,7 @@ import HWM.Domain.Workspace (WorkGroup (..), WorkspaceRef (..), addWorkgroupMemb
 import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Integrations.Toolchain.Hie (syncHie)
 import HWM.Integrations.Toolchain.Stack (syncStackYaml)
-import HWM.Runtime.UI (putLine, sectionWorkspace, statusTableM)
+import HWM.Runtime.UI (putLine, sectionWorkspace)
 import Options.Applicative (help, long, metavar, strArgument, strOption)
 import Relude
 
