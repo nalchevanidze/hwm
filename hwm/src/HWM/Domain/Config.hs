@@ -87,6 +87,5 @@ defaultScripts =
     [ ("build", "stack build --fast"),
       ("test", "stack test {TARGET} --fast"),
       ("install", "stack install"),
-      ("lint", "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s ."),
-      ("clean", "find . -name \"*.cabal\" -exec rm -rf {} \\; && stack clean")
+      ("lint", "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .")
     ]
