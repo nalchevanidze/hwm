@@ -23,6 +23,12 @@
           [2m└─- [0mbase: [2m → >= 4.7 && <  5.0[0m
   [2m└─- [0m[2m• [0m[33mversion mismatch: 0.1.0 → 0.1.2[0m
       [2m└─- [0m[2mfile: bar/bar.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: library does not expose any modules[0m
+      [2m└─- [0m[2mfile: bar/bar.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
+      [2m└─- [0m[2mfile: bar/bar.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
+      [2m└─- [0m[2mfile: bar/bar.cabal[0m
   [2m• [0m[1mfoo[0m
   [2m└─- [0m[2m• [0m[33mversion mismatch: 0.1.0 → 0.1.2[0m
       [2m└─- [0m[2mfile: foo/package.yaml[0m
@@ -31,5 +37,11 @@
       [2m└─- [0m[2m• [0m[2mdependencies[0m
           [2m└─- [0mbase: [2m → >= 4.7 && <  5.0[0m
   [2m└─- [0m[2m• [0m[33mversion mismatch: 0.1.0 → 0.1.2[0m
+      [2m└─- [0m[2mfile: foo/foo.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: library does not expose any modules[0m
+      [2m└─- [0m[2mfile: foo/foo.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
+      [2m└─- [0m[2mfile: foo/foo.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
       [2m└─- [0m[2mfile: foo/foo.cabal[0m
 
