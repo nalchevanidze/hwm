@@ -18,16 +18,16 @@ import Data.Traversable (for)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon, subPathSign)
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
-import HWM.Core.Pkg (Pkg (..))
+import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (fromEither)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, selectedArtifacts)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
-import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
 import HWM.Runtime.Network (getGHUploadUrl, uploadToGitHub)
+import HWM.Runtime.Process (exec)
 import HWM.Runtime.UI (forTable, indent, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, long, metavar, option, showDefault, str, strOption, switch, value)
 import Relude
@@ -137,3 +137,8 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
       stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
       pure $ (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
+
+stackGenBinary :: PkgName -> FilePath -> [Text] -> ConfigT ()
+stackGenBinary pkgName dirPath args = do
+  (success, buildOut) <- exec "cabal" (["install", format pkgName, "--local-bin-path", format dirPath] <> args)
+  unless success $ throwError (fromString $ "Build failed: " <> buildOut)
