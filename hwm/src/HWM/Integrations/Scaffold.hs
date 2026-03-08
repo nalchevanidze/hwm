@@ -4,6 +4,7 @@
 module HWM.Integrations.Scaffold (scaffoldPackage) where
 
 import qualified Data.Text as T
+import HWM.Core.Formatting (Status)
 import HWM.Core.Pkg (PkgName)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Integrations.Toolchain.Package (newPackage)
@@ -20,8 +21,8 @@ libHsTemplate =
       "someFunc = putStrLn \"Scaffolded by HWM\""
     ]
 
-scaffoldPackage :: FilePath -> PkgName -> ConfigT ()
+scaffoldPackage :: FilePath -> PkgName -> ConfigT [(Text, Status)]
 scaffoldPackage targetDir pkgName = do
   liftIO $ createDirectoryIfMissing True (targetDir </> "src")
-  xs <- newPackage targetDir pkgName
   liftIO $ writeFile (targetDir </> "src/Lib.hs") (T.unpack libHsTemplate)
+  newPackage targetDir pkgName
