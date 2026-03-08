@@ -203,7 +203,8 @@ data BuildEnvironment = BuildEnvironment
     buildResolver :: Name,
     buildAllowNewer :: Maybe Bool,
     buildStack :: Bool,
-    buildNix :: Bool
+    buildNix :: Bool,
+    builder :: Builder
   }
   deriving
     ( Generic,
@@ -237,7 +238,8 @@ getBuildEnvironments = do
           buildGHC = ghc env,
           buildAllowNewer = stack env >>= unfeature >>= allowNewer,
           buildStack = isEnabled (envStack globalEnv) (stack env),
-          buildNix = isEnabled (envNix globalEnv) (nix env)
+          buildNix = isEnabled (envNix globalEnv) (nix env),
+          builder = fromMaybe CabalBuilder (envBuilder globalEnv)
         }
   where
     excludePkgs build pkgs =
