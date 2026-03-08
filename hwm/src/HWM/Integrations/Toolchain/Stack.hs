@@ -39,7 +39,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..), fromEither)
 import HWM.Core.Version (Version, latestGHCVersion, parseGHCVersion)
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environments (..), Feature (..), StackEnvironment (..), getBuildEnvironment, hkgRefs)
+import HWM.Domain.Environments (BuildEnvironment (..), Builder (..), Enviroment (..), Environments (..), Feature (..), StackEnvironment (..), getBuildEnvironment, hkgRefs)
 import HWM.Domain.Workspace (toWorkspaceRef)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
@@ -128,7 +128,6 @@ createEnvYaml target = do
         }
   pure ()
 
-
 runStack :: [Text] -> ConfigT (Bool, String)
 runStack = exec "stack"
 
@@ -192,10 +191,10 @@ deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExte
 buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> [(Name, Stack)] -> m Environments
 buildMatrix pkgs (defaultEnv : envs) = do
   environments <- sortOn (ghc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
-  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments, envStack = Just True, envNix = Nothing}
+  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments, envStack = Just True, envNix = Nothing, envBuilder = Just StackBuilder}
 buildMatrix _ [] = do
   let defaultEnv = mkDefaultEnv
-  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv], envStack = Nothing, envNix = Nothing}
+  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv], envStack = Nothing, envNix = Nothing, envBuilder = Nothing}
 
 mkDefaultEnv :: (Name, Enviroment)
 mkDefaultEnv =

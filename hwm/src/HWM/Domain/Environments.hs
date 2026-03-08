@@ -61,8 +61,20 @@ data Builder
   | NixBuilder
   deriving (Generic, Show, Ord, Eq)
 
+instance FromJSON Builder where
+  parseJSON (String "cabal") = pure CabalBuilder
+  parseJSON (String "stack") = pure StackBuilder
+  parseJSON (String "nix") = pure NixBuilder
+  parseJSON _ = fail "Invalid builder. Expected 'cabal', 'stack', or 'nix'."
+
+instance ToJSON Builder where
+  toJSON CabalBuilder = String "cabal"
+  toJSON StackBuilder = String "stack"
+  toJSON NixBuilder = String "nix"
+
 data Environments = Environments
-  { envDefault :: Name,
+  { envBuilder :: Maybe Builder,
+    envDefault :: Name,
     envNix :: Maybe Bool,
     envStack :: Maybe Bool,
     envProfiles :: Map Name Enviroment
