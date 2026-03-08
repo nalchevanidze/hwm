@@ -129,9 +129,8 @@ updateConfig f = updateConfigM f []
 
 updateConfigM :: (Config -> ConfigT Config) -> StatusM ConfigT -> ConfigT b -> ConfigT b
 updateConfigM f xs m = do
-  sectionConfig (("hwm.yaml", pure Updated) : xs)
   config' <- asks config >>= f
-  local (\e -> e {config = config'}) (checkConfig >> m)
+  local (\e -> e {config = config'}) (checkConfig >> sectionConfig (("hwm.yaml", pure Updated) : xs) >> m)
 
 runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
