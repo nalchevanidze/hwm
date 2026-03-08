@@ -61,6 +61,7 @@ library
       HWM.Core.Result
       HWM.Core.Version
       HWM.Domain.Bounds
+      HWM.Domain.Build
       HWM.Domain.Config
       HWM.Domain.ConfigT
       HWM.Domain.Dependencies

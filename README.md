@@ -198,12 +198,14 @@ HWM introduces **Release Trains**, decoupling your workspace structure from your
 
 #### 📦 Artifact Pipeline
 
-Transform raw binaries into hashed, compressed distribution units.
+Transform raw binaries into hashed, compressed distribution units using your preferred engine.
 
 ```yaml
+enviroments:
+  builder: stack # or nix or cabal
 release:
   artifacts:
-    hwm: libs/hwm:hwm
+    hwm: libs/(root):hwm
 ```
 
 #### 🚢 Publication Trains
@@ -223,8 +225,8 @@ release:
 # Bump version across the workspace
 hwm version minor
 
-# Build local binaries and hashes
-hwm release artifacts
+# Build local binaries and hashes with builder of choice
+hwm release artifacts --builder=nix
 
 # Push a specific train to Hackage
 hwm release publish main

@@ -17,8 +17,6 @@ module HWM.Integrations.Toolchain.Stack
     parseExtraDeps,
     scanStackFiles,
     buildMatrix,
-    runStack,
-    stackGenBinary,
   )
 where
 
@@ -39,6 +37,7 @@ import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..), fromEither)
 import HWM.Core.Version (Version, latestGHCVersion, parseGHCVersion)
+import HWM.Domain.Build (Builder (StackBuilder))
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environments (..), Feature (..), StackEnvironment (..), getBuildEnvironment, hkgRefs)
 import HWM.Domain.Workspace (toWorkspaceRef)
@@ -129,19 +128,11 @@ createEnvYaml target = do
         }
   pure ()
 
-stackGenBinary :: PkgName -> FilePath -> [Text] -> ConfigT ()
-stackGenBinary pkgName dirPath args = do
-  (success, buildOut) <- runStack (["install", format pkgName, "--local-bin-path", format dirPath] <> args)
-  unless success $ throwError (fromString $ "Build failed: " <> buildOut)
-
-runStack :: [Text] -> ConfigT (Bool, String)
-runStack = exec "stack"
-
 sdist :: Pkg -> ConfigT [Issue]
 sdist pkg = do
   let issueTopic = pkgMemberId pkg
       issueMessage = "stack sdist detected Issues. No packages were published."
-  (isSuccess, out) <- runStack ["sdist", format (pkgName pkg)]
+  (isSuccess, out) <- exec "stack" ["sdist", format (pkgName pkg)]
   let severity = if isSuccess then findIssue out else Just SeverityError
   case severity of
     Nothing -> pure []
@@ -152,7 +143,7 @@ sdist pkg = do
 
 upload :: Pkg -> ConfigT (Status, [Issue])
 upload pkg = do
-  (isSuccess, out) <- runStack ["upload", format (pkgName pkg)]
+  (isSuccess, out) <- exec "stack" ["upload", format (pkgName pkg)]
   ( if isSuccess
       then pure (Checked, [])
       else
@@ -197,10 +188,10 @@ deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExte
 buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> [(Name, Stack)] -> m Environments
 buildMatrix pkgs (defaultEnv : envs) = do
   environments <- sortOn (ghc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
-  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments, envStack = Just True, envNix = Nothing}
+  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments, envStack = Just True, envNix = Nothing, envBuilder = Just StackBuilder}
 buildMatrix _ [] = do
   let defaultEnv = mkDefaultEnv
-  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv], envStack = Nothing, envNix = Nothing}
+  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv], envStack = Nothing, envNix = Nothing, envBuilder = Nothing}
 
 mkDefaultEnv :: (Name, Enviroment)
 mkDefaultEnv =

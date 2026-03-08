@@ -67,7 +67,7 @@ else
     echo "Checking Haskell files..."
 fi
 
-find . -name "*.hs" -not -path "./.ormolu/*" -not -path "*/.stack-work/*" -exec "${INSTALL_DIR}/ormolu" --mode "${MODE}" {} \;
+find . -name "*.hs" -not -path "./.ormolu/*" -not -path "./dist-newstyle/*" -not -path "*/.stack-work/*" -exec "${INSTALL_DIR}/ormolu" --mode "${MODE}" {} \;
 
 if [ "${MODE}" = "inplace" ]; then
     echo "✓ Formatting complete"

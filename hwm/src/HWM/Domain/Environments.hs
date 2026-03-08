@@ -46,6 +46,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Era (..), Version, selectEra)
 import HWM.Domain.Bounds (TestedRange (..))
+import HWM.Domain.Build (Builder (..))
 import HWM.Domain.Workspace (Workspace, WorkspaceRef, allPackages, checkWorkspaceRefs, isMember)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
 import HWM.Runtime.Files (Signature, aesonYAMLOptions, aesonYAMLOptionsAdvanced, genSignature)
@@ -55,7 +56,8 @@ import Relude
 type Extras = VersionMap
 
 data Environments = Environments
-  { envDefault :: Name,
+  { envBuilder :: Maybe Builder,
+    envDefault :: Name,
     envNix :: Maybe Bool,
     envStack :: Maybe Bool,
     envProfiles :: Map Name Enviroment
@@ -184,7 +186,8 @@ data BuildEnvironment = BuildEnvironment
     buildResolver :: Name,
     buildAllowNewer :: Maybe Bool,
     buildStack :: Bool,
-    buildNix :: Bool
+    buildNix :: Bool,
+    buildBuilder :: Builder
   }
   deriving
     ( Generic,
@@ -218,7 +221,8 @@ getBuildEnvironments = do
           buildGHC = ghc env,
           buildAllowNewer = stack env >>= unfeature >>= allowNewer,
           buildStack = isEnabled (envStack globalEnv) (stack env),
-          buildNix = isEnabled (envNix globalEnv) (nix env)
+          buildNix = isEnabled (envNix globalEnv) (nix env),
+          buildBuilder = fromMaybe CabalBuilder (envBuilder globalEnv)
         }
   where
     excludePkgs build pkgs =

@@ -9,6 +9,7 @@ workspace:
       - golden
       - .
 environments:
+  builder: stack
   default: stable
   nix: true
   profiles:
@@ -71,7 +72,7 @@ release:
       - libs/(root)
 scripts:
   build: stack build --fast
-  clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
+  clean: stack clean
   format: sh scripts/format.sh
   format:fix: sh scripts/format.sh --fix
   install: stack install

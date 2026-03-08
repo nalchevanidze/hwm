@@ -1,9 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Redundant $" #-}
 
 module HWM.CLI.Command.Release.Artifacts
   ( ReleaseArchiveOptions (..),
@@ -20,12 +17,13 @@ import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (fromEither)
+import HWM.Domain.Build (Builder (..), buildBinary)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
+import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, selectedArtifacts)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
-import HWM.Integrations.Toolchain.Stack (stackGenBinary)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
 import HWM.Runtime.Network (getGHUploadUrl, uploadToGitHub)
 import HWM.Runtime.UI (forTable, indent, putLine, section, sectionTableM)
@@ -41,7 +39,8 @@ data ReleaseArchiveOptions = ReleaseArchiveOptions
     outputDir :: FilePath,
     ovFormat :: Maybe [Text],
     ovGhcOptions :: Maybe [Text],
-    ovNameTemplate :: Maybe Text
+    ovNameTemplate :: Maybe Text,
+    opsBuilder :: Maybe Builder
   }
   deriving (Show)
 
@@ -60,6 +59,7 @@ instance ParseCLI ReleaseArchiveOptions where
       <*> optional (option (parseLS <$> str) (long "format" <> metavar "FORMAT" <> help "Override the archive format for the release target. Supported: zip, tar.gz."))
       <*> optional (option (parseLS <$> str) (long "ghc-options" <> metavar "GHC_OPTION" <> help "Override GHC options for the release target. Can be specified multiple times."))
       <*> optional (strOption (long "name-template" <> metavar "NAME_TEMPLATE" <> help "Override the name template for the release target. Use {name} and {version} as placeholders."))
+      <*> optional (option (str >>= parse) (long "builder" <> metavar "BUILDER" <> help "Override the builder for the release target. Supported: cabal, stack, nix."))
 
 genBindaryDir :: (MonadIO m, ToString a) => a -> m FilePath
 genBindaryDir name = do
@@ -102,14 +102,17 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   cfgs <- getArchiveConfigs >>= withOverrides ops
   ghTag <- if ghPublish then Just <$> ensureIsLatestTag version else pure Nothing
   uploadUrl <- maybe (pure Nothing) (fmap Just . getGHUploadUrl cfg) ghTag
+  defaultBuilder <- buildBuilder <$> getBuildEnvironment Nothing
+  let builder = fromMaybe defaultBuilder opsBuilder
+  sectionTableM
+    "artifacts"
+    [ ("destination", pure $ maybe (format outputDir) format uploadUrl),
+      ("version", pure $ format version <> maybe "" (\tag -> " (GitHub Release " <> tag <> ")") ghTag),
+      ("targets", pure $ formatList "," (map fst cfgs)),
+      ("builder", pure $ format builder)
+    ]
 
-  sectionTableM "artifacts"
-    $ [ ("destination", pure $ maybe (format outputDir) format uploadUrl),
-        ("version", pure $ format version <> maybe "" (\tag -> " (GitHub Release " <> tag <> ")") ghTag),
-        ("targets", pure $ formatList "," (map fst cfgs))
-      ]
-
-  plans <- forTable "build" cfgs (\x -> (fst x, buildPkg x))
+  plans <- forTable "build" cfgs (\x -> (fst x, buildPkg outputDir builder x))
 
   section "archive" $ pure ()
   artifacts <- for plans $ \(name, plan) -> do
@@ -129,11 +132,12 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       putLine $ subPathSign <> format archivePath
       uploadToGitHub url sha256Path
       putLine $ subPathSign <> format sha256Path
-  where
-    buildPkg (name, ArtifactConfig {..}) = do
-      binaryDir <- genBindaryDir name
-      let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
-      optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
-      Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
-      stackGenBinary pkgName binaryDir (ghcOptions arcGhcOptions)
-      pure $ (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
+
+buildPkg :: FilePath -> Builder -> (Name, ArtifactConfig) -> ConfigT (Text, ArchivingPlan)
+buildPkg outputDir builder (name, ArtifactConfig {..}) = do
+  binaryDir <- genBindaryDir name
+  let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
+  optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
+  Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
+  buildBinary builder pkgName binaryDir (ghcOptions arcGhcOptions)
+  pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
