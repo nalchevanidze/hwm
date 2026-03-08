@@ -207,7 +207,7 @@ newCabalPackage :: (MonadError Issue m, MonadIO m) => FilePath -> PkgName -> Ver
 newCabalPackage dir name version deps = do
   let package = emptyPackage name version deps
   liftIO $ writeGenericPackageDescription (dir </> (toString name <> ".cabal")) package
-  pure Checked
+  pure Updated
 
 emptyPackage :: PkgName -> Version -> Dependencies -> GenericPackageDescription
 emptyPackage (P.PkgName name) version dependencies =
