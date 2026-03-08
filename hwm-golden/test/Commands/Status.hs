@@ -12,3 +12,10 @@ testStatus = describe "status" $ do
           project = "simple",
           scenario = "status/simple"
         }
+  it "checks the status of a cabal-only workspace" $
+    goldenTest
+      Golden
+        { cmd = "status",
+          project = "morpheus",
+          scenario = "status/cabal"
+        }

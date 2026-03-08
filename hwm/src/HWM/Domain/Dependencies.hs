@@ -31,7 +31,9 @@ import Control.Monad.Error.Class (MonadError (..))
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (..),
+    Value (..),
   )
+import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -44,7 +46,7 @@ import Distribution.Types.GenericPackageDescription (GenericPackageDescription (
 import Distribution.Version (LowerBound (..), VersionInterval (..))
 import qualified Distribution.Version as Cabal
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Format (..), formatTable, subPathSign)
+import HWM.Core.Formatting (Format (..), formatTableRow, subPathSign)
 import HWM.Core.Parsing (Parse (..), firstWord)
 import HWM.Core.Pkg (IsPkg (..), Pkg (..), PkgName (..), PkgSource (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
@@ -84,10 +86,17 @@ toDependencyList :: Dependencies -> [Dependency]
 toDependencyList (Dependencies m) = map (uncurry Dependency) $ Map.toList m
 
 instance FromJSON Dependencies where
-  parseJSON v = initDependencies <$> (parseJSON v >>= traverse parse . sort)
+  parseJSON (Array v) = initDependencies <$> (parseJSON (Array v) >>= traverse parse . sort)
+  parseJSON v = Dependencies <$> parseJSON v
 
 instance ToJSON Dependencies where
-  toJSON = toJSON . formatTable . map format . toDependencyList
+  toJSON (Dependencies ms) = toJSON . Map.mapWithKey formatTable $ ms
+    where
+      formatTable key value =
+        let padding = T.replicate (size - T.length (format key)) " "
+         in String (padding <> formatTableRow table (T.words (format value)))
+      size = maximum $ map (T.length . format) $ Map.keys ms
+      table = map (T.words . format) $ Map.elems ms
 
 fromDependencyList :: [Dependency] -> Dependencies
 fromDependencyList = initDependencies
@@ -361,7 +370,7 @@ data DependencyBoundsIssue = DependencyBoundsIssue
   }
 
 collectDependencyIssues :: (Monad m, HasDependencies a) => (PkgName -> m (Maybe Bounds)) -> a -> m [DependencyBoundsIssue]
-collectDependencyIssues f pkg = concat <$> traverse checkForDependencyIssues (collectDependencies [] pkg)
+collectDependencyIssues f pkg = concat <$> traverse checkForDependencyIssues (Map.toList (Map.fromList (collectDependencies [] pkg)))
   where
     checkForDependencyIssues (path, deps) = concat <$> traverse (getIssue path) (toDependencyList deps)
     getIssue path dep = detectDependencyIssue path dep <$> f (hwmDepName dep)
