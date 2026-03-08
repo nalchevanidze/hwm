@@ -15,9 +15,9 @@ import Data.Traversable (for)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon, subPathSign)
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
-import HWM.Core.Pkg (Pkg (..), PkgName)
+import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (fromEither)
-import HWM.Domain.Build (Builder (..))
+import HWM.Domain.Build (Builder (..), buildBinary)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
@@ -26,12 +26,11 @@ import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
 import HWM.Runtime.Network (getGHUploadUrl, uploadToGitHub)
-import HWM.Runtime.Process (exec)
 import HWM.Runtime.UI (forTable, indent, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, long, metavar, option, showDefault, str, strOption, switch, value)
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, doesPathExist, emptyPermissions, removeFile, removePathForcibly, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
-import System.FilePath (joinPath, (</>))
+import System.Directory (createDirectoryIfMissing, removePathForcibly)
+import System.FilePath (joinPath)
 
 -- | Options for 'hwm release archive'
 data ReleaseArchiveOptions = ReleaseArchiveOptions
@@ -110,7 +109,7 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       ("builder", pure $ format builder)
     ]
 
-  plans <- forTable "build" cfgs (\x -> (fst x, buildPkg builder x))
+  plans <- forTable "build" cfgs (\x -> (fst x, buildPkg outputDir builder x))
 
   section "archive" $ pure ()
   artifacts <- for plans $ \(name, plan) -> do
@@ -130,80 +129,12 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       putLine $ subPathSign <> format archivePath
       uploadToGitHub url sha256Path
       putLine $ subPathSign <> format sha256Path
-  where
-    buildPkg builder (name, ArtifactConfig {..}) = do
-      binaryDir <- genBindaryDir name
-      let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
-      optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
-      Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
-      genBinary builder pkgName binaryDir (ghcOptions arcGhcOptions)
-      pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
 
-genBinary :: Builder -> PkgName -> FilePath -> [Text] -> ConfigT ()
-genBinary builder pkgName dirPath args = do
-  (success, buildOut) <- command
-  unless success $ throwError (fromString $ "Build failed: " <> buildOut)
-  when (builder == NixBuilder) (extractNixArtifact pkgName dirPath)
-  where
-    command = case builder of
-      StackBuilder ->
-        exec "stack" $ ["install", format pkgName, "--local-bin-path", format dirPath] <> args
-      CabalBuilder ->
-        exec "cabal"
-          $ [ "install",
-              format pkgName,
-              "--install-method=copy",
-              "--installdir",
-              format dirPath,
-              "--overwrite-policy=always"
-            ]
-          <> args
-      NixBuilder ->
-        -- WARNING: We DO NOT append 'args' here.
-        -- Nix does not accept '--ghc-options' via CLI; it must be set in the flake.
-        exec "nix" ["build", ".#" <> format pkgName, "-o", format (dirPath </> "result")]
-
-extractNixArtifact :: PkgName -> FilePath -> ConfigT ()
-extractNixArtifact pkgName distDir = do
-  let resultLink = distDir </> "result"
-      finalDest = distDir </> toString pkgName
-      pkgStr = toString (format pkgName)
-
-  liftIO $ createDirectoryIfMissing True distDir
-  isLink <- liftIO $ doesPathExist resultLink
-  unless isLink
-    $ throwError
-    $ fromString
-    $ "Nix build completed, but did not create an output at: "
-    <> resultLink
-    <> "\n(This usually means the Nix derivation is empty or 'exec' hid a build failure.)"
-  let searchPaths =
-        [ resultLink </> "bin" </> pkgStr, -- Standard Haskell (Cabal/Stack)
-          resultLink </> pkgStr, -- Simple/Single-binary derivation
-          resultLink -- Derivation is the binary itself
-        ]
-  maybeSource <- findM (liftIO . doesFileExist) searchPaths
-
-  case maybeSource of
-    Just sourcePath -> do
-      liftIO $ copyFile sourcePath finalDest
-      -- Ensure the user can execute it (Nix store is read-only)
-      liftIO $ do
-        let properPerms =
-              setOwnerReadable True
-                $ setOwnerWritable True
-                $ setOwnerExecutable True emptyPermissions
-        setPermissions finalDest properPerms
-      -- Cleanup: Remove the 'result' symlink to keep the folder clean
-      liftIO $ removeFile resultLink
-    Nothing ->
-      throwError
-        $ fromString
-        $ "Nix build succeeded, but binary '"
-        <> pkgStr
-        <> "' not found inside the Nix store path.\n"
-
-findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
-findM _ [] = pure Nothing
-findM p (x : xs) = do
-  ifM (p x) (pure $ Just x) (findM p xs)
+buildPkg :: FilePath -> Builder -> (Name, ArtifactConfig) -> ConfigT (Text, ArchivingPlan)
+buildPkg outputDir builder (name, ArtifactConfig {..}) = do
+  binaryDir <- genBindaryDir name
+  let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
+  optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
+  Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
+  buildBinary builder pkgName binaryDir (ghcOptions arcGhcOptions)
+  pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})

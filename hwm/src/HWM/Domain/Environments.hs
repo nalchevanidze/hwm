@@ -46,12 +46,12 @@ import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Era (..), Version, selectEra)
 import HWM.Domain.Bounds (TestedRange (..))
+import HWM.Domain.Build (Builder (..))
 import HWM.Domain.Workspace (Workspace, WorkspaceRef, allPackages, checkWorkspaceRefs, isMember)
 import HWM.Runtime.Cache (Cache, Registry (currentEnv), VersionMap, getLatestNightlySnapshot, getRegistry, getSnapshot, getVersions)
 import HWM.Runtime.Files (Signature, aesonYAMLOptions, aesonYAMLOptionsAdvanced, genSignature)
 import HWM.Runtime.UI (MonadUI, forTable_, sectionEnvironments)
 import Relude
-import HWM.Domain.Build (Builder (..))
 
 type Extras = VersionMap
 
