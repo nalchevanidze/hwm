@@ -268,7 +268,7 @@ runNativeSDist pkg gpkg outDir = do
     liftIO
       $ try
       $ withCurrentDirectory (P.pkgDirPath pkg)
-      $ sdist pkgDesc flags (const dirPrefix) knownSuffixHandlers -- Handles .hsc, .x, .y files
+      $ sdist pkgDesc flags (const dirPrefix) knownSuffixHandlers
   case result of
     Right () -> pure []
     Left (e :: IOException) ->
