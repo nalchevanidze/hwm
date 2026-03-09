@@ -30,9 +30,9 @@ import Distribution.PackageDescription.Configuration (flattenPackageDescription)
 import Distribution.PackageDescription.Parsec
 import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
-import qualified Distribution.Simple.PreProcess as PP
+import Distribution.Simple.PreProcess (knownSuffixHandlers)
 import Distribution.Simple.Setup (defaultSDistFlags, sDistDirectory, sDistVerbosity, toFlag)
-import qualified Distribution.Simple.SrcDist as SrcDist
+import Distribution.Simple.SrcDist (sdist)
 import Distribution.Types.BuildInfo (BuildInfo (..))
 import Distribution.Types.CondTree (CondTree (..))
 import Distribution.Types.Library (Library (..))
@@ -55,6 +55,7 @@ import Hpack (Force (..), Options (..), Result (..), defaultOptions, hpackResult
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
+import System.Directory (withCurrentDirectory)
 import System.FilePath (takeDirectory, (</>))
 
 toStatus :: PackageCheck -> Status
@@ -262,20 +263,12 @@ runNativeSDist :: Pkg -> GenericPackageDescription -> FilePath -> ConfigT [Issue
 runNativeSDist pkg gpkg outDir = do
   let pkgDesc = flattenPackageDescription gpkg
       dirPrefix = toString (P.pkgName pkg) <> "-" <> show (pkgVersion (package pkgDesc))
-      flags =
-        defaultSDistFlags
-          { sDistDirectory = toFlag outDir,
-            sDistVerbosity = toFlag Verbosity.normal
-          }
-
+      flags = defaultSDistFlags {sDistDirectory = toFlag outDir, sDistVerbosity = toFlag Verbosity.silent}
   result <-
     liftIO
       $ try
-      $ SrcDist.sdist
-        pkgDesc
-        flags
-        (const dirPrefix) -- Creates the internal 'name-version/' folder
-        PP.knownSuffixHandlers -- Handles .hsc, .x, .y files
+      $ withCurrentDirectory (P.pkgDirPath pkg)
+      $ sdist pkgDesc flags (const dirPrefix) knownSuffixHandlers -- Handles .hsc, .x, .y files
   case result of
     Right () -> pure []
     Left (e :: IOException) ->
