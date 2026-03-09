@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -51,7 +52,6 @@ uploadToGitHub uploadUrl filePath = do
     uri <- liftIO $ mkURI uploadUrl
     case useHttpsURI uri of
       Just (url, opts) -> do
-        let fileName = T.pack $ takeFileName filePath
         void
           $ req
             POST
@@ -59,23 +59,17 @@ uploadToGitHub uploadUrl filePath = do
             (ReqBodyFile filePath) -- Raw bytes, no multipart wrapping
             ignoreResponse
             ( opts
-                <> queryParam "name" (Just fileName) -- Required by GitHub
+                <> queryParam "name" (Just $ T.pack $ takeFileName filePath)
                 <> ghAuth token
-                <> header "Content-Type" "application/octet-stream" -- Crucial!
+                <> header "Content-Type" "application/octet-stream" 
             )
       Nothing -> liftIO $ putStrLn "GitHub Upload URLs must be HTTPS"
-
--- 1. Define a tiny data type to represent the GitHub JSON response.
--- Aeson automatically maps the "upload_url" JSON key to this record field.
 
 data GitHubRelease = GitHubRelease
   { name :: Text,
     upload_url :: Text
   }
-  deriving (Show, Generic)
-
--- 2. Automatically derive the JSON parser
-instance FromJSON GitHubRelease
+  deriving (Show, Generic, FromJSON)
 
 getGHUploadUrl :: (MonadIO m, MonadError Issue m) => Config -> Text -> m Text
 getGHUploadUrl Config {..} tag = do
