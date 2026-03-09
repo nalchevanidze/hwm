@@ -55,7 +55,7 @@ import Hpack (Force (..), Options (..), Result (..), defaultOptions, hpackResult
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
-import System.Directory (makeAbsolute, withCurrentDirectory)
+import System.Directory (doesFileExist, makeAbsolute, withCurrentDirectory)
 import System.FilePath (takeDirectory, (</>))
 
 toStatus :: PackageCheck -> Status
@@ -265,13 +265,29 @@ runNativeSDist pkg gpkg outDir = do
   let pkgDesc = flattenPackageDescription gpkg
       dirPrefix = toString (P.pkgName pkg) <> "-" <> show (pkgVersion (package pkgDesc))
       flags = defaultSDistFlags {sDistDirectory = toFlag outDir, sDistVerbosity = toFlag Verbosity.silent}
+      filePath = outDir </> dirPrefix <> ".tar.gz"
   result <-
     liftIO
       $ try
       $ withCurrentDirectory (P.pkgDirPath pkg)
       $ sdist pkgDesc flags (const dirPrefix) knownSuffixHandlers
+
   case result of
-    Right () -> pure (Just outDir, [])
+    Right () -> do
+      exists <- liftIO $ doesFileExist filePath
+      if exists
+        then pure (Just filePath, [])
+        else
+          pure
+            ( Nothing,
+              [ Issue
+                  { issueMessage = "Invalid Package: " <> toText filePath <> " was not created by sdist",
+                    issueSeverity = SeverityError,
+                    issueTopic = P.pkgMemberId pkg,
+                    issueDetails = Nothing
+                  }
+              ]
+            )
     Left (e :: IOException) ->
       pure
         ( Nothing,
