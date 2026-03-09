@@ -89,7 +89,6 @@ runPublish PublishOptions {..} = do
     ]
 
   pkgs <- arrangePackageRelease (concatMap snd wgs)
-  let size = genMaxLen (map printPkgWSRef pkgs)
 
   sdists <- traverse nativeSdist pkgs
   failIssues (concatMap snd sdists)
@@ -98,9 +97,11 @@ runPublish PublishOptions {..} = do
 
   let ls = zip releasePkgs [1 ..] :: [((Pkg, FilePath), Int)]
 
+  let size = genMaxLen (map (\((pkg, _), n) -> show n <> ". " <> printPkgWSRef pkg) ls)
+
   section "publishing plan (topological sort)" $ do
     for_ ls $ \((pkg, filePath), idx) -> do
-      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx <> chalk Dim (" - file: " <> fromString (makeRelative cwd filePath))
+      putLine $ "└── " <> padDots size (show idx <> ". " <> printPkgWSRef pkg) <> fromString (makeRelative cwd filePath)
 
   section "publishing" $ do
     for_ releasePkgs $ \(pkg, filePath) -> do
