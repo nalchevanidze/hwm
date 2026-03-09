@@ -34,6 +34,16 @@ getGitHubToken = do
     (pure . T.pack)
     maybeToken
 
+ghAuth :: Text -> Option 'Https
+ghAuth token =
+  header "Authorization" ("Bearer " <> encodeUtf8 token)
+    <> header "User-Agent" "hwm-tool"
+
+hackageAuth :: Text -> Option 'Https
+hackageAuth token =
+  header "X-ApiKey" (encodeUtf8 token)
+    <> header "User-Agent" "hwm-tool"
+
 uploadToGitHub :: (MonadIO m, MonadError Issue m) => Text -> FilePath -> m ()
 uploadToGitHub uploadUrl filePath = do
   token <- getGitHubToken
@@ -50,9 +60,8 @@ uploadToGitHub uploadUrl filePath = do
             ignoreResponse
             ( opts
                 <> queryParam "name" (Just fileName) -- Required by GitHub
-                <> header "Authorization" ("Bearer " <> encodeUtf8 token)
+                <> ghAuth token
                 <> header "Content-Type" "application/octet-stream" -- Crucial!
-                <> header "User-Agent" "hwm-tool" -- GitHub requires a User-Agent
             )
       Nothing -> liftIO $ putStrLn "GitHub Upload URLs must be HTTPS"
 
@@ -68,82 +77,68 @@ data GitHubRelease = GitHubRelease
 -- 2. Automatically derive the JSON parser
 instance FromJSON GitHubRelease
 
--- 3. The main function returning the clean URL
 getGHUploadUrl :: (MonadIO m, MonadError Issue m) => Config -> Text -> m Text
 getGHUploadUrl Config {..} tag = do
   gh <- maybe (throwError "GitHub repository not configured") pure cfgGithub
   token <- getGitHubToken
   liftIO $ runReq defaultHttpConfig $ do
-    -- Construct the endpoint URL
     let urlStr = "https://api.github.com/repos/" <> gh <> "/releases/tags/" <> tag
     uri <- liftIO $ mkURI urlStr
     case useHttpsURI uri of
       Just (url, opts) -> do
-        -- Execute the GET request, expecting a JSON response matching our GitHubRelease type
-        r <-
-          req
-            GET
-            url
-            NoReqBody
-            jsonResponse -- This automatically parses the ByteString into our GitHubRelease data type!
-            ( opts
-                <> header "Authorization" ("Bearer " <> encodeUtf8 token)
-                <> header "Accept" "application/vnd.github+json"
-                <> header "User-Agent" "hwm-tool"
-            )
-
-        -- Extract the raw URL from the parsed JSON object
+        r <- req GET url NoReqBody jsonResponse (opts <> ghAuth token <> header "Accept" "application/vnd.github+json")
         let rawUrl = upload_url (responseBody r)
-
         -- Strip the "{?name,label}" template suffix before returning
         return $ T.takeWhile (/= '{') rawUrl
       Nothing -> error "GitHub API URLs must be HTTPS"
 
+mkSecond :: Int -> Int
+mkSecond n = n * 1000000
+
 hwmConfig :: HttpConfig
 hwmConfig =
   let policy =
-        capDelay (5 * oneSecond) (exponentialBackoff oneSecond)
+        capDelay (mkSecond 5) (exponentialBackoff (mkSecond 1))
           <> limitRetries 3
    in defaultHttpConfig {httpConfigRetryPolicy = policy}
 
-oneSecond :: Int
-oneSecond = 1000000
+safeReq :: (MonadIO m) => Pkg -> Text -> (Status -> Issue) -> IO b -> m (Either Issue b)
+safeReq pkg errMsg f action = do
+  res <- liftIO $ timeout (mkSecond 90) $ try action
+  case res of
+    Nothing -> pure $ Left $ Issue (pkgMemberId pkg) SeverityError (errMsg <> " (Timeout)") Nothing
+    Just (Left (VanillaHttpException (HttpExceptionRequest _ (StatusCodeException r _)))) -> pure $ Left $ f (responseStatus r)
+    Just (Left e) -> pure $ Left $ networkError pkg e
+    Just (Right a) -> pure $ Right a
+
+getHackageToken :: (MonadIO m, MonadError Issue m) => m Text
+getHackageToken = do
+  maybeToken <- liftIO $ lookupEnv "HACKAGE_AUTH_TOKEN"
+  maybe
+    (throwError "HACKAGE_AUTH_TOKEN environment variable not set. Please set it to a valid Hackage API Token.")
+    (pure . T.pack)
+    maybeToken
 
 uploadToHackage :: Pkg -> FilePath -> ConfigT [Issue]
 uploadToHackage pkg tarballPath = do
-  mToken <- liftIO $ lookupEnv "HACKAGE_AUTH_TOKEN"
-  case mToken of
-    Nothing -> pure [Issue (pkgMemberId pkg) SeverityError "HACKAGE_AUTH_TOKEN not set" Nothing]
-    Just token -> do
-      body <- reqBodyMultipart [partFileSource "package" tarballPath]
+  token <- getHackageToken
+  body <- reqBodyMultipart [partFileSource "package" tarballPath]
+  let url = https "hackage.haskell.org" /: "packages"
+  let auth = hackageAuth token
+  result <-
+    safeReq pkg "Hackage Upload Failed" (handleHttpError pkg)
+      $ runReq hwmConfig
+      $ req POST url body ignoreResponse auth
 
-      let url = https "hackage.haskell.org" /: "packages"
-      let auth = header "Authorization" ("X-ApiKey " <> encodeUtf8 (T.pack token))
-
-      result <-
-        liftIO
-          $ liftIO
-            ( timeout (90 * oneSecond)
-                $ try
-                $ runReq hwmConfig
-                $ req POST url body ignoreResponse auth
-            )
-      case result of
-        Just (Right _) -> pure []
-        Nothing ->
-          pure [Issue (pkgMemberId pkg) SeverityError "Global timeout: Upload took > 90s" Nothing]
-        Just (Left (VanillaHttpException (HttpExceptionRequest _ (StatusCodeException res _)))) ->
-          handleHttpError pkg (responseStatus res)
-        Just (Left e) ->
-          pure [networkError pkg e]
+  pure $ either pure (const []) result
 
 -- | Handle specific Hackage API responses
-handleHttpError :: Pkg -> Status -> ConfigT [Issue]
+handleHttpError :: Pkg -> Status -> Issue
 handleHttpError pkg status = case statusCode status of
-  409 -> pure [warn pkg "Version already exists on Hackage. Skipping."]
-  401 -> pure [err pkg "Invalid Hackage API Token."]
-  413 -> pure [err pkg "Package tarball is too large for Hackage."]
-  _ -> pure [err pkg $ "Hackage returned: " <> show (statusCode status)]
+  409 -> warn pkg "Version already exists on Hackage. Skipping."
+  401 -> err pkg "Invalid Hackage API Token."
+  413 -> err pkg "Package tarball is too large for Hackage."
+  _ -> err pkg $ "Hackage returned: " <> show (statusCode status)
 
 networkError :: (Show a) => Pkg -> a -> Issue
 networkError pkg e = Issue (pkgMemberId pkg) SeverityError ("[Hackage Connection Error]: " <> show e) Nothing
