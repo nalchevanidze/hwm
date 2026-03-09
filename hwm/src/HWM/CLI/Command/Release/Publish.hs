@@ -110,4 +110,3 @@ runPublish PublishOptions {..} = do
       let status = if null publishIssues then Checked else Invalid
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> statusIcon status
       failIssues publishIssues
-      liftIO exitFailure
