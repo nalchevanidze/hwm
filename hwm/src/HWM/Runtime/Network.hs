@@ -61,7 +61,7 @@ uploadToGitHub uploadUrl filePath = do
             ( opts
                 <> queryParam "name" (Just $ T.pack $ takeFileName filePath)
                 <> ghAuth token
-                <> header "Content-Type" "application/octet-stream" 
+                <> header "Content-Type" "application/octet-stream"
             )
       Nothing -> liftIO $ putStrLn "GitHub Upload URLs must be HTTPS"
 
