@@ -43,6 +43,10 @@ failIssues issues = do
   printSummary issues
   when (maxSeverity issues == Just SeverityError) $ liftIO exitFailure
 
+unpackPath :: (Pkg, Maybe FilePath) -> ConfigT (Pkg, FilePath)
+unpackPath (pkg, Just path) = pure (pkg, path)
+unpackPath (pkg, Nothing) = throwError $ fromString $ "No file path found for package " <> toString (printPkgWSRef pkg)
+
 newtype PublishOptions = PublishOptions
   { publishGroup :: Maybe Name
   }
@@ -88,10 +92,10 @@ runPublish PublishOptions {..} = do
 
   sdists <- traverse nativeSdist pkgs
   failIssues (concatMap snd sdists)
-
+  releasePkgs <- traverse (unpackPath . fst) sdists
   section "publishing" $ do
-    for_ sdists $ \((pkg, filePath), _) -> do
-      publishIssues <- uploadToHackage pkg "TODO: sdist path"
+    for_ releasePkgs $ \(pkg, filePath) -> do
+      publishIssues <- uploadToHackage pkg filePath
       let status = if null publishIssues then Checked else Invalid
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> statusIcon status
       failIssues publishIssues

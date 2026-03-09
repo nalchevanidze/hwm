@@ -30,9 +30,10 @@ import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Configuration (flattenPackageDescription)
 import Distribution.PackageDescription.Parsec
 import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
+import Distribution.Simple.Flag (toFlag)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.Simple.PreProcess (knownSuffixHandlers)
-import Distribution.Simple.Setup (defaultSDistFlags)
+import Distribution.Simple.Setup (SDistFlags (..), defaultSDistFlags)
 import Distribution.Simple.SrcDist (sdist)
 import Distribution.Text (display)
 import Distribution.Types.BuildInfo (BuildInfo (..))
@@ -40,6 +41,7 @@ import Distribution.Types.CondTree (CondTree (..))
 import Distribution.Types.Library (Library (..))
 import Distribution.Utils.Path (getSymbolicPath, unsafeMakeSymbolicPath)
 import Distribution.Verbosity (normal)
+import qualified Distribution.Verbosity as Verbosity
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
@@ -279,7 +281,7 @@ runNativeSDist pkg pkgDesc outDir = do
     -- prepare the 'dist' folder inside the package dir and run sdist
     removePathForcibly localDistDir
     createDirectoryIfMissing True localDistDir
-    withCurrentDirectory (P.pkgDirPath pkg) $ sdist pkgDesc defaultSDistFlags (const "") knownSuffixHandlers
+    withCurrentDirectory (P.pkgDirPath pkg) $ sdist pkgDesc (defaultSDistFlags {sDistVerbosity = toFlag Verbosity.silent}) (const "") knownSuffixHandlers
     exists <- doesFileExist tempTarPath
     if exists
       then renameFile tempTarPath finalPath >> pure (Just finalPath)
