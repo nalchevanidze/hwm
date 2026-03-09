@@ -22,7 +22,6 @@ import Control.Exception.Base (try)
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.ByteString as BS
 import Data.Foldable (Foldable (..))
-import qualified Data.List as L
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import Distribution.Package (packageVersion)
@@ -33,7 +32,7 @@ import Distribution.PackageDescription.Parsec
 import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.Simple.PreProcess (knownSuffixHandlers)
-import Distribution.Simple.Setup (defaultSDistFlags, sDistDirectory, sDistVerbosity, toFlag)
+import Distribution.Simple.Setup (defaultSDistFlags)
 import Distribution.Simple.SrcDist (sdist)
 import Distribution.Text (display)
 import Distribution.Types.BuildInfo (BuildInfo (..))
@@ -41,7 +40,6 @@ import Distribution.Types.CondTree (CondTree (..))
 import Distribution.Types.Library (Library (..))
 import Distribution.Utils.Path (getSymbolicPath, unsafeMakeSymbolicPath)
 import Distribution.Verbosity (normal)
-import qualified Distribution.Verbosity as Verbosity
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
@@ -58,7 +56,7 @@ import Hpack (Force (..), Options (..), Result (..), defaultOptions, hpackResult
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
-import System.Directory (createDirectoryIfMissing, doesFileExist, findFile, listDirectory, makeAbsolute, removePathForcibly, renameFile, withCurrentDirectory)
+import System.Directory (createDirectoryIfMissing, doesFileExist, makeAbsolute, removePathForcibly, renameFile, withCurrentDirectory)
 import System.FilePath (takeDirectory, (</>))
 
 toStatus :: PackageCheck -> Status
