@@ -129,10 +129,8 @@ uploadToHackage pkg tarballPath = do
     safeReq pkg "Hackage Upload Failed" (handleHttpError pkg)
       $ runReq hwmConfig
       $ req POST url body ignoreResponse auth
-
   pure $ either pure (const []) result
 
--- | Handle specific Hackage API responses
 handleHttpError :: Pkg -> Status -> Issue
 handleHttpError pkg status = case statusCode status of
   409 -> warn pkg "Version already exists on Hackage. Skipping."
