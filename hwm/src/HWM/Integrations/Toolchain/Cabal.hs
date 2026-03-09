@@ -73,7 +73,7 @@ isError PackageDistSuspicious {} = False
 toIssue :: Pkg -> PackageCheck -> Issue
 toIssue pkg check =
   Issue
-    { issueMessage = "Invalid package: " <> show check,
+    { issueMessage = "Invalid Package [Cabal check]: " <> show check,
       issueSeverity = if isError check then SeverityError else SeverityWarning,
       issueTopic = P.pkgMemberId pkg,
       issueDetails = Nothing
@@ -274,7 +274,7 @@ runNativeSDist pkg gpkg outDir = do
     Left (e :: IOException) ->
       pure
         [ Issue
-            { issueMessage = "Internal sdist failure: " <> show e,
+            { issueMessage = "Invalid Package [Cabal sdist]: " <> show e,
               issueSeverity = SeverityError,
               issueTopic = P.pkgMemberId pkg,
               issueDetails = Nothing
