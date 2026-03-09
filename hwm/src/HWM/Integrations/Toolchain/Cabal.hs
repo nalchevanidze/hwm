@@ -55,7 +55,7 @@ import Hpack (Force (..), Options (..), Result (..), defaultOptions, hpackResult
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
-import System.Directory (withCurrentDirectory)
+import System.Directory (makeAbsolute, withCurrentDirectory)
 import System.FilePath (takeDirectory, (</>))
 
 toStatus :: PackageCheck -> Status
@@ -256,7 +256,8 @@ emptyPackage (P.PkgName name) version dependencies =
 nativeSdist :: Pkg -> ConfigT [Issue]
 nativeSdist pkg = do
   gpkg <- readCabalFile pkg
-  issues <- runNativeSDist pkg gpkg "./.hwm/sdist"
+  outDir <- liftIO (makeAbsolute $ "./.hwm/sdist" </> toString (P.pkgName pkg))
+  issues <- runNativeSDist pkg gpkg outDir
   pure (issues <> map (toIssue pkg) (checkPackage gpkg Nothing))
 
 runNativeSDist :: Pkg -> GenericPackageDescription -> FilePath -> ConfigT [Issue]
