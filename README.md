@@ -230,10 +230,11 @@ hwm version minor
 # Build local binaries and hashes with builder of choice
 hwm release artifacts --builder=nix
 
-# Push a train to Hackage with Fail-Fast protection
+# Push a train to Hackage (Requires HACKAGE_AUTH_TOKEN in environment with a valid API token)
 hwm release publish main
-
 ```
+
+
 
 <p align="center">
 <img src="images/publish.png" alt="HWM Publish Output" width="600">
