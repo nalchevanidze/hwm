@@ -22,8 +22,10 @@ import Control.Exception.Base (try)
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.ByteString as BS
 import Data.Foldable (Foldable (..))
+import qualified Data.List as L
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import Distribution.Package (packageVersion)
 import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Configuration (flattenPackageDescription)
@@ -33,6 +35,7 @@ import Distribution.Simple.PackageDescription (readGenericPackageDescription)
 import Distribution.Simple.PreProcess (knownSuffixHandlers)
 import Distribution.Simple.Setup (defaultSDistFlags, sDistDirectory, sDistVerbosity, toFlag)
 import Distribution.Simple.SrcDist (sdist)
+import Distribution.Text (display)
 import Distribution.Types.BuildInfo (BuildInfo (..))
 import Distribution.Types.CondTree (CondTree (..))
 import Distribution.Types.Library (Library (..))
@@ -55,7 +58,7 @@ import Hpack (Force (..), Options (..), Result (..), defaultOptions, hpackResult
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
-import System.Directory (doesFileExist, makeAbsolute, withCurrentDirectory)
+import System.Directory (createDirectoryIfMissing, doesFileExist, findFile, listDirectory, makeAbsolute, removePathForcibly, renameFile, withCurrentDirectory)
 import System.FilePath (takeDirectory, (</>))
 
 toStatus :: PackageCheck -> Status
@@ -253,49 +256,40 @@ emptyPackage (P.PkgName name) version dependencies =
           condForeignLibs = []
         }
 
-nativeSdist :: Pkg -> ConfigT (Maybe FilePath, [Issue])
+err :: Pkg -> Text -> Issue
+err pkg msg = Issue (P.pkgMemberId pkg) SeverityError msg Nothing
+
+nativeSdist :: Pkg -> ConfigT ((Pkg, Maybe FilePath), [Issue])
 nativeSdist pkg = do
   gpkg <- readCabalFile pkg
   outDir <- liftIO (makeAbsolute $ "./.hwm/sdist" </> toString (P.pkgName pkg))
-  (filePath, issues) <- runNativeSDist pkg gpkg outDir
-  pure (filePath, issues <> map (toIssue pkg) (checkPackage gpkg Nothing))
+  (filePath, issues) <- runNativeSDist pkg (flattenPackageDescription gpkg) outDir
+  pure ((pkg, filePath), issues <> map (toIssue pkg) (checkPackage gpkg Nothing))
 
-runNativeSDist :: Pkg -> GenericPackageDescription -> FilePath -> ConfigT (Maybe FilePath, [Issue])
-runNativeSDist pkg gpkg outDir = do
-  let pkgDesc = flattenPackageDescription gpkg
-      dirPrefix = toString (P.pkgName pkg) <> "-" <> show (pkgVersion (package pkgDesc))
-      flags = defaultSDistFlags {sDistDirectory = toFlag outDir, sDistVerbosity = toFlag Verbosity.silent}
-      filePath = outDir </> dirPrefix <> ".tar.gz"
-  result <-
-    liftIO
-      $ try
-      $ withCurrentDirectory (P.pkgDirPath pkg)
-      $ sdist pkgDesc flags (const dirPrefix) knownSuffixHandlers
+runNativeSDist :: Pkg -> PackageDescription -> FilePath -> ConfigT (Maybe FilePath, [Issue])
+runNativeSDist pkg pkgDesc outDir = do
+  let tarName = toString (P.pkgName pkg) <> "-" <> display (packageVersion (package pkgDesc)) <> ".tar.gz"
+      -- We'll look for it here: package_dir/dist/package-version.tar.gz
+      localDistDir = P.pkgDirPath pkg </> "dist"
+      tempTarPath = localDistDir </> tarName
+      finalPath = outDir </> tarName
+
+  result <- liftIO $ try $ do
+    -- Setup the HWM output dir
+    removePathForcibly outDir
+    createDirectoryIfMissing True outDir
+    -- prepare the 'dist' folder inside the package dir and run sdist
+    removePathForcibly localDistDir
+    createDirectoryIfMissing True localDistDir
+    withCurrentDirectory (P.pkgDirPath pkg) $ sdist pkgDesc defaultSDistFlags (const "") knownSuffixHandlers
+    exists <- doesFileExist tempTarPath
+    if exists
+      then renameFile tempTarPath finalPath >> pure (Just finalPath)
+      else pure Nothing
 
   case result of
-    Right () -> do
-      exists <- liftIO $ doesFileExist filePath
-      if exists
-        then pure (Just filePath, [])
-        else
-          pure
-            ( Nothing,
-              [ Issue
-                  { issueMessage = "Invalid Package: " <> toText filePath <> " was not created by sdist",
-                    issueSeverity = SeverityError,
-                    issueTopic = P.pkgMemberId pkg,
-                    issueDetails = Nothing
-                  }
-              ]
-            )
+    Right (Just path) -> pure (Just path, [])
+    Right Nothing ->
+      pure (Nothing, [err pkg $ "Cabal sdist ran, but " <> toText tarName <> " was not found."])
     Left (e :: IOException) ->
-      pure
-        ( Nothing,
-          [ Issue
-              { issueMessage = "Invalid Package [Cabal sdist]: " <> show e,
-                issueSeverity = SeverityError,
-                issueTopic = P.pkgMemberId pkg,
-                issueDetails = Nothing
-              }
-          ]
-        )
+      pure (Nothing, [err pkg $ "Cabal sdist IO Error: " <> show e])
