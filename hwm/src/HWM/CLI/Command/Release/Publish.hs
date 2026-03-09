@@ -45,7 +45,7 @@ failIssues issues
   | maxSeverity issues == Just SeverityError = do
       printSummary issues
       liftIO exitFailure
-  | otherwise = traverse_ injectIssue issues >> liftIO exitFailure
+  | otherwise = traverse_ injectIssue issues
 
 unpackPath :: (Pkg, Maybe FilePath) -> ConfigT (Pkg, FilePath)
 unpackPath (pkg, Just path) = pure (pkg, path)
@@ -106,7 +106,7 @@ runPublish PublishOptions {..} = do
   token <- getHackageToken
   section "publishing" $ do
     for_ releasePkgs $ \(pkg, filePath) -> do
-      publishIssues <- uploadToHackage token pkg filePath
-      let status = if null publishIssues then Checked else Invalid
+      issues <- uploadToHackage token pkg filePath
+      let status = if null issues then Checked else Invalid
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> statusIcon status
-      failIssues publishIssues
+      failIssues issues
