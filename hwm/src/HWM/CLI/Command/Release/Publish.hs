@@ -24,7 +24,7 @@ import HWM.Core.Formatting
   )
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Core.Result (Issue (..), Severity (..), maxSeverity)
+import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (..), maxSeverity)
 import HWM.Domain.Config (Config (cfgRelease))
 import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
 import HWM.Domain.Dependencies (sortByDependencyHierarchy)
@@ -41,9 +41,11 @@ import System.FilePath (makeRelative)
 
 failIssues :: [Issue] -> ConfigT ()
 failIssues [] = pure ()
-failIssues issues = do
-  printSummary issues
-  when (maxSeverity issues == Just SeverityError) $ liftIO exitFailure
+failIssues issues
+  | maxSeverity issues == Just SeverityError = do
+      printSummary issues
+      liftIO exitFailure
+  | otherwise = traverse_ injectIssue issues
 
 unpackPath :: (Pkg, Maybe FilePath) -> ConfigT (Pkg, FilePath)
 unpackPath (pkg, Just path) = pure (pkg, path)
