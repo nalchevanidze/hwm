@@ -49,21 +49,18 @@ uploadToGitHub :: (MonadIO m, MonadError Issue m) => Text -> FilePath -> m ()
 uploadToGitHub uploadUrl filePath = do
   token <- getGitHubToken
   liftIO $ runReq defaultHttpConfig $ do
-    uri <- liftIO $ mkURI uploadUrl
-    case useHttpsURI uri of
-      Just (url, opts) -> do
-        void
-          $ req
-            POST
-            url
-            (ReqBodyFile filePath) -- Raw bytes, no multipart wrapping
-            ignoreResponse
-            ( opts
-                <> queryParam "name" (Just $ T.pack $ takeFileName filePath)
-                <> ghAuth token
-                <> header "Content-Type" "application/octet-stream"
-            )
-      Nothing -> liftIO $ putStrLn "GitHub Upload URLs must be HTTPS"
+    (url, opts) <- withURI uploadUrl
+    void
+      $ req
+        POST
+        url
+        (ReqBodyFile filePath)
+        ignoreResponse
+        ( opts
+            <> queryParam "name" (Just $ T.pack $ takeFileName filePath)
+            <> ghAuth token
+            <> header "Content-Type" "application/octet-stream"
+        )
 
 data GitHubRelease = GitHubRelease
   { name :: Text,
@@ -76,14 +73,17 @@ getGHUploadUrl Config {..} tag = do
   gh <- maybe (throwError "GitHub repository not configured") pure cfgGithub
   token <- getGitHubToken
   liftIO $ runReq defaultHttpConfig $ do
-    uri <- liftIO $ mkURI ("https://api.github.com/repos/" <> gh <> "/releases/tags/" <> tag)
-    case useHttpsURI uri of
-      Just (url, opts) -> do
-        r <- req GET url NoReqBody jsonResponse (opts <> ghAuth token <> header "Accept" "application/vnd.github+json")
-        let rawUrl = upload_url (responseBody r)
-        -- Strip the "{?name,label}" template suffix before returning
-        return $ T.takeWhile (/= '{') rawUrl
-      Nothing -> error "GitHub API URLs must be HTTPS"
+    (url, opts) <- withURI ("https://api.github.com/repos/" <> gh <> "/releases/tags/" <> tag)
+    r <- req GET url NoReqBody jsonResponse (opts <> ghAuth token <> header "Accept" "application/vnd.github+json")
+    let rawUrl = upload_url (responseBody r)
+    pure $ T.takeWhile (/= '{') rawUrl
+
+withURI :: (MonadIO m) => Text -> m (Url Https, Option scheme)
+withURI u = do
+  uri <- liftIO $ mkURI u
+  case useHttpsURI uri of
+    Just (url, opts) -> pure (url, opts)
+    Nothing -> error ("URLs must be HTTPS: " <> show u)
 
 mkSecond :: Int -> Int
 mkSecond n = n * 1000000
