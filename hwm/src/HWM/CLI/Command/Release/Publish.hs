@@ -23,14 +23,15 @@ import HWM.Core.Formatting
   )
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Core.Result (Issue, Severity (..), maxSeverity)
+import HWM.Core.Result (Issue (..), Severity (..), maxSeverity)
 import HWM.Domain.Config (Config (cfgRelease))
 import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
 import HWM.Domain.Dependencies (sortByDependencyHierarchy)
 import HWM.Domain.Release (Release (..))
 import HWM.Domain.Workspace (WsPkgs, printPkgWSRef, resolveWsPkgs)
+import HWM.Integrations.Toolchain.Cabal (nativeSdist)
 import HWM.Integrations.Toolchain.Package (deriveDependencyGraph)
-import HWM.Integrations.Toolchain.Stack (sdist, upload)
+import HWM.Integrations.Toolchain.Stack (upload)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (intercalate)
@@ -84,7 +85,7 @@ runPublish PublishOptions {..} = do
     for_ (zip pkgs [1 ..] :: [(Pkg, Int)]) $ \(pkg, idx) -> do
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx
 
-  issues <- traverse sdist (concatMap snd wgs)
+  issues <- traverse nativeSdist (concatMap snd wgs)
   failIssues (concat issues)
 
   section "publishing" $ do

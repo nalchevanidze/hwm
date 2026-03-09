@@ -12,6 +12,7 @@ module HWM.Integrations.Toolchain.Cabal
     CabalPackage,
     newCabalPackage,
     readCabalPackage,
+    nativeSdist,
   )
 where
 
@@ -22,9 +23,13 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
+import qualified Distribution.PackageDescription.Check as Check
+import Distribution.PackageDescription.Configuration (flattenPackageDescription)
 import Distribution.PackageDescription.Parsec
 import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
+import Distribution.Simple.Setup (defaultSDistFlags)
+import Distribution.Simple.SrcDist (sdist)
 import Distribution.Types.BuildInfo (BuildInfo (..))
 import Distribution.Types.CondTree (CondTree (..))
 import Distribution.Types.Library (Library (..))
@@ -48,7 +53,7 @@ import Hpack.Config (ProgramName (..))
 import Relude
 import System.FilePath (takeDirectory, (</>))
 
--- | Translate Cabal warnings into formatting status for downstream reporting.
+-- \| Translate Cabal warnings into formatting status for downstream reporting.
 toStatus :: PackageCheck -> Status
 toStatus p
   | isError p = Invalid
@@ -242,3 +247,12 @@ emptyPackage (P.PkgName name) version dependencies =
           condSubLibraries = [],
           condForeignLibs = []
         }
+
+nativeSdist :: Pkg -> ConfigT [Issue]
+nativeSdist pkg = do
+  let issueTopic = P.pkgMemberId pkg
+  gpkg <- readCabalFile pkg
+  let checkResults = checkPackage gpkg Nothing
+  let criticalErrors = [err | Check.PackageDistInexcusable err <- checkResults]
+  liftIO $ sdist (flattenPackageDescription gpkg) defaultSDistFlags (<> toString (P.pkgName pkg)) []
+  pure []
