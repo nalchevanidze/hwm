@@ -24,7 +24,7 @@ import HWM.Core.Formatting
   )
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (..), maxSeverity)
+import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..), maxSeverity)
 import HWM.Domain.Config (Config (cfgRelease))
 import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
 import HWM.Domain.Dependencies (sortByDependencyHierarchy)
@@ -32,7 +32,7 @@ import HWM.Domain.Release (Release (..))
 import HWM.Domain.Workspace (WsPkgs, printPkgWSRef, resolveWsPkgs)
 import HWM.Integrations.Toolchain.Cabal (nativeSdist)
 import HWM.Integrations.Toolchain.Package (deriveDependencyGraph)
-import HWM.Runtime.Network (uploadToHackage)
+import HWM.Runtime.Network (getHackageToken, uploadToHackage)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (intercalate)
@@ -45,7 +45,7 @@ failIssues issues
   | maxSeverity issues == Just SeverityError = do
       printSummary issues
       liftIO exitFailure
-  | otherwise = traverse_ injectIssue issues
+  | otherwise = traverse_ injectIssue issues >> liftIO exitFailure
 
 unpackPath :: (Pkg, Maybe FilePath) -> ConfigT (Pkg, FilePath)
 unpackPath (pkg, Just path) = pure (pkg, path)
@@ -103,9 +103,11 @@ runPublish PublishOptions {..} = do
     for_ ls $ \((pkg, filePath), idx) -> do
       putLine $ "└── " <> padDots size (show idx <> ". " <> printPkgWSRef pkg) <> fromString (makeRelative cwd filePath)
 
+  token <- getHackageToken
   section "publishing" $ do
     for_ releasePkgs $ \(pkg, filePath) -> do
-      publishIssues <- uploadToHackage pkg filePath
+      publishIssues <- uploadToHackage token pkg filePath
       let status = if null publishIssues then Checked else Invalid
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> statusIcon status
       failIssues publishIssues
+      liftIO exitFailure

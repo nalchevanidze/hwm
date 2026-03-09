@@ -6,7 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Runtime.Network (uploadToGitHub, getGHUploadUrl, uploadToHackage) where
+module HWM.Runtime.Network (uploadToGitHub, getGHUploadUrl, uploadToHackage, getHackageToken) where
 
 import Control.Exception (try)
 import Control.Monad.Except (MonadError (..))
@@ -112,9 +112,8 @@ getHackageToken = do
     (pure . T.pack)
     maybeToken
 
-uploadToHackage :: Pkg -> FilePath -> ConfigT [Issue]
-uploadToHackage pkg tarballPath = do
-  token <- getHackageToken
+uploadToHackage :: Text -> Pkg -> FilePath -> ConfigT [Issue]
+uploadToHackage token pkg tarballPath = do
   let auth = hackageAuth token
   let url = https "hackage.haskell.org" /: "packages"
   body <- reqBodyMultipart [partFileSource "package" tarballPath]
