@@ -253,14 +253,14 @@ emptyPackage (P.PkgName name) version dependencies =
           condForeignLibs = []
         }
 
-nativeSdist :: Pkg -> ConfigT [Issue]
+nativeSdist :: Pkg -> ConfigT (Maybe FilePath, [Issue])
 nativeSdist pkg = do
   gpkg <- readCabalFile pkg
   outDir <- liftIO (makeAbsolute $ "./.hwm/sdist" </> toString (P.pkgName pkg))
-  issues <- runNativeSDist pkg gpkg outDir
-  pure (issues <> map (toIssue pkg) (checkPackage gpkg Nothing))
+  (filePath, issues) <- runNativeSDist pkg gpkg outDir
+  pure (filePath, issues <> map (toIssue pkg) (checkPackage gpkg Nothing))
 
-runNativeSDist :: Pkg -> GenericPackageDescription -> FilePath -> ConfigT [Issue]
+runNativeSDist :: Pkg -> GenericPackageDescription -> FilePath -> ConfigT (Maybe FilePath, [Issue])
 runNativeSDist pkg gpkg outDir = do
   let pkgDesc = flattenPackageDescription gpkg
       dirPrefix = toString (P.pkgName pkg) <> "-" <> show (pkgVersion (package pkgDesc))
@@ -271,13 +271,15 @@ runNativeSDist pkg gpkg outDir = do
       $ withCurrentDirectory (P.pkgDirPath pkg)
       $ sdist pkgDesc flags (const dirPrefix) knownSuffixHandlers
   case result of
-    Right () -> pure []
+    Right () -> pure (Just outDir, [])
     Left (e :: IOException) ->
       pure
-        [ Issue
-            { issueMessage = "Invalid Package [Cabal sdist]: " <> show e,
-              issueSeverity = SeverityError,
-              issueTopic = P.pkgMemberId pkg,
-              issueDetails = Nothing
-            }
-        ]
+        ( Nothing,
+          [ Issue
+              { issueMessage = "Invalid Package [Cabal sdist]: " <> show e,
+                issueSeverity = SeverityError,
+                issueTopic = P.pkgMemberId pkg,
+                issueDetails = Nothing
+              }
+          ]
+        )

@@ -86,7 +86,7 @@ runPublish PublishOptions {..} = do
     for_ (zip pkgs [1 ..] :: [(Pkg, Int)]) $ \(pkg, idx) -> do
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx
 
-  issues <- traverse nativeSdist (concatMap snd wgs)
+  issues <- traverse nativeSdist pkgs
   failIssues (concat issues)
 
   section "publishing" $ do
