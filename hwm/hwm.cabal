@@ -68,7 +68,6 @@ library
       HWM.Domain.Environments
       HWM.Domain.Registry
       HWM.Domain.Release
-      HWM.Domain.Release.Upload
       HWM.Domain.Workspace
       HWM.Integrations.Scaffold
       HWM.Integrations.Toolchain.Cabal

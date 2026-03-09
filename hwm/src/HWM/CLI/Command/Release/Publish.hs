@@ -16,6 +16,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting
   ( Color (..),
     Format (..),
+    Status (Checked, Invalid),
     chalk,
     genMaxLen,
     padDots,
@@ -31,7 +32,7 @@ import HWM.Domain.Release (Release (..))
 import HWM.Domain.Workspace (WsPkgs, printPkgWSRef, resolveWsPkgs)
 import HWM.Integrations.Toolchain.Cabal (nativeSdist)
 import HWM.Integrations.Toolchain.Package (deriveDependencyGraph)
-import HWM.Integrations.Toolchain.Stack (upload)
+import HWM.Runtime.Network (uploadToHackage)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (intercalate)
@@ -90,6 +91,7 @@ runPublish PublishOptions {..} = do
 
   section "publishing" $ do
     for_ pkgs $ \pkg -> do
-      (status, publishIssues) <- upload pkg
+      publishIssues <- uploadToHackage pkg "TODO: sdist path"
+      let status = if null publishIssues then Checked else Invalid
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> statusIcon status
       failIssues publishIssues

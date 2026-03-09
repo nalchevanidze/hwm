@@ -11,7 +11,6 @@ module HWM.Integrations.Toolchain.Stack
     syncStackYaml,
     createEnvYaml,
     stackPath,
-    upload,
     parseExtraDeps,
     scanStackFiles,
     buildMatrix,
@@ -28,11 +27,11 @@ import Data.Aeson
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Format (..), Status (..), indentBlockNum, slugify)
+import HWM.Core.Formatting (Format (..), Status (..), slugify)
 import HWM.Core.Options (Options (..), askOptions)
 import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg (..), PkgName)
-import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..), fromEither)
+import HWM.Core.Result (Issue (..), fromEither)
 import HWM.Core.Version (Version, latestGHCVersion, parseGHCVersion)
 import HWM.Domain.Build (Builder (StackBuilder))
 import HWM.Domain.ConfigT (ConfigT)
@@ -40,7 +39,6 @@ import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environm
 import HWM.Domain.Workspace (toWorkspaceRef)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
-import HWM.Runtime.Process (exec)
 import Relude hiding (head, tail)
 import System.Directory (createDirectoryIfMissing, doesFileExist, makeAbsolute)
 import System.FilePath (dropExtension, (</>))
@@ -123,26 +121,6 @@ createEnvYaml target = do
           ..
         }
   pure ()
-
-upload :: Pkg -> ConfigT (Status, [Issue])
-upload pkg = do
-  (isSuccess, out) <- exec "cabal" ["upload", format (pkgName pkg)]
-  ( if isSuccess
-      then pure (Checked, [])
-      else
-        ( do
-            pure
-              ( Invalid,
-                [ Issue
-                    { issueTopic = pkgMemberId pkg,
-                      issueMessage = "Package publishing failed:" <> indentBlockNum 4 ("\n\n" <> T.pack out),
-                      issueSeverity = SeverityError,
-                      issueDetails = Just GenericIssue {issueFile = fromMaybe (cabalFile pkg) (hpackFile pkg)}
-                    }
-                ]
-              )
-        )
-    )
 
 scanStackFiles :: (MonadIO m, MonadError Issue m) => Options -> FilePath -> m [(Name, Stack)]
 scanStackFiles opts root = do
