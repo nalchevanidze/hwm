@@ -131,7 +131,7 @@ handleHttpError pkg status = case statusCode status of
   _ -> err pkg $ "Hackage returned: " <> show (statusCode status)
 
 networkError :: (Show a) => Pkg -> a -> Issue
-networkError pkg e = Issue (pkgMemberId pkg) SeverityError ("[Hackage Connection Error]: " <> show e) Nothing
+networkError pkg _ = Issue (pkgMemberId pkg) SeverityError "Hackage Connection Error" Nothing
 
 err :: Pkg -> Text -> Issue
 err pkg msg = Issue (pkgMemberId pkg) SeverityError msg Nothing
