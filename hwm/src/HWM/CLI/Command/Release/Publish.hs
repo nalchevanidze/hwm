@@ -16,6 +16,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting
   ( Color (..),
     Format (..),
+    Status (Checked, Invalid),
     chalk,
     genMaxLen,
     padDots,
@@ -23,23 +24,32 @@ import HWM.Core.Formatting
   )
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Core.Result (Issue, Severity (..), maxSeverity)
+import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..), maxSeverity)
 import HWM.Domain.Config (Config (cfgRelease))
 import HWM.Domain.ConfigT (ConfigT, Env (..), askVersion)
 import HWM.Domain.Dependencies (sortByDependencyHierarchy)
 import HWM.Domain.Release (Release (..))
 import HWM.Domain.Workspace (WsPkgs, printPkgWSRef, resolveWsPkgs)
+import HWM.Integrations.Toolchain.Cabal (nativeSdist)
 import HWM.Integrations.Toolchain.Package (deriveDependencyGraph)
-import HWM.Integrations.Toolchain.Stack (sdist, upload)
+import HWM.Runtime.Network (getHackageToken, uploadToHackage)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (intercalate)
+import System.Directory (getCurrentDirectory)
+import System.FilePath (makeRelative)
 
 failIssues :: [Issue] -> ConfigT ()
 failIssues [] = pure ()
-failIssues issues = do
-  printSummary issues
-  when (maxSeverity issues == Just SeverityError) $ liftIO exitFailure
+failIssues issues
+  | maxSeverity issues == Just SeverityError = do
+      printSummary issues
+      liftIO exitFailure
+  | otherwise = traverse_ injectIssue issues
+
+unpackPath :: (Pkg, Maybe FilePath) -> ConfigT (Pkg, FilePath)
+unpackPath (pkg, Just path) = pure (pkg, path)
+unpackPath (pkg, Nothing) = throwError $ fromString $ "No file path found for package " <> toString (printPkgWSRef pkg)
 
 newtype PublishOptions = PublishOptions
   { publishGroup :: Maybe Name
@@ -79,16 +89,24 @@ runPublish PublishOptions {..} = do
     ]
 
   pkgs <- arrangePackageRelease (concatMap snd wgs)
-  let size = genMaxLen (map printPkgWSRef pkgs)
+
+  sdists <- traverse nativeSdist pkgs
+  failIssues (concatMap snd sdists)
+  releasePkgs <- traverse (unpackPath . fst) sdists
+  cwd <- liftIO getCurrentDirectory
+
+  let ls = zip releasePkgs [1 ..] :: [((Pkg, FilePath), Int)]
+
+  let size = genMaxLen (map (\((pkg, _), n) -> show n <> ". " <> printPkgWSRef pkg) ls)
+
   section "publishing plan (topological sort)" $ do
-    for_ (zip pkgs [1 ..] :: [(Pkg, Int)]) $ \(pkg, idx) -> do
-      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx
+    for_ ls $ \((pkg, filePath), idx) -> do
+      putLine $ "└── " <> padDots size (show idx <> ". " <> printPkgWSRef pkg) <> fromString (makeRelative cwd filePath)
 
-  issues <- traverse sdist (concatMap snd wgs)
-  failIssues (concat issues)
-
+  token <- getHackageToken
   section "publishing" $ do
-    for_ pkgs $ \pkg -> do
-      (status, publishIssues) <- upload pkg
+    for_ releasePkgs $ \(pkg, filePath) -> do
+      issues <- uploadToHackage token pkg filePath
+      let status = if null issues then Checked else Invalid
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> statusIcon status
-      failIssues publishIssues
+      failIssues issues

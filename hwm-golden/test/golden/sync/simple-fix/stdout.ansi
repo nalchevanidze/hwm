@@ -18,25 +18,15 @@
 [1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
 
   [2m• [0m[1mbar[0m
-  [2m└─- [0m[2m• [0m[31mInvalid package: No executables, libraries, tests, or benchmarks found. Nothing to do.[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'category' field.[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[31mInvalid package: No 'synopsis' or 'description' field.[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[31mInvalid package: The 'license' field is missing or is NONE.[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
+  [2m└─- [0m[2m• [0m[31mInvalid Package [Cabal check]: No executables, libraries, tests, or benchmarks found. Nothing to do.[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'category' field.[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'maintainer' field.[0m
+  [2m└─- [0m[2m• [0m[31mInvalid Package [Cabal check]: No 'synopsis' or 'description' field.[0m
+  [2m└─- [0m[2m• [0m[31mInvalid Package [Cabal check]: The 'license' field is missing or is NONE.[0m
   [2m• [0m[1mfoo[0m
-  [2m└─- [0m[2m• [0m[31mInvalid package: No executables, libraries, tests, or benchmarks found. Nothing to do.[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'category' field.[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[31mInvalid package: No 'synopsis' or 'description' field.[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[31mInvalid package: The 'license' field is missing or is NONE.[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
+  [2m└─- [0m[2m• [0m[31mInvalid Package [Cabal check]: No executables, libraries, tests, or benchmarks found. Nothing to do.[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'category' field.[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'maintainer' field.[0m
+  [2m└─- [0m[2m• [0m[31mInvalid Package [Cabal check]: No 'synopsis' or 'description' field.[0m
+  [2m└─- [0m[2m• [0m[31mInvalid Package [Cabal check]: The 'license' field is missing or is NONE.[0m
 

@@ -18,17 +18,11 @@
 [1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
 
   [2m• [0m[1mbar[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: library does not expose any modules[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
-      [2m└─- [0m[2mfile: bar/bar.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: library does not expose any modules[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'maintainer' field.[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'description' field.[0m
   [2m• [0m[1mfoo[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: library does not expose any modules[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'maintainer' field.[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
-  [2m└─- [0m[2m• [0m[33mInvalid package: No 'description' field.[0m
-      [2m└─- [0m[2mfile: foo/foo.cabal[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: library does not expose any modules[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'maintainer' field.[0m
+  [2m└─- [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'description' field.[0m
 
