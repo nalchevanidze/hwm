@@ -115,7 +115,7 @@ getHackageToken = do
 uploadToHackage :: Text -> Pkg -> FilePath -> ConfigT [Issue]
 uploadToHackage token pkg tarballPath = do
   let auth = hackageAuth token
-  let url = https "hackage.haskell.org" /: "packages"
+  let url = https "hackage.haskell.org" /: "packages" /: "candidates"
   body <- reqBodyMultipart [partFileSource "package" tarballPath]
   result <-
     safeReq pkg "Hackage Upload Failed" (handleHttpError pkg)

@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.36.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -113,7 +113,7 @@ library
     , process >=1.0.0 && <2.0.0
     , relude >=0.7.0.0 && <=1.2.2.2
     , req >=3.9.0 && <=3.13.4
-    , retry
+    , retry >=0.8.1 && <=0.9.4.0
     , stm >=2.4 && <2.6.0
     , text >=1.2.3 && <3.0.0
     , time >=1.9.2 && <2.0.0
@@ -154,7 +154,7 @@ executable hwm
     , process >=1.0.0 && <2.0.0
     , relude >=0.7.0.0 && <=1.2.2.2
     , req >=3.9.0 && <=3.13.4
-    , retry
+    , retry >=0.8.1 && <=0.9.4.0
     , stm >=2.4 && <2.6.0
     , text >=1.2.3 && <3.0.0
     , time >=1.9.2 && <2.0.0
