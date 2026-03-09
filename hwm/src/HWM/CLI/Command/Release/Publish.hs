@@ -36,6 +36,8 @@ import HWM.Runtime.Network (uploadToHackage)
 import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (intercalate)
+import System.Directory (getCurrentDirectory)
+import System.FilePath (makeRelative)
 
 failIssues :: [Issue] -> ConfigT ()
 failIssues [] = pure ()
@@ -93,6 +95,12 @@ runPublish PublishOptions {..} = do
   sdists <- traverse nativeSdist pkgs
   failIssues (concatMap snd sdists)
   releasePkgs <- traverse (unpackPath . fst) sdists
+  cwd <- liftIO getCurrentDirectory
+
+  section "packages" $ do
+    for_ releasePkgs $ \(pkg, filePath) -> do
+      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> fromString (makeRelative cwd filePath)
+
   section "publishing" $ do
     for_ releasePkgs $ \(pkg, filePath) -> do
       publishIssues <- uploadToHackage pkg filePath
