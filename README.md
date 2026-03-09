@@ -194,29 +194,31 @@ hwm run test -- morpheus-graphql-core --test-show-details=direct
 
 ### 5. Release & Distribution
 
-HWM introduces **Release Trains**, decoupling your workspace structure from your distribution strategy.
+HWM introduces **Release Trains**, a high-integrity system for decoupling workspace structure from distribution strategy while ensuring topological correctness.
 
 #### 📦 Artifact Pipeline
 
-Transform raw binaries into hashed, compressed distribution units using your preferred engine.
+Transform raw binaries into hashed, compressed distribution units using your preferred engine. HWM ensures every artifact is strictly validated before the publication phase begins.
 
 ```yaml
-enviroments:
+environments:
   builder: stack # or nix or cabal
 release:
   artifacts:
     hwm: libs/(root):hwm
+
 ```
 
 #### 🚢 Publication Trains
 
-Define groups of packages to be published to Hackage together in topological order.
+Define groups of packages to be published to Hackage. HWM enforces a **topological sort**, ensuring "core" dependencies are published before the packages that rely on them.
 
 ```yaml
 release:
   publish:
     main:
       - libs
+
 ```
 
 **Usage:**
@@ -228,7 +230,7 @@ hwm version minor
 # Build local binaries and hashes with builder of choice
 hwm release artifacts --builder=nix
 
-# Push a specific train to Hackage
+# Push a train to Hackage with Fail-Fast protection
 hwm release publish main
 
 ```
