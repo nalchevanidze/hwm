@@ -90,18 +90,17 @@ runPublish PublishOptions {..} = do
 
   pkgs <- arrangePackageRelease (concatMap snd wgs)
   let size = genMaxLen (map printPkgWSRef pkgs)
-  section "publishing plan (topological sort)" $ do
-    for_ (zip pkgs [1 ..] :: [(Pkg, Int)]) $ \(pkg, idx) -> do
-      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx
 
   sdists <- traverse nativeSdist pkgs
   failIssues (concatMap snd sdists)
   releasePkgs <- traverse (unpackPath . fst) sdists
   cwd <- liftIO getCurrentDirectory
 
-  section "packages" $ do
-    for_ releasePkgs $ \(pkg, filePath) -> do
-      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> fromString (makeRelative cwd filePath)
+  let ls = zip releasePkgs [1 ..] :: [((Pkg, FilePath), Int)]
+
+  section "publishing plan (topological sort)" $ do
+    for_ ls $ \((pkg, filePath), idx) -> do
+      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx <> "file:" <> fromString (makeRelative cwd filePath)
 
   section "publishing" $ do
     for_ releasePkgs $ \(pkg, filePath) -> do
