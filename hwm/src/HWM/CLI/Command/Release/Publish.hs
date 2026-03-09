@@ -86,11 +86,11 @@ runPublish PublishOptions {..} = do
     for_ (zip pkgs [1 ..] :: [(Pkg, Int)]) $ \(pkg, idx) -> do
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx
 
-  issues <- traverse nativeSdist pkgs
-  failIssues (concat issues)
+  sdists <- traverse nativeSdist pkgs
+  failIssues (concatMap snd sdists)
 
   section "publishing" $ do
-    for_ pkgs $ \pkg -> do
+    for_ sdists $ \((pkg, filePath), _) -> do
       publishIssues <- uploadToHackage pkg "TODO: sdist path"
       let status = if null publishIssues then Checked else Invalid
       putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> statusIcon status
