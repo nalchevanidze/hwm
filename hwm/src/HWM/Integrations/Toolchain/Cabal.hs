@@ -256,7 +256,7 @@ emptyPackage (P.PkgName name) version dependencies =
 nativeSdist :: Pkg -> ConfigT [Issue]
 nativeSdist pkg = do
   gpkg <- readCabalFile pkg
-  issues <- runNativeSDist pkg gpkg ("./.hwm/" </> "dist")
+  issues <- runNativeSDist pkg gpkg "./.hwm/sdist"
   pure (issues <> map (toIssue pkg) (checkPackage gpkg Nothing))
 
 runNativeSDist :: Pkg -> GenericPackageDescription -> FilePath -> ConfigT [Issue]
