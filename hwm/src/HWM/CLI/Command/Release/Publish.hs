@@ -100,7 +100,7 @@ runPublish PublishOptions {..} = do
 
   section "publishing plan (topological sort)" $ do
     for_ ls $ \((pkg, filePath), idx) -> do
-      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx <> "file:" <> fromString (makeRelative cwd filePath)
+      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> show idx <> chalk Dim (" - file: " <> fromString (makeRelative cwd filePath))
 
   section "publishing" $ do
     for_ releasePkgs $ \(pkg, filePath) -> do
