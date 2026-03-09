@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Integrations.Toolchain.Cabal
@@ -16,6 +17,8 @@ module HWM.Integrations.Toolchain.Cabal
   )
 where
 
+import Control.Exception (IOException)
+import Control.Exception.Base (try)
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.ByteString as BS
 import Data.Foldable (Foldable (..))
@@ -23,24 +26,25 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
-import qualified Distribution.PackageDescription.Check as Check
 import Distribution.PackageDescription.Configuration (flattenPackageDescription)
 import Distribution.PackageDescription.Parsec
 import Distribution.PackageDescription.PrettyPrint (writeGenericPackageDescription)
 import Distribution.Simple.PackageDescription (readGenericPackageDescription)
-import Distribution.Simple.Setup (defaultSDistFlags)
-import Distribution.Simple.SrcDist (sdist)
+import qualified Distribution.Simple.PreProcess as PP
+import Distribution.Simple.Setup (defaultSDistFlags, sDistDirectory, sDistVerbosity, toFlag)
+import qualified Distribution.Simple.SrcDist as SrcDist
 import Distribution.Types.BuildInfo (BuildInfo (..))
 import Distribution.Types.CondTree (CondTree (..))
 import Distribution.Types.Library (Library (..))
 import Distribution.Utils.Path (getSymbolicPath, unsafeMakeSymbolicPath)
 import Distribution.Verbosity (normal)
+import qualified Distribution.Verbosity as Verbosity
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
 import HWM.Core.Pkg (IsPkg (..), PackageIO, Pkg (Pkg, hpackFile), PkgName)
 import qualified HWM.Core.Pkg as P
-import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
+import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version, toCabalVersion)
 import HWM.Domain.ConfigT (ConfigT)
 import qualified HWM.Domain.ConfigT as CT
@@ -53,7 +57,6 @@ import Hpack.Config (ProgramName (..))
 import Relude
 import System.FilePath (takeDirectory, (</>))
 
--- \| Translate Cabal warnings into formatting status for downstream reporting.
 toStatus :: PackageCheck -> Status
 toStatus p
   | isError p = Invalid
@@ -66,19 +69,20 @@ isError PackageBuildWarning {} = False
 isError PackageDistSuspiciousWarn {} = False
 isError PackageDistSuspicious {} = False
 
+toIssue :: Pkg -> PackageCheck -> Issue
+toIssue pkg check =
+  Issue
+    { issueMessage = "Invalid package: " <> show check,
+      issueSeverity = if isError check then SeverityError else SeverityWarning,
+      issueTopic = P.pkgMemberId pkg,
+      issueDetails = Nothing
+    }
+
 validateHackage :: Pkg -> ConfigT Status
 validateHackage pkg = do
   gpd <- liftIO $ readGenericPackageDescription normal (P.cabalFile pkg)
   let ls = checkPackage gpd Nothing
-  for_ ls $ \l -> do
-    injectIssue
-      ( Issue
-          { issueMessage = "Invalid package: " <> show l,
-            issueSeverity = if isError l then SeverityError else SeverityWarning,
-            issueTopic = P.pkgMemberId pkg,
-            issueDetails = Just GenericIssue {issueFile = P.cabalFile pkg}
-          }
-      )
+  for_ ls $ \l -> injectIssue (toIssue pkg l)
   pure (maximum (Checked : map toStatus ls))
 
 instance PackageIO CabalPackage ConfigT where
@@ -250,9 +254,36 @@ emptyPackage (P.PkgName name) version dependencies =
 
 nativeSdist :: Pkg -> ConfigT [Issue]
 nativeSdist pkg = do
-  let issueTopic = P.pkgMemberId pkg
   gpkg <- readCabalFile pkg
-  let checkResults = checkPackage gpkg Nothing
-  let criticalErrors = [err | Check.PackageDistInexcusable err <- checkResults]
-  liftIO $ sdist (flattenPackageDescription gpkg) defaultSDistFlags (<> toString (P.pkgName pkg)) []
-  pure []
+  issues <- runNativeSDist pkg gpkg ("./.hwm/" </> "dist")
+  pure (issues <> map (toIssue pkg) (checkPackage gpkg Nothing))
+
+runNativeSDist :: Pkg -> GenericPackageDescription -> FilePath -> ConfigT [Issue]
+runNativeSDist pkg gpkg outDir = do
+  let pkgDesc = flattenPackageDescription gpkg
+      dirPrefix = toString (P.pkgName pkg) <> "-" <> show (pkgVersion (package pkgDesc))
+      flags =
+        defaultSDistFlags
+          { sDistDirectory = toFlag outDir,
+            sDistVerbosity = toFlag Verbosity.normal
+          }
+
+  result <-
+    liftIO
+      $ try
+      $ SrcDist.sdist
+        pkgDesc
+        flags
+        (const dirPrefix) -- Creates the internal 'name-version/' folder
+        PP.knownSuffixHandlers -- Handles .hsc, .x, .y files
+  case result of
+    Right () -> pure []
+    Left (e :: IOException) ->
+      pure
+        [ Issue
+            { issueMessage = "Internal sdist failure: " <> show e,
+              issueSeverity = SeverityError,
+              issueTopic = P.pkgMemberId pkg,
+              issueDetails = Nothing
+            }
+        ]

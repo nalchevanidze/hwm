@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -12,7 +11,6 @@ module HWM.Integrations.Toolchain.Stack
     syncStackYaml,
     createEnvYaml,
     stackPath,
-    sdist,
     upload,
     parseExtraDeps,
     scanStackFiles,
@@ -28,7 +26,6 @@ import Data.Aeson
     genericToJSON,
   )
 import qualified Data.Map as Map
-import Data.Text (pack)
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..), indentBlockNum, slugify)
@@ -43,7 +40,6 @@ import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environm
 import HWM.Domain.Workspace (toWorkspaceRef)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
-import HWM.Runtime.Logging (logIssue)
 import HWM.Runtime.Process (exec)
 import Relude hiding (head, tail)
 import System.Directory (createDirectoryIfMissing, doesFileExist, makeAbsolute)
@@ -128,19 +124,6 @@ createEnvYaml target = do
         }
   pure ()
 
-sdist :: Pkg -> ConfigT [Issue]
-sdist pkg = do
-  let issueTopic = pkgMemberId pkg
-      issueMessage = "stack sdist detected Issues. No packages were published."
-  (isSuccess, out) <- exec "stack" ["sdist", format (pkgName pkg)]
-  let severity = if isSuccess then findIssue out else Just SeverityError
-  case severity of
-    Nothing -> pure []
-    Just issueSeverity -> do
-      issueFile <- logIssue "sdist" issueSeverity [("COMMAND", "stack sdist " <> format (pkgName pkg))] (pack out)
-      let issueDetails = Just GenericIssue {issueFile}
-       in pure [Issue {..}]
-
 upload :: Pkg -> ConfigT (Status, [Issue])
 upload pkg = do
   (isSuccess, out) <- exec "stack" ["upload", format (pkgName pkg)]
@@ -160,15 +143,6 @@ upload pkg = do
               )
         )
     )
-
-findIssue :: String -> Maybe Severity
-findIssue str =
-  let ls = map T.strip $ T.lines $ T.toLower $ T.pack str
-   in case find ("error:" `T.isInfixOf`) ls of
-        Just _ -> Just SeverityError
-        Nothing -> case find ("warning:" `T.isInfixOf`) ls of
-          Just _ -> Just SeverityWarning
-          Nothing -> Nothing
 
 scanStackFiles :: (MonadIO m, MonadError Issue m) => Options -> FilePath -> m [(Name, Stack)]
 scanStackFiles opts root = do
