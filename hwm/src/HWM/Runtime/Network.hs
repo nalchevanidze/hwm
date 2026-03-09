@@ -42,7 +42,7 @@ ghAuth token =
 
 hackageAuth :: Text -> Option 'Https
 hackageAuth token =
-  header "X-ApiKey" (encodeUtf8 token)
+  header "Authorization" ("X-ApiKey " <> encodeUtf8 token)
     <> header "User-Agent" "hwm-tool"
 
 uploadToGitHub :: (MonadIO m, MonadError Issue m) => Text -> FilePath -> m ()
