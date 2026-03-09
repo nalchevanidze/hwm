@@ -64,6 +64,7 @@ registry:
   unordered-containers: '>=  0.2.14.0    &&  <=  0.2.21'
   yaml: '                >=  0.11.5.0    &&  <=  0.11.11.2'
   zip-archive: '         >=  0.4.1       &&  <=  0.4.3.2'
+  http-client: '         >=  0.7.0       &&  <=  0.7.20.0'
 release:
   artifacts:
     hwm: libs/(root):hwm

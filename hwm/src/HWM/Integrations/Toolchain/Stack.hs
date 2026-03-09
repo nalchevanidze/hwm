@@ -126,7 +126,7 @@ createEnvYaml target = do
 
 upload :: Pkg -> ConfigT (Status, [Issue])
 upload pkg = do
-  (isSuccess, out) <- exec "stack" ["upload", format (pkgName pkg)]
+  (isSuccess, out) <- exec "cabal" ["upload", format (pkgName pkg)]
   ( if isSuccess
       then pure (Checked, [])
       else
