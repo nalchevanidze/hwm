@@ -82,8 +82,7 @@ getGHUploadUrl Config {..} tag = do
   gh <- maybe (throwError "GitHub repository not configured") pure cfgGithub
   token <- getGitHubToken
   liftIO $ runReq defaultHttpConfig $ do
-    let urlStr = "https://api.github.com/repos/" <> gh <> "/releases/tags/" <> tag
-    uri <- liftIO $ mkURI urlStr
+    uri <- liftIO $ mkURI ("https://api.github.com/repos/" <> gh <> "/releases/tags/" <> tag)
     case useHttpsURI uri of
       Just (url, opts) -> do
         r <- req GET url NoReqBody jsonResponse (opts <> ghAuth token <> header "Accept" "application/vnd.github+json")
