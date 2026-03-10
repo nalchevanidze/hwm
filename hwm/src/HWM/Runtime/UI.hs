@@ -37,8 +37,10 @@ import Control.Monad.Except (MonadError (..))
 import Data.List (groupBy, maximum, (!!))
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (..), Format (..), Status (..), chalk, indentBlockNum, padDots, renderSummaryStatus, statusIcon, subPathSign)
+import HWM.Core.Options (whenCI)
 import HWM.Core.Result
   ( Issue (..),
     IssueDetails (..),
@@ -213,8 +215,14 @@ levelColor :: Severity -> Color
 levelColor SeverityError = Red
 levelColor SeverityWarning = Yellow
 
-printSummary :: (MonadUI m) => [Issue] -> m ()
-printSummary = traverse_ putLine . renderSummaryLines
+printSummary :: (MonadUI m, MonadIO m) => [Issue] -> m ()
+printSummary issues = traverse_ putLine (renderSummaryLines issues) >> whenCI (traverse_ extractLog issues)
+  where
+    extractLog Issue {issueDetails = Just (CommandIssue {issueLogFile})} = do
+      content <- liftIO $ T.readFile (toString issueLogFile)
+      putLine $ chalk Dim ("--- logs for " <> format issueLogFile <> " ---")
+      putLine content
+    extractLog _ = pure ()
 
 statusIndicator :: (MonadIO m) => Int -> Text -> Text -> m ()
 statusIndicator padding prefix msg = do
