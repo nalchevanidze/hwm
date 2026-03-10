@@ -69,7 +69,7 @@ genBindaryDir name = do
 
 ghcOptions :: [Text] -> [Text]
 ghcOptions [] = []
-ghcOptions xs = ["--ghc-options='" <> T.unwords xs <> "'"]
+ghcOptions xs = map ("--ghc-options=" <>) xs
 
 defaultOutputDir :: FilePath
 defaultOutputDir = ".hwm/dist"
