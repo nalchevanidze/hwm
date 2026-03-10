@@ -135,26 +135,3 @@ toAction p NixBuilder (Test ac) =
 
 inNixDevelop :: Exec -> Exec
 inNixDevelop (Exec cmd ops env) = Exec "nix" (["develop", "--command", cmd] <> ops) env
-
--- # Current HWM logic
--- environments:
---   stable:
---     builder: nix   # "I want Nix to be the one calling GHC"
-
--- # Alternative "Layered" logic
--- environments:
---   stable:
---     builder: cabal
---     use-nix: true  # "I want Cabal to call GHC, but inside a Nix shell
---
--- # hwm.yaml
--- environments:
---  scriptes:
---     build: "cabal build --copy-bins"
---   stable:
---     builder: stack
---     # HWM provides default 'build' and 'test' logic,
---     # but you can override the "template" here:
---     scripts:
---       build: "<builder> build --copy-bins"
---       test: "<builder> test --coverage"
