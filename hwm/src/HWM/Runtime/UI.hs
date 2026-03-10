@@ -220,7 +220,7 @@ printSummary issues = traverse_ putLine (renderSummaryLines issues) >> whenCI (t
   where
     extractLog Issue {issueDetails = Just (CommandIssue {issueLogFile})} = do
       content <- liftIO $ T.readFile (toString issueLogFile)
-      putLine $ chalk Dim ("--- logs for " <> format issueLogFile <> " ---")
+      putLine $ chalk Dim ("--- CI logs for " <> format issueLogFile <> " ---")
       putLine content
     extractLog _ = pure ()
 
