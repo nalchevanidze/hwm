@@ -215,7 +215,7 @@ deriveBounds name TestedRange {..} = do
 
   newUpper <- maybe (head <$> getVersions name) pure upper
 
-  section "discovery" $ do
+  section_ "discovery" $ do
     putLine $ padDots 16 "registry" <> "missing (initiating lookup)"
     putLine $ padDots 16 "legacy" <> maybe (chalk Red "missing") (chalk Green . format) lower <> " (min)"
     putLine $ padDots 16 "nightly" <> maybe (chalk Red "missing") ((<> " (max)") . chalk Green . format) upper

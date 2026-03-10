@@ -1,11 +1,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Build
   ( Builder (..),
-    buildBinary,
+    BuilderCommand (..),
+    runBuilderCommand,
   )
 where
 
@@ -13,11 +15,13 @@ import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (throwError)
 import Data.Aeson (FromJSON (..), ToJSON (toJSON))
 import Data.Aeson.Types (Value (..))
+import qualified Data.Text as T
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (PkgName)
 import HWM.Core.Result (Issue)
-import HWM.Runtime.Process (exec)
+import HWM.Runtime.Platform (Platform (..), detectPlatform, toNixSystem)
+import HWM.Runtime.Process (Exec (..), runInBackground)
 import Relude
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, doesPathExist, emptyPermissions, removeFile, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import System.FilePath ((</>))
@@ -46,29 +50,19 @@ instance Format Builder where
   format StackBuilder = "stack"
   format NixBuilder = "nix"
 
-buildBinary :: (MonadError Issue m, MonadIO m) => Builder -> PkgName -> FilePath -> [Text] -> m ()
-buildBinary builder pkgName dirPath args = do
-  (success, buildOut) <- command
-  unless success $ throwError (fromString $ "Build failed: " <> buildOut)
-  when (builder == NixBuilder) (extractNixArtifact pkgName dirPath)
-  where
-    command = case builder of
-      StackBuilder ->
-        exec "stack" $ ["install", format pkgName, "--local-bin-path", format dirPath] <> args
-      CabalBuilder ->
-        exec "cabal"
-          $ [ "install",
-              format pkgName,
-              "--install-method=copy",
-              "--installdir",
-              format dirPath,
-              "--overwrite-policy=always"
-            ]
-          <> args
-      NixBuilder ->
-        -- WARNING: We DO NOT append 'args' here.
-        -- Nix does not accept '--ghc-options' via CLI; it must be set in the flake.
-        exec "nix" ["build", ".#" <> format pkgName, "-o", format (dirPath </> "result")]
+runBuilderCommand :: (MonadError Issue m, MonadIO m) => Builder -> Bool -> BuilderCommand -> [Text] -> m ()
+runBuilderCommand builder nixEnabled cmd args = do
+  p <- detectPlatform
+  let action = toAction p builder cmd
+  let Exec {..} = if nixEnabled && builder /= NixBuilder then inNixDevelop action else action
+  -- WARNING: Nix does not accept '--ghc-options' via CLI; it must be set in the flake.
+  let exec = Exec execCmd (execArgs <> if builder == NixBuilder then [] else args) []
+  runInBackground exec "build" 16
+  postAction builder cmd
+
+postAction :: (MonadIO m, MonadError Issue m) => Builder -> BuilderCommand -> m ()
+postAction NixBuilder Install {..} = extractNixArtifact iName dirPath
+postAction _ _ = pure ()
 
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
 extractNixArtifact pkgName distDir = do
@@ -103,14 +97,64 @@ extractNixArtifact pkgName distDir = do
         setPermissions finalDest properPerms
       -- Cleanup: Remove the 'result' symlink to keep the folder clean
       liftIO $ removeFile resultLink
-    Nothing ->
-      throwError
-        $ fromString
-        $ "Nix build succeeded, but binary '"
-        <> pkgStr
-        <> "' not found inside the Nix store path.\n"
+    Nothing -> throwError $ fromString $ "Nix build succeeded, but binary '" <> pkgStr <> "' not found inside the Nix store path.\n"
 
 findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
 findM _ [] = pure Nothing
 findM p (x : xs) = do
   ifM (p x) (pure $ Just x) (findM p xs)
+
+data BuilderCommand = Build [PkgName] | Test [PkgName] | Install {iName :: PkgName, dirPath :: FilePath}
+  deriving (Eq, Show)
+
+instance Format BuilderCommand where
+  format (Build pkgs) = "build " <> T.unwords (map format pkgs)
+  format (Test pkgs) = "test " <> T.unwords (map format pkgs)
+  format (Install pkg dir) = "install " <> format pkg <> " to " <> toText dir
+
+mkExec :: Text -> [Text] -> Exec
+mkExec name args = Exec name args []
+
+toAction :: Platform -> Builder -> BuilderCommand -> Exec
+-- Stack and Cabal ignore the system string
+toAction _ StackBuilder (Build pkgs) = mkExec "stack" (["build"] <> map format pkgs)
+toAction _ CabalBuilder (Build pkgs) = mkExec "cabal" (["build"] <> map format pkgs)
+toAction _ StackBuilder Install {..} = mkExec "stack" ["install", format iName, "--local-bin-path", format dirPath]
+toAction _ CabalBuilder Install {..} = mkExec "cabal" ["install", format iName, "--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
+toAction _ StackBuilder (Test ac) = mkExec "stack" $ ["test"] <> map format ac
+toAction _ CabalBuilder (Test ac) = mkExec "cabal" $ ["test"] <> map format ac
+-- Nix uses the system string
+toAction _ NixBuilder (Build pkgs) = mkExec "nix" $ ["build"] <> map (\pkg -> ".#" <> format pkg) pkgs
+toAction _ NixBuilder Install {..} = mkExec "nix" ["build", ".#" <> format iName, "-o", format (dirPath </> "result")]
+toAction _ NixBuilder (Test []) = mkExec "nix" ["flake", "check"]
+-- Map over the list of packages (ac) to build multiple test checks at once!
+toAction p NixBuilder (Test ac) =
+  mkExec "nix"
+    $ ["build", "-L", "--no-link"]
+    <> map (\pkg -> ".#checks." <> toNixSystem p <> "." <> format pkg) ac
+
+inNixDevelop :: Exec -> Exec
+inNixDevelop (Exec cmd ops env) = Exec "nix" (["develop", "--command", cmd] <> ops) env
+
+-- # Current HWM logic
+-- environments:
+--   stable:
+--     builder: nix   # "I want Nix to be the one calling GHC"
+
+-- # Alternative "Layered" logic
+-- environments:
+--   stable:
+--     builder: cabal
+--     use-nix: true  # "I want Cabal to call GHC, but inside a Nix shell
+--
+-- # hwm.yaml
+-- environments:
+--  scriptes:
+--     build: "cabal build --copy-bins"
+--   stable:
+--     builder: stack
+--     # HWM provides default 'build' and 'test' logic,
+--     # but you can override the "template" here:
+--     scripts:
+--       build: "<builder> build --copy-bins"
+--       test: "<builder> test --coverage"

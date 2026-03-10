@@ -33,7 +33,7 @@ import HWM.Domain.Workspace (WsPkgs, printPkgWSRef, resolveWsPkgs)
 import HWM.Integrations.Toolchain.Cabal (nativeSdist)
 import HWM.Integrations.Toolchain.Package (deriveDependencyGraph)
 import HWM.Runtime.Network (getHackageToken, uploadToHackage)
-import HWM.Runtime.UI (printSummary, putLine, section, sectionTableM)
+import HWM.Runtime.UI (printSummary, putLine, sectionTableM, section_)
 import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (intercalate)
 import System.Directory (getCurrentDirectory)
@@ -99,12 +99,12 @@ runPublish PublishOptions {..} = do
 
   let size = genMaxLen (map (\((pkg, _), n) -> show n <> ". " <> printPkgWSRef pkg) ls)
 
-  section "publishing plan (topological sort)" $ do
+  section_ "publishing plan (topological sort)" $ do
     for_ ls $ \((pkg, filePath), idx) -> do
       putLine $ "└── " <> padDots size (show idx <> ". " <> printPkgWSRef pkg) <> fromString (makeRelative cwd filePath)
 
   token <- getHackageToken
-  section "publishing" $ do
+  section_ "publishing" $ do
     for_ releasePkgs $ \(pkg, filePath) -> do
       issues <- uploadToHackage token pkg filePath
       let status = if null issues then Checked else Invalid
