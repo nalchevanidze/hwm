@@ -70,7 +70,7 @@ data GitHubRelease = GitHubRelease
 
 getGHUploadUrl :: (MonadIO m, MonadError Issue m) => Config -> Text -> m Text
 getGHUploadUrl Config {..} tag = do
-  gh <- maybe (throwError "GitHub repository not configured") pure cfgGithub
+  gh <- maybe (throwError "GitHub repository not configured. Please set github field in hwm.yaml file") pure cfgGithub
   token <- getGitHubToken
   liftIO $ runReq defaultHttpConfig $ do
     (url, opts) <- withURI ("https://api.github.com/repos/" <> gh <> "/releases/tags/" <> tag)

@@ -101,6 +101,11 @@ if [[ -z "$BIN_DIR" ]]; then
 fi
 mkdir -p "$BIN_DIR"
 
+if [ -n "$GITHUB_PATH" ]; then
+  echo "$BIN_DIR" >> "$GITHUB_PATH"
+  echo "Added $BIN_DIR to GITHUB_PATH"
+fi
+
 # Temp workdir + cleanup
 WORKDIR="$(mktemp -d 2>/dev/null || (rm -rf .pkg-local && mkdir -p .pkg-local && echo ".pkg-local"))"
 cleanup() { rm -rf "$WORKDIR" 2>/dev/null || true; }
