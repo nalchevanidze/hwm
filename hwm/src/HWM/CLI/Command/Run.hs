@@ -9,25 +9,22 @@ module HWM.CLI.Command.Run
   )
 where
 
-import Control.Concurrent.Async
 import Control.Monad.Error.Class (MonadError (..))
 import Data.List (intersect)
 import qualified Data.Map as M
 import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (..), Format (..), Status (Checked, Invalid), chalk, genMaxLen, padDots, statusIcon)
+import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, padDots)
 import HWM.Core.Parsing (ParseCLI (..), parseOptions)
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, config)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment, getBuildEnvironments)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Stack (createEnvYaml, stackPath)
-import HWM.Runtime.Logging (logIssue)
-import HWM.Runtime.Process (inheritRun, silentRun)
-import HWM.Runtime.UI (putLine, runSpinner, sectionEnvironments, sectionWorkspace, statusIndicator)
+import HWM.Runtime.Process (Exec (..), inheritRun, runInBackground)
+import HWM.Runtime.UI (putLine, sectionEnvironments, sectionWorkspace)
 import Options.Applicative
   ( argument,
     help,
@@ -84,29 +81,18 @@ runCommand padding multi scripts targets envName = do
   let supported = targets `intersect` buildPkgs
   cmd <- resolveCommand scripts supported
   yamlPath <- stackPath envName
+  let exexOptions = Exec {execCmd = cmd, execArgs = [], execEnv = [("STACK_YAML", yamlPath)]}
   if multi
     then do
-      let env = format benv
-      (success, content) <- silentRun yamlPath cmd (async (runSpinner padding env))
-      statusIndicator padding env (statusIcon (if success then Checked else Invalid))
-      unless success $ do
-        path <- logIssue buildName SeverityError [("ENVIRONMENT", format benv), ("COMMAND", format cmd)] content
-        throwError
-          Issue
-            { issueTopic = buildName,
-              issueMessage = "Command failed",
-              issueSeverity = SeverityError,
-              issueDetails = Just CommandIssue {issueCommand = format cmd, issueLogFile = path}
-            }
-      putLine ""
+      runInBackground exexOptions (format benv) padding
     else do
       sectionWorkspace $ do
         putLine $ padDots 16 "targets" <> if null supported then chalk Yellow "None (Global Scope)" else chalk Cyan (T.unwords $ format . pkgName <$> supported)
       sectionEnvironments Nothing $ putLine $ format benv
       putLine ""
       putLine ("❯ " <> cmd)
-      inheritRun yamlPath cmd
-      putLine ""
+      inheritRun exexOptions
+  putLine ""
 
 resolveCommand :: Text -> [Pkg] -> ConfigT Text
 resolveCommand cmd targets = do

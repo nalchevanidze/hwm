@@ -15,7 +15,7 @@ module HWM.Runtime.UI
     runUI,
     putLine,
     indent,
-    section,
+    section_,
     sectionWorkspace,
     sectionEnvironments,
     sectionConfig,
@@ -27,6 +27,7 @@ module HWM.Runtime.UI
     printGenTable,
     forTable,
     statusTableM,
+    section,
   )
 where
 
@@ -36,8 +37,10 @@ import Control.Monad.Except (MonadError (..))
 import Data.List (groupBy, maximum, (!!))
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (..), Format (..), Status (..), chalk, indentBlockNum, padDots, renderSummaryStatus, statusIcon, subPathSign)
+import HWM.Core.Options (whenCI)
 import HWM.Core.Result
   ( Issue (..),
     IssueDetails (..),
@@ -104,14 +107,17 @@ sectionBase emoji title action = do
   putLine (emoji <> " " <> chalk Bold title)
   indent 1 action
 
-section :: (MonadUI m) => Text -> m a -> m ()
-section t m = sectionBase "•" t m $> ()
+section_ :: (MonadUI m) => Text -> m a -> m ()
+section_ t m = sectionBase "•" t m $> ()
+
+section :: (MonadUI m) => Text -> m a -> m a
+section = sectionBase "•"
 
 sectionWorkspace :: (MonadUI m) => m a -> m ()
 sectionWorkspace m = sectionBase "./" "workspace" m $> ()
 
 sectionEnvironments :: (MonadUI m) => Maybe Text -> m a -> m ()
-sectionEnvironments title = section ("environments" <> maybe "" (\name -> chalk Dim " (default: " <> chalk Magenta name <> chalk Dim ")") title)
+sectionEnvironments title = section_ ("environments" <> maybe "" (\name -> chalk Dim " (default: " <> chalk Magenta name <> chalk Dim ")") title)
 
 minRawSize :: Int
 minRawSize = 16
@@ -141,10 +147,10 @@ statusTableM = tableM_ . map (second render)
     render s = statusIcon <$> s
 
 sectionTableM :: (MonadUI m) => Text -> [(Text, m Text)] -> m ()
-sectionTableM title = section title . tableM_
+sectionTableM title = section_ title . tableM_
 
 sectionConfig :: (MonadUI m) => [(Text, m Status)] -> m ()
-sectionConfig = section "config" . tableM_ . map (second render)
+sectionConfig = section_ "config" . tableM_ . map (second render)
   where
     render s = statusIcon <$> s
 
@@ -209,8 +215,14 @@ levelColor :: Severity -> Color
 levelColor SeverityError = Red
 levelColor SeverityWarning = Yellow
 
-printSummary :: (MonadUI m) => [Issue] -> m ()
-printSummary = traverse_ putLine . renderSummaryLines
+printSummary :: (MonadUI m, MonadIO m) => [Issue] -> m ()
+printSummary issues = traverse_ putLine (renderSummaryLines issues) >> whenCI (traverse_ extractLog issues)
+  where
+    extractLog Issue {issueDetails = Just (CommandIssue {issueLogFile})} = do
+      content <- liftIO $ T.readFile (toString issueLogFile)
+      putLine $ chalk Dim ("--- CI logs for " <> format issueLogFile <> " ---")
+      putLine content
+    extractLog _ = pure ()
 
 statusIndicator :: (MonadIO m) => Int -> Text -> Text -> m ()
 statusIndicator padding prefix msg = do
@@ -219,11 +231,11 @@ statusIndicator padding prefix msg = do
   liftIO $ putStr $ toString $ "  " <> padDots padding prefix <> msg
   liftIO $ hFlush stdout
 
-runSpinner :: (MonadIO m) => Int -> Text -> m ()
-runSpinner padding prefix = loop ["◜", "◠", "◝", "◞", "◡", "◟"]
+runSpinner :: (MonadIO m) => Int -> Text -> Text -> m ()
+runSpinner padding prefix suffix = loop ["◜", "◠", "◝", "◞", "◡", "◟"]
   where
     loop (f : fs) = do
-      statusIndicator padding prefix f
+      statusIndicator padding prefix (f <> suffix)
       liftIO $ threadDelay 200000 -- 200ms
       loop (fs ++ [f])
     loop [] = pure ()

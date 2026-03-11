@@ -7,6 +7,7 @@ module HWM.Runtime.Platform
     Platform (..),
     detectPlatform,
     platformFilePath,
+    toNixSystem,
   )
 where
 
@@ -74,3 +75,11 @@ detectArch s = case map toLower s of
   "arm64" -> Arm64
   "aarch64" -> Arm64 -- GHC uses aarch64 for Apple Silicon/Linux ARM
   _ -> UnknownArch
+
+toNixSystem :: Platform -> Text
+toNixSystem (Platform Linux X64) = "x86_64-linux"
+toNixSystem (Platform Linux Arm64) = "aarch64-linux"
+toNixSystem (Platform MacOS X64) = "x86_64-darwin"
+toNixSystem (Platform MacOS Arm64) = "aarch64-darwin"
+toNixSystem (Platform Windows _) = "x86_64-windows" -- Note: Nix on Windows usually implies WSL, but this is the standard triple
+toNixSystem _ = "unknown-system"

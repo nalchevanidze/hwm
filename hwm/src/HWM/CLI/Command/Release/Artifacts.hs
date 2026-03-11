@@ -17,7 +17,7 @@ import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (fromEither)
-import HWM.Domain.Build (Builder (..), buildBinary)
+import HWM.Domain.Build (Builder (..), BuilderCommand (..), runBuilderCommand)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
@@ -26,7 +26,7 @@ import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
 import HWM.Runtime.Network (getGHUploadUrl, uploadToGitHub)
-import HWM.Runtime.UI (forTable, indent, putLine, section, sectionTableM)
+import HWM.Runtime.UI (indent, putLine, section, sectionTableM)
 import Options.Applicative (argument, help, long, metavar, option, showDefault, str, strOption, switch, value)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
@@ -69,7 +69,7 @@ genBindaryDir name = do
 
 ghcOptions :: [Text] -> [Text]
 ghcOptions [] = []
-ghcOptions xs = ["--ghc-options=" <> T.unwords xs]
+ghcOptions xs = map ("--ghc-options=" <>) xs
 
 defaultOutputDir :: FilePath
 defaultOutputDir = ".hwm/dist"
@@ -112,7 +112,8 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       ("builder", pure $ format builder)
     ]
 
-  plans <- forTable "build" cfgs (\x -> (fst x, buildPkg outputDir builder x))
+  plans <- section "build" $ traverse (buildPkg outputDir builder) cfgs
+  putLine ""
 
   section "archive" $ pure ()
   artifacts <- for plans $ \(name, plan) -> do
@@ -139,5 +140,5 @@ buildPkg outputDir builder (name, ArtifactConfig {..}) = do
   let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
   optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
   Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
-  buildBinary builder pkgName binaryDir (ghcOptions arcGhcOptions)
+  runBuilderCommand builder False (Install pkgName binaryDir) (ghcOptions arcGhcOptions)
   pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
