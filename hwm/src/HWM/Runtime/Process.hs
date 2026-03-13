@@ -29,6 +29,7 @@ import qualified System.IO as TIO
 import System.Process (readProcessWithExitCode)
 import System.Process.Typed
   ( ExitCode (..),
+    Process,
     proc,
     runProcess_,
     setEnv,
@@ -60,12 +61,25 @@ data ExecOptions = ExecOptions
     loopIO :: Maybe (IO ())
   }
 
+processHandle :: Maybe (IO a) -> Handle -> Process stdin stdout stderr -> IO ExitCode
+processHandle (Just loopIO) logHandle p = do
+  spinner <- async loopIO
+  status <- waitExitCode p
+  cancel spinner
+  logCommandEnd logHandle status
+  pure status
+processHandle Nothing logHandle p = do
+  status <- waitExitCode p
+  logCommandEnd logHandle status
+  pure status
+
 execAsync :: (MonadUI m, MonadIO m) => Exec -> ExecOptions -> m [Issue]
 execAsync Exec {..} ExecOptions {..} = do
   let processLogPath = logPath logId
   prepareDir logRoot
   let cmd = execCmd <> " " <> T.unwords execArgs
   currentEnv <- liftIO getEnvironment
+
   let targetEnv = execEnv <> currentEnv
   liftIO $ do
     status <- TIO.withFile processLogPath TIO.WriteMode $ \logHandle -> do
@@ -75,12 +89,7 @@ execAsync Exec {..} ExecOptions {..} = do
               $ setStdout (useHandleOpen logHandle)
               $ setStderr (useHandleOpen logHandle)
               $ shell (toString cmd)
-      withProcessWait processConfig $ \p -> do
-        spinner <- maybe (pure Nothing) (fmap Just . async) loopIO
-        status <- waitExitCode p
-        maybe (pure ()) cancel spinner
-        logCommandEnd logHandle status
-        pure status
+      withProcessWait processConfig $ processHandle loopIO logHandle
     pure $ case status of
       ExitSuccess -> []
       _ ->
@@ -102,6 +111,8 @@ inheritRun Exec {..} = do
 inNixDevelop :: Bool -> Exec -> Exec
 inNixDevelop True (Exec cmd ops env) = Exec "nix" (["develop", "--command", cmd] <> ops) env
 inNixDevelop False e = e
+
+
 
 execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Bool -> Exec -> Name -> Name -> Int -> m ()
 execInBackground useNix e label env padding = do

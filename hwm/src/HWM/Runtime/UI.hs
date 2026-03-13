@@ -252,10 +252,15 @@ statusIndicator i padding prefix msg = do
   liftIO $ hFlush stdout
 
 runSpinner :: (MonadIO m) => Int -> Int -> Text -> Text -> m ()
-runSpinner i padding prefix suffix = loop ["◜", "◠", "◝", "◞", "◡", "◟"]
+runSpinner i padding prefix suffix = genAnimation loop ["◜", "◠", "◝", "◞", "◡", "◟"]
+  where
+    loop ch = statusIndicator i padding prefix (ch <> suffix)
+
+genAnimation :: (MonadIO m) => (Text -> m ()) -> [Text] -> m ()
+genAnimation g = loop
   where
     loop (f : fs) = do
-      statusIndicator i padding prefix (f <> suffix)
+      g f
       liftIO $ threadDelay 200000 -- 200ms
       loop (fs ++ [f])
     loop [] = pure ()
