@@ -16,18 +16,13 @@ runs:
         # Ensure the GitHub runner can find the binaries HWM installs
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Bootstrap and Install HWM
+    - name: Build and Install HWM (Pure Nix)
       shell: bash
       run: |
-        # 1. We must compile HWM first using the Nix environment
-        nix develop --command stack build
+        # 1. Nix evaluates the flake, builds the binary inside the /nix/store, 
+        #    and installs a symlink directly into the CI runner's Nix profile.
+        #    (The Determinate Systems action automatically adds this to $PATH)
+        nix profile install .
 
-        # 2. Run the newly compiled HWM to install itself
-        # (Using stack exec ensures we use the exact binary we just built)
-        nix develop --command stack exec hwm -- install --fast
-
-    - name: Verify Installation
-      shell: bash
-      run: |
-        # Proves that ~/.local/bin/hwm is correctly wired up!
+        # 2. Verify it's globally available
         hwm --version
