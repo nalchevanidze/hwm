@@ -58,8 +58,8 @@ data Exec = Exec
 type EnvVars = [(String, String)]
 
 data ExecOptions = ExecOptions
-  { logId :: Name,
-    formatFX :: Text -> Text,
+  { envName :: Name,
+    formatFX :: Text -> Text -> Text,
     fxEnabled :: Bool
   }
 
@@ -77,6 +77,8 @@ processHandle _ False logHandle p = do
 
 execAsync :: (MonadUI m, MonadError Issue m, MonadIO m) => Exec -> ExecOptions -> m ()
 execAsync Exec {..} ExecOptions {..} = do
+  logId <- genLogId envName
+  let fx = formatFX (toText $ logPath logId)
   let processLogPath = logPath logId
   prepareDir logRoot
   let cmd = execCmd <> " " <> T.unwords execArgs
@@ -89,13 +91,13 @@ execAsync Exec {..} ExecOptions {..} = do
             $ setStdout (useHandleOpen logHandle)
             $ setStderr (useHandleOpen logHandle)
             $ shell (toString cmd)
-    withProcessWait processConfig $ processHandle (uiIndicator formatFX fxEnabled Nothing) fxEnabled logHandle
+    withProcessWait processConfig $ processHandle (uiIndicator fx fxEnabled Nothing) fxEnabled logHandle
   case status of
     ExitSuccess -> do
-      liftIO $ uiIndicator formatFX fxEnabled (Just Checked)
+      liftIO $ uiIndicator fx fxEnabled (Just Checked)
       pure ()
     _ -> do
-      liftIO $ uiIndicator formatFX fxEnabled (Just Invalid)
+      liftIO $ uiIndicator fx fxEnabled (Just Invalid)
       throwError
         Issue
           { issueTopic = logId,
@@ -118,12 +120,11 @@ inNixDevelop False e = e
 execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Bool -> Exec -> Name -> Name -> Int -> m ()
 execInBackground useNix e label env padding = do
   fxEnabled <- not <$> isCI
-  logId <- genLogId env
   ind <- uiIndentLevel
   execAsync
     (inNixDevelop useNix e)
     ExecOptions
-      { logId = logId,
-        formatFX = \icon -> indentBlockNum ind (padDots padding label <> icon <> chalk Dim (" logs: " <> toText (logPath logId))),
+      { envName = env,
+        formatFX = \path icon -> indentBlockNum ind (padDots padding label <> icon <> chalk Dim (" logs: " <> path)),
         fxEnabled = fxEnabled
       }
