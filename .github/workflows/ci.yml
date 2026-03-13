@@ -29,9 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-        with:
-          ghc: ${{ matrix.ghc }}
-
       - name: Test Archiving
         shell: bash
         run: hwm release artifacts
