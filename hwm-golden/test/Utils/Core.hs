@@ -83,10 +83,7 @@ diff expectedDir = do
 
 runHWM :: String -> IO String
 runHWM cmd = do
-  (exitCode, out, err) <-
-    readCreateProcessWithExitCode
-      (shell $ "cabal exec hwm -- " <> cmd)
-      ""
+  (exitCode, out, err) <- readCreateProcessWithExitCode (shell $ "hwm -- " <> cmd) ""
   unless (exitCode == System.Exit.ExitSuccess)
     $ expectationFailure ("Command failed with stdout: " <> out <> "stderr: " <> err)
   return out
