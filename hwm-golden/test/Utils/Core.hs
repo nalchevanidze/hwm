@@ -85,7 +85,7 @@ runHWM :: String -> IO String
 runHWM cmd = do
   (exitCode, out, err) <-
     readCreateProcessWithExitCode
-      (shell $ "stack exec hwm -- " <> cmd)
+      (shell $ "cabal exec hwm -- " <> cmd)
       ""
   unless (exitCode == System.Exit.ExitSuccess)
     $ expectationFailure ("Command failed with stdout: " <> out <> "stderr: " <> err)
