@@ -18,11 +18,11 @@ import Control.Concurrent.Async
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (Dim), Status (..), chalk, statusIcon)
+import HWM.Core.Formatting (Color (Dim), Status (..), chalk, statusIcon, indentBlockNum, padDots)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Runtime.Files (prepareDir)
 import HWM.Runtime.Logging (genLogId, logCommandEnd, logCommandStart, logPath, logRoot)
-import HWM.Runtime.UI (MonadUI (uiIndentLevel), runSpinner, statusIndicator)
+import HWM.Runtime.UI (MonadUI (uiIndentLevel), loopFrames, refreshFrame)
 import Relude
 import System.Environment (getEnvironment)
 import qualified System.IO as TIO
