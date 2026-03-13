@@ -132,9 +132,9 @@ hpackForceUpdate pkg path = do
     _ -> pure Updated
 
 generateCabalProject :: [Pkg] -> Text -> Text
-generateCabalProject packagePaths ghcVersion =
+generateCabalProject packagePaths _ghcVersion =
   T.unlines
-    [ "with-compiler: ghc-" <> ghcVersion,
+    [ -- "with-compiler: ghc-" <> ghcVersion, --TODO: this should be allowed only when nix is not used, but for now we need it to make sure that the correct GHC version is used in CI
       "packages:\n" <> T.unlines (map (("  " <>) . format . P.pkgDirPath) packagePaths)
     ]
 
