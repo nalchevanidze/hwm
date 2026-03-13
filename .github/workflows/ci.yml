@@ -39,7 +39,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu, macOS, windows]
+        # os: [ubuntu, macOS, windows]
+        os: [ubuntu, macOS]
     name: Artifact ${{ matrix.os }}
     runs-on: ${{ matrix.os }}-latest
     steps:
