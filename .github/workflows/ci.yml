@@ -36,7 +36,6 @@ jobs:
         run: hwm test --fast
 
   archive:
-    needs: setup
     strategy:
       fail-fast: false
       matrix:
