@@ -9,11 +9,11 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - ghc: 9.6.3
             env: stable
-      fail-fast: false
     runs-on: ubuntu-latest
     name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
     steps:
