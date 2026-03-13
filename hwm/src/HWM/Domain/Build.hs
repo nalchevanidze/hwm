@@ -12,6 +12,7 @@ module HWM.Domain.Build
     postBuildAction,
     comandLogId,
     isCustom,
+    BuildFlag (..),
   )
 where
 
@@ -149,15 +150,28 @@ data BuilderCommand
   | Custom Text
   deriving (Eq, Show)
 
+data BuildFlag
+  = CustomBuildFlag Text
+  | BuildFastFlag
+  | GHCOptionsFlag Text
+  deriving (Eq, Show)
+
 mkExec :: (Applicative m) => Text -> [Text] -> m Exec
 mkExec name args = pure $ Exec name args []
 
-toExec :: (MonadIO m, MonadError Issue m) => Builder -> BuilderCommand -> TargetScope -> [Text] -> [(String, String)] -> m Exec
-toExec builder cmd scope args envs = do
+formatFlag :: Builder -> BuildFlag -> [Text]
+-- WARNING: Nix does not accept '--ghc-options' via CLI; it must be set in the flake.
+formatFlag NixBuilder _ = []
+formatFlag CabalBuilder BuildFastFlag = ["--disable-optimization"]
+formatFlag StackBuilder BuildFastFlag = ["--fast"]
+formatFlag _ (GHCOptionsFlag xs) = ["--ghc-options=" <> xs]
+formatFlag _ (CustomBuildFlag txt) = [txt]
+
+toExec :: (MonadIO m, MonadError Issue m) => Builder -> BuilderCommand -> TargetScope -> [BuildFlag] -> [(String, String)] -> m Exec
+toExec builder cmd scope flags envs = do
   p <- detectPlatform
   Exec {..} <- toAction p builder cmd scope
-  -- WARNING: Nix does not accept '--ghc-options' via CLI; it must be set in the flake.
-  pure $ Exec execCmd (execArgs <> if builder == NixBuilder then [] else args) envs
+  pure $ Exec execCmd (execArgs <> concatMap (formatFlag builder) flags) envs
 
 handleScope :: TargetScope -> [Text]
 handleScope ScopeGlobal = []

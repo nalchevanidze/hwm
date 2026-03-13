@@ -16,7 +16,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon)
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
 import HWM.Core.Result (fromEither)
-import HWM.Domain.Build (Builder (..), BuilderCommand (..), TargetScope (ScopePkgs))
+import HWM.Domain.Build (BuildFlag (GHCOptionsFlag), Builder (..), BuilderCommand (..), TargetScope (ScopePkgs))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatch)
@@ -66,10 +66,6 @@ genBindaryDir name = do
   let path = joinPath [".hwm/release/binaries", toString name]
   prepeareDir path
   pure path
-
-ghcOptions :: [Text] -> [Text]
-ghcOptions [] = []
-ghcOptions xs = map ("--ghc-options=" <>) xs
 
 defaultOutputDir :: FilePath
 defaultOutputDir = ".hwm/dist"
@@ -141,5 +137,5 @@ buildPkg outputDir builder (name, ArtifactConfig {..}) = do
   optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
   pkg <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
   env <- overrideBuilder builder <$> getBuildEnvironment Nothing
-  dispatch (DispatcheCommand (Install binaryDir) (ScopePkgs [pkg]) (ghcOptions arcGhcOptions)) env
+  dispatch (DispatcheCommand (Install binaryDir) (ScopePkgs [pkg]) (map GHCOptionsFlag arcGhcOptions)) env
   pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})

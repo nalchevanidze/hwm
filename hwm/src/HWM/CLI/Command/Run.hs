@@ -15,7 +15,7 @@ where
 
 import HWM.Core.Common (Name)
 import HWM.Core.Parsing (ParseCLI (..), parseOptions)
-import HWM.Domain.Build (BuilderCommand (..), TargetScope (..))
+import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..), TargetScope (..))
 import HWM.Domain.Config (getScript)
 import HWM.Domain.ConfigT (ConfigT, config)
 import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatchForEach)
@@ -75,7 +75,7 @@ runBuild :: TaskCommandOptions -> ConfigT ()
 runBuild TaskCommandOptions {..} = do
   scope <- parseTargets opsWorkspaces
   envs <- selectEnvironments opsEnviroments
-  dispatchForEach (DispatcheCommand Build scope ["--fast" | opsFast]) envs
+  dispatchForEach (DispatcheCommand Build scope [BuildFastFlag | opsFast]) envs
 
 runInstall :: TaskCommandOptions -> ConfigT ()
 runInstall TaskCommandOptions {..} = do
@@ -83,10 +83,10 @@ runInstall TaskCommandOptions {..} = do
   envs <- selectEnvironments opsEnviroments
   binDir <- getLocalBinDir
   warnBindDir binDir
-  dispatchForEach (DispatcheCommand (Install binDir) scope ["--fast" | opsFast]) envs
+  dispatchForEach (DispatcheCommand (Install binDir) scope [BuildFastFlag | opsFast]) envs
 
 runTest :: TaskCommandOptions -> ConfigT ()
 runTest TaskCommandOptions {..} = do
   scope <- parseTargets opsWorkspaces
   envs <- selectEnvironments opsEnviroments
-  dispatchForEach (DispatcheCommand Test scope ["--fast" | opsFast]) envs
+  dispatchForEach (DispatcheCommand Test scope [BuildFastFlag | opsFast]) envs

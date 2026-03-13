@@ -14,7 +14,7 @@ where
 import Data.List (intersect, (\\))
 import HWM.Core.Formatting (Color (..), Format (..), andMore, chalk)
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Domain.Build (Builder (..), BuilderCommand (..), TargetScope (..), comandLogId, isCustom, postBuildAction, toExec)
+import HWM.Domain.Build (BuildFlag (..), Builder (..), BuilderCommand (..), TargetScope (..), comandLogId, isCustom, postBuildAction, toExec)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..))
 import HWM.Domain.Workspace (printPkgWSRef)
@@ -26,7 +26,7 @@ import Relude
 data DispatcheCommand = DispatcheCommand
   { builderCommand :: BuilderCommand,
     scope :: TargetScope,
-    commandFlags :: [Text]
+    commandFlags :: [BuildFlag]
   }
 
 dispatch :: DispatcheCommand -> BuildEnvironment -> ConfigT ()
