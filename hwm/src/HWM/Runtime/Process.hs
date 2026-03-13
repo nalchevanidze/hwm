@@ -119,12 +119,12 @@ inNixDevelop False e = e
 
 execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Bool -> Exec -> Name -> Name -> Int -> m ()
 execInBackground useNix e label env padding = do
-  fxEnabled <- not <$> isCI
+  ci <- isCI
   ind <- uiIndentLevel
   execAsync
     (inNixDevelop useNix e)
     ExecOptions
       { envName = env,
         formatFX = \path icon -> indentBlockNum ind (padDots padding label <> icon <> chalk Dim (" logs: " <> path)),
-        fxEnabled = fxEnabled
+        fxEnabled = not ci
       }
