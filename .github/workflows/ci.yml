@@ -31,11 +31,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           ghc: ${{ matrix.ghc }}
-      - name: Install dependencies
-        shell: bash
-        run: stack build --fast --test --only-dependencies
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
+
       - name: Test Archiving
         shell: bash
         run: hwm release artifacts
