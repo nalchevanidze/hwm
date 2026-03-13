@@ -19,6 +19,7 @@ import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (Dim), Status (..), chalk, indentBlockNum, padDots)
+import HWM.Core.Options (isCI)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Runtime.Files (prepareDir)
 import HWM.Runtime.Logging (genLogId, logCommandEnd, logCommandStart, logPath, logRoot)
@@ -58,17 +59,18 @@ type EnvVars = [(String, String)]
 
 data ExecOptions = ExecOptions
   { logId :: Name,
-    loopIO :: Maybe (IO ())
+    loopIO :: Bool -> Maybe Status -> IO (),
+    fxEnabled :: Bool
   }
 
-processHandle :: Maybe (IO a) -> Handle -> Process stdin stdout stderr -> IO ExitCode
-processHandle (Just loopIO) logHandle p = do
-  spinner <- async loopIO
+processHandle :: IO a -> Bool -> Handle -> Process stdin stdout stderr -> IO ExitCode
+processHandle f True logHandle p = do
+  spinner <- async f
   status <- waitExitCode p
   cancel spinner
   logCommandEnd logHandle status
   pure status
-processHandle Nothing logHandle p = do
+processHandle _ False logHandle p = do
   status <- waitExitCode p
   logCommandEnd logHandle status
   pure status
@@ -89,17 +91,21 @@ execAsync Exec {..} ExecOptions {..} = do
               $ setStdout (useHandleOpen logHandle)
               $ setStderr (useHandleOpen logHandle)
               $ shell (toString cmd)
-      withProcessWait processConfig $ processHandle loopIO logHandle
-    pure $ case status of
-      ExitSuccess -> []
-      _ ->
-        [ Issue
-            { issueTopic = logId,
-              issueMessage = "Command failed",
-              issueSeverity = SeverityError,
-              issueDetails = Just CommandIssue {issueCommand = cmd, issueLogFile = processLogPath}
-            }
-        ]
+      withProcessWait processConfig $ processHandle (loopIO fxEnabled Nothing) fxEnabled logHandle
+    case status of
+      ExitSuccess -> do
+        liftIO $ loopIO fxEnabled (Just Checked)
+        pure []
+      _ -> do
+        liftIO $ loopIO fxEnabled (Just Invalid)
+        pure
+          [ Issue
+              { issueTopic = logId,
+                issueMessage = "Command failed",
+                issueSeverity = SeverityError,
+                issueDetails = Just CommandIssue {issueCommand = cmd, issueLogFile = processLogPath}
+              }
+          ]
 
 inheritRun :: (MonadIO m, MonadUI m) => Exec -> m ()
 inheritRun Exec {..} = do
@@ -114,12 +120,10 @@ inNixDevelop False e = e
 
 execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Bool -> Exec -> Name -> Name -> Int -> m ()
 execInBackground useNix e label env padding = do
+  fxEnabled <- not <$> isCI
   logId <- genLogId env
   ind <- uiIndentLevel
   let logsSuffix = chalk Dim (" logs: " <> toText (logPath logId))
   let f icon = indentBlockNum ind (padDots padding label <> icon <> logsSuffix)
-  let exOptions = ExecOptions {logId = logId, loopIO = Just (uiIndicator f True Nothing)}
-  issues <- execAsync (inNixDevelop useNix e) exOptions
-  let status = if null issues then Checked else Invalid
-  uiIndicator f True (Just status)
+  issues <- execAsync (inNixDevelop useNix e) ExecOptions {logId = logId, loopIO = uiIndicator f, fxEnabled = fxEnabled}
   traverse_ throwError issues

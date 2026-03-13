@@ -7,6 +7,7 @@ module HWM.Core.Options
     defaultOptions,
     askOptions,
     whenCI,
+    isCI,
     whenDebug,
   )
 where
@@ -39,9 +40,12 @@ defaultOptions =
       optionDebug = False
     }
 
+isCI :: (MonadIO m) => m Bool
+isCI = liftIO $ isJust <$> lookupEnv "CI"
+
 whenCI :: (MonadIO m) => m () -> m ()
 whenCI action = do
-  ci <- liftIO $ isJust <$> lookupEnv "CI"
+  ci <- isCI
   when ci action
 
 whenDebug :: (MonadIO m) => m () -> m ()
