@@ -86,12 +86,8 @@ execAsync Exec {..} ExecOptions {..} = do
   let targetEnv = execEnv <> currentEnv
   status <- liftIO $ TIO.withFile processLogPath TIO.WriteMode $ \logHandle -> do
     logCommandStart logHandle cmd
-    let processConfig =
-          setEnv targetEnv
-            $ setStdout (useHandleOpen logHandle)
-            $ setStderr (useHandleOpen logHandle)
-            $ shell (toString cmd)
-    withProcessWait processConfig $ processHandle (uiIndicator fx fxEnabled Nothing) fxEnabled logHandle
+    let config = setEnv targetEnv $ setStdout (useHandleOpen logHandle) $ setStderr (useHandleOpen logHandle) $ shell (toString cmd)
+    withProcessWait config $ processHandle (uiIndicator fx fxEnabled Nothing) fxEnabled logHandle
   case status of
     ExitSuccess -> do
       liftIO $ uiIndicator fx fxEnabled (Just Checked)
