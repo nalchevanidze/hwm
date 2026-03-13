@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - ghc: 9.6.3
@@ -37,7 +37,7 @@ jobs:
 
   archive:
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: [ubuntu, macOS, windows]
     name: Artifact ${{ matrix.os }}
