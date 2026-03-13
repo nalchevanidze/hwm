@@ -12,6 +12,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         ghc: [9.6.3]
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     name: Setup ${{ matrix.os }}
     steps:
