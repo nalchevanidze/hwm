@@ -59,7 +59,7 @@ type EnvVars = [(String, String)]
 
 data ExecOptions = ExecOptions
   { logId :: Name,
-    loopIO :: Bool -> Maybe Status -> IO (),
+    formatFX :: Text -> Text,
     fxEnabled :: Bool
   }
 
@@ -91,13 +91,13 @@ execAsync Exec {..} ExecOptions {..} = do
               $ setStdout (useHandleOpen logHandle)
               $ setStderr (useHandleOpen logHandle)
               $ shell (toString cmd)
-      withProcessWait processConfig $ processHandle (loopIO fxEnabled Nothing) fxEnabled logHandle
+      withProcessWait processConfig $ processHandle (uiIndicator formatFX fxEnabled Nothing) fxEnabled logHandle
     case status of
       ExitSuccess -> do
-        liftIO $ loopIO fxEnabled (Just Checked)
+        liftIO $ uiIndicator formatFX fxEnabled (Just Checked)
         pure []
       _ -> do
-        liftIO $ loopIO fxEnabled (Just Invalid)
+        liftIO $ uiIndicator formatFX fxEnabled (Just Invalid)
         pure
           [ Issue
               { issueTopic = logId,
@@ -124,6 +124,12 @@ execInBackground useNix e label env padding = do
   logId <- genLogId env
   ind <- uiIndentLevel
   let logsSuffix = chalk Dim (" logs: " <> toText (logPath logId))
-  let f icon = indentBlockNum ind (padDots padding label <> icon <> logsSuffix)
-  issues <- execAsync (inNixDevelop useNix e) ExecOptions {logId = logId, loopIO = uiIndicator f, fxEnabled = fxEnabled}
+  issues <-
+    execAsync
+      (inNixDevelop useNix e)
+      ExecOptions
+        { logId = logId,
+          formatFX = \icon -> indentBlockNum ind (padDots padding label <> icon <> logsSuffix),
+          fxEnabled = fxEnabled
+        }
   traverse_ throwError issues
