@@ -185,6 +185,7 @@ toAction _ CabalBuilder Build (ScopePkgs pkgs) = mkExec "cabal" (["build"] <> ha
 toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope scope <> ["--local-bin-path", format dirPath])
 toAction _ CabalBuilder Install {..} scope = mkExec "cabal" (["install"] <> handleScope scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
 toAction _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope scope)
+toAction _ CabalBuilder Test ScopeGlobal = mkExec "cabal" ["test", "all"]
 toAction _ CabalBuilder Test scope = mkExec "cabal" (["test"] <> handleScope scope)
 -- Nix uses the system string
 toAction _ NixBuilder Build ScopeGlobal = mkExec "nix" ["build"]
