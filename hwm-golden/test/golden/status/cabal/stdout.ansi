@@ -8,75 +8,76 @@
   stable (9.6.6) [2m....[0m [36mlts-22.43 (active)[0m
 
 ./ [1mworkspace[0m
-  
+
   • [1mhelpers[0m
-  [2m└─- [0mbenchmarks [2m....[0m [33m![0m [33mcabal[0m
-  
+  [2m└── [0mbenchmarks [2m....[0m [33m![0m [33mcabal[0m
+
   • [1mlibs[0m
-  [2m└─- [0mapp [2m...............[0m [33m![0m [33mcabal[0m
-  [2m└─- [0mcode-gen-utils [2m....[0m [32m✓[0m
-  [2m└─- [0mserver [2m............[0m [33m![0m [33mcabal[0m
-  [2m└─- [0mtests [2m.............[0m [33m![0m [33mcabal[0m
-  [2m└─- [0mcore [2m..............[0m [33m![0m [33mcabal[0m
-  [2m└─- [0msubscriptions [2m.....[0m [33m![0m [33mcabal[0m
-  [2m└─- [0mcode-gen [2m..........[0m [32m✓[0m
-  [2m└─- [0mclient [2m............[0m [33m![0m [33mcabal[0m
-  [2m└─- [0m(root) [2m............[0m [33m![0m [33mcabal[0m
+  [2m└── [0mapp [2m...............[0m [33m![0m [33mcabal[0m
+  [2m└── [0mcode-gen-utils [2m....[0m [32m✓[0m
+  [2m└── [0mserver [2m............[0m [33m![0m [33mcabal[0m
+  [2m└── [0mtests [2m.............[0m [33m![0m [33mcabal[0m
+  [2m└── [0mcore [2m..............[0m [33m![0m [33mcabal[0m
+  [2m└── [0msubscriptions [2m.....[0m [33m![0m [33mcabal[0m
+  [2m└── [0mcode-gen [2m..........[0m [32m✓[0m
+  [2m└── [0mclient [2m............[0m [33m![0m [33mcabal[0m
+  [2m└── [0m_root_ [2m............[0m [33m![0m [33mcabal[0m
+
 
 [1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
 
-  [2m• [0m[1m(root)[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: morpheus-graphql/morpheus-graphql.cabal[0m
-      [2m└─- [0m[2m• [0m[2mtests:morpheus-graphql-test[0m
-          [2m└─- [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
+  [2m• [0m[1m_root_[0m
+  [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
+      [2m└── [0m[2mfile: morpheus-graphql/morpheus-graphql.cabal[0m
+      [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-test[0m
+          [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
   [2m• [0m[1mapp[0m
-  [2m└─- [0m[2m• [0m[33m5 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: morpheus-graphql-app/morpheus-graphql-app.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
-          [2m└─- [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
-      [2m└─- [0m[2m• [0m[2mtests:morpheus-graphql-app-test[0m
-          [2m└─- [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-          [2m└─- [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
-          [2m└─- [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
+  [2m└── [0m[2m• [0m[33m5 dependency issue(s)[0m
+      [2m└── [0m[2mfile: morpheus-graphql-app/morpheus-graphql-app.cabal[0m
+      [2m└── [0m[2m• [0m[2mlibrary[0m
+          [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
+          [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
+      [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-app-test[0m
+          [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
+          [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
+          [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
   [2m• [0m[1mbenchmarks[0m
-  [2m└─- [0m[2m• [0m[33m2 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: helpers/benchmarks/morpheus-graphql-benchmarks.cabal[0m
-      [2m└─- [0m[2m• [0m[2mbenchmarks:morpheus-graphql-bench[0m
-          [2m└─- [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
-          [2m└─- [0mgraphql: [2m>= 0.5 && <  2.0.0 → unknown[0m
+  [2m└── [0m[2m• [0m[33m2 dependency issue(s)[0m
+      [2m└── [0m[2mfile: helpers/benchmarks/morpheus-graphql-benchmarks.cabal[0m
+      [2m└── [0m[2m• [0m[2mbenchmarks:morpheus-graphql-bench[0m
+          [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
+          [2m└── [0mgraphql: [2m>= 0.5 && <  2.0.0 → unknown[0m
   [2m• [0m[1mclient[0m
-  [2m└─- [0m[2m• [0m[33m3 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: morpheus-graphql-client/morpheus-graphql-client.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
-      [2m└─- [0m[2m• [0m[2mtests:morpheus-graphql-client-test[0m
-          [2m└─- [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
-          [2m└─- [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
+  [2m└── [0m[2m• [0m[33m3 dependency issue(s)[0m
+      [2m└── [0m[2mfile: morpheus-graphql-client/morpheus-graphql-client.cabal[0m
+      [2m└── [0m[2m• [0m[2mlibrary[0m
+          [2m└── [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
+      [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-client-test[0m
+          [2m└── [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
+          [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
   [2m• [0m[1mcore[0m
-  [2m└─- [0m[2m• [0m[33m5 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: morpheus-graphql-core/morpheus-graphql-core.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
-          [2m└─- [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
-      [2m└─- [0m[2m• [0m[2mtests:morpheus-graphql-core-test[0m
-          [2m└─- [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-          [2m└─- [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
-          [2m└─- [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
+  [2m└── [0m[2m• [0m[33m5 dependency issue(s)[0m
+      [2m└── [0m[2mfile: morpheus-graphql-core/morpheus-graphql-core.cabal[0m
+      [2m└── [0m[2m• [0m[2mlibrary[0m
+          [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
+          [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
+      [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-core-test[0m
+          [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
+          [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
+          [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
   [2m• [0m[1mserver[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: morpheus-graphql-server/morpheus-graphql-server.cabal[0m
-      [2m└─- [0m[2m• [0m[2mtests:morpheus-graphql-server-test[0m
-          [2m└─- [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
+  [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
+      [2m└── [0m[2mfile: morpheus-graphql-server/morpheus-graphql-server.cabal[0m
+      [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-server-test[0m
+          [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
   [2m• [0m[1msubscriptions[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: morpheus-graphql-subscriptions/morpheus-graphql-subscriptions.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
+  [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
+      [2m└── [0m[2mfile: morpheus-graphql-subscriptions/morpheus-graphql-subscriptions.cabal[0m
+      [2m└── [0m[2m• [0m[2mlibrary[0m
+          [2m└── [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
   [2m• [0m[1mtests[0m
-  [2m└─- [0m[2m• [0m[33m1 dependency issue(s)[0m
-      [2m└─- [0m[2mfile: morpheus-graphql-tests/morpheus-graphql-tests.cabal[0m
-      [2m└─- [0m[2m• [0m[2mlibrary[0m
-          [2m└─- [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
+  [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
+      [2m└── [0m[2mfile: morpheus-graphql-tests/morpheus-graphql-tests.cabal[0m
+      [2m└── [0m[2m• [0m[2mlibrary[0m
+          [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
 

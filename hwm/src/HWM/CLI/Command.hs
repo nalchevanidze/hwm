@@ -16,7 +16,7 @@ import HWM.CLI.Command.Environment.Root (EnvCommand, runEnv)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
 import HWM.CLI.Command.Registry.Root (RegistryCommand, runRegistry)
 import HWM.CLI.Command.Release.Root (ReleaseCommand (..), runRelease)
-import HWM.CLI.Command.Run (ScriptOptions, runScript)
+import HWM.CLI.Command.Run (ScriptOptions, TaskCommandOptions, runBuild, runInstall, runScript, runTest)
 import HWM.CLI.Command.Status (showStatus)
 import HWM.CLI.Command.Sync (sync)
 import HWM.CLI.Command.Version (VersionOptions, runVersion)
@@ -39,6 +39,9 @@ data Command
   | Env EnvCommand
   | Workspace WorkspaceCommand
   | Release ReleaseCommand
+  | Install TaskCommandOptions
+  | Build TaskCommandOptions
+  | Test TaskCommandOptions
   deriving (Show)
 
 currentVersion :: String
@@ -50,6 +53,9 @@ command (Release cmd) = runRelease cmd
 command (Version options) = runVersion options
 command Sync {tag} = sync tag
 command Run {scriptName, runOptions} = runScript scriptName runOptions
+command (Build options) = runBuild options
+command (Install options) = runInstall options
+command (Test options) = runTest options
 command Status = showStatus
 command Init {} = pure ()
 command (Registry options) = runRegistry options

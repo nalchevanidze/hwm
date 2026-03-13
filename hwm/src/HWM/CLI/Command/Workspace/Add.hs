@@ -6,7 +6,7 @@ module HWM.CLI.Command.Workspace.Add (WorkspaceAddOptions, runWorkspaceAdd) wher
 
 import Control.Monad.Error.Class (MonadError (throwError))
 import qualified Data.Map as Map
-import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatusM, padDots, subPathSign)
+import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatusM)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityError, SeverityWarning))
@@ -16,7 +16,7 @@ import HWM.Domain.Workspace (WorkGroup (..), WorkspaceRef (..), addWorkgroupMemb
 import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Integrations.Toolchain.Hie (syncHie)
 import HWM.Integrations.Toolchain.Stack (syncStackYaml)
-import HWM.Runtime.UI (putLine, sectionWorkspace)
+import HWM.Runtime.UI (minRowSize, putLine, sectionWorkspace, uiLabel, uiSpace, uiSubPathRow)
 import Options.Applicative (help, long, metavar, strArgument, strOption)
 import Relude
 
@@ -48,7 +48,7 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId Noth
     else do
       let ws = Map.insert groupId (WorkGroup opsWorkspaceDir [] opsPrefix) wss
       sectionWorkspace $ do
-        putLine ""
+        uiSpace
         displayStatusM [("added", pure Checked)] >>= putLine . (("• " <> chalk Bold groupId <> " ") <>)
       updateConfig (\cfg -> pure $ cfg {cfgWorkspace = ws}) (pure ())
 runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Just memberId), ..}) = do
@@ -57,10 +57,10 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Jus
   (ws, w) <- addWorkgroupMember groupId memberId
   sectionWorkspace
     $ do
-      putLine ""
-      putLine $ "• " <> chalk Bold groupId
+      uiSpace
+      uiLabel groupId
       xs <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
-      displayStatusM xs >>= putLine . ((subPathSign <> padDots 16 memberId) <>)
+      displayStatusM xs >>= uiSubPathRow minRowSize memberId
 
   updateConfigM (\cfg -> pure $ cfg {cfgWorkspace = ws}) [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)] $ pure ()
   where

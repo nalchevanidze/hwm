@@ -42,10 +42,10 @@ jobs:
           ghc: ${{ matrix.ghc }}
 
       - name: Build
-        run: stack build --fast
+        run: hwm build --fast
 
       - name: Test
-        run: stack test --fast
+        run: hwm test --fast
 
   archive:
     needs: setup

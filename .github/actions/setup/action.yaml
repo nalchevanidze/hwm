@@ -6,7 +6,7 @@ inputs:
     default: 9.6.3
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Set Stack Root
       shell: bash
@@ -41,5 +41,5 @@ runs:
       shell: bash
       run: |
         hash -r || true
-        stack install --fast
+        hwm install --fast
         hwm --version

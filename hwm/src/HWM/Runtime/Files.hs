@@ -20,6 +20,8 @@ module HWM.Runtime.Files
     prepareDir,
     syncFile,
     rewriteMaybe_,
+    getLocalBinDir,
+    warnBindDir,
   )
 where
 
@@ -46,10 +48,10 @@ import qualified Data.Text.IO as TIO
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import HWM.Core.Formatting (Format (..), Status (..))
-import HWM.Core.Result (Issue)
+import HWM.Core.Result (Issue, MonadIssue (injectIssue))
 import Relude hiding (readFile, writeFile)
-import System.Directory (createDirectoryIfMissing, doesFileExist)
-import System.FilePath (joinPath, splitDirectories)
+import System.Directory (createDirectoryIfMissing, doesFileExist, getHomeDirectory)
+import System.FilePath (dropTrailingPathSeparator, joinPath, splitDirectories, splitSearchPath, (</>))
 
 data Signature = Signed Text | Unsigned
   deriving (Ord, Show)
@@ -265,3 +267,17 @@ syncFile path newFile = do
   if old == Just newFile
     then pure Checked
     else liftIO $ TIO.writeFile path newFile $> Updated
+
+getLocalBinDir :: (MonadIssue m, MonadIO m) => m FilePath
+getLocalBinDir = do
+  home <- liftIO getHomeDirectory
+  let dir = home </> ".local" </> "bin"
+  liftIO $ createDirectoryIfMissing True dir
+  pure dir
+
+warnBindDir :: (MonadIssue m, MonadIO m) => FilePath -> m ()
+warnBindDir dir = do
+  pathStr <- concatMap splitSearchPath . maybeToList <$> liftIO (lookupEnv "PATH")
+  let pathDirs = map dropTrailingPathSeparator pathStr
+  unless (dropTrailingPathSeparator dir `elem` pathDirs) $ do
+    injectIssue (fromString $ "Directory " <> dir <> " is not on your $PATH. Executables installed here will not be globally available.")

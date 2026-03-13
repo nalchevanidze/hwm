@@ -9,8 +9,9 @@
 module HWM.Integrations.Toolchain.Stack
   ( Stack (..),
     syncStackYaml,
-    createEnvYaml,
-    stackPath,
+    genStackMatrixConfig,
+    getStackMatrixEnvVars,
+    stackMatrixPath,
     parseExtraDeps,
     scanStackFiles,
     buildMatrix,
@@ -39,6 +40,7 @@ import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environm
 import HWM.Domain.Workspace (toWorkspaceRef)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
+import HWM.Runtime.Process (EnvVars)
 import Relude hiding (head, tail)
 import System.Directory (createDirectoryIfMissing, doesFileExist, makeAbsolute)
 import System.FilePath (dropExtension, (</>))
@@ -98,18 +100,14 @@ syncStackYaml = do
           ..
         }
 
-stackPath :: Maybe Name -> ConfigT FilePath
-stackPath (Just name) = liftIO $ makeAbsolute $ ".hwm/matrix/stack-" <> toString name <> ".yaml"
-stackPath Nothing = do
-  options <- askOptions
-  liftIO $ makeAbsolute $ optionsStack options
+stackMatrixPath :: Name -> ConfigT FilePath
+stackMatrixPath name = liftIO $ makeAbsolute $ ".hwm/matrix/stack-" <> toString name <> ".yaml"
 
-createEnvYaml :: Name -> ConfigT ()
-createEnvYaml target = do
-  path <- stackPath (Just target)
+genStackMatrixConfig :: BuildEnvironment -> ConfigT ()
+genStackMatrixConfig BuildEnvironment {..} = do
+  path <- stackMatrixPath buildName
   liftIO $ createDirectoryIfMissing True ".hwm/matrix/"
   _ <- rewrite_ path $ const $ do
-    BuildEnvironment {..} <- getBuildEnvironment Nothing
     pure
       Stack
         { saveHackageCreds = Just False,
@@ -121,6 +119,11 @@ createEnvYaml target = do
           ..
         }
   pure ()
+
+getStackMatrixEnvVars :: Name -> ConfigT EnvVars
+getStackMatrixEnvVars envName = do
+  yamlPath <- stackMatrixPath envName
+  pure [("STACK_YAML", yamlPath)]
 
 scanStackFiles :: (MonadIO m, MonadError Issue m) => Options -> FilePath -> m [(Name, Stack)]
 scanStackFiles opts root = do

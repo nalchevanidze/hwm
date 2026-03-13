@@ -463,7 +463,7 @@ hwm status
   └── client
   └── server
   └── code-gen
-  └── (root)
+  └── _root_
 
   • helpers
   └── benchmarks

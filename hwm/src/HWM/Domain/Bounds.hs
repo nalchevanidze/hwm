@@ -33,7 +33,7 @@ import Data.Aeson
     ToJSON (..),
     Value (..),
   )
-import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList, padDots)
+import HWM.Core.Formatting (Color (..), Format (..), chalk, formatList)
 import HWM.Core.Has (Has)
 import HWM.Core.Parsing (Parse (..), fromToString, removeHead, sepBy, unconsM)
 import HWM.Core.Pkg (PkgName)
@@ -216,10 +216,10 @@ deriveBounds name TestedRange {..} = do
   newUpper <- maybe (head <$> getVersions name) pure upper
 
   section_ "discovery" $ do
-    putLine $ padDots 16 "registry" <> "missing (initiating lookup)"
-    putLine $ padDots 16 "legacy" <> maybe (chalk Red "missing") (chalk Green . format) lower <> " (min)"
-    putLine $ padDots 16 "nightly" <> maybe (chalk Red "missing") ((<> " (max)") . chalk Green . format) upper
-    unless (isJust lower || isJust upper) $ putLine $ padDots 16 "hackage" <> chalk Green (format newUpper) <> " (max)"
+    uiRow minRowSize "registry" "missing (initiating lookup)"
+    uiRow minRowSize "legacy" (maybe (chalk Red "missing") (chalk Green . format) lower <> " (min)")
+    uiRow minRowSize "nightly" (maybe (chalk Red "missing") ((<> " (max)") . chalk Green . format) upper)
+    unless (isJust lower || isJust upper) $ uiRow minRowSize "hackage" (chalk Green (format newUpper) <> " (max)")
 
   pure
     Bounds

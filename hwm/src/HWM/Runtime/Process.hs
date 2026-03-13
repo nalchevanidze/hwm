@@ -7,11 +7,10 @@
 module HWM.Runtime.Process
   ( inheritRun,
     exec,
-    execAsync,
+    execInBackground,
     Exec (..),
-    runInBackground,
     ExecOptions (..),
-    Envs,
+    EnvVars,
   )
 where
 
@@ -22,8 +21,8 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Color (Dim), Status (..), chalk, statusIcon)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Runtime.Files (prepareDir)
-import HWM.Runtime.Logging (logCommandEnd, logCommandStart, logPath, logRoot)
-import HWM.Runtime.UI (runSpinner, statusIndicator)
+import HWM.Runtime.Logging (genLogId, logCommandEnd, logCommandStart, logPath, logRoot)
+import HWM.Runtime.UI (MonadUI (uiIndentLevel), runSpinner, statusIndicator)
 import Relude
 import System.Environment (getEnvironment)
 import qualified System.IO as TIO
@@ -54,14 +53,14 @@ data Exec = Exec
     execEnv :: [(String, String)]
   }
 
-type Envs = [(String, String)]
+type EnvVars = [(String, String)]
 
 data ExecOptions = ExecOptions
   { logId :: Name,
     loopIO :: Maybe (IO ())
   }
 
-execAsync :: (MonadIO m) => Exec -> ExecOptions -> m [Issue]
+execAsync :: (MonadUI m, MonadIO m) => Exec -> ExecOptions -> m [Issue]
 execAsync Exec {..} ExecOptions {..} = do
   let processLogPath = logPath logId
   prepareDir logRoot
@@ -93,18 +92,24 @@ execAsync Exec {..} ExecOptions {..} = do
             }
         ]
 
-inheritRun :: (MonadIO m) => Exec -> m ()
+inheritRun :: (MonadIO m, MonadUI m) => Exec -> m ()
 inheritRun Exec {..} = do
   currentEnv <- liftIO getEnvironment
   let targetEnv = execEnv <> currentEnv
   let processConfig = setEnv targetEnv $ proc "/bin/sh" (["-c", toString execCmd] <> map toString execArgs)
   liftIO (runProcess_ processConfig)
 
-runInBackground :: (MonadIO m, MonadError Issue m) => Exec -> Name -> Int -> m ()
-runInBackground e label padding = do
-  let logsSuffix = chalk Dim (" logs: " <> toText (logPath label))
-  let exOptions = ExecOptions {logId = label, loopIO = Just (runSpinner padding label logsSuffix)}
-  issues <- execAsync e exOptions
+inNixDevelop :: Bool -> Exec -> Exec
+inNixDevelop True (Exec cmd ops env) = Exec "nix" (["develop", "--command", cmd] <> ops) env
+inNixDevelop False e = e
+
+execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Bool -> Exec -> Name -> Name -> Int -> m ()
+execInBackground useNix e label env padding = do
+  logId <- genLogId env
+  ind <- uiIndentLevel
+  let logsSuffix = chalk Dim (" logs: " <> toText (logPath logId))
+  let exOptions = ExecOptions {logId = logId, loopIO = Just (runSpinner ind padding label logsSuffix)}
+  issues <- execAsync (inNixDevelop useNix e) exOptions
   let statusMsg = statusIcon (if null issues then Checked else Invalid)
-  statusIndicator padding label (statusMsg <> logsSuffix)
+  statusIndicator ind padding label (statusMsg <> logsSuffix)
   traverse_ throwError issues

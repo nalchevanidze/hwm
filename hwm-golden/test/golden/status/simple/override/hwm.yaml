@@ -4,8 +4,8 @@ version: 0.1.2
 workspace:
   libs:
     members:
-    - bar
-    - foo
+      - bar
+      - foo
 environments:
   default: default
   profiles:
@@ -14,9 +14,4 @@ environments:
 registry:
   base: '>=  4.7  &&  <  5.0'
 scripts:
-  build: stack build --fast
-  clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
-  install: stack install
-  lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
-    -s .
-  test: stack test {TARGET} --fast
+  build: echo "Hello, world!"

@@ -6,25 +6,24 @@
 module HWM.CLI.Command.Run
   ( runScript,
     ScriptOptions,
+    TaskCommandOptions,
+    runBuild,
+    runInstall,
+    runTest,
   )
 where
 
-import Control.Monad.Error.Class (MonadError (..))
-import Data.List (intersect)
-import qualified Data.Map as M
-import qualified Data.Text as T
-import Data.Traversable (for)
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (..), Format (..), chalk, genMaxLen, padDots)
 import HWM.Core.Parsing (ParseCLI (..), parseOptions)
-import HWM.Core.Pkg (Pkg (..))
-import HWM.Domain.Config (Config (..))
+import HWM.Domain.Build (BuilderCommand (..), TargetScope (..))
+import HWM.Domain.Config (getScript)
 import HWM.Domain.ConfigT (ConfigT, config)
-import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment, getBuildEnvironments)
-import HWM.Domain.Workspace (resolveWorkspaces)
-import HWM.Integrations.Toolchain.Stack (createEnvYaml, stackPath)
-import HWM.Runtime.Process (Exec (..), inheritRun, runInBackground)
-import HWM.Runtime.UI (putLine, sectionEnvironments, sectionWorkspace)
+import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatchForEach)
+import HWM.Domain.Environments (selectEnvironments)
+import HWM.Domain.Workspace (printPkgWSRef, resolveWorkspaces)
+import HWM.Runtime.Files (getLocalBinDir, warnBindDir)
+import HWM.Runtime.Process (Exec (..), inheritRun)
+import HWM.Runtime.UI (minRowSize, putLine, sectionWorkspace, uiRow, uiSubPath)
 import Options.Applicative
   ( argument,
     help,
@@ -33,77 +32,61 @@ import Options.Applicative
     short,
     str,
   )
+import Options.Applicative.Builder (switch)
 import Relude
 
-data ScriptOptions = ScriptOptions
-  { scriptTargets :: [Name],
-    scriptEnvs :: [Name],
-    scriptOptions :: [Text]
-  }
-  deriving (Show)
+newtype ScriptOptions = ScriptOptions {scriptOptions :: [Text]} deriving (Show)
 
 instance ParseCLI ScriptOptions where
-  parseCLI =
-    ScriptOptions
-      <$> parseOptions (long "target" <> short 't' <> metavar "TARGET" <> help "Limit to package (core) or group (libs)")
-      <*> parseOptions (long "env" <> short 'e' <> metavar "ENV" <> help "Run in specific env (use 'all' for full matrix)")
-      <*> many (argument str (metavar "ARGS..." <> help "Arguments to forward to the script"))
-
-getEnvs :: [Name] -> ConfigT [BuildEnvironment]
-getEnvs ["all"] = getBuildEnvironments
-getEnvs names = for names (getBuildEnvironment . Just)
+  parseCLI = ScriptOptions <$> many (argument str (metavar "ARGS..." <> help "Arguments to forward to the script"))
 
 runScript :: Name -> ScriptOptions -> ConfigT ()
 runScript scriptName ScriptOptions {..} = do
   cfg <- asks config
-  case cfgScripts cfg >>= M.lookup scriptName of
-    Just script -> do
-      envs <- getEnvs scriptEnvs
-      targets <- concatMap snd <$> resolveWorkspaces scriptTargets
-      for_ envs (createEnvYaml . buildName)
-      let multi = length envs > 1
-      let cmdTemplate = if null scriptOptions then script else T.unwords (script : scriptOptions)
-      let padding = genMaxLen (map format envs)
-      let run = runCommand padding multi cmdTemplate targets
+  script <- getScript scriptName cfg
+  putLine ("❯ " <> script)
+  inheritRun Exec {execCmd = script, execArgs = scriptOptions, execEnv = []}
 
-      if multi
-        then do
-          when multi $ do
-            sectionWorkspace $ do
-              putLine $ padDots 16 "targets" <> if null scriptTargets then chalk Yellow "None (Global Scope)" else chalk Cyan (T.unwords scriptTargets)
-            sectionEnvironments Nothing (for_ (map buildName envs) (run . Just))
-        else run Nothing
-    Nothing -> throwError $ fromString $ toString $ "Script not found: " <> scriptName
+data TaskCommandOptions = TaskCommandOptions
+  { opsEnviroments :: [Name],
+    opsWorkspaces :: [Name],
+    opsFast :: Bool
+  }
+  deriving (Show)
 
-runCommand :: Int -> Bool -> Text -> [Pkg] -> Maybe Name -> ConfigT ()
-runCommand padding multi scripts targets envName = do
-  benv@BuildEnvironment {..} <- getBuildEnvironment envName
-  let supported = targets `intersect` buildPkgs
-  cmd <- resolveCommand scripts supported
-  yamlPath <- stackPath envName
-  let exexOptions = Exec {execCmd = cmd, execArgs = [], execEnv = [("STACK_YAML", yamlPath)]}
-  if multi
-    then do
-      runInBackground exexOptions (format benv) padding
-    else do
-      sectionWorkspace $ do
-        putLine $ padDots 16 "targets" <> if null supported then chalk Yellow "None (Global Scope)" else chalk Cyan (T.unwords $ format . pkgName <$> supported)
-      sectionEnvironments Nothing $ putLine $ format benv
-      putLine ""
-      putLine ("❯ " <> cmd)
-      inheritRun exexOptions
-  putLine ""
+instance ParseCLI TaskCommandOptions where
+  parseCLI =
+    TaskCommandOptions
+      <$> parseOptions (long "env" <> short 'e' <> metavar "ENV" <> help "Run in specific env (use 'all' for full matrix)")
+      <*> many (argument str (metavar "WORKSPACE" <> help "Limit to package (core) or group (libs)"))
+      <*> switch (long "fast" <> help "Enable fast mode")
 
-resolveCommand :: Text -> [Pkg] -> ConfigT Text
-resolveCommand cmd targets = do
-  let hasPlaceholder = "{TARGET}" `T.isInfixOf` cmd
-      hasTargets = not (null targets)
-      targetsStr = T.unwords (map (format . pkgName) targets)
-  let result = case (hasPlaceholder, hasTargets) of
-        (True, True) -> Right $ T.replace "{TARGET}" targetsStr cmd
-        (True, False) -> Left "Missing Target! This command requires specific targets (e.g. --target app1)."
-        (False, True) -> Left "Target Not Allowed! This command is Global-only and does not support specific targets."
-        (False, False) -> Right cmd
-  case result of
-    Left err -> throwError $ fromString err
-    Right c -> pure c
+parseTargets :: [Name] -> ConfigT TargetScope
+parseTargets names = case names of
+  [] -> do
+    sectionWorkspace $ uiRow minRowSize "scope" "Global"
+    pure ScopeGlobal
+  _ -> do
+    pkgs <- concatMap snd <$> resolveWorkspaces names
+    sectionWorkspace $ for_ pkgs $ \pkg -> uiSubPath (printPkgWSRef pkg)
+    pure $ ScopePkgs pkgs
+
+runBuild :: TaskCommandOptions -> ConfigT ()
+runBuild TaskCommandOptions {..} = do
+  scope <- parseTargets opsWorkspaces
+  envs <- selectEnvironments opsEnviroments
+  dispatchForEach (DispatcheCommand Build scope ["--fast" | opsFast]) envs
+
+runInstall :: TaskCommandOptions -> ConfigT ()
+runInstall TaskCommandOptions {..} = do
+  scope <- parseTargets opsWorkspaces
+  envs <- selectEnvironments opsEnviroments
+  binDir <- getLocalBinDir
+  warnBindDir binDir
+  dispatchForEach (DispatcheCommand (Install binDir) scope ["--fast" | opsFast]) envs
+
+runTest :: TaskCommandOptions -> ConfigT ()
+runTest TaskCommandOptions {..} = do
+  scope <- parseTargets opsWorkspaces
+  envs <- selectEnvironments opsEnviroments
+  dispatchForEach (DispatcheCommand Test scope ["--fast" | opsFast]) envs

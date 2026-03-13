@@ -10,7 +10,7 @@ module HWM.CLI.Command.Init (initWorkspace, InitOptions (..)) where
 import Control.Monad.Except (MonadError (..))
 import Data.List
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (Cyan), Format (format), chalk, padDots)
+import HWM.Core.Formatting (Color (Cyan), Format (format), chalk)
 import HWM.Core.Options (Options (..))
 import HWM.Core.Parsing (ParseCLI (..), flag)
 import HWM.Core.Pkg (IsPkg (..), scanPkgs)
@@ -23,7 +23,7 @@ import HWM.Domain.Workspace (buildWorkspace)
 import HWM.Integrations.Toolchain.Cabal (readCabalPackage)
 import HWM.Integrations.Toolchain.Stack (buildMatrix, scanStackFiles)
 import HWM.Runtime.Files (forbidOverride)
-import HWM.Runtime.UI (MonadUI, putLine, runUI, section)
+import HWM.Runtime.UI (MonadUI, runUI, section, uiRow)
 import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (exitWith, notElem)
 import System.Directory (getCurrentDirectory)
@@ -77,10 +77,10 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
           ..
         }
       opts
-    putLine $ padDots size "save (config)" <> chalk Cyan "hwm.yaml"
+    uiRow size "save (config)" (chalk Cyan "hwm.yaml")
 
 scanning :: (MonadUI m, Foldable t) => Text -> t a -> m ()
-scanning name ls = putLine (padDots size ("scan (" <> name <> ")") <> format (length ls) <> " found")
+scanning name ls = uiRow size ("scan (" <> name <> ")") (format (length ls) <> " found")
 
 deriveName :: FilePath -> Name
 deriveName path =

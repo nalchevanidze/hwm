@@ -25,6 +25,8 @@ module HWM.Domain.Environments
     environmentHash,
     NixEnvironment (..),
     Feature (..),
+    selectEnvironments,
+    overrideBuilder,
   )
 where
 
@@ -196,6 +198,9 @@ data BuildEnvironment = BuildEnvironment
       Eq
     )
 
+overrideBuilder :: Builder -> BuildEnvironment -> BuildEnvironment
+overrideBuilder builder env = env {buildBuilder = builder}
+
 instance Format BuildEnvironment where
   format BuildEnvironment {..} = buildName <> " (" <> format buildGHC <> ")"
 
@@ -311,3 +316,8 @@ getTestedRange = do
 removeEnvironmentByName :: Name -> Environments -> Environments
 removeEnvironmentByName envName matrix =
   matrix {envProfiles = Map.delete envName (envProfiles matrix)}
+
+selectEnvironments :: (MonadError Issue m, MonadIO m, MonadReader env m, Has env Workspace, Has env Environments, Has env Cache) => [Name] -> m [BuildEnvironment]
+selectEnvironments ["all"] = getBuildEnvironments
+selectEnvironments [] = getBuildEnvironment Nothing >>= \env -> pure [env]
+selectEnvironments names = for names (getBuildEnvironment . Just)

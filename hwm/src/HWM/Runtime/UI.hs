@@ -24,10 +24,16 @@ module HWM.Runtime.UI
     printSummary,
     statusIndicator,
     runSpinner,
-    printGenTable,
+    uiFormatTable,
     forTable,
     statusTableM,
     section,
+    uiSpace,
+    uiRow,
+    uiSubPath,
+    uiSubPathRow,
+    uiLabel,
+    minRowSize,
   )
 where
 
@@ -39,7 +45,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (..), Format (..), Status (..), chalk, indentBlockNum, padDots, renderSummaryStatus, statusIcon, subPathSign)
+import HWM.Core.Formatting (Color (..), Format (..), Status (..), chalk, indentBlockNum, minRowSize, padDots, renderSummaryStatus, statusIcon, subPathSign)
 import HWM.Core.Options (whenCI)
 import HWM.Core.Result
   ( Issue (..),
@@ -93,6 +99,21 @@ instance (MonadUI m) => MonadUI (ResultT m) where
   uiIndentLevel = lift uiIndentLevel
   uiWithIndent f (ResultT action) = ResultT $ uiWithIndent f action
 
+uiSpace :: (MonadUI m) => m ()
+uiSpace = uiWrite "\n"
+
+uiSubPath :: (MonadUI m, Format a) => a -> m ()
+uiSubPath value = putLine $ subPathSign <> format value
+
+uiSubPathRow :: (MonadUI m) => Int -> Text -> Text -> m ()
+uiSubPathRow size key value = putLine $ subPathSign <> padDots size key <> value
+
+uiRow :: (MonadUI m) => Int -> Text -> Text -> m ()
+uiRow size key value = putLine $ padDots size key <> value
+
+uiLabel :: (MonadUI m) => Text -> m ()
+uiLabel name = putLine $ "• " <> chalk Bold name
+
 putLine :: (MonadUI m) => Text -> m ()
 putLine txt = do
   level <- uiIndentLevel
@@ -103,7 +124,7 @@ indent amount = uiWithIndent (+ amount)
 
 sectionBase :: (MonadUI m) => Text -> Text -> m a -> m a
 sectionBase emoji title action = do
-  putLine ""
+  uiSpace
   putLine (emoji <> " " <> chalk Bold title)
   indent 1 action
 
@@ -119,14 +140,11 @@ sectionWorkspace m = sectionBase "./" "workspace" m $> ()
 sectionEnvironments :: (MonadUI m) => Maybe Text -> m a -> m ()
 sectionEnvironments title = section_ ("environments" <> maybe "" (\name -> chalk Dim " (default: " <> chalk Magenta name <> chalk Dim ")") title)
 
-minRawSize :: Int
-minRawSize = 16
-
 forHLTable :: (MonadUI m) => [a] -> (a -> (Name, m (Name, b))) -> m [(Name, b)]
 forHLTable as f = traverse formatRow rows
   where
     rows = map f as
-    maxLabelLen = maximum (minRawSize : map (T.length . fst) rows) + 2
+    maxLabelLen = maximum (minRowSize : map (T.length . fst) rows) + 2
     formatRow (label, valueM) = do
       (value, mvalue) <- valueM
       putLine $ padDots maxLabelLen label <> value
@@ -154,8 +172,8 @@ sectionConfig = section_ "config" . tableM_ . map (second render)
   where
     render s = statusIcon <$> s
 
-printGenTable :: (MonadUI m) => [[Text]] -> m ()
-printGenTable rows =
+uiFormatTable :: (MonadUI m) => [[Text]] -> m ()
+uiFormatTable rows =
   let n = if null rows then 0 else maximum (map length rows)
       padRow r = take n (r ++ repeat "")
       paddedRows = map padRow rows
@@ -216,7 +234,9 @@ levelColor SeverityError = Red
 levelColor SeverityWarning = Yellow
 
 printSummary :: (MonadUI m, MonadIO m) => [Issue] -> m ()
-printSummary issues = traverse_ putLine (renderSummaryLines issues) >> whenCI (traverse_ extractLog issues)
+printSummary issues = do
+  uiSpace
+  traverse_ putLine (renderSummaryLines issues) >> whenCI (traverse_ extractLog issues)
   where
     extractLog Issue {issueDetails = Just (CommandIssue {issueLogFile})} = do
       content <- liftIO $ T.readFile (toString issueLogFile)
@@ -224,18 +244,18 @@ printSummary issues = traverse_ putLine (renderSummaryLines issues) >> whenCI (t
       putLine content
     extractLog _ = pure ()
 
-statusIndicator :: (MonadIO m) => Int -> Text -> Text -> m ()
-statusIndicator padding prefix msg = do
+statusIndicator :: (MonadIO m) => Int -> Int -> Text -> Text -> m ()
+statusIndicator i padding prefix msg = do
   liftIO clearLine
   liftIO $ setCursorColumn 0
-  liftIO $ putStr $ toString $ "  " <> padDots padding prefix <> msg
+  liftIO $ putStr $ toString $ indentBlockNum i (padDots padding prefix <> msg)
   liftIO $ hFlush stdout
 
-runSpinner :: (MonadIO m) => Int -> Text -> Text -> m ()
-runSpinner padding prefix suffix = loop ["◜", "◠", "◝", "◞", "◡", "◟"]
+runSpinner :: (MonadIO m) => Int -> Int -> Text -> Text -> m ()
+runSpinner i padding prefix suffix = loop ["◜", "◠", "◝", "◞", "◡", "◟"]
   where
     loop (f : fs) = do
-      statusIndicator padding prefix (f <> suffix)
+      statusIndicator i padding prefix (f <> suffix)
       liftIO $ threadDelay 200000 -- 200ms
       loop (fs ++ [f])
     loop [] = pure ()

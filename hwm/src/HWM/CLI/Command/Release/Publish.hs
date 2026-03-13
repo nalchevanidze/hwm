@@ -19,7 +19,6 @@ import HWM.Core.Formatting
     Status (Checked, Invalid),
     chalk,
     genMaxLen,
-    padDots,
     statusIcon,
   )
 import HWM.Core.Parsing (ParseCLI (..))
@@ -33,7 +32,7 @@ import HWM.Domain.Workspace (WsPkgs, printPkgWSRef, resolveWsPkgs)
 import HWM.Integrations.Toolchain.Cabal (nativeSdist)
 import HWM.Integrations.Toolchain.Package (deriveDependencyGraph)
 import HWM.Runtime.Network (getHackageToken, uploadToHackage)
-import HWM.Runtime.UI (printSummary, putLine, sectionTableM, section_)
+import HWM.Runtime.UI (printSummary, sectionTableM, section_, uiSubPathRow)
 import Options.Applicative (argument, help, metavar, str)
 import Relude hiding (intercalate)
 import System.Directory (getCurrentDirectory)
@@ -101,12 +100,12 @@ runPublish PublishOptions {..} = do
 
   section_ "publishing plan (topological sort)" $ do
     for_ ls $ \((pkg, filePath), idx) -> do
-      putLine $ "└── " <> padDots size (show idx <> ". " <> printPkgWSRef pkg) <> fromString (makeRelative cwd filePath)
+      uiSubPathRow size (show idx <> ". " <> printPkgWSRef pkg) (format $ makeRelative cwd filePath)
 
   token <- getHackageToken
   section_ "publishing" $ do
     for_ releasePkgs $ \(pkg, filePath) -> do
       issues <- uploadToHackage token pkg filePath
       let status = if null issues then Checked else Invalid
-      putLine $ "└── " <> padDots size (printPkgWSRef pkg) <> statusIcon status
+      uiSubPathRow size (printPkgWSRef pkg) (statusIcon status)
       failIssues issues

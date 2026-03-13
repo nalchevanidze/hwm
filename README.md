@@ -51,9 +51,6 @@ graph TD
 
 ```bash
 cabal install hwm
-# or
-stack install hwm
-
 ```
 
 ### Zero-Config Onboarding
@@ -205,7 +202,7 @@ environments:
   builder: stack # or nix or cabal
 release:
   artifacts:
-    hwm: libs/(root):hwm
+    hwm: libs/_root_:hwm
 
 ```
 
