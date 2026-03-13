@@ -22,8 +22,6 @@ module HWM.Runtime.UI
     sectionTableM,
     forTable_,
     printSummary,
-    statusIndicator,
-    runSpinner,
     uiFormatTable,
     forTable,
     statusTableM,
@@ -34,6 +32,8 @@ module HWM.Runtime.UI
     uiSubPathRow,
     uiLabel,
     minRowSize,
+    loopFrames,
+    refreshFrame,
   )
 where
 
@@ -244,23 +244,20 @@ printSummary issues = do
       putLine content
     extractLog _ = pure ()
 
-statusIndicator :: (MonadIO m) => Int -> Int -> Text -> Text -> m ()
-statusIndicator i padding prefix msg = do
-  liftIO clearLine
-  liftIO $ setCursorColumn 0
-  liftIO $ putStr $ toString $ indentBlockNum i (padDots padding prefix <> msg)
-  liftIO $ hFlush stdout
+refreshFrame :: Text -> IO ()
+refreshFrame f = do
+  clearLine
+  setCursorColumn 0
+  putStr $ toString f
+  hFlush stdout
 
-runSpinner :: (MonadIO m) => Int -> Int -> Text -> Text -> m ()
-runSpinner i padding prefix suffix = genAnimation loop ["◜", "◠", "◝", "◞", "◡", "◟"]
-  where
-    loop ch = statusIndicator i padding prefix (ch <> suffix)
-
-genAnimation :: (MonadIO m) => (Text -> m ()) -> [Text] -> m ()
-genAnimation g = loop
+loopFrames :: (Text -> Text) -> [Text] -> IO ()
+loopFrames g = loop
   where
     loop (f : fs) = do
-      g f
-      liftIO $ threadDelay 200000 -- 200ms
+      refreshFrame (g f)
+      threadDelay 200000
       loop (fs ++ [f])
     loop [] = pure ()
+
+

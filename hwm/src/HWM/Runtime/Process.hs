@@ -112,7 +112,16 @@ inNixDevelop :: Bool -> Exec -> Exec
 inNixDevelop True (Exec cmd ops env) = Exec "nix" (["develop", "--command", cmd] <> ops) env
 inNixDevelop False e = e
 
+statusIndicator :: (MonadIO m) => Int -> Int -> Text -> Text -> m ()
+statusIndicator i padding prefix msg = liftIO $ refreshFrame $ formatIndicator i padding prefix msg
 
+formatIndicator :: Int -> Int -> Text -> Text -> Text
+formatIndicator i padding prefix msg = indentBlockNum i (padDots padding prefix <> msg)
+
+runSpinner :: (MonadIO m) => Int -> Int -> Text -> Text -> m ()
+runSpinner i padding prefix suffix = liftIO $ loopFrames fomatStatus ["◜", "◠", "◝", "◞", "◡", "◟"]
+  where
+    fomatStatus ch = formatIndicator i padding prefix (ch <> suffix)
 
 execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Bool -> Exec -> Name -> Name -> Int -> m ()
 execInBackground useNix e label env padding = do
