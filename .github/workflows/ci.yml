@@ -38,10 +38,9 @@ jobs:
   archive:
     strategy:
       fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
-    name: Artifact ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+      matrix: [ubuntu, macOS, windows]
+    name: Artifact ${{ matrix }}
+    runs-on: ${{ matrix }}-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
