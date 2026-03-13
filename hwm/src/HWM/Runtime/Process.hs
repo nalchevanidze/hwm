@@ -75,37 +75,34 @@ processHandle _ False logHandle p = do
   logCommandEnd logHandle status
   pure status
 
-execAsync :: (MonadUI m, MonadIO m) => Exec -> ExecOptions -> m [Issue]
+execAsync :: (MonadUI m, MonadError Issue m, MonadIO m) => Exec -> ExecOptions -> m ()
 execAsync Exec {..} ExecOptions {..} = do
   let processLogPath = logPath logId
   prepareDir logRoot
   let cmd = execCmd <> " " <> T.unwords execArgs
   currentEnv <- liftIO getEnvironment
-
   let targetEnv = execEnv <> currentEnv
-  liftIO $ do
-    status <- TIO.withFile processLogPath TIO.WriteMode $ \logHandle -> do
-      logCommandStart logHandle cmd
-      let processConfig =
-            setEnv targetEnv
-              $ setStdout (useHandleOpen logHandle)
-              $ setStderr (useHandleOpen logHandle)
-              $ shell (toString cmd)
-      withProcessWait processConfig $ processHandle (uiIndicator formatFX fxEnabled Nothing) fxEnabled logHandle
-    case status of
-      ExitSuccess -> do
-        liftIO $ uiIndicator formatFX fxEnabled (Just Checked)
-        pure []
-      _ -> do
-        liftIO $ uiIndicator formatFX fxEnabled (Just Invalid)
-        pure
-          [ Issue
-              { issueTopic = logId,
-                issueMessage = "Command failed",
-                issueSeverity = SeverityError,
-                issueDetails = Just CommandIssue {issueCommand = cmd, issueLogFile = processLogPath}
-              }
-          ]
+  status <- liftIO $ TIO.withFile processLogPath TIO.WriteMode $ \logHandle -> do
+    logCommandStart logHandle cmd
+    let processConfig =
+          setEnv targetEnv
+            $ setStdout (useHandleOpen logHandle)
+            $ setStderr (useHandleOpen logHandle)
+            $ shell (toString cmd)
+    withProcessWait processConfig $ processHandle (uiIndicator formatFX fxEnabled Nothing) fxEnabled logHandle
+  case status of
+    ExitSuccess -> do
+      liftIO $ uiIndicator formatFX fxEnabled (Just Checked)
+      pure ()
+    _ -> do
+      liftIO $ uiIndicator formatFX fxEnabled (Just Invalid)
+      throwError
+        Issue
+          { issueTopic = logId,
+            issueMessage = "Command failed",
+            issueSeverity = SeverityError,
+            issueDetails = Just CommandIssue {issueCommand = cmd, issueLogFile = processLogPath}
+          }
 
 inheritRun :: (MonadIO m, MonadUI m) => Exec -> m ()
 inheritRun Exec {..} = do
@@ -123,13 +120,10 @@ execInBackground useNix e label env padding = do
   fxEnabled <- not <$> isCI
   logId <- genLogId env
   ind <- uiIndentLevel
-  let logsSuffix = chalk Dim (" logs: " <> toText (logPath logId))
-  issues <-
-    execAsync
-      (inNixDevelop useNix e)
-      ExecOptions
-        { logId = logId,
-          formatFX = \icon -> indentBlockNum ind (padDots padding label <> icon <> logsSuffix),
-          fxEnabled = fxEnabled
-        }
-  traverse_ throwError issues
+  execAsync
+    (inNixDevelop useNix e)
+    ExecOptions
+      { logId = logId,
+        formatFX = \icon -> indentBlockNum ind (padDots padding label <> icon <> chalk Dim (" logs: " <> toText (logPath logId))),
+        fxEnabled = fxEnabled
+      }
