@@ -8,30 +8,13 @@ on:
 
 jobs:
   build:
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - ghc: 9.6.3
-            env: stable
     runs-on: ubuntu-latest
-    name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
+    name: Build and Test
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-        with:
-          ghc: ${{ matrix.ghc }}
-      - name: Install dependencies
-        shell: bash
-        run: stack build --fast --test --only-dependencies
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-        with:
-          ghc: ${{ matrix.ghc }}
-
       - name: Build
         run: hwm build --fast
-
       - name: Test
         run: hwm test --fast
 

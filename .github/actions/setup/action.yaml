@@ -10,19 +10,9 @@ runs:
     - name: Magic Nix Cache
       uses: DeterminateSystems/magic-nix-cache-action@main
 
-    - name: Add Local Bin to GITHUB_PATH
-      shell: bash
-      run: |
-        # Ensure the GitHub runner can find the binaries HWM installs
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-
     - name: Build and Install HWM (Pure Nix)
       shell: bash
       run: |
-        # 1. Nix evaluates the flake, builds the binary inside the /nix/store, 
-        #    and installs a symlink directly into the CI runner's Nix profile.
-        #    (The Determinate Systems action automatically adds this to $PATH)
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
         nix profile install .
-
-        # 2. Verify it's globally available
         hwm --version
