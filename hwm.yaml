@@ -9,7 +9,7 @@ workspace:
     - .
     prefix: hwm
 environments:
-  builder: stack
+  builder: cabal
   default: stable
   nix: true
   profiles:
