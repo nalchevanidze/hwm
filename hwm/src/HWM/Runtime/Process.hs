@@ -18,11 +18,11 @@ import Control.Concurrent.Async
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (Dim), Status (..), chalk, statusIcon, indentBlockNum, padDots)
+import HWM.Core.Formatting (Color (Dim), Status (..), chalk, indentBlockNum, padDots)
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Runtime.Files (prepareDir)
 import HWM.Runtime.Logging (genLogId, logCommandEnd, logCommandStart, logPath, logRoot)
-import HWM.Runtime.UI (MonadUI (uiIndentLevel), loopFrames, refreshFrame)
+import HWM.Runtime.UI (MonadUI (uiIndentLevel), uiIndicator)
 import Relude
 import System.Environment (getEnvironment)
 import qualified System.IO as TIO
@@ -112,24 +112,14 @@ inNixDevelop :: Bool -> Exec -> Exec
 inNixDevelop True (Exec cmd ops env) = Exec "nix" (["develop", "--command", cmd] <> ops) env
 inNixDevelop False e = e
 
-statusIndicator :: (MonadIO m) => Int -> Int -> Text -> Text -> m ()
-statusIndicator i padding prefix msg = liftIO $ refreshFrame $ formatIndicator i padding prefix msg
-
-formatIndicator :: Int -> Int -> Text -> Text -> Text
-formatIndicator i padding prefix msg = indentBlockNum i (padDots padding prefix <> msg)
-
-runSpinner :: (MonadIO m) => Int -> Int -> Text -> Text -> m ()
-runSpinner i padding prefix suffix = liftIO $ loopFrames fomatStatus ["◜", "◠", "◝", "◞", "◡", "◟"]
-  where
-    fomatStatus ch = formatIndicator i padding prefix (ch <> suffix)
-
 execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Bool -> Exec -> Name -> Name -> Int -> m ()
 execInBackground useNix e label env padding = do
   logId <- genLogId env
   ind <- uiIndentLevel
   let logsSuffix = chalk Dim (" logs: " <> toText (logPath logId))
-  let exOptions = ExecOptions {logId = logId, loopIO = Just (runSpinner ind padding label logsSuffix)}
+  let f icon = indentBlockNum ind (padDots padding label <> icon <> logsSuffix)
+  let exOptions = ExecOptions {logId = logId, loopIO = Just (uiIndicator f True Nothing)}
   issues <- execAsync (inNixDevelop useNix e) exOptions
-  let statusMsg = statusIcon (if null issues then Checked else Invalid)
-  statusIndicator ind padding label (statusMsg <> logsSuffix)
+  let status = if null issues then Checked else Invalid
+  uiIndicator f True (Just status)
   traverse_ throwError issues

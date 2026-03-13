@@ -32,8 +32,7 @@ module HWM.Runtime.UI
     uiSubPathRow,
     uiLabel,
     minRowSize,
-    loopFrames,
-    refreshFrame,
+    uiIndicator,
   )
 where
 
@@ -260,4 +259,7 @@ loopFrames g = loop
       loop (fs ++ [f])
     loop [] = pure ()
 
-
+uiIndicator :: (MonadIO m) => (Text -> Text) -> Bool -> Maybe Status -> m ()
+uiIndicator f False Nothing = liftIO $ refreshFrame $ f "►"
+uiIndicator f True Nothing = liftIO $ loopFrames f ["◜", "◠", "◝", "◞", "◡", "◟"]
+uiIndicator f _ (Just s) = liftIO $ refreshFrame $ f (statusIcon s)
