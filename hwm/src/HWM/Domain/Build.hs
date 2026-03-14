@@ -202,6 +202,3 @@ toAction _ NixBuilder Install {..} scope =
     ScopeGlobal -> pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result-global")] [] (Just $ extractGlobalNixArtifacts dirPath)
     ScopePkgs [pkg] -> pure $ Exec "nix" ["build", ".#" <> format (pkgName pkg), "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifact (pkgName pkg) dirPath)
     ScopePkgs _ -> throwError "Multiple package install is not supported with Nix builder."
-
--- TODO: use nix flake only for hwm test --all-envs
--- mkExec "nix" ["flake", "check"]
