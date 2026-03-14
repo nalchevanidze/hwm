@@ -99,7 +99,7 @@ generateMatrixPkgs (projectName, env) =
       envName = toCamelCase envRaw
       pathList = map (\pkg -> "    pkgs." <> overlay <> "." <> format (pkgName pkg)) (buildPkgs env)
    in map (individualPkg overlay envName) (buildPkgs env)
-        <> [ envName <> "-all = pkgs.symlinkJoin {",
+        <> [ "env-" <> envName <> "-all = pkgs.symlinkJoin {",
              "  name = \"" <> envRaw <> "-workspace\";",
              "  paths = [ "
            ]
