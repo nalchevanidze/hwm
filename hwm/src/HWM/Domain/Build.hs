@@ -19,7 +19,8 @@ import Control.Monad.Except (throwError)
 import Data.Aeson (FromJSON (..), ToJSON (toJSON))
 import Data.Aeson.Types (Value (..))
 import qualified Data.Text as T
-import HWM.Core.Formatting (Format (..))
+import HWM.Core.Common (Name)
+import HWM.Core.Formatting (Format (..), toCamelCase)
 import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue)
@@ -154,11 +155,11 @@ formatFlag StackBuilder BuildFastFlag = ["--fast"]
 formatFlag _ (GHCOptionsFlag xs) = ["--ghc-options=" <> xs]
 formatFlag _ (CustomBuildFlag txt) = [txt]
 
-toExec :: (MonadIO m, MonadError Issue m) => Builder -> BuilderCommand -> TargetScope -> [BuildFlag] -> [(String, String)] -> m (Exec m)
-toExec builder cmd scope flags envs = do
+toExec :: (MonadIO m, MonadError Issue m) => Name -> Builder -> BuilderCommand -> TargetScope -> [BuildFlag] -> [(String, String)] -> m (Exec m)
+toExec envName builder cmd scope flags envs = do
   p <- detectPlatform
   Exec {..} <- toAction p builder cmd scope
-  pure $ inNixDevelop nixEnabled $ Exec execCmd (execArgs <> concatMap (formatFlag builder) flags) envs postCommand
+  pure $ inNixDevelop envName nixEnabled $ Exec execCmd (execArgs <> concatMap (formatFlag builder) flags) envs postCommand
   where
     nixEnabled = CabalBuilder {inNixDevelopment = True} == builder
 
@@ -166,9 +167,11 @@ handleScope :: TargetScope -> [Text]
 handleScope ScopeGlobal = []
 handleScope (ScopePkgs pkgs) = map (format . pkgName) pkgs
 
-inNixDevelop :: Bool -> Exec m -> Exec m
-inNixDevelop True (Exec cmd ops env post) = Exec "nix" (["develop", "--command", cmd] <> ops) env post
-inNixDevelop False e = e
+inNixDevelop :: Name -> Bool -> Exec m -> Exec m
+inNixDevelop envName True (Exec cmd ops env post) = Exec "nix" (["develop", targetAttr, "--command", cmd] <> ops) env post
+  where
+    targetAttr = ".#" <> toCamelCase envName
+inNixDevelop _ False e = e
 
 toAction :: (MonadError Issue m, MonadIO m) => Platform -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack and Cabal ignore the system string

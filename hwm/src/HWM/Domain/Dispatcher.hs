@@ -42,7 +42,7 @@ dispatch :: DispatcheCommand -> BuildEnvironment -> ConfigT ()
 dispatch (DispatcheCommand cmd tscope flags) env@BuildEnvironment {..} = do
   envs <- setupEnvironment env
   scope <- excludePackages buildPkgs tscope
-  exec <- toExec buildBuilder cmd scope flags envs
+  exec <- toExec buildName buildBuilder cmd scope flags envs
   ci <- isCI
   ind <- uiIndentLevel
   execInBackground
