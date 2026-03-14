@@ -123,51 +123,77 @@ workspace:
 
 _When HWM generates your configs, it automatically builds the exact relative paths (`morpheus-graphql-core`), saving you from writing out bloated package names over and over._
 
-### 3. Multi-Mode Profiles & Toolchain Toggles
+### 3. Environments, Builders & CI Profiles
 
-Bring the power of CI matrices to your local development environment. Define your environments purely by GHC version, and globally or locally toggle the toolchains (`stack`, `nix`, `cabal`, `hie`) you want to support.
+Bring the power of CI matrices directly into your local workspace. HWM allows you to define logical **environments** that map to specific GHC versions, toolchain toggles, and specific builders (`stack`, `cabal`, or `nix`). 
+
+Instead of writing complex bash routing in GitHub Actions or juggling multiple config files locally, you define your targets exactly once.
 
 ```yaml
 environments:
+  # Global defaults for the workspace
+  builder: stack 
   default: stable
-  # Global: Enable these for all profiles by default
-  stack: true
-  nix: true
-
+  nix: true # generates flake.nix on hwm sync
+  stack: true # generates stack.yaml on hwm sync
   profiles:
     legacy:
       ghc: 8.10.7
-      # event if stack is globally disabled, this profile will still generate a stack.yaml with the specified resolver and extra-deps.
+      # Override global settings: inject specific stack dependencies
       stack:
-        resolver: lts-18.28
         extra-deps:
           base-orphans: 0.8.1
           fastsum: 0.1.0.0
+
     stable:
-      ghc: 9.6.6
+      ghc: 9.6.3
       stack:
-        resolver: lts-22.43
         extra-deps:
           fastsum: 0.1.1.1
+
+    # Purpose-built CI profiles
+    ci-windows:
+      ghc: 9.6.3
+      builder: cabal
+    ci-nix:
+      ghc: 9.6.3
+      builder: nix
+
 ```
 
-**Run Your Matrix Locally (for now only for stack, nix will be suported):**
+**Seamless CI Integration:**
+By defining `ci-nix` and `ci-windows`, your GitHub Actions workflow becomes incredibly dumb (which is exactly what you want). You just tell HWM to sync the environment, and it instantly pivots the workspace to use the correct underlying toolchain.
 
 ```bash
-# Test across all defined environments (Stable, Legacy, etc.)
+# On Ubuntu/macOS runners:
+hwm sync ci-nix
+hwm build
+hwm test 
+
+# On Windows runners:
+hwm sync ci-windows
+hwm build
+hwm test
+```
+
+**Run Your Matrix Locally:**
+You can also run your tests across all defined environments to guarantee your changes won't break legacy users before you even push to CI. *(Note: Matrix testing currently supports Stack; Nix and Cabal support is coming soon).*
+
+```bash
 hwm test --env=all
+
 ```
 
 <p align="center">
 <img src="images/matrix.png" alt="HWM Matrix Build Output" width="700">
 </p>
 
-**Switching Environments:**
+**Manual Environment Switching:**
+Need to debug a legacy GHC issue locally? Just switch environments. HWM instantly overwrites your root configs (`stack.yaml`, `cabal.project`, `flake.nix`) to match that specific profile.
 
 ```bash
-# Instantly overwrites the root configs (stack.yaml, cabal.project, flake.nix)
-# to match the 'legacy' GHC 8.10.7 profile.
 hwm sync legacy
+
 ```
 
 ### 4. Task Runner & Scripts
