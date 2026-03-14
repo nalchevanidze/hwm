@@ -81,25 +81,24 @@
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmStableWorkspacePackages; [
               cabal-install
-              haskell-language-server
               hlint
               stack
+              haskell-language-server
             ];
           };
           stable = pkgs.hwmStableWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmStableWorkspacePackages; [
               cabal-install
-              haskell-language-server
               hlint
               stack
+              haskell-language-server
             ];
           };
           legacy = pkgs.hwmLegacyWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmLegacyWorkspacePackages; [
               cabal-install
-              haskell-language-server
               hlint
               stack
             ];
@@ -108,18 +107,18 @@
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmCiWindowsWorkspacePackages; [
               cabal-install
-              haskell-language-server
               hlint
               stack
+              haskell-language-server
             ];
           };
           ciNix = pkgs.hwmCiNixWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmCiNixWorkspacePackages; [
               cabal-install
-              haskell-language-server
               hlint
               stack
+              haskell-language-server
             ];
           };
         });
