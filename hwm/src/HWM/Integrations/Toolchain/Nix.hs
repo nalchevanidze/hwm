@@ -68,6 +68,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
             )
             ( forAllSystems "packages" (generatePublicPackages projectName benv (map snd ctxs))
                 <> forAllSystems "devShells" (generateDevShell True ctx <> concatMap (generateDevShell False) ctxs)
+                <> ["checks = forAllSystems (system: self.packages.${system});"]
             )
             False
       )
