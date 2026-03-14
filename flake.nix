@@ -9,12 +9,12 @@
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       haskellOverlay = final: prev: {
         hwmStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
-            hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
-            hwm = hfinal.callCabal2nix "hwm" ./hwm {};
+          hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+          hwm = hfinal.callCabal2nix "hwm" ./hwm {};
         });
         hwmLegacyWorkspacePackages = prev.haskell.packages.ghc810.extend (hfinal: hprev: {
-            hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
-            hwm = hfinal.callCabal2nix "hwm" ./hwm {};
+          hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+          hwm = hfinal.callCabal2nix "hwm" ./hwm {};
         });
       };
     in
