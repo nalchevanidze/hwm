@@ -10,8 +10,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Environments
-  ( Enviroment (..),
-    Environments (..),
+  ( Environments (..),
+    EnviromentProfile (..),
     BuildEnvironment (..),
     StackEnvironment (..),
     getBuildEnvironments,
@@ -20,13 +20,15 @@ module HWM.Domain.Environments
     printEnvironments,
     getTestedRange,
     removeEnvironmentByName,
-    newEnv,
     existsEnviroment,
     environmentHash,
     NixEnvironment (..),
     Feature (..),
     selectEnvironments,
     overrideBuilder,
+    mkEnvironments,
+    mkEnvironment,
+    addProfile,
   )
 where
 
@@ -62,21 +64,30 @@ data Environments = Environments
     envDefault :: Name,
     envNix :: Maybe Bool,
     envStack :: Maybe Bool,
-    envProfiles :: Map Name Enviroment
+    envProfiles :: Map Name EnviromentProfile
   }
   deriving
     ( Generic,
       Show
     )
 
-newEnv :: Version -> Enviroment
-newEnv ghc =
-  Enviroment
+addProfile :: Name -> EnviromentProfile -> Environments -> Environments
+addProfile name profile envs = envs {envProfiles = Map.insert name profile (envProfiles envs)}
+
+mkEnvironment :: Version -> EnviromentProfile
+mkEnvironment ghc =
+  EnviromentProfile
     { ghc = ghc,
       exclude = Nothing,
       stack = Nothing,
-      nix = Nothing
+      nix = Nothing,
+      builder = Nothing
     }
+
+mkEnvironments :: Version -> Environments
+mkEnvironments ghc =
+  let defaultEnv = ("default", mkEnvironment ghc)
+   in Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv], envStack = Nothing, envNix = Nothing, envBuilder = Nothing}
 
 environmentHash :: Environments -> Signature
 environmentHash Environments {..} =
@@ -109,7 +120,7 @@ instance
     traverse_ (checkTarget fileSig) envProfiles
     where
       signature = environmentHash Environments {..}
-      checkTarget fileSig Enviroment {..}
+      checkTarget fileSig EnviromentProfile {..}
         | fileSig == signature = checkExclude
         -- checking all hkgRefs is expensive, so we skip it if the signature matches
         | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs (extraDeps =<< unfeature =<< stack)), checkExclude]
@@ -148,11 +159,12 @@ instance FromJSON NixEnvironment where
   parseJSON (Object _) = pure NixEnvironment
   parseJSON _ = fail "Invalid Nix environment configuration. Expected an object or a boolean."
 
-data Enviroment = Enviroment
+data EnviromentProfile = EnviromentProfile
   { ghc :: Version,
     exclude :: Maybe [WorkspaceRef],
     stack :: Maybe (Feature StackEnvironment),
-    nix :: Maybe (Feature NixEnvironment)
+    nix :: Maybe (Feature NixEnvironment),
+    builder :: Maybe Builder
   }
   deriving
     ( Generic,
@@ -161,10 +173,10 @@ data Enviroment = Enviroment
       Eq
     )
 
-instance FromJSON Enviroment where
+instance FromJSON EnviromentProfile where
   parseJSON = genericParseJSON aesonYAMLOptions
 
-instance ToJSON Enviroment where
+instance ToJSON EnviromentProfile where
   toJSON = genericToJSON aesonYAMLOptions
 
 data StackEnvironment = StackEnvironment

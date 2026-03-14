@@ -5,14 +5,13 @@
 module HWM.CLI.Command.Environment.Add (EnvAddOptions, runEnvAdd) where
 
 import Control.Monad.Except (throwError)
-import qualified Data.Map as Map
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..))
 import HWM.Core.Parsing (Parse (..), ParseCLI (..))
 import HWM.Core.Version (Version)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
-import HWM.Domain.Environments (Environments (..), existsEnviroment, newEnv, printEnvironments)
+import HWM.Domain.Environments (addProfile, existsEnviroment, mkEnvironment, printEnvironments)
 import HWM.Runtime.UI (minRowSize, section, uiRow)
 import Options.Applicative (help, metavar, strArgument)
 import Options.Applicative.Builder (argument, str)
@@ -42,6 +41,6 @@ runEnvAdd EnvAddOptions {..} = do
       updateConfig
         ( \cfg@Config {..} -> do
             uiRow minRowSize "ghc" (format envGHC)
-            pure cfg {cfgEnvironments = cfgEnvironments {envProfiles = Map.insert envName (newEnv envGHC) (envProfiles cfgEnvironments)}}
+            pure cfg {cfgEnvironments = addProfile envName (mkEnvironment envGHC) cfgEnvironments}
         )
         (pure ())

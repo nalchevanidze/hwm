@@ -36,7 +36,7 @@ import HWM.Core.Result (Issue (..), fromEither)
 import HWM.Core.Version (Version, latestGHCVersion, parseGHCVersion)
 import HWM.Domain.Build (Builder (StackBuilder))
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Domain.Environments (BuildEnvironment (..), Enviroment (..), Environments (..), Feature (..), StackEnvironment (..), getBuildEnvironment, hkgRefs)
+import HWM.Domain.Environments (BuildEnvironment (..), EnviromentProfile (..), Environments (..), Feature (..), StackEnvironment (..), getBuildEnvironment, hkgRefs, mkEnvironment, mkEnvironments)
 import HWM.Domain.Workspace (toWorkspaceRef)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
@@ -144,26 +144,17 @@ buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> [(Name, Stack)] -> m 
 buildMatrix pkgs (defaultEnv : envs) = do
   environments <- sortOn (ghc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
   pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList environments, envStack = Just True, envNix = Nothing, envBuilder = Just StackBuilder}
-buildMatrix _ [] = do
-  let defaultEnv = mkDefaultEnv
-  pure Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv], envStack = Nothing, envNix = Nothing, envBuilder = Nothing}
+buildMatrix _ [] = pure $ mkEnvironments latestGHCVersion
 
-mkDefaultEnv :: (Name, Enviroment)
-mkDefaultEnv =
-  ( "default",
-    Enviroment
-      { stack = Nothing,
-        exclude = Nothing,
-        ghc = latestGHCVersion,
-        nix = Nothing,
-        ..
-      }
-  )
-
-inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m (Name, Enviroment)
+inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m (Name, EnviromentProfile)
 inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do
   ghc <- maybe (getSnapshotGHC resolver) (fromEither "GHC Parsing" . parseGHCVersion) compiler
   extraDeps <- parseExtraDeps (fromMaybe [] deps)
   let excludeList = filter ((`notElem` packages) . pkgDirPath) allPkgs
-      exclude = if null excludeList then Nothing else Just (map toWorkspaceRef excludeList)
-  pure (name, Enviroment {stack = Just (Enabled StackEnvironment {resolver = Just resolver, ..}), nix = Nothing, ..})
+  pure
+    ( name,
+      (mkEnvironment ghc)
+        { stack = Just (Enabled StackEnvironment {resolver = Just resolver, ..}),
+          exclude = if null excludeList then Nothing else Just (map toWorkspaceRef excludeList)
+        }
+    )
