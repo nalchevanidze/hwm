@@ -45,7 +45,6 @@ dispatch (DispatcheCommand cmd tscope flags) env@BuildEnvironment {..} = do
         formatFX = \path icon -> indentBlockNum ind (padDots minRowSize (comandLabel cmd) <> icon <> chalk Dim (" logs: " <> path)),
         fxEnabled = not ci
       }
-
   postBuildAction buildBuilder cmd scope
 
 excludePackages :: [Pkg] -> TargetScope -> ConfigT TargetScope
