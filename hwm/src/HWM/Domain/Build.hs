@@ -167,8 +167,9 @@ inNixDevelop :: Name -> Bool -> Exec m -> Exec m
 inNixDevelop envName True (Exec cmd ops env post) = Exec "nix" (["develop", toNixEnv envName, "--command", cmd] <> ops) env post
 inNixDevelop _ False e = e
 
-genTargets :: (Format p) => p -> [Pkg] -> [Text]
-genTargets envName pkgs =
+nixScope :: (Format p) => p -> TargetScope -> [Text]
+nixScope _ ScopeGlobal = [] -- TODO: should handle environment-specific global builds
+nixScope envName (ScopePkgs pkgs) =
   let envSuffix = toCamelCase (format envName)
    in map (\pkg -> ".#" <> format (pkgName pkg) <> "-" <> envSuffix) pkgs
 
@@ -185,8 +186,7 @@ toAction _ _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <>
 toAction _ _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope False scope)
 toAction _ _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> handleScope True scope)
 -- Nix uses the system string
-toAction _ _ NixBuilder Build ScopeGlobal = mkExec "nix" ["build"]
-toAction envName _ NixBuilder Build (ScopePkgs pkgs) = mkExec "nix" $ ["build"] <> genTargets envName pkgs
+toAction envName _ NixBuilder Build scope = mkExec "nix" $ ["build"] <> nixScope envName scope
 -- Start Nix Install
 toAction _ _ NixBuilder Install {..} ScopeGlobal = pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result-global")] [] (Just $ extractGlobalNixArtifacts dirPath)
 toAction _ _ NixBuilder Install {..} (ScopePkgs [pkg]) =
