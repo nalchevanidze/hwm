@@ -49,6 +49,7 @@ import HWM.Core.Pkg (IsPkg (..), PackageIO, Pkg (Pkg, hpackFile), PkgName)
 import qualified HWM.Core.Pkg as P
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version, toCabalVersion)
+import HWM.Domain.Build (Builder (CabalBuilder, NixBuilder))
 import HWM.Domain.ConfigT (ConfigT)
 import qualified HWM.Domain.ConfigT as CT
 import HWM.Domain.Dependencies (Dependencies (..), HasDependencies (..), MapDeps (..), mkCabalDependency, toDependencyList)
@@ -131,18 +132,19 @@ hpackForceUpdate pkg path = do
     H.OutputUnchanged -> pure Checked
     _ -> pure Updated
 
-generateCabalProject :: [Pkg] -> Text -> Text
-generateCabalProject packagePaths _ghcVersion =
+generateCabalProject :: BuildEnvironment -> Text
+generateCabalProject BuildEnvironment {..} =
   T.unlines
-    [ -- "with-compiler: ghc-" <> ghcVersion, --TODO: this should be allowed only when nix is not used, but for now we need it to make sure that the correct GHC version is used in CI
-      "packages:\n" <> T.unlines (map (("  " <>) . format . P.pkgDirPath) packagePaths)
-    ]
+    $ ["with-compiler: ghc-" <> format buildGHC | dependsOnNix]
+    <> ["packages:\n" <> T.unlines (map (("  " <>) . format . P.pkgDirPath) buildPkgs)]
+  where
+    dependsOnNix = buildBuilder /= CabalBuilder True || buildBuilder == NixBuilder
 
 syncCabalProject :: ConfigT Status
 syncCabalProject = do
   cabalFilePath <- asks (optionsCabal . CT.options)
-  BuildEnvironment {..} <- getBuildEnvironment Nothing
-  syncFile cabalFilePath (generateCabalProject buildPkgs (toText buildGHC))
+  env <- getBuildEnvironment Nothing
+  syncFile cabalFilePath (generateCabalProject env)
 
 data CabalPackage = CabalPackage
   { cbDirectory :: FilePath,
