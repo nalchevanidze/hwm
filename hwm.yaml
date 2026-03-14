@@ -12,9 +12,11 @@ environments:
   builder: nix/cabal
   default: stable
   nix: true
+  hie: true
   profiles:
     legacy:
       ghc: 8.10.7
+      hie: false
       stack:
         extra-deps:
           aeson: 1.4.4.0
