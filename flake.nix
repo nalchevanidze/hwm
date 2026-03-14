@@ -8,7 +8,11 @@
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       haskellOverlay = final: prev: {
-            hwmWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+        hwmStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+            hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+            hwm = hfinal.callCabal2nix "hwm" ./hwm {};
+        });
+        hwmLegacyWorkspacePackages = prev.haskell.packages.ghc810.extend (hfinal: hprev: {
               hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
               hwm = hfinal.callCabal2nix "hwm" ./hwm {};
             });
@@ -20,18 +24,28 @@
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
         {
-          hwm-golden = pkgs.hwmWorkspacePackages.hwm-golden;
-          hwm = pkgs.hwmWorkspacePackages.hwm;
-          default = pkgs.hwmWorkspacePackages.hwm;
+          hwm-golden = pkgs.hwmStableWorkspacePackages.hwm-golden;
+          hwm = pkgs.hwmStableWorkspacePackages.hwm;
+          default = pkgs.hwmStableWorkspacePackages.hwm;
         });
       devShells = forAllSystems (system:
         let
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
         {
-          default = pkgs.hwmWorkspacePackages.shellFor {
+          default = pkgs.hwmStableWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
-            buildInputs = with pkgs.hwmWorkspacePackages; [
+            buildInputs = with pkgs.stableWorkspacePackages; [ cabal-install haskell-language-server hlint stack ];
+          };
+
+          stable = pkgs.hwmStableWorkspacePackages.shellFor {
+            packages = p: [ p.hwm-golden p.hwm ];
+            buildInputs = with pkgs.stableWorkspacePackages; [ cabal-install haskell-language-server hlint stack ];
+          };
+
+          legacy = pkgs.hwmLegacyWorkspacePackages.shellFor {
+            packages = p: [ p.hwm-golden p.hwm ];
+            buildInputs = with pkgs.hwmLegacyWorkspacePackages; [
               cabal-install
               haskell-language-server
               hlint
