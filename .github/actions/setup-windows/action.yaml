@@ -38,3 +38,4 @@ runs:
       run: |
         stack install --fast
         hwm --version
+        hwm sync windows
