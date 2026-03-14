@@ -155,7 +155,7 @@ formatFlag _ (CustomBuildFlag txt) = [txt]
 toExec :: (MonadIO m, MonadError Issue m) => Name -> Builder -> BuilderCommand -> TargetScope -> [BuildFlag] -> [(String, String)] -> m (Exec m)
 toExec envName builder cmd scope flags envs = do
   p <- detectPlatform
-  Exec {..} <- toAction (NixContext envName p) builder cmd scope
+  Exec {..} <- toAction (Env envName p) builder cmd scope
   pure $ inNixDevelop envName nixEnabled $ Exec execCmd (execArgs <> concatMap (formatFlag builder) flags) envs postCommand
   where
     nixEnabled = CabalBuilder {inNixDevelopment = True} == builder
@@ -177,12 +177,12 @@ handleScope :: Bool -> TargetScope -> [Text]
 handleScope isCabal ScopeGlobal = ["all" | isCabal]
 handleScope _ (ScopePkgs pkgs) = map (format . pkgName) pkgs
 
-data NixContext = NixContext
+data Env = Env
   { envName :: Name,
     platform :: Platform
   }
 
-toAction :: (MonadError Issue m, MonadIO m) => NixContext -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
+toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
 toAction _ StackBuilder Build scope = mkExec "stack" (["build"] <> handleScope False scope)
 toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope False scope <> ["--local-bin-path", format dirPath])
