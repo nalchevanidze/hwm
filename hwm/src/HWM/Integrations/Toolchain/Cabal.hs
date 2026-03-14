@@ -136,8 +136,9 @@ generateCabalProject :: BuildEnvironment -> Text
 generateCabalProject BuildEnvironment {..} =
   T.unlines
     $ ["with-compiler: ghc-" <> format buildGHC | not dependsOnNix]
-    <> ["packages:\n" <> T.unlines (map (("  " <>) . format . P.pkgDirPath) buildPkgs)]
+    <> ("packages:" : map printPkg buildPkgs)
   where
+    printPkg pkg = "  " <> format (P.pkgDirPath pkg)
     dependsOnNix = buildBuilder == CabalBuilder True || buildBuilder == NixBuilder
 
 syncCabalProject :: ConfigT Status
