@@ -36,3 +36,6 @@ tests:
     main: Main.hs
     source-dirs: test
     ghc-options: -Wall
+    dependencies:
+      - hwm-golden
+      - hspec
