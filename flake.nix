@@ -12,10 +12,6 @@
           hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
           hwm = hfinal.callCabal2nix "hwm" ./hwm {};
         });
-        hwmLegacyWorkspacePackages = prev.haskell.packages.ghc810.extend (hfinal: hprev: {
-          hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
-          hwm = hfinal.callCabal2nix "hwm" ./hwm {};
-        });
         hwmStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
           hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
           hwm = hfinal.callCabal2nix "hwm" ./hwm {};
@@ -38,15 +34,6 @@
             paths = [ 
               pkgs.hwmCiNixWorkspacePackages.hwm-golden
               pkgs.hwmCiNixWorkspacePackages.hwm
-           ];
-          };
-          hwm-golden-legacy = pkgs.hwmLegacyWorkspacePackages.hwm-golden;
-          hwm-legacy = pkgs.hwmLegacyWorkspacePackages.hwm;
-          env-legacy-all = pkgs.symlinkJoin {
-            name = "legacy-workspace";
-            paths = [ 
-              pkgs.hwmLegacyWorkspacePackages.hwm-golden
-              pkgs.hwmLegacyWorkspacePackages.hwm
            ];
           };
           hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
@@ -80,14 +67,6 @@
               hlint
               stack
               haskell-language-server
-            ];
-          };
-          legacy = pkgs.hwmLegacyWorkspacePackages.shellFor {
-            packages = p: [ p.hwm-golden p.hwm ];
-            buildInputs = with pkgs.hwmLegacyWorkspacePackages; [
-              cabal-install
-              hlint
-              stack
             ];
           };
           stable = pkgs.hwmStableWorkspacePackages.shellFor {
