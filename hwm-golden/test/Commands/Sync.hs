@@ -1,7 +1,7 @@
 module Commands.Sync (testSync) where
 
 import Test.Hspec (Spec, describe, it)
-import Utils.Golden (Golden (..), goldenTest)
+import HWM.Golden (Golden (..), goldenTest)
 
 testSync :: Spec
 testSync = describe "sync" $ do

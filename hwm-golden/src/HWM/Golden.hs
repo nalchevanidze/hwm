@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Golden (Golden (..), goldenTest) where
+module HWM.Golden (Golden (..), goldenTest) where
 
 import Data.Aeson (decode, encode)
 import qualified Data.ByteString.Lazy as LBS

@@ -29,6 +29,7 @@ source-repository head
 
 library
   exposed-modules:
+      HWM.Golden
       HWM.Golden.Core
   other-modules:
       Paths_hwm_golden
@@ -57,7 +58,6 @@ test-suite hwm-golden-sync
       Commands.Status
       Commands.Sync
       Commands.Workspace
-      Utils.Golden
       Paths_hwm_golden
   hs-source-dirs:
       test
