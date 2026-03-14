@@ -200,16 +200,18 @@ toAction _ CabalBuilder {} Install {..} scope = mkCabal "install" scope ["--inst
 toAction _ CabalBuilder {} Build scope = mkCabal "build" scope []
 toAction _ CabalBuilder {} Test scope = mkCabal "test" scope []
 -- Nix
-toAction ctx NixBuilder Build scope = mkExec "nix" $ ["build"] <> nixScope (envName ctx) scope
+toAction ctx NixBuilder Build scope = mkExec "nix" $ ["build", "--no-link"] <> nixScope (envName ctx) scope
+toAction ctx NixBuilder Test scope = mkExec "nix" $ ["build", "--no-link"] <> nixScope (envName ctx) scope
 toAction _ NixBuilder Install {..} scope =
   case scope of
     ScopeGlobal -> pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result-global")] [] (Just $ extractGlobalNixArtifacts dirPath)
     ScopePkgs [pkg] -> pure $ Exec "nix" ["build", ".#" <> format (pkgName pkg), "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifact (pkgName pkg) dirPath)
     ScopePkgs _ -> throwError "Multiple package install is not supported with Nix builder."
-toAction ctx NixBuilder Test scope =
-  case scope of
-    ScopeGlobal -> mkExec "nix" ["flake", "check"]
-    ScopePkgs pkgs ->
-      mkExec "nix"
-        $ ["build", "-L", "--no-link"]
-        <> map (\pkg -> ".#checks." <> toNixSystem (platform ctx) <> "." <> format (pkgName pkg)) pkgs
+
+-- TODO: use nix flake only for hwm test --all-envs
+-- case scope of
+--   ScopeGlobal -> mkExec "nix" ["flake", "check"]
+--   ScopePkgs pkgs ->
+--     mkExec "nix"
+--       $ ["build", "-L", "--no-link"]
+--       <> map (\pkg -> ".#checks." <> toNixSystem (platform ctx) <> "." <> format (pkgName pkg)) pkgs
