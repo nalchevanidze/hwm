@@ -48,7 +48,7 @@ rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
     <> ["  });"]
 
 renderPackage :: Pkg -> Text
-renderPackage pkg = "      " <> format (pkgName pkg) <> " = hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {};"
+renderPackage pkg = "    " <> format (pkgName pkg) <> " = hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {};"
 
 deriveFlakeNix :: Context -> [Context] -> Text
 deriveFlakeNix ctx@(projectName, benv) ctxs =
