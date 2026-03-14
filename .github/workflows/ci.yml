@@ -38,10 +38,6 @@ jobs:
         if: matrix.os != 'windows'
         uses: ./.github/actions/setup
 
-      - name: Setup Windows
-        if: matrix.os == 'windows'
-        uses: hwm sync windows
-
       - name: Test Archiving
         run: hwm release artifacts
 
