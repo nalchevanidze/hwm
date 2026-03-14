@@ -45,10 +45,10 @@ generateOverlay benvs =
 
 rendergOverlayItem :: Context -> [Text]
 rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
-  [ "      " <> renderName ctx <> " = prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
+  [ "    " <> renderName ctx <> " = prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
   ]
     <> map renderPackage buildPkgs
-    <> ["      });"]
+    <> ["    });"]
 
 renderPackage :: Pkg -> Text
 renderPackage pkg = "        " <> format (pkgName pkg) <> " = hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {};"
