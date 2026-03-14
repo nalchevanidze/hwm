@@ -1,3 +1,4 @@
+with-compiler: ghc-9.6.6
 packages:
   helpers/benchmarks
   morpheus-graphql-app
@@ -9,4 +10,3 @@ packages:
   morpheus-graphql-code-gen
   morpheus-graphql-client
   morpheus-graphql
-

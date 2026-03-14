@@ -14,6 +14,7 @@ module HWM.Integrations.Toolchain.Cabal
     newCabalPackage,
     readCabalPackage,
     nativeSdist,
+    setupCabalMatrixEnvironment,
   )
 where
 
@@ -45,15 +46,17 @@ import qualified Distribution.Verbosity as Verbosity
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
-import HWM.Core.Pkg (IsPkg (..), PackageIO, Pkg (Pkg, hpackFile), PkgName)
+import HWM.Core.Pkg (IsPkg (..), PackageIO, Pkg (..), PkgName)
 import qualified HWM.Core.Pkg as P
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version, toCabalVersion)
+import HWM.Domain.Build (Builder (CabalBuilder, NixBuilder))
 import HWM.Domain.ConfigT (ConfigT)
 import qualified HWM.Domain.ConfigT as CT
 import HWM.Domain.Dependencies (Dependencies (..), HasDependencies (..), MapDeps (..), mkCabalDependency, toDependencyList)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
 import HWM.Runtime.Files (syncFile)
+import HWM.Runtime.Process (EnvVars)
 import Hpack (Force (..), Options (..), Result (..), defaultOptions, hpackResult, setProgramName, setTarget)
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
@@ -131,18 +134,28 @@ hpackForceUpdate pkg path = do
     H.OutputUnchanged -> pure Checked
     _ -> pure Updated
 
-generateCabalProject :: [Pkg] -> Text -> Text
-generateCabalProject packagePaths _ghcVersion =
+generateCabalProject :: Text -> BuildEnvironment -> Text
+generateCabalProject prefix BuildEnvironment {..} =
   T.unlines
-    [ -- "with-compiler: ghc-" <> ghcVersion, --TODO: this should be allowed only when nix is not used, but for now we need it to make sure that the correct GHC version is used in CI
-      "packages:\n" <> T.unlines (map (("  " <>) . format . P.pkgDirPath) packagePaths)
-    ]
+    $ ["with-compiler: ghc-" <> format buildGHC | not dependsOnNix]
+    <> ("packages:" : map printPkg buildPkgs)
+  where
+    printPkg pkg = "  " <> prefix <> format (P.pkgDirPath pkg)
+    dependsOnNix = buildBuilder == CabalBuilder True || buildBuilder == NixBuilder
+
+setupCabalMatrixEnvironment :: BuildEnvironment -> ConfigT EnvVars
+setupCabalMatrixEnvironment env = do
+  matrixDir <- liftIO $ makeAbsolute ".hwm/matrix/"
+  liftIO $ createDirectoryIfMissing True matrixDir
+  let projectPath = matrixDir <> "cabal-" <> toString (buildName env) <> ".project"
+  _ <- syncFile projectPath (generateCabalProject "../../" env)
+  pure [("CABAL_PROJECT_FILE", projectPath)]
 
 syncCabalProject :: ConfigT Status
 syncCabalProject = do
   cabalFilePath <- asks (optionsCabal . CT.options)
-  BuildEnvironment {..} <- getBuildEnvironment Nothing
-  syncFile cabalFilePath (generateCabalProject buildPkgs (toText buildGHC))
+  env <- getBuildEnvironment Nothing
+  syncFile cabalFilePath (generateCabalProject "" env)
 
 data CabalPackage = CabalPackage
   { cbDirectory :: FilePath,
