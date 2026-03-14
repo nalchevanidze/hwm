@@ -19,6 +19,7 @@ import HWM.Domain.Build (BuildFlag (..), Builder (..), BuilderCommand (..), Targ
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..))
 import HWM.Domain.Workspace (printPkgWSRef)
+import HWM.Integrations.Toolchain.Cabal (setupCabalMatrixEnvironment)
 import HWM.Integrations.Toolchain.Stack (setupStackMatrixEnvironment)
 import HWM.Runtime.Process (EnvVars, ExecOptions (..), execInBackground)
 import HWM.Runtime.UI (MonadUI (..), minRowSize, sectionEnvironments, section_, uiRow)
@@ -34,7 +35,7 @@ setupEnvironment :: BuildEnvironment -> ConfigT EnvVars
 setupEnvironment env =
   case buildBuilder env of
     StackBuilder -> setupStackMatrixEnvironment env
-    CabalBuilder _ -> pure mempty
+    CabalBuilder {} -> setupCabalMatrixEnvironment env
     NixBuilder -> pure mempty
 
 dispatch :: DispatcheCommand -> BuildEnvironment -> ConfigT ()
