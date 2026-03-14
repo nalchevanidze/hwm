@@ -67,7 +67,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
                 <> generateOverlay ctxs
             )
             ( forAllSystems "packages" (generatePublicPackages ctx (buildPkgs benv))
-                <> forAllSystems "devShells" (concatMap (uncurry generateDevShell) ctxs)
+                <> forAllSystems "devShells" (concatMap (uncurry generateDevShell) (ctx : ctxs))
             )
             False
       )
