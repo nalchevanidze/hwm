@@ -4,7 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
+module HWM.Golden.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
 import Data.Aeson (ToJSON)
