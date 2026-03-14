@@ -18,7 +18,6 @@ import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Except (throwError)
 import Data.Aeson (FromJSON (..), ToJSON (toJSON))
 import Data.Aeson.Types (Value (..))
-import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), toCamelCase)
 import HWM.Core.Parsing (Parse (..))
