@@ -9,7 +9,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  publish_release:
+  publish:
     if: ${{ github.base_ref == 'main' && startsWith(github.head_ref, 'release-') && github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
     steps:
@@ -26,27 +26,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  upload_artifact:
-    needs: publish_release
+  artifacts:
+    needs: publish
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            target: linux
-          - os: macos-latest
-            target: mac-os
-          - os: windows-latest
-            target: windows
-    name: Upload Artifact ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
+        os: [ubuntu, macos, windows]
+    name: Upload Artifact ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
       - uses: ./.github/actions/setup
+
       - name: Upload Artifacts
+        shell: bash
         run: hwm release artifacts --github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
