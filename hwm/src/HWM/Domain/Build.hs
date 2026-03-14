@@ -180,8 +180,8 @@ handleScope _ (ScopePkgs pkgs) = map (format . pkgName) pkgs
 stackScope :: TargetScope -> [Text]
 stackScope = handleScope False
 
-cabalScope :: TargetScope -> [Text]
-cabalScope = handleScope True
+mkCabal :: (Applicative m) => Text -> TargetScope -> [Text] -> m (Exec m)
+mkCabal cmd scope ops = mkExec "cabal" ([cmd] <> handleScope True scope <> ops)
 
 data Env = Env
   { envName :: Name,
@@ -194,9 +194,9 @@ toAction _ StackBuilder Build scope = mkExec "stack" (["build"] <> stackScope sc
 toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> stackScope scope <> ["--local-bin-path", format dirPath])
 toAction _ StackBuilder Test scope = mkExec "stack" (["test"] <> stackScope scope)
 -- Cabal
-toAction _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> cabalScope scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
-toAction _ CabalBuilder {} Build scope = mkExec "cabal" (["build"] <> cabalScope scope)
-toAction _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> cabalScope scope)
+toAction _ CabalBuilder {} Install {..} scope = mkCabal "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
+toAction _ CabalBuilder {} Build scope = mkCabal "build" scope []
+toAction _ CabalBuilder {} Test scope = mkCabal "test" scope []
 -- Nix
 toAction ctx NixBuilder Build scope = mkExec "nix" $ ["build"] <> nixScope (envName ctx) scope
 toAction _ NixBuilder Install {..} scope =
