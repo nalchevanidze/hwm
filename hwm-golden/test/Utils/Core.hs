@@ -164,6 +164,4 @@ sanitizeAllCabals = do
   forM_ cabalFiles $ \path -> do
     content <- TIO.readFile path
     let sanitized = sanitizeCabal content
-    when (content /= sanitized) $ do
-      TIO.writeFile path sanitized
-      putStrLn $ "Sanitized: " <> path
+    when (content /= sanitized) $ TIO.writeFile path sanitized
