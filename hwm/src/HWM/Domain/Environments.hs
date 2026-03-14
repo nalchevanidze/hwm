@@ -174,7 +174,7 @@ data EnviromentProfile = EnviromentProfile
     )
 
 profilePrefix :: String
-profilePrefix = "prefile"
+profilePrefix = "profile"
 
 instance FromJSON EnviromentProfile where
   parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced profilePrefix)
