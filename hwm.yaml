@@ -17,6 +17,7 @@ environments:
     legacy:
       ghc: 8.10.7
       hie: false
+      nix: false
       stack:
         extra-deps:
           aeson: 1.4.4.0
