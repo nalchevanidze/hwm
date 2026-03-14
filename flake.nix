@@ -36,9 +36,9 @@
           default = pkgs.hwmStableWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmStableWorkspacePackages; [ 
-              cabal-install 
-              haskell-language-server 
-              hlint 
+              cabal-install
+              haskell-language-server
+              hlint
               stack 
             ];
           };
@@ -46,9 +46,9 @@
           stable = pkgs.hwmStableWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmStableWorkspacePackages; [ 
-              cabal-install 
-              haskell-language-server 
-              hlint 
+              cabal-install
+              haskell-language-server
+              hlint
               stack 
             ];
           };
