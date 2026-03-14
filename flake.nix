@@ -32,9 +32,17 @@
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
         {
+          default = pkgs.hwmStableWorkspacePackages.hwm;
           hwm-golden = pkgs.hwmStableWorkspacePackages.hwm-golden;
           hwm = pkgs.hwmStableWorkspacePackages.hwm;
-          default = pkgs.hwmStableWorkspacePackages.hwm;
+          hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
+          hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
+          hwm-golden-legacy = pkgs.hwmLegacyWorkspacePackages.hwm-golden;
+          hwm-legacy = pkgs.hwmLegacyWorkspacePackages.hwm;
+          hwm-golden-ciWindows = pkgs.hwmCiWindowsWorkspacePackages.hwm-golden;
+          hwm-ciWindows = pkgs.hwmCiWindowsWorkspacePackages.hwm;
+          hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
+          hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
         });
       devShells = forAllSystems (system:
         let

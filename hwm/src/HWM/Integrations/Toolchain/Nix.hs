@@ -66,7 +66,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
               ]
                 <> generateOverlay ctxs
             )
-            ( forAllSystems "packages" (generatePublicPackages ctx (buildPkgs benv))
+            ( forAllSystems "packages" (generatePublicPackages projectName benv (map snd ctxs))
                 <> forAllSystems "devShells" (generateDevShell True ctx <> concatMap (generateDevShell False) ctxs)
             )
             False
@@ -76,14 +76,26 @@ braces :: [Text] -> [Text]
 braces body =
   ["{"] <> map ("  " <>) body <> ["}"]
 
-generatePublicPackages :: Context -> [Pkg] -> [Text]
-generatePublicPackages _ [] = []
-generatePublicPackages ctx@(projectName, _) pkgs = map renderPublicPackage pkgs <> renderDefaultPackage
+-- Notice the new signature: we pass the default environment, then all environments
+generatePublicPackages :: Name -> BuildEnvironment -> [BuildEnvironment] -> [Text]
+generatePublicPackages projectName defaultEnv allEnvs =
+  defaultPkgAlias <> basePkgs <> matrixPkgs
   where
-    renderPublicPackage pkg = format (pkgName pkg) <> " = " <> pkgsNixName ctx <> "." <> format (pkgName pkg) <> ";"
-    renderDefaultPackage =
-      let defaultPkg = maybeToList $ find ((projectName ==) . format . pkgName) pkgs
-       in map (\pkg -> "default = " <> pkgsNixName ctx <> "." <> format (pkgName pkg) <> ";") defaultPkg
+    defaultOverlay = renderName (projectName, defaultEnv)
+    defaultPkgAlias =
+      let defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
+       in map (\pkg -> "default = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") defaultPkg
+    basePkgs =
+      map (\pkg -> format (pkgName pkg) <> " = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
+    matrixPkgs = concatMap generateMatrixPkgs allEnvs
+    generateMatrixPkgs env =
+      let overlay = renderName (projectName, env)
+          envName = toCamelCase (format (buildName env))
+       in map
+            ( \pkg ->
+                format (pkgName pkg) <> "-" <> envName <> " = pkgs." <> overlay <> "." <> format (pkgName pkg) <> ";"
+            )
+            (buildPkgs env)
 
 generateDevShell :: Bool -> Context -> [Text]
 generateDevShell _ (_, BuildEnvironment {buildPkgs = []}) = [] -- Handle empty workspace
