@@ -135,10 +135,10 @@ hpackForceUpdate pkg path = do
 generateCabalProject :: BuildEnvironment -> Text
 generateCabalProject BuildEnvironment {..} =
   T.unlines
-    $ ["with-compiler: ghc-" <> format buildGHC | dependsOnNix]
+    $ ["with-compiler: ghc-" <> format buildGHC | not dependsOnNix]
     <> ["packages:\n" <> T.unlines (map (("  " <>) . format . P.pkgDirPath) buildPkgs)]
   where
-    dependsOnNix = buildBuilder /= CabalBuilder True || buildBuilder == NixBuilder
+    dependsOnNix = buildBuilder == CabalBuilder True || buildBuilder == NixBuilder
 
 syncCabalProject :: ConfigT Status
 syncCabalProject = do
