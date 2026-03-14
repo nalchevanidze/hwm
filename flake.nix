@@ -38,7 +38,8 @@
             buildInputs = with pkgs.stableWorkspacePackages; [ 
               cabal-install 
               haskell-language-server 
-              hlint stack 
+              hlint 
+              stack 
             ];
           };
 
@@ -47,7 +48,8 @@
             buildInputs = with pkgs.stableWorkspacePackages; [ 
               cabal-install 
               haskell-language-server 
-              hlint stack 
+              hlint 
+              stack 
             ];
           };
 
