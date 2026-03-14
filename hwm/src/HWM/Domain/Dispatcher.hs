@@ -15,12 +15,12 @@ import Data.List (intersect, (\\))
 import HWM.Core.Formatting (Color (..), Format (..), andMore, chalk, indentBlockNum, padDots)
 import HWM.Core.Options (isCI)
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..), TargetScope (..), comandLabel, toExec)
+import HWM.Domain.Build (BuildFlag (..), Builder (..), BuilderCommand (..), TargetScope (..), comandLabel, toExec)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..))
 import HWM.Domain.Workspace (printPkgWSRef)
 import HWM.Integrations.Toolchain.Stack (setupStackMatrixEnvironment)
-import HWM.Runtime.Process (ExecOptions (..), execInBackground)
+import HWM.Runtime.Process (EnvVars, ExecOptions (..), execInBackground)
 import HWM.Runtime.UI (MonadUI (..), minRowSize, sectionEnvironments, section_, uiRow)
 import Relude
 
@@ -30,9 +30,16 @@ data DispatcheCommand = DispatcheCommand
     commandFlags :: [BuildFlag]
   }
 
+setupEnvironment :: BuildEnvironment -> ConfigT EnvVars
+setupEnvironment env =
+  case buildBuilder env of
+    StackBuilder -> setupStackMatrixEnvironment env
+    CabalBuilder _ -> pure mempty
+    NixBuilder -> pure mempty
+
 dispatch :: DispatcheCommand -> BuildEnvironment -> ConfigT ()
 dispatch (DispatcheCommand cmd tscope flags) env@BuildEnvironment {..} = do
-  envs <- setupStackMatrixEnvironment env
+  envs <- setupEnvironment env
   scope <- excludePackages buildPkgs tscope
   exec <- toExec buildBuilder cmd scope flags envs
   ci <- isCI
