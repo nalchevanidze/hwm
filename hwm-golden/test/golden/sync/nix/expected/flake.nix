@@ -132,5 +132,6 @@
             ];
           };
         });
+      checks = forAllSystems (system: self.packages.${system});
     };
 }
