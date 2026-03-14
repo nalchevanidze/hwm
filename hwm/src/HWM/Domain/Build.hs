@@ -8,10 +8,9 @@ module HWM.Domain.Build
   ( Builder (..),
     BuilderCommand (..),
     TargetScope (..),
+    BuildFlag (..),
     toExec,
     comandLabel,
-    isCustom,
-    BuildFlag (..),
   )
 where
 
