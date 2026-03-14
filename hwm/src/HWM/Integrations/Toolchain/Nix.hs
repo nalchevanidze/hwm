@@ -27,7 +27,7 @@ syncNixFile = do
   syncFile (optionsNix ops) (deriveFlakeNix (cfgName, benv) (map (cfgName,) benvs))
 
 renderName :: Context -> Text
-renderName (name, BuildEnvironment {..}) = toCamelCase name <> T.toTitle (format buildName) <> "WorkspacePackages"
+renderName (name, BuildEnvironment {..}) = toCamelCase (name <> T.toTitle (format buildName) <> "WorkspacePackages")
 
 pkgsNixName :: Context -> Text
 pkgsNixName ctx = "pkgs." <> renderName ctx
