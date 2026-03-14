@@ -62,8 +62,8 @@ type Extras = VersionMap
 data Environments = Environments
   { envsDefault :: Name,
     envsProfiles :: Map Name EnviromentProfile,
-    -- flags that can be set globally, but overridden by profiles,
     envsBuilder :: Maybe Builder,
+    -- generators,
     envsNix :: Maybe Bool,
     envsStack :: Maybe Bool,
     envsHie :: Maybe Bool
