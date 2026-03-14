@@ -177,6 +177,12 @@ handleScope :: Bool -> TargetScope -> [Text]
 handleScope isCabal ScopeGlobal = ["all" | isCabal]
 handleScope _ (ScopePkgs pkgs) = map (format . pkgName) pkgs
 
+stackScope :: TargetScope -> [Text]
+stackScope = handleScope False
+
+cabalScope :: TargetScope -> [Text]
+cabalScope = handleScope True
+
 data Env = Env
   { envName :: Name,
     platform :: Platform
@@ -184,13 +190,13 @@ data Env = Env
 
 toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
-toAction _ StackBuilder Build scope = mkExec "stack" (["build"] <> handleScope False scope)
-toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope False scope <> ["--local-bin-path", format dirPath])
-toAction _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope False scope)
+toAction _ StackBuilder Build scope = mkExec "stack" (["build"] <> stackScope scope)
+toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> stackScope scope <> ["--local-bin-path", format dirPath])
+toAction _ StackBuilder Test scope = mkExec "stack" (["test"] <> stackScope scope)
 -- Cabal
-toAction _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> handleScope True scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
-toAction _ CabalBuilder {} Build scope = mkExec "cabal" (["build"] <> handleScope True scope)
-toAction _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> handleScope True scope)
+toAction _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> cabalScope scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
+toAction _ CabalBuilder {} Build scope = mkExec "cabal" (["build"] <> cabalScope scope)
+toAction _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> cabalScope scope)
 -- Nix
 toAction ctx NixBuilder Build scope = mkExec "nix" $ ["build"] <> nixScope (envName ctx) scope
 toAction _ NixBuilder Install {..} scope =
