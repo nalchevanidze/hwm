@@ -97,12 +97,14 @@ generateMatrixPkgs (projectName, env) =
   let overlay = renderName (projectName, env)
       envRaw = format (buildName env)
       envName = toCamelCase envRaw
-      -- 2. Generate the paths list for the group: "[ pkgs.overlay.hwm pkgs.overlay.hwm-golden ]"
-      pathList = T.intercalate " " $ map (\pkg -> "pkgs." <> overlay <> "." <> format (pkgName pkg)) (buildPkgs env)
+      pathList = map (\pkg -> "    pkgs." <> overlay <> "." <> format (pkgName pkg)) (buildPkgs env)
    in map (individualPkg overlay envName) (buildPkgs env)
         <> [ envRaw <> "-all = pkgs.symlinkJoin {",
-             "          name = \"" <> envRaw <> "-workspace\";",
-             "          paths = [ " <> pathList <> " ];",
+             "  name = \"" <> envRaw <> "-workspace\";",
+             "  paths = [ "
+           ]
+        <> pathList
+        <> [ " ];",
              "};"
            ]
 
