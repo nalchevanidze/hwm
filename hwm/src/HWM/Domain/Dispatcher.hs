@@ -15,7 +15,7 @@ import Data.List (intersect, (\\))
 import HWM.Core.Formatting (Color (..), Format (..), andMore, chalk, indentBlockNum, padDots)
 import HWM.Core.Options (isCI)
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..), TargetScope (..), comandLabel, postBuildAction, toExec)
+import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..), TargetScope (..), comandLabel, toExec)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..))
 import HWM.Domain.Workspace (printPkgWSRef)
@@ -45,7 +45,6 @@ dispatch (DispatcheCommand cmd tscope flags) env@BuildEnvironment {..} = do
         formatFX = \path icon -> indentBlockNum ind (padDots minRowSize (comandLabel cmd) <> icon <> chalk Dim (" logs: " <> path)),
         fxEnabled = not ci
       }
-  postBuildAction buildBuilder cmd scope
 
 excludePackages :: [Pkg] -> TargetScope -> ConfigT TargetScope
 excludePackages _ ScopeGlobal = pure ScopeGlobal

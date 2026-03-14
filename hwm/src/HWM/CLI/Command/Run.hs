@@ -45,7 +45,7 @@ runScript scriptName ScriptOptions {..} = do
   cfg <- asks config
   script <- getScript scriptName cfg
   putLine ("❯ " <> script)
-  inheritRun Exec {execCmd = script, execArgs = scriptOptions, execEnv = []}
+  inheritRun Exec {execCmd = script, execArgs = scriptOptions, execEnv = [], postCommand = Nothing}
 
 data TaskCommandOptions = TaskCommandOptions
   { opsEnviroments :: [Name],

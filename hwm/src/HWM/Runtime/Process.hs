@@ -11,6 +11,7 @@ module HWM.Runtime.Process
     ExecOptions (..),
     EnvVars,
     execInBackground,
+    mkExec,
   )
 where
 
@@ -41,6 +42,9 @@ import System.Process.Typed
     withProcessWait,
   )
 
+mkExec :: (Applicative m) => Text -> [Text] -> m (Exec m)
+mkExec name args = pure $ Exec name args [] Nothing
+
 exec :: (MonadIO m) => Text -> [Text] -> m (Bool, String)
 exec name args = do
   (code, _, out) <- liftIO (readProcessWithExitCode (toString name) (map toString args) "")
@@ -48,10 +52,11 @@ exec name args = do
     ExitSuccess {} -> pure (True, out)
     ExitFailure {} -> pure (False, out)
 
-data Exec = Exec
+data Exec m = Exec
   { execCmd :: Text,
     execArgs :: [Text],
-    execEnv :: [(String, String)]
+    execEnv :: [(String, String)],
+    postCommand :: Maybe (m ())
   }
 
 type EnvVars = [(String, String)]
@@ -74,7 +79,7 @@ processHandle _ False logHandle p = do
   logCommandEnd logHandle status
   pure status
 
-execInBackground :: (MonadUI m, MonadError Issue m, MonadIO m) => Exec -> ExecOptions -> m ()
+execInBackground :: (MonadUI m, MonadError Issue m, MonadIO m) => Exec m -> ExecOptions -> m ()
 execInBackground Exec {..} ExecOptions {..} = do
   logId <- genLogId envName
   let fx = formatFX (toText $ logPath logId)
@@ -91,7 +96,7 @@ execInBackground Exec {..} ExecOptions {..} = do
   case status of
     ExitSuccess -> do
       liftIO $ uiIndicator fx fxEnabled (Just Checked)
-      pure ()
+      sequence_ postCommand
     _ -> do
       liftIO $ uiIndicator fx fxEnabled (Just Invalid)
       throwError
@@ -102,9 +107,10 @@ execInBackground Exec {..} ExecOptions {..} = do
             issueDetails = Just CommandIssue {issueCommand = cmd, issueLogFile = processLogPath}
           }
 
-inheritRun :: (MonadIO m, MonadUI m) => Exec -> m ()
+inheritRun :: (MonadIO m, MonadUI m) => Exec m -> m ()
 inheritRun Exec {..} = do
   currentEnv <- liftIO getEnvironment
   let targetEnv = execEnv <> currentEnv
   let processConfig = setEnv targetEnv $ proc "/bin/sh" (["-c", toString execCmd] <> map toString execArgs)
   liftIO (runProcess_ processConfig)
+  sequence_ postCommand
