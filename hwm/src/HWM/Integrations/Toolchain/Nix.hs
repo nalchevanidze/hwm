@@ -99,16 +99,12 @@ generateMatrixPkgs (projectName, env) =
       envName = toCamelCase envRaw
       -- 2. Generate the paths list for the group: "[ pkgs.overlay.hwm pkgs.overlay.hwm-golden ]"
       pathList = T.intercalate " " $ map (\pkg -> "pkgs." <> overlay <> "." <> format (pkgName pkg)) (buildPkgs env)
-
-      -- 3. Generate the symlinkJoin block
-      groupPkg =
-        T.unlines
-          [ "        \"" <> envRaw <> "-all\" = pkgs.symlinkJoin {",
-            "          name = \"" <> envRaw <> "-workspace\";",
-            "          paths = [ " <> pathList <> " ];",
-            "        };"
-          ]
-   in map (individualPkg overlay envName) (buildPkgs env) <> [groupPkg]
+   in map (individualPkg overlay envName) (buildPkgs env)
+        <> [ envRaw <> "-all = pkgs.symlinkJoin {",
+             "          name = \"" <> envRaw <> "-workspace\";",
+             "          paths = [ " <> pathList <> " ];",
+             "};"
+           ]
 
 generateDevShell :: Bool -> Context -> [Text]
 generateDevShell _ (_, BuildEnvironment {buildPkgs = []}) = [] -- Handle empty workspace
