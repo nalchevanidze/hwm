@@ -125,21 +125,24 @@ _When HWM generates your configs, it automatically builds the exact relative pat
 
 ### 3. Environments, Builders & CI Profiles
 
-Bring the power of CI matrices directly into your local workspace. HWM allows you to define logical **environments** that map to specific GHC versions, toolchain toggles, and specific builders (`stack`, `cabal`, or `nix`). 
+Bring the power of CI matrices directly into your local workspace. HWM allows you to define logical **environments** that map to specific GHC versions, toolchain toggles, and specific builders (`stack`, `cabal`, or `nix`).
 
-Instead of writing complex bash routing in GitHub Actions or juggling multiple config files locally, you define your targets exactly once.
+Instead of writing complex bash routing in GitHub Actions or juggling multiple config files locally, you define your targets exactly once. HWM treats these files (`stack.yaml`, `cabal.project`, `flake.nix`, `hie.yaml`) as **ephemeral generators**—artifacts of your current profile.
 
 ```yaml
 environments:
   # Global defaults for the workspace
   builder: stack 
   default: stable
-  nix: true # generates flake.nix on hwm sync
-  stack: true # generates stack.yaml on hwm sync
+  nix: true   # Auto-generates flake.nix on 'hwm sync'
+  stack: true # Auto-generates stack.yaml on 'hwm sync'
+  hie: true   # Auto-generates hie.yaml on 'hwm sync'
+
   profiles:
     legacy:
       ghc: 8.10.7
-      # Override global settings: inject specific stack dependencies
+      # Override: Disable HLS for old GHCs and omit from flake.nix
+      hie: false 
       stack:
         extra-deps:
           base-orphans: 0.8.1
@@ -147,53 +150,57 @@ environments:
 
     stable:
       ghc: 9.6.3
-      stack:
-        extra-deps:
-          fastsum: 0.1.1.1
+      builder: nix/cabal # Uses Nix to provide the environment and Cabal to build
 
     # Purpose-built CI profiles
     ci-windows:
       ghc: 9.6.3
       builder: cabal
+      nix: false # Excluded from flake.nix; uses pure Cabal on Windows
+    
     ci-nix:
       ghc: 9.6.3
       builder: nix
 
+    ci-mixed:
+      ghc: 9.6.3
+      builder: nix/cabal # Uses Nix to provide the environment and Cabal to build
 ```
 
 **Seamless CI Integration:**
-By defining `ci-nix` and `ci-windows`, your GitHub Actions workflow becomes incredibly dumb (which is exactly what you want). You just tell HWM to sync the environment, and it instantly pivots the workspace to use the correct underlying toolchain.
+By defining profiles like `ci-nix` and `ci-windows`, your GitHub Actions workflow becomes incredibly simple. You just tell HWM to sync the environment, and it instantly pivots the workspace to use the correct underlying toolchain.
 
 ```bash
+hwm sync ci-mixed
+hwm build # Executes via 'nix develop --command cabal build'
+
 # On Ubuntu/macOS runners:
 hwm sync ci-nix
-hwm build
-hwm test 
+hwm build # Executes 'nix build --no-link .#env-ciNix-all' where 'env-ciNix-all' is a synthetic package that depends on all packages in the workspace, for enviroment 'ci-nix' with ghc 9.6.3.
 
 # On Windows runners:
 hwm sync ci-windows
-hwm build
-hwm test
+hwm build # Executes via 'cabal build'
 ```
 
 **Run Your Matrix Locally:**
-You can also run your tests across all defined environments to guarantee your changes won't break legacy users before you even push to CI. *(Note: Matrix testing currently supports Stack; Nix and Cabal support is coming soon).*
+Avoid "CI Ping-Pong" by running tests across all defined environments locally. HWM handles the context switching between builders (Stack vs. Cabal vs. Nix) automatically.
 
 ```bash
+# Runs the test suite across every defined profile
 hwm test --env=all
-
 ```
 
 <p align="center">
 <img src="images/matrix.png" alt="HWM Matrix Build Output" width="700">
 </p>
 
-**Manual Environment Switching:**
-Need to debug a legacy GHC issue locally? Just switch environments. HWM instantly overwrites your root configs (`stack.yaml`, `cabal.project`, `flake.nix`) to match that specific profile.
+**Manual Environment & IDE Switching:**
+HWM ensures your IDE (HLS) always matches your build environment. When you run `hwm sync`, it doesn't just update the build files; it rewrites `hie.yaml`.
 
 ```bash
+# Instantly overwrites stack.yaml, flake.nix, and hie.yaml for GHC 8.10
 hwm sync legacy
-
 ```
 
 ### 4. Task Runner & Scripts
@@ -202,16 +209,17 @@ HWM includes a lightweight, pass-through task runner. Define simple aliases for 
 
 ```yaml
 scripts:
-  build: cabal build all
-  clean: find . -name "*.cabal" -exec rm -rf {} \; && cabal clean
-  test: cabal test all
+  format: sh scripts/format.sh
+  lint: hlint .
+  test: hwm test --fast
+
 ```
 
 Pass arguments seamlessly to your underlying tools:
 
 ```bash
-# Translates to: cabal test morpheus-graphql-core --test-show-details=direct
-hwm run test -- morpheus-graphql-core --test-show-details=direct
+# Translates to: hwm test --fast -- --only "JSON Parser"
+hwm run test -- --only "JSON Parser"
 
 ```
 
