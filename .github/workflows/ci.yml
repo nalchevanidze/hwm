@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build and Test
+    name: Build
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
@@ -22,7 +22,7 @@ jobs:
         shell: bash
         run: hwm test --fast
 
-  archive:
+  artifacts:
     strategy:
       fail-fast: false
       matrix:
