@@ -41,8 +41,6 @@ jobs:
       - uses: ./.github/actions/setup-windows
       - name: Upload Artifacts
         run: hwm release artifacts
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   hlint:
     runs-on: ubuntu-latest
