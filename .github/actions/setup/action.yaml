@@ -28,6 +28,7 @@ runs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         nix profile install .
         hwm --version
+        hwm sync ci-nix
 
     # ==========================================
     # WINDOWS: Cabal Setup
@@ -63,7 +64,7 @@ runs:
       run: |
         # Install the executable locally
         cabal install exe:hwm --installdir="$HOME/.local/bin" --overwrite-policy=always
-        
+
         # Add local bin to PATH for the rest of the workflow
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
@@ -72,4 +73,4 @@ runs:
       shell: bash
       run: |
         hwm --version
-        hwm sync windows
+        hwm sync ci-windows
