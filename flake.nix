@@ -42,7 +42,6 @@
               stack
             ];
           };
-
           stable = pkgs.hwmStableWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmStableWorkspacePackages; [
@@ -52,7 +51,6 @@
               stack
             ];
           };
-
           legacy = pkgs.hwmLegacyWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmLegacyWorkspacePackages; [
