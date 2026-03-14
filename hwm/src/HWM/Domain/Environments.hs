@@ -60,11 +60,13 @@ import Relude
 type Extras = VersionMap
 
 data Environments = Environments
-  { envsBuilder :: Maybe Builder,
-    envsDefault :: Name,
+  { envsDefault :: Name,
+    envsProfiles :: Map Name EnviromentProfile,
+    envsBuilder :: Maybe Builder,
+    -- generators,
     envsNix :: Maybe Bool,
     envsStack :: Maybe Bool,
-    envsProfiles :: Map Name EnviromentProfile
+    envsHie :: Maybe Bool
   }
   deriving
     ( Generic,
@@ -81,13 +83,21 @@ mkEnvironment ghc =
       profileExclude = Nothing,
       profileStack = Nothing,
       profileNix = Nothing,
-      profileBuilder = Nothing
+      profileBuilder = Nothing,
+      profileHie = Nothing
     }
 
 mkEnvironments :: Version -> Environments
 mkEnvironments ghc =
   let defaultEnv = ("default", mkEnvironment ghc)
-   in Environments {envsDefault = fst defaultEnv, envsProfiles = Map.fromList [defaultEnv], envsStack = Nothing, envsNix = Nothing, envsBuilder = Nothing}
+   in Environments
+        { envsDefault = fst defaultEnv,
+          envsProfiles = Map.fromList [defaultEnv],
+          envsStack = Nothing,
+          envsNix = Nothing,
+          envsBuilder = Nothing,
+          envsHie = Nothing
+        }
 
 environmentHash :: Environments -> Signature
 environmentHash Environments {..} =
@@ -164,7 +174,8 @@ data EnviromentProfile = EnviromentProfile
     profileExclude :: Maybe [WorkspaceRef],
     profileStack :: Maybe (Feature StackEnvironment),
     profileNix :: Maybe (Feature NixEnvironment),
-    profileBuilder :: Maybe Builder
+    profileBuilder :: Maybe Builder,
+    profileHie :: Maybe Bool
   }
   deriving
     ( Generic,
@@ -202,9 +213,10 @@ data BuildEnvironment = BuildEnvironment
     buildExtraDeps :: Maybe Extras,
     buildResolver :: Name,
     buildAllowNewer :: Maybe Bool,
-    buildStack :: Bool,
+    buildBuilder :: Builder,
     buildNix :: Bool,
-    buildBuilder :: Builder
+    buildStack :: Bool,
+    buildHie :: Bool
   }
   deriving
     ( Generic,
@@ -240,9 +252,10 @@ getBuildEnvironments = do
           buildResolver = fromMaybe (eraStackageResolverName $ selectEra (profileGhc env)) (resolver =<< unfeature =<< profileStack env),
           buildGHC = profileGhc env,
           buildAllowNewer = profileStack env >>= unfeature >>= allowNewer,
+          buildBuilder = fromMaybe (CabalBuilder False) (profileBuilder env <|> envsBuilder globalEnv),
           buildStack = isEnabled (envsStack globalEnv) (profileStack env),
           buildNix = isEnabled (envsNix globalEnv) (profileNix env),
-          buildBuilder = fromMaybe (CabalBuilder False) (profileBuilder env <|> envsBuilder globalEnv)
+          buildHie = fromMaybe True (profileHie env <|> envsHie globalEnv)
         }
   where
     excludePkgs build pkgs =

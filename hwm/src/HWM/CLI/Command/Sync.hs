@@ -29,6 +29,6 @@ sync tag = do
     ( [("cabal.project", syncCabalProject)]
         <> [("stack.yaml", syncStackYaml) | buildStack env]
         <> [("flake.nix", syncNixFile) | buildNix env]
-        <> [("hie.yaml", syncHie)]
+        <> [("hie.yaml", syncHie) | buildHie env]
     )
   syncPackages
