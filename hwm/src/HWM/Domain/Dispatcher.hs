@@ -19,7 +19,7 @@ import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..), TargetScope (..), 
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..))
 import HWM.Domain.Workspace (printPkgWSRef)
-import HWM.Integrations.Toolchain.Stack (genStackMatrixConfig, getStackMatrixEnvVars)
+import HWM.Integrations.Toolchain.Stack (setupStackMatrixEnvironment)
 import HWM.Runtime.Process (ExecOptions (..), execInBackground)
 import HWM.Runtime.UI (MonadUI (..), minRowSize, sectionEnvironments, section_, uiRow)
 import Relude
@@ -32,9 +32,8 @@ data DispatcheCommand = DispatcheCommand
 
 dispatch :: DispatcheCommand -> BuildEnvironment -> ConfigT ()
 dispatch (DispatcheCommand cmd tscope flags) env@BuildEnvironment {..} = do
+  envs <- setupStackMatrixEnvironment env
   scope <- excludePackages buildPkgs tscope
-  genStackMatrixConfig env
-  envs <- getStackMatrixEnvVars buildName
   exec <- toExec buildBuilder cmd scope flags envs
   ci <- isCI
   ind <- uiIndentLevel

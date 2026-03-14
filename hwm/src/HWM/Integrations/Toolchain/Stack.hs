@@ -9,10 +9,7 @@
 module HWM.Integrations.Toolchain.Stack
   ( Stack (..),
     syncStackYaml,
-    genStackMatrixConfig,
-    getStackMatrixEnvVars,
-    stackMatrixPath,
-    parseExtraDeps,
+    setupStackMatrixEnvironment,
     scanStackFiles,
     buildMatrix,
   )
@@ -119,6 +116,11 @@ genStackMatrixConfig BuildEnvironment {..} = do
           ..
         }
   pure ()
+
+setupStackMatrixEnvironment :: BuildEnvironment -> ConfigT EnvVars
+setupStackMatrixEnvironment env = do
+  genStackMatrixConfig env
+  getStackMatrixEnvVars (buildName env)
 
 getStackMatrixEnvVars :: Name -> ConfigT EnvVars
 getStackMatrixEnvVars envName = do
