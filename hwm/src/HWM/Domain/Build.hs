@@ -32,7 +32,7 @@ import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, does
 import System.FilePath ((</>))
 
 data Builder
-  = CabalBuilder
+  = CabalBuilder {inNixDevelopment :: Bool}
   | StackBuilder
   | NixBuilder
   deriving (Generic, Show, Ord, Eq)
@@ -42,7 +42,8 @@ instance FromJSON Builder where
   parseJSON _ = fail "Invalid builder. Expected 'cabal', 'stack', or 'nix'."
 
 instance Parse Builder where
-  parse "cabal" = pure CabalBuilder
+  parse "cabal" = pure CabalBuilder {inNixDevelopment = False}
+  parse "nix/cabal" = pure CabalBuilder {inNixDevelopment = True}
   parse "stack" = pure StackBuilder
   parse "nix" = pure NixBuilder
   parse _ = fail "Invalid builder. Expected 'cabal', 'stack', or 'nix'."
@@ -51,7 +52,8 @@ instance ToJSON Builder where
   toJSON = String . format
 
 instance Format Builder where
-  format CabalBuilder = "cabal"
+  format (CabalBuilder False) = "cabal"
+  format (CabalBuilder True) = "nix/cabal"
   format StackBuilder = "stack"
   format NixBuilder = "nix"
 
@@ -162,7 +164,7 @@ mkExec name args = pure $ Exec name args []
 formatFlag :: Builder -> BuildFlag -> [Text]
 -- WARNING: Nix does not accept '--ghc-options' via CLI; it must be set in the flake.
 formatFlag NixBuilder _ = []
-formatFlag CabalBuilder BuildFastFlag = ["--disable-optimization"]
+formatFlag CabalBuilder {} BuildFastFlag = ["--disable-optimization"]
 formatFlag StackBuilder BuildFastFlag = ["--fast"]
 formatFlag _ (GHCOptionsFlag xs) = ["--ghc-options=" <> xs]
 formatFlag _ (CustomBuildFlag txt) = [txt]
@@ -180,14 +182,14 @@ handleScope (ScopePkgs pkgs) = map (format . pkgName) pkgs
 toAction :: (MonadError Issue m) => Platform -> Builder -> BuilderCommand -> TargetScope -> m Exec
 -- Stack and Cabal ignore the system string
 toAction _ StackBuilder Build scope = mkExec "stack" (["build"] <> handleScope scope)
-toAction _ CabalBuilder Build ScopeGlobal = mkExec "cabal" ["build", "all"]
-toAction _ CabalBuilder Build (ScopePkgs pkgs) = mkExec "cabal" (["build"] <> handleScope (ScopePkgs pkgs))
+toAction _ CabalBuilder {} Build ScopeGlobal = mkExec "cabal" ["build", "all"]
+toAction _ CabalBuilder {} Build (ScopePkgs pkgs) = mkExec "cabal" (["build"] <> handleScope (ScopePkgs pkgs))
 toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope scope <> ["--local-bin-path", format dirPath])
-toAction _ CabalBuilder Install {..} ScopeGlobal = mkExec "cabal" (["install", "all:exes"] <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
-toAction _ CabalBuilder Install {..} scope = mkExec "cabal" (["install"] <> handleScope scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
+toAction _ CabalBuilder {} Install {..} ScopeGlobal = mkExec "cabal" (["install", "all:exes"] <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
+toAction _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> handleScope scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
 toAction _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope scope)
-toAction _ CabalBuilder Test ScopeGlobal = mkExec "cabal" ["test", "all"]
-toAction _ CabalBuilder Test scope = mkExec "cabal" (["test"] <> handleScope scope)
+toAction _ CabalBuilder {} Test ScopeGlobal = mkExec "cabal" ["test", "all"]
+toAction _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> handleScope scope)
 -- Nix uses the system string
 toAction _ NixBuilder Build ScopeGlobal = mkExec "nix" ["build"]
 toAction _ NixBuilder Build (ScopePkgs pkgs) = mkExec "nix" $ ["build"] <> map (\pkg -> ".#" <> format (pkgName pkg)) pkgs

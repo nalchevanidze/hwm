@@ -227,7 +227,7 @@ getBuildEnvironments = do
           buildAllowNewer = stack env >>= unfeature >>= allowNewer,
           buildStack = isEnabled (envStack globalEnv) (stack env),
           buildNix = isEnabled (envNix globalEnv) (nix env),
-          buildBuilder = fromMaybe CabalBuilder (envBuilder globalEnv)
+          buildBuilder = fromMaybe (CabalBuilder False) (envBuilder globalEnv)
         }
   where
     excludePkgs build pkgs =
