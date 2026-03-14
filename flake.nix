@@ -16,6 +16,14 @@
           hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
           hwm = hfinal.callCabal2nix "hwm" ./hwm {};
         });
+        hwmCiWindowsWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+          hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+          hwm = hfinal.callCabal2nix "hwm" ./hwm {};
+        });
+        hwmCiNixWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+          hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+          hwm = hfinal.callCabal2nix "hwm" ./hwm {};
+        });
       };
     in
     {
@@ -54,6 +62,24 @@
           legacy = pkgs.hwmLegacyWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmLegacyWorkspacePackages; [
+              cabal-install
+              haskell-language-server
+              hlint
+              stack
+            ];
+          };
+          ciWindows = pkgs.hwmCiWindowsWorkspacePackages.shellFor {
+            packages = p: [ p.hwm-golden p.hwm ];
+            buildInputs = with pkgs.hwmCiWindowsWorkspacePackages; [
+              cabal-install
+              haskell-language-server
+              hlint
+              stack
+            ];
+          };
+          ciNix = pkgs.hwmCiNixWorkspacePackages.shellFor {
+            packages = p: [ p.hwm-golden p.hwm ];
+            buildInputs = with pkgs.hwmCiNixWorkspacePackages; [
               cabal-install
               haskell-language-server
               hlint
