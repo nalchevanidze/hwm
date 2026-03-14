@@ -74,10 +74,8 @@ release:
     main:
     - libs/_root_
 scripts:
-  test: stack test --fast
-  clean: stack clean
   format: sh scripts/format.sh
   format:fix: sh scripts/format.sh --fix
   lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
-  test:update: GOLDEN_UPDATE=1 stack test --fast
+  test:update: GOLDEN_UPDATE=1 hwm test --fast

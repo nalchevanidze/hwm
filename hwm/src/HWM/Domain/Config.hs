@@ -85,9 +85,7 @@ instance
 defaultScripts :: Map Name Text
 defaultScripts =
   Map.fromList
-    [ ("test", "stack test {TARGET} --fast"),
-      ("lint", "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .")
-    ]
+    [("lint", "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .")]
 
 getScript :: (MonadError e f, IsString e) => Name -> Config -> f Text
 getScript name cfg =
