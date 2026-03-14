@@ -38,5 +38,5 @@ runs:
       shell: bash
       run: |
         hash -r || true
-        hwm install --fast
+        stack install --fast
         hwm --version
