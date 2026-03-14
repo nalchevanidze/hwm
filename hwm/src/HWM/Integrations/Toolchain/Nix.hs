@@ -21,9 +21,8 @@ syncNixFile :: ConfigT Status
 syncNixFile = do
   Config {..} <- asks config
   ops <- asks options
-  -- TODO: fix later to avoid redundant calls to getBuildEnvironment
   benv <- getBuildEnvironment Nothing
-  benvs <- reverse <$> getBuildEnvironments
+  benvs <- filter buildNix <$> getBuildEnvironments
   syncFile (optionsNix ops) (deriveFlakeNix (cfgName, benv) (map (cfgName,) benvs))
 
 renderName :: Context -> Text
