@@ -1,7 +1,7 @@
 module Commands.Status (testStatus) where
 
-import Test.Hspec (Spec, describe, it)
 import HWM.Golden (Golden (..), goldenTest)
+import Test.Hspec (Spec, describe, it)
 
 testStatus :: Spec
 testStatus = describe "status" $ do
