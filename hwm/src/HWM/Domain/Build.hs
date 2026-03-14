@@ -23,7 +23,6 @@ import HWM.Core.Formatting (Format (..), toCamelCase)
 import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue)
-import HWM.Runtime.Platform (Platform (..), detectPlatform, toNixSystem)
 import HWM.Runtime.Process (EnvVars, Exec (..), mkExec)
 import Relude
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, doesPathExist, emptyPermissions, listDirectory, removeFile, removePathForcibly, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
@@ -154,8 +153,7 @@ formatFlag _ (CustomBuildFlag txt) = [txt]
 
 toExec :: (MonadIO m, MonadError Issue m) => Name -> Builder -> BuilderCommand -> TargetScope -> [BuildFlag] -> [(String, String)] -> m (Exec m)
 toExec envName builder cmd scope flags envs = do
-  p <- detectPlatform
-  Exec {..} <- toAction (Env envName p) builder cmd scope
+  Exec {..} <- toAction (Env envName) builder cmd scope
   pure $ inNixDevelop envName nixEnabled $ Exec execCmd (execArgs <> concatMap (formatFlag builder) flags) envs postCommand
   where
     nixEnabled = CabalBuilder {inNixDevelopment = True} == builder
@@ -185,10 +183,7 @@ mkStack cmd scope ops = mkExec "stack" ([cmd] <> handleScope False scope <> ops)
 mkCabal :: (Applicative m) => Text -> TargetScope -> [Text] -> m (Exec m)
 mkCabal cmd scope ops = mkExec "cabal" ([cmd] <> handleScope True scope <> ops)
 
-data Env = Env
-  { envName :: Name,
-    platform :: Platform
-  }
+newtype Env = Env {envName :: Name}
 
 toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
@@ -209,9 +204,4 @@ toAction _ NixBuilder Install {..} scope =
     ScopePkgs _ -> throwError "Multiple package install is not supported with Nix builder."
 
 -- TODO: use nix flake only for hwm test --all-envs
--- case scope of
---   ScopeGlobal -> mkExec "nix" ["flake", "check"]
---   ScopePkgs pkgs ->
---     mkExec "nix"
---       $ ["build", "-L", "--no-link"]
---       <> map (\pkg -> ".#checks." <> toNixSystem (platform ctx) <> "." <> format (pkgName pkg)) pkgs
+-- mkExec "nix" ["flake", "check"]
