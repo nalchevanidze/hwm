@@ -160,10 +160,6 @@ toExec envName builder cmd scope flags envs = do
   where
     nixEnabled = CabalBuilder {inNixDevelopment = True} == builder
 
-handleScope :: TargetScope -> [Text]
-handleScope ScopeGlobal = []
-handleScope (ScopePkgs pkgs) = map (format . pkgName) pkgs
-
 toNixEnv :: Text -> Text
 toNixEnv name = ".#" <> toCamelCase name
 
@@ -176,17 +172,18 @@ genTargets envName pkgs =
   let envSuffix = toCamelCase (format envName)
    in map (\pkg -> ".#" <> format (pkgName pkg) <> "-" <> envSuffix) pkgs
 
+handleScope :: Bool -> TargetScope -> [Text]
+handleScope isCabal ScopeGlobal = ["all" | isCabal]
+handleScope _ (ScopePkgs pkgs) = map (format . pkgName) pkgs
+
 toAction :: (MonadError Issue m, MonadIO m) => Name -> Platform -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack and Cabal ignore the system string
-toAction _ _ StackBuilder Build scope = mkExec "stack" (["build"] <> handleScope scope)
-toAction _ _ CabalBuilder {} Build ScopeGlobal = mkExec "cabal" ["build", "all"]
-toAction _ _ CabalBuilder {} Build (ScopePkgs pkgs) = mkExec "cabal" (["build"] <> handleScope (ScopePkgs pkgs))
-toAction _ _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope scope <> ["--local-bin-path", format dirPath])
-toAction _ _ CabalBuilder {} Install {..} ScopeGlobal = mkExec "cabal" (["install", "all:exes"] <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
-toAction _ _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> handleScope scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
-toAction _ _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope scope)
-toAction _ _ CabalBuilder {} Test ScopeGlobal = mkExec "cabal" ["test", "all"]
-toAction _ _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> handleScope scope)
+toAction _ _ StackBuilder Build scope = mkExec "stack" (["build"] <> handleScope False scope)
+toAction _ _ CabalBuilder {} Build scope = mkExec "cabal" (["build"] <> handleScope True scope)
+toAction _ _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope False scope <> ["--local-bin-path", format dirPath])
+toAction _ _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> handleScope True scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
+toAction _ _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope False scope)
+toAction _ _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> handleScope True scope)
 -- Nix uses the system string
 toAction _ _ NixBuilder Build ScopeGlobal = mkExec "nix" ["build"]
 toAction envName _ NixBuilder Build (ScopePkgs pkgs) = mkExec "nix" $ ["build"] <> genTargets envName pkgs
