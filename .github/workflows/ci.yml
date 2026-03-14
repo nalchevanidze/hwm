@@ -15,9 +15,11 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Build
+        shell: bash
         run: hwm build --fast
 
       - name: Test
+        shell: bash
         run: hwm test --fast
 
   archive:
@@ -32,6 +34,7 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Test Archiving
+        shell: bash
         run: hwm release artifacts
 
   style:
