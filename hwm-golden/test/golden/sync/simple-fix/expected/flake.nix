@@ -8,10 +8,10 @@
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       haskellOverlay = final: prev: {
-            simpleWorkspacePackages = prev.haskell.packages.ghc810.extend (hfinal: hprev: {
-              foo = hfinal.callCabal2nix "foo" ./foo {};
-              bar = hfinal.callCabal2nix "bar" ./bar {};
-            });
+        simpleFooWorkspacePackages = prev.haskell.packages.ghc810.extend (hfinal: hprev: {
+          foo = hfinal.callCabal2nix "foo" ./foo {};
+          bar = hfinal.callCabal2nix "bar" ./bar {};
+        });
       };
     in
     {
@@ -20,17 +20,26 @@
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
         {
-          foo = pkgs.simpleWorkspacePackages.foo;
-          bar = pkgs.simpleWorkspacePackages.bar;
+          foo = pkgs.simpleFooWorkspacePackages.foo;
+          bar = pkgs.simpleFooWorkspacePackages.bar;
         });
       devShells = forAllSystems (system:
         let
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
         {
-          default = pkgs.simpleWorkspacePackages.shellFor {
+          default = pkgs.simpleFooWorkspacePackages.shellFor {
             packages = p: [ p.foo p.bar ];
-            buildInputs = with pkgs.simpleWorkspacePackages; [
+            buildInputs = with pkgs.simpleFooWorkspacePackages; [
+              cabal-install
+              haskell-language-server
+              hlint
+              stack
+            ];
+          };
+          foo = pkgs.simpleFooWorkspacePackages.shellFor {
+            packages = p: [ p.foo p.bar ];
+            buildInputs = with pkgs.simpleFooWorkspacePackages; [
               cabal-install
               haskell-language-server
               hlint
