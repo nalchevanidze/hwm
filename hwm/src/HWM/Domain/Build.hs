@@ -183,23 +183,25 @@ data NixContext = NixContext
   }
 
 toAction :: (MonadError Issue m, MonadIO m) => NixContext -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
--- Stack and Cabal ignore the system string
+-- Stack
 toAction _ StackBuilder Build scope = mkExec "stack" (["build"] <> handleScope False scope)
-toAction _ CabalBuilder {} Build scope = mkExec "cabal" (["build"] <> handleScope True scope)
 toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope False scope <> ["--local-bin-path", format dirPath])
-toAction _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> handleScope True scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
 toAction _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope False scope)
+-- Cabal
+toAction _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> handleScope True scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
+toAction _ CabalBuilder {} Build scope = mkExec "cabal" (["build"] <> handleScope True scope)
 toAction _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> handleScope True scope)
--- Nix uses the system string
+-- Nix
 toAction ctx NixBuilder Build scope = mkExec "nix" $ ["build"] <> nixScope (envName ctx) scope
--- Start Nix Install
-toAction _ NixBuilder Install {..} ScopeGlobal = pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result-global")] [] (Just $ extractGlobalNixArtifacts dirPath)
-toAction _ NixBuilder Install {..} (ScopePkgs [pkg]) = pure $ Exec "nix" ["build", ".#" <> format (pkgName pkg), "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifact (pkgName pkg) dirPath)
-toAction _ NixBuilder Install {} (ScopePkgs _) = throwError "Multiple package install is not supported with Nix builder."
--- end Nix Install
-toAction _ NixBuilder Test ScopeGlobal = mkExec "nix" ["flake", "check"]
--- Map over the list of packages (ac) to build multiple test checks at once!
-toAction ctx NixBuilder Test (ScopePkgs pkgs) =
-  mkExec "nix"
-    $ ["build", "-L", "--no-link"]
-    <> map (\pkg -> ".#checks." <> toNixSystem (platform ctx) <> "." <> format (pkgName pkg)) pkgs
+toAction _ NixBuilder Install {..} scope =
+  case scope of
+    ScopeGlobal -> pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result-global")] [] (Just $ extractGlobalNixArtifacts dirPath)
+    ScopePkgs [pkg] -> pure $ Exec "nix" ["build", ".#" <> format (pkgName pkg), "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifact (pkgName pkg) dirPath)
+    ScopePkgs _ -> throwError "Multiple package install is not supported with Nix builder."
+toAction ctx NixBuilder Test scope =
+  case scope of
+    ScopeGlobal -> mkExec "nix" ["flake", "check"]
+    ScopePkgs pkgs ->
+      mkExec "nix"
+        $ ["build", "-L", "--no-link"]
+        <> map (\pkg -> ".#checks." <> toNixSystem (platform ctx) <> "." <> format (pkgName pkg)) pkgs
