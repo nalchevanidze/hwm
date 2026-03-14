@@ -1,19 +1,26 @@
 # hash: b0ee06f57dae0b996c4bbf36ac42e765ab795b7911c520377604a48d6c4d64c1
 name: hwm
-version: 0.3.0
+version: 0.4.0
 github: nalchevanidze/hwm
 workspace:
   libs:
     members:
-      - golden
-      - .
+    - golden
+    - .
     prefix: hwm
 environments:
   builder: nix/cabal
   default: stable
-  nix: true
   hie: true
+  nix: true
   profiles:
+    ci-nix:
+      ghc: 9.6.3
+      builder: nix
+    ci-windows:
+      ghc: 9.6.3
+      builder: cabal
+      nix: false
     legacy:
       ghc: 8.10.7
       hie: false
@@ -36,13 +43,6 @@ environments:
           fastsum: 0.1.1.1
           list-extras: 0.4.1.6
           type-aligned: 0.9.6
-    ci-windows:
-      ghc: 9.6.3
-      nix: false
-      builder: cabal
-    ci-nix:
-      ghc: 9.6.3
-      builder: nix
   stack: true
 registry:
   aeson: '               >=  1.5.6.0     &&  <=  2.2.3.0'
@@ -82,11 +82,10 @@ release:
     hwm: libs/_root_:hwm
   publish:
     main:
-      - libs/_root_
+    - libs/_root_
 scripts:
   format: sh scripts/format.sh
   format:fix: sh scripts/format.sh --fix
-  lint:
-    curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
+  lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
   test:update: GOLDEN_UPDATE=1 hwm test --fast
