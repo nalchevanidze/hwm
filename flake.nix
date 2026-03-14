@@ -37,7 +37,7 @@
           hwm = pkgs.hwmStableWorkspacePackages.hwm;
           hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
           hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
-          stable-all = pkgs.symlinkJoin {
+          env-stable-all = pkgs.symlinkJoin {
             name = "stable-workspace";
             paths = [ 
               pkgs.hwmStableWorkspacePackages.hwm-golden
@@ -46,7 +46,7 @@
           };
           hwm-golden-legacy = pkgs.hwmLegacyWorkspacePackages.hwm-golden;
           hwm-legacy = pkgs.hwmLegacyWorkspacePackages.hwm;
-          legacy-all = pkgs.symlinkJoin {
+          env-legacy-all = pkgs.symlinkJoin {
             name = "legacy-workspace";
             paths = [ 
               pkgs.hwmLegacyWorkspacePackages.hwm-golden
@@ -55,7 +55,7 @@
           };
           hwm-golden-ciWindows = pkgs.hwmCiWindowsWorkspacePackages.hwm-golden;
           hwm-ciWindows = pkgs.hwmCiWindowsWorkspacePackages.hwm;
-          ciWindows-all = pkgs.symlinkJoin {
+          env-ciWindows-all = pkgs.symlinkJoin {
             name = "ci-windows-workspace";
             paths = [ 
               pkgs.hwmCiWindowsWorkspacePackages.hwm-golden
@@ -64,7 +64,7 @@
           };
           hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
-          ciNix-all = pkgs.symlinkJoin {
+          env-ciNix-all = pkgs.symlinkJoin {
             name = "ci-nix-workspace";
             paths = [ 
               pkgs.hwmCiNixWorkspacePackages.hwm-golden
