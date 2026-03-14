@@ -67,7 +67,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
                 <> generateOverlay ctxs
             )
             ( forAllSystems "packages" (generatePublicPackages ctx (buildPkgs benv))
-                <> forAllSystems "devShells" (concatMap (uncurry generateDevShell) (ctx : ctxs))
+                <> forAllSystems "devShells" (concatMap (generateDevShell False) (ctx : ctxs))
             )
             False
       )
@@ -85,10 +85,10 @@ generatePublicPackages ctx@(projectName, _) pkgs = map renderPublicPackage pkgs 
       let defaultPkg = maybeToList $ find ((projectName ==) . format . pkgName) pkgs
        in map (\pkg -> "default = " <> pkgsNixName ctx <> "." <> format (pkgName pkg) <> ";") defaultPkg
 
-generateDevShell :: Name -> BuildEnvironment -> [Text]
-generateDevShell _ BuildEnvironment {buildPkgs = []} = [] -- Handle empty workspace
-generateDevShell projectName benv@BuildEnvironment {..} =
-  [ "default = " <> pkgsNixName (projectName, benv) <> ".shellFor {",
+generateDevShell :: Bool -> Context -> [Text]
+generateDevShell _ (_, BuildEnvironment {buildPkgs = []}) = [] -- Handle empty workspace
+generateDevShell isDefault (projectName, benv@BuildEnvironment {..}) =
+  [ name <> " = " <> pkgsNixName (projectName, benv) <> ".shellFor {",
     "  packages = p: [ " <> renderPackageList buildPkgs <> " ];",
     "  buildInputs = with " <> pkgsNixName (projectName, benv) <> "; ["
   ]
@@ -97,6 +97,7 @@ generateDevShell projectName benv@BuildEnvironment {..} =
          "};"
        ]
   where
+    name = if isDefault then "default" else format buildName
     libs = ["cabal-install", "haskell-language-server", "hlint"] <> stackLibs
     stackLibs = ["stack" | buildStack]
     renderPackageList = T.intercalate " " . map (\pkg -> "p." <> format (pkgName pkg))
