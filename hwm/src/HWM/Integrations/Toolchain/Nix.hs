@@ -97,7 +97,7 @@ generateDevShell isDefault (projectName, benv@BuildEnvironment {..}) =
          "};"
        ]
   where
-    name = if isDefault then "default" else format buildName
+    name = if isDefault then "default" else toCamelCase (format buildName)
     libs = ["cabal-install", "haskell-language-server", "hlint"] <> stackLibs
     stackLibs = ["stack" | buildStack]
     renderPackageList = T.intercalate " " . map (\pkg -> "p." <> format (pkgName pkg))
