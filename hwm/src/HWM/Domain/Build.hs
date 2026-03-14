@@ -63,7 +63,6 @@ comandLabel :: BuilderCommand -> Text
 comandLabel Build {} = "build"
 comandLabel Test {} = "test"
 comandLabel Install {} = "build"
-comandLabel Custom {} = "comand"
 
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
 extractNixArtifact pkgName distDir = do
@@ -138,7 +137,6 @@ data BuilderCommand
   = Build
   | Test
   | Install {dirPath :: FilePath}
-  | Custom Text
   deriving (Eq, Show)
 
 data BuildFlag
@@ -204,20 +202,3 @@ toAction _ p NixBuilder Test (ScopePkgs pkgs) =
   mkExec "nix"
     $ ["build", "-L", "--no-link"]
     <> map (\pkg -> ".#checks." <> toNixSystem p <> "." <> format (pkgName pkg)) pkgs
-toAction _ _ _ (Custom customCmd) scope = do
-  cmd <- resolveTargets scope customCmd
-  mkExec cmd []
-
-resolveTargets :: (MonadError Issue m) => TargetScope -> Text -> m Text
-resolveTargets ScopeGlobal cmd
-  | hasTarget cmd = throwError "Target Not Allowed! This command is Global-only and does not support specific targets."
-  | otherwise = pure cmd
-resolveTargets (ScopePkgs pkgs) cmd
-  | hasTarget cmd = pure $ T.replace targetKeyword (T.unwords (map (format . pkgName) pkgs)) cmd
-  | otherwise = throwError "Missing Target! This command requires specific targets (e.g. --target app1)."
-
-hasTarget :: Text -> Bool
-hasTarget cmd = targetKeyword `T.isInfixOf` cmd
-
-targetKeyword :: Text
-targetKeyword = "{TARGET}"
