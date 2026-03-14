@@ -183,6 +183,7 @@ toAction _ StackBuilder Build scope = mkExec "stack" (["build"] <> handleScope s
 toAction _ CabalBuilder Build ScopeGlobal = mkExec "cabal" ["build", "all"]
 toAction _ CabalBuilder Build (ScopePkgs pkgs) = mkExec "cabal" (["build"] <> handleScope (ScopePkgs pkgs))
 toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope scope <> ["--local-bin-path", format dirPath])
+toAction _ CabalBuilder Install {..} ScopeGlobal = mkExec "cabal" (["install", "all:exes"] <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
 toAction _ CabalBuilder Install {..} scope = mkExec "cabal" (["install"] <> handleScope scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
 toAction _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope scope)
 toAction _ CabalBuilder Test ScopeGlobal = mkExec "cabal" ["test", "all"]
