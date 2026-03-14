@@ -77,11 +77,11 @@ addProfile name profile envs = envs {envsProfiles = Map.insert name profile (env
 mkEnvironment :: Version -> EnviromentProfile
 mkEnvironment ghc =
   EnviromentProfile
-    { ghc = ghc,
-      exclude = Nothing,
-      stack = Nothing,
-      nix = Nothing,
-      builder = Nothing
+    { profileGhc = ghc,
+      profileExclude = Nothing,
+      profileStack = Nothing,
+      profileNix = Nothing,
+      profileBuilder = Nothing
     }
 
 mkEnvironments :: Version -> Environments
@@ -91,7 +91,7 @@ mkEnvironments ghc =
 
 environmentHash :: Environments -> Signature
 environmentHash Environments {..} =
-  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< unfeature <=< stack) (toList envsProfiles)
+  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< unfeature <=< profileStack) (toList envsProfiles)
   where
     toSig (pkg, v) = format pkg <> "-" <> format v
 
@@ -123,9 +123,9 @@ instance
       checkTarget fileSig EnviromentProfile {..}
         | fileSig == signature = checkExclude
         -- checking all hkgRefs is expensive, so we skip it if the signature matches
-        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs (extraDeps =<< unfeature =<< stack)), checkExclude]
+        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs (extraDeps =<< unfeature =<< profileStack)), checkExclude]
         where
-          checkExclude = checkWorkspaceRefs (fromMaybe [] exclude)
+          checkExclude = checkWorkspaceRefs (fromMaybe [] profileExclude)
 
 data Feature a = Enabled a | Disabled deriving (Generic, Show, Ord, Eq)
 
@@ -160,11 +160,11 @@ instance FromJSON NixEnvironment where
   parseJSON _ = fail "Invalid Nix environment configuration. Expected an object or a boolean."
 
 data EnviromentProfile = EnviromentProfile
-  { ghc :: Version,
-    exclude :: Maybe [WorkspaceRef],
-    stack :: Maybe (Feature StackEnvironment),
-    nix :: Maybe (Feature NixEnvironment),
-    builder :: Maybe Builder
+  { profileGhc :: Version,
+    profileExclude :: Maybe [WorkspaceRef],
+    profileStack :: Maybe (Feature StackEnvironment),
+    profileNix :: Maybe (Feature NixEnvironment),
+    profileBuilder :: Maybe Builder
   }
   deriving
     ( Generic,
@@ -173,11 +173,14 @@ data EnviromentProfile = EnviromentProfile
       Eq
     )
 
+profilePrefix :: String
+profilePrefix = "prefile"
+
 instance FromJSON EnviromentProfile where
-  parseJSON = genericParseJSON aesonYAMLOptions
+  parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced profilePrefix)
 
 instance ToJSON EnviromentProfile where
-  toJSON = genericToJSON aesonYAMLOptions
+  toJSON = genericToJSON (aesonYAMLOptionsAdvanced profilePrefix)
 
 data StackEnvironment = StackEnvironment
   { resolver :: Maybe Name,
@@ -233,17 +236,17 @@ getBuildEnvironments = do
       BuildEnvironment
         { buildPkgs = excludePkgs env pkgs,
           buildName = name,
-          buildExtraDeps = extraDeps =<< unfeature =<< stack env,
-          buildResolver = fromMaybe (eraStackageResolverName $ selectEra (ghc env)) (resolver =<< unfeature =<< stack env),
-          buildGHC = ghc env,
-          buildAllowNewer = stack env >>= unfeature >>= allowNewer,
-          buildStack = isEnabled (envsStack globalEnv) (stack env),
-          buildNix = isEnabled (envsNix globalEnv) (nix env),
+          buildExtraDeps = extraDeps =<< unfeature =<< profileStack env,
+          buildResolver = fromMaybe (eraStackageResolverName $ selectEra (profileGhc env)) (resolver =<< unfeature =<< profileStack env),
+          buildGHC = profileGhc env,
+          buildAllowNewer = profileStack env >>= unfeature >>= allowNewer,
+          buildStack = isEnabled (envsStack globalEnv) (profileStack env),
+          buildNix = isEnabled (envsNix globalEnv) (profileNix env),
           buildBuilder = fromMaybe (CabalBuilder False) (envsBuilder globalEnv)
         }
   where
     excludePkgs build pkgs =
-      let excluseion = fromMaybe [] (exclude build)
+      let excluseion = fromMaybe [] (profileExclude build)
        in filter (not . (\pkg -> any (`isMember` pkg) excluseion)) pkgs
 
 getBuildEnvironment ::

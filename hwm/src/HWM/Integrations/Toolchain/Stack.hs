@@ -142,7 +142,7 @@ deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExte
 
 buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> [(Name, Stack)] -> m Environments
 buildMatrix pkgs (defaultEnv : envs) = do
-  environments <- sortOn (ghc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
+  environments <- sortOn (profileGhc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
   pure Environments {envsDefault = fst defaultEnv, envsProfiles = Map.fromList environments, envsStack = Just True, envsNix = Nothing, envsBuilder = Just StackBuilder}
 buildMatrix _ [] = pure $ mkEnvironments latestGHCVersion
 
@@ -154,7 +154,7 @@ inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do
   pure
     ( name,
       (mkEnvironment ghc)
-        { stack = Just (Enabled StackEnvironment {resolver = Just resolver, ..}),
-          exclude = if null excludeList then Nothing else Just (map toWorkspaceRef excludeList)
+        { profileStack = Just (Enabled StackEnvironment {resolver = Just resolver, ..}),
+          profileExclude = if null excludeList then Nothing else Just (map toWorkspaceRef excludeList)
         }
     )
