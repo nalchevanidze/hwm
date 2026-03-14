@@ -165,10 +165,11 @@ handleScope :: TargetScope -> [Text]
 handleScope ScopeGlobal = []
 handleScope (ScopePkgs pkgs) = map (format . pkgName) pkgs
 
+toNixEnv :: Text -> Text
+toNixEnv name = ".#" <> toCamelCase name
+
 inNixDevelop :: Name -> Bool -> Exec m -> Exec m
-inNixDevelop envName True (Exec cmd ops env post) = Exec "nix" (["develop", targetAttr, "--command", cmd] <> ops) env post
-  where
-    targetAttr = ".#" <> toCamelCase envName
+inNixDevelop envName True (Exec cmd ops env post) = Exec "nix" (["develop", toNixEnv envName, "--command", cmd] <> ops) env post
 inNixDevelop _ False e = e
 
 genTargets :: (Format p) => p -> [Pkg] -> [Text]
