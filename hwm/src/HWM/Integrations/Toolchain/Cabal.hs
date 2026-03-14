@@ -143,21 +143,13 @@ generateCabalProject prefix BuildEnvironment {..} =
     printPkg pkg = "  " <> prefix <> format (P.pkgDirPath pkg)
     dependsOnNix = buildBuilder == CabalBuilder True || buildBuilder == NixBuilder
 
-cabalMatrixPath :: Name -> ConfigT FilePath
-cabalMatrixPath name = liftIO $ makeAbsolute $ ".hwm/matrix/cabal-" <> toString name <> ".project"
-
 setupCabalMatrixEnvironment :: BuildEnvironment -> ConfigT EnvVars
 setupCabalMatrixEnvironment env = do
-  projectPath <- cabalMatrixPath (buildName env)
-  genCabalMatrixConfig env
+  matrixDir <- liftIO $ makeAbsolute ".hwm/matrix/"
+  liftIO $ createDirectoryIfMissing True matrixDir
+  let projectPath = matrixDir <> "cabal-" <> toString (buildName env) <> ".project"
+  _ <- syncFile projectPath (generateCabalProject "../../" env)
   pure [("CABAL_PROJECT_FILE", projectPath)]
-
-genCabalMatrixConfig :: BuildEnvironment -> ConfigT ()
-genCabalMatrixConfig env = do
-  path <- cabalMatrixPath (buildName env)
-  liftIO $ createDirectoryIfMissing True ".hwm/matrix/"
-  _ <- syncFile path (generateCabalProject "../../" env)
-  pure ()
 
 syncCabalProject :: ConfigT Status
 syncCabalProject = do
