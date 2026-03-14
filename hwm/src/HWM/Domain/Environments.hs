@@ -213,9 +213,10 @@ data BuildEnvironment = BuildEnvironment
     buildExtraDeps :: Maybe Extras,
     buildResolver :: Name,
     buildAllowNewer :: Maybe Bool,
-    buildStack :: Bool,
+    buildBuilder :: Builder,
     buildNix :: Bool,
-    buildBuilder :: Builder
+    buildStack :: Bool,
+    buildHie :: Bool
   }
   deriving
     ( Generic,
@@ -251,9 +252,10 @@ getBuildEnvironments = do
           buildResolver = fromMaybe (eraStackageResolverName $ selectEra (profileGhc env)) (resolver =<< unfeature =<< profileStack env),
           buildGHC = profileGhc env,
           buildAllowNewer = profileStack env >>= unfeature >>= allowNewer,
+          buildBuilder = fromMaybe (CabalBuilder False) (profileBuilder env <|> envsBuilder globalEnv),
           buildStack = isEnabled (envsStack globalEnv) (profileStack env),
           buildNix = isEnabled (envsNix globalEnv) (profileNix env),
-          buildBuilder = fromMaybe (CabalBuilder False) (profileBuilder env <|> envsBuilder globalEnv)
+          buildHie = fromMaybe True (profileHie env <|> envsHie globalEnv)
         }
   where
     excludePkgs build pkgs =
