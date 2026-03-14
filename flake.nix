@@ -37,12 +37,40 @@
           hwm = pkgs.hwmStableWorkspacePackages.hwm;
           hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
           hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
+          env-stable-all = pkgs.symlinkJoin {
+            name = "stable-workspace";
+            paths = [ 
+              pkgs.hwmStableWorkspacePackages.hwm-golden
+              pkgs.hwmStableWorkspacePackages.hwm
+           ];
+          };
           hwm-golden-legacy = pkgs.hwmLegacyWorkspacePackages.hwm-golden;
           hwm-legacy = pkgs.hwmLegacyWorkspacePackages.hwm;
+          env-legacy-all = pkgs.symlinkJoin {
+            name = "legacy-workspace";
+            paths = [ 
+              pkgs.hwmLegacyWorkspacePackages.hwm-golden
+              pkgs.hwmLegacyWorkspacePackages.hwm
+           ];
+          };
           hwm-golden-ciWindows = pkgs.hwmCiWindowsWorkspacePackages.hwm-golden;
           hwm-ciWindows = pkgs.hwmCiWindowsWorkspacePackages.hwm;
+          env-ciWindows-all = pkgs.symlinkJoin {
+            name = "ci-windows-workspace";
+            paths = [ 
+              pkgs.hwmCiWindowsWorkspacePackages.hwm-golden
+              pkgs.hwmCiWindowsWorkspacePackages.hwm
+           ];
+          };
           hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
+          env-ciNix-all = pkgs.symlinkJoin {
+            name = "ci-nix-workspace";
+            paths = [ 
+              pkgs.hwmCiNixWorkspacePackages.hwm-golden
+              pkgs.hwmCiNixWorkspacePackages.hwm
+           ];
+          };
         });
       devShells = forAllSystems (system:
         let
@@ -95,5 +123,6 @@
             ];
           };
         });
+      checks = forAllSystems (system: self.packages.${system});
     };
 }

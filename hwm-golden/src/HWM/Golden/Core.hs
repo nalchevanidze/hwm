@@ -1,9 +1,10 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Core (assertNotModified, diffChanges, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
+module HWM.Golden.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
 import Data.Aeson (ToJSON)
@@ -11,12 +12,15 @@ import Data.Aeson.Types (FromJSON)
 import qualified Data.ByteString as BS
 import qualified Data.List as S
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime)
 import qualified GHC.IO.Exception as System.Exit
 import Relude
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
 import System.FilePath (takeDirectory, takeExtension, (</>))
+import System.FilePath.Glob (glob)
 import System.IO.Temp (withSystemTempDirectory)
 import System.Process (callCommand, readCreateProcessWithExitCode, shell)
 import Test.Hspec (Expectation, expectationFailure, shouldBe)
@@ -147,3 +151,17 @@ diffChanges expectedDir (ChangeReport added deleted modified) = do
       $ expectationFailure
       $ "Idempotency failure: File should have been deleted but still exists: "
       ++ f
+
+sanitizeCabal :: T.Text -> T.Text
+sanitizeCabal =
+  T.unlines
+    . filter (not . T.isPrefixOf "-- This file has been generated")
+    . T.lines
+
+sanitizeAllCabals :: IO ()
+sanitizeAllCabals = do
+  cabalFiles <- glob "./**/*.cabal"
+  forM_ cabalFiles $ \path -> do
+    content <- TIO.readFile path
+    let sanitized = sanitizeCabal content
+    when (content /= sanitized) $ TIO.writeFile path sanitized

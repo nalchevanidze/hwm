@@ -1,7 +1,7 @@
 module Commands.Workspace (testWorkspace) where
 
+import HWM.Golden (Golden (..), goldenTest)
 import Test.Hspec (Spec, describe, it)
-import Utils.Golden (Golden (..), goldenTest)
 
 testWorkspace :: Spec
 testWorkspace = describe "workspace" $ do

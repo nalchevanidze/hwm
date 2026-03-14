@@ -22,6 +22,15 @@
         {
           foo = pkgs.simpleFooWorkspacePackages.foo;
           bar = pkgs.simpleFooWorkspacePackages.bar;
+          foo-foo = pkgs.simpleFooWorkspacePackages.foo;
+          bar-foo = pkgs.simpleFooWorkspacePackages.bar;
+          env-foo-all = pkgs.symlinkJoin {
+            name = "foo-workspace";
+            paths = [ 
+              pkgs.simpleFooWorkspacePackages.foo
+              pkgs.simpleFooWorkspacePackages.bar
+           ];
+          };
         });
       devShells = forAllSystems (system:
         let
@@ -47,5 +56,6 @@
             ];
           };
         });
+      checks = forAllSystems (system: self.packages.${system});
     };
 }

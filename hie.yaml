@@ -2,6 +2,8 @@ cradle:
   stack:
     stackYaml: ./stack.yaml
     components:
+    - path: ./hwm-golden/src
+      component: hwm-golden:lib
     - path: ./hwm-golden/test
       component: hwm-golden:test:hwm-golden-sync
     - path: ./hwm/src

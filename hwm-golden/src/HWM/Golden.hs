@@ -1,16 +1,16 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Golden (Golden (..), goldenTest) where
+module HWM.Golden (Golden (..), goldenTest) where
 
 import Data.Aeson (decode, encode)
 import qualified Data.ByteString.Lazy as LBS
+import HWM.Golden.Core (diffChanges, inWorkDir, runHWM, sanitizeAllCabals, saveSnapshot, trackChanges)
 import Relude
 import System.Directory (makeAbsolute)
 import System.FilePath ((</>))
 import qualified System.IO as IO
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (diffChanges, inWorkDir, runHWM, saveSnapshot, trackChanges)
 
 data Golden = Golden
   { cmd :: String,
@@ -30,6 +30,7 @@ goldenTest Golden {..} = do
   updateMode <- isUpdateMode
   inWorkDir project scenarioDir $ do
     (changes, out) <- trackChanges (runHWM cmd)
+    sanitizeAllCabals
     if updateMode
       then do
         saveSnapshot changes expectedDir

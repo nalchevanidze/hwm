@@ -68,6 +68,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
             )
             ( forAllSystems "packages" (generatePublicPackages projectName benv (map snd ctxs))
                 <> forAllSystems "devShells" (generateDevShell True ctx <> concatMap (generateDevShell False) ctxs)
+                <> ["checks = forAllSystems (system: self.packages.${system});"]
             )
             False
       )
@@ -87,15 +88,26 @@ generatePublicPackages projectName defaultEnv allEnvs =
        in map (\pkg -> "default = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") defaultPkg
     basePkgs =
       map (\pkg -> format (pkgName pkg) <> " = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
-    matrixPkgs = concatMap generateMatrixPkgs allEnvs
-    generateMatrixPkgs env =
-      let overlay = renderName (projectName, env)
-          envName = toCamelCase (format (buildName env))
-       in map
-            ( \pkg ->
-                format (pkgName pkg) <> "-" <> envName <> " = pkgs." <> overlay <> "." <> format (pkgName pkg) <> ";"
-            )
-            (buildPkgs env)
+    matrixPkgs = concatMap (generateMatrixPkgs . (projectName,)) allEnvs
+
+individualPkg :: Text -> Text -> Pkg -> Text
+individualPkg overlay envName pkg = format (pkgName pkg) <> "-" <> envName <> " = pkgs." <> overlay <> "." <> format (pkgName pkg) <> ";"
+
+generateMatrixPkgs :: (Name, BuildEnvironment) -> [Text]
+generateMatrixPkgs (projectName, env) =
+  let overlay = renderName (projectName, env)
+      envRaw = format (buildName env)
+      envName = toCamelCase envRaw
+      pathList = map (\pkg -> "    pkgs." <> overlay <> "." <> format (pkgName pkg)) (buildPkgs env)
+   in map (individualPkg overlay envName) (buildPkgs env)
+        <> [ "env-" <> envName <> "-all = pkgs.symlinkJoin {",
+             "  name = \"" <> envRaw <> "-workspace\";",
+             "  paths = [ "
+           ]
+        <> pathList
+        <> [ " ];",
+             "};"
+           ]
 
 generateDevShell :: Bool -> Context -> [Text]
 generateDevShell _ (_, BuildEnvironment {buildPkgs = []}) = [] -- Handle empty workspace

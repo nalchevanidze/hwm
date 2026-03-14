@@ -1,7 +1,7 @@
 module Commands.Init (testInit) where
 
+import HWM.Golden (Golden (..), goldenTest)
 import Test.Hspec (Spec, describe, it)
-import Utils.Golden (Golden (..), goldenTest)
 
 testInit :: Spec
 testInit = describe "init" $ do
