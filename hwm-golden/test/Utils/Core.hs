@@ -158,8 +158,8 @@ sanitizeCabal =
     . filter (not . T.isPrefixOf "-- This file has been generated")
     . T.lines
 
-sanitizeAllCabals ::  IO ()
-sanitizeAllCabals  = do
+sanitizeAllCabals :: IO ()
+sanitizeAllCabals = do
   cabalFiles <- glob "./**/*.cabal"
   forM_ cabalFiles $ \path -> do
     content <- TIO.readFile path
