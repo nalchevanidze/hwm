@@ -24,9 +24,9 @@
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
         {
-          default = pkgs.hwmStableWorkspacePackages.hwm;
-          hwm-golden = pkgs.hwmStableWorkspacePackages.hwm-golden;
-          hwm = pkgs.hwmStableWorkspacePackages.hwm;
+          default = pkgs.hwmCiNixWorkspacePackages.hwm;
+          hwm-golden = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
+          hwm = pkgs.hwmCiNixWorkspacePackages.hwm;
           hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
           env-ciNix-all = pkgs.symlinkJoin {
@@ -51,9 +51,9 @@
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
         {
-          default = pkgs.hwmStableWorkspacePackages.shellFor {
+          default = pkgs.hwmCiNixWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
-            buildInputs = with pkgs.hwmStableWorkspacePackages; [
+            buildInputs = with pkgs.hwmCiNixWorkspacePackages; [
               cabal-install
               hlint
               stack

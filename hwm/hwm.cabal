@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           hwm
-version:        0.3.0
+version:        0.4.0
 synopsis:       Haskell Workspace Manager - Orchestrates Stack, Cabal, and HLS
 description:    HWM (Haskell Workspace Manager) manages multi-package Haskell projects by
                 generating and synchronizing configuration files for Stack, Cabal, Hpack, and HLS
@@ -148,7 +148,7 @@ executable hwm
     , hpack >=0.34.6 && <=0.39.3
     , http-client >=0.6.4.1 && <=0.7.19
     , http-types >=0.12.3.0 && <=0.12.4
-    , hwm >=0.3.0 && <0.4.0
+    , hwm >=0.4.0 && <0.5.0
     , modern-uri >=0.3.4.3 && <=0.3.6.1
     , mtl >2.0.0 && <2.6.0
     , optparse-applicative >=0.16.1.0 && <=0.19.0.0
