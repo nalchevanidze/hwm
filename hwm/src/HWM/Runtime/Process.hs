@@ -7,10 +7,10 @@
 module HWM.Runtime.Process
   ( inheritRun,
     exec,
-    execInBackground,
     Exec (..),
     ExecOptions (..),
     EnvVars,
+    execInBackground,
   )
 where
 
@@ -18,12 +18,11 @@ import Control.Concurrent.Async
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (Dim), Status (..), chalk, indentBlockNum, padDots)
-import HWM.Core.Options (isCI)
+import HWM.Core.Formatting (Status (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Runtime.Files (prepareDir)
 import HWM.Runtime.Logging (genLogId, logCommandEnd, logCommandStart, logPath, logRoot)
-import HWM.Runtime.UI (MonadUI (uiIndentLevel), uiIndicator)
+import HWM.Runtime.UI
 import Relude
 import System.Environment (getEnvironment)
 import qualified System.IO as TIO
@@ -75,8 +74,8 @@ processHandle _ False logHandle p = do
   logCommandEnd logHandle status
   pure status
 
-execAsync :: (MonadUI m, MonadError Issue m, MonadIO m) => Exec -> ExecOptions -> m ()
-execAsync Exec {..} ExecOptions {..} = do
+execInBackground :: (MonadUI m, MonadError Issue m, MonadIO m) => Exec -> ExecOptions -> m ()
+execInBackground Exec {..} ExecOptions {..} = do
   logId <- genLogId envName
   let fx = formatFX (toText $ logPath logId)
   let processLogPath = logPath logId
@@ -109,15 +108,3 @@ inheritRun Exec {..} = do
   let targetEnv = execEnv <> currentEnv
   let processConfig = setEnv targetEnv $ proc "/bin/sh" (["-c", toString execCmd] <> map toString execArgs)
   liftIO (runProcess_ processConfig)
-
-execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Exec -> Name -> Name -> Int -> m ()
-execInBackground e label env padding = do
-  ci <- isCI
-  ind <- uiIndentLevel
-  execAsync
-    e
-    ExecOptions
-      { envName = env,
-        formatFX = \path icon -> indentBlockNum ind (padDots padding label <> icon <> chalk Dim (" logs: " <> path)),
-        fxEnabled = not ci
-      }

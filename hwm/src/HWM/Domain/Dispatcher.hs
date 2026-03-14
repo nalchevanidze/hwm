@@ -12,15 +12,16 @@ module HWM.Domain.Dispatcher
 where
 
 import Data.List (intersect, (\\))
-import HWM.Core.Formatting (Color (..), Format (..), andMore, chalk)
+import HWM.Core.Formatting (Color (..), Format (..), andMore, chalk, indentBlockNum, padDots)
+import HWM.Core.Options (isCI)
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..), TargetScope (..), comandLabel, postBuildAction, toExec)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..))
 import HWM.Domain.Workspace (printPkgWSRef)
 import HWM.Integrations.Toolchain.Stack (genStackMatrixConfig, getStackMatrixEnvVars)
-import HWM.Runtime.Process (execInBackground)
-import HWM.Runtime.UI (minRowSize, sectionEnvironments, section_, uiRow)
+import HWM.Runtime.Process (ExecOptions (..), execInBackground)
+import HWM.Runtime.UI (MonadUI (..), minRowSize, sectionEnvironments, section_, uiRow)
 import Relude
 
 data DispatcheCommand = DispatcheCommand
@@ -35,7 +36,16 @@ dispatch (DispatcheCommand cmd tscope flags) env@BuildEnvironment {..} = do
   genStackMatrixConfig env
   envs <- getStackMatrixEnvVars buildName
   exec <- toExec buildBuilder cmd scope flags envs
-  execInBackground exec (comandLabel cmd) buildName minRowSize
+  ci <- isCI
+  ind <- uiIndentLevel
+  execInBackground
+    exec
+    ExecOptions
+      { envName = buildName,
+        formatFX = \path icon -> indentBlockNum ind (padDots minRowSize (comandLabel cmd) <> icon <> chalk Dim (" logs: " <> path)),
+        fxEnabled = not ci
+      }
+
   postBuildAction buildBuilder cmd scope
 
 excludePackages :: [Pkg] -> TargetScope -> ConfigT TargetScope
