@@ -27,16 +27,12 @@ runs:
           ~/.stack
           .stack-work
         key: ${{ runner.os }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ inputs.ghc }}-stack-
-
-    - name: Build and Install
-      shell: bash
-      run: echo "$(stack path --local-bin)" >> $GITHUB_PATH
+        restore-keys: ${{ runner.os }}-${{ inputs.ghc }}-stack-
 
     - name: Build and Install
       shell: bash
       run: |
+        echo "$(stack path --local-bin)" >> $GITHUB_PATH
         hash -r || true
         stack install --fast
         hwm --version
