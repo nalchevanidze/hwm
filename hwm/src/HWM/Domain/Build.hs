@@ -177,8 +177,8 @@ handleScope :: Bool -> TargetScope -> [Text]
 handleScope isCabal ScopeGlobal = ["all" | isCabal]
 handleScope _ (ScopePkgs pkgs) = map (format . pkgName) pkgs
 
-stackScope :: TargetScope -> [Text]
-stackScope = handleScope False
+mkStack :: (Applicative m) => Text -> TargetScope -> [Text] -> m (Exec m)
+mkStack cmd scope ops = mkExec "stack" ([cmd] <> handleScope False scope <> ops)
 
 mkCabal :: (Applicative m) => Text -> TargetScope -> [Text] -> m (Exec m)
 mkCabal cmd scope ops = mkExec "cabal" ([cmd] <> handleScope True scope <> ops)
@@ -190,9 +190,9 @@ data Env = Env
 
 toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
-toAction _ StackBuilder Build scope = mkExec "stack" (["build"] <> stackScope scope)
-toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> stackScope scope <> ["--local-bin-path", format dirPath])
-toAction _ StackBuilder Test scope = mkExec "stack" (["test"] <> stackScope scope)
+toAction _ StackBuilder Build scope = mkStack "build" scope []
+toAction _ StackBuilder Install {..} scope = mkStack "install" scope ["--local-bin-path", format dirPath]
+toAction _ StackBuilder Test scope = mkStack "test" scope []
 -- Cabal
 toAction _ CabalBuilder {} Install {..} scope = mkCabal "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
 toAction _ CabalBuilder {} Build scope = mkCabal "build" scope []
