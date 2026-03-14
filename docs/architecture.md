@@ -286,20 +286,6 @@ aesonYAMLOptions :: Options
 inheritRun :: FilePath -> Text -> ConfigT ()  -- Interactive
 silentRun :: FilePath -> Text -> ConfigT (Bool, Text)  -- Captured
 ```
-
-#### Logging.hs & UI.hs
-
-```haskell
--- Log to .hwm/logs/{env}-{timestamp}.log
-log :: Name -> [(Text, Text)] -> Text -> ConfigT FilePath
-logError :: Name -> [(Text, Text)] -> Text -> ConfigT FilePath
-
--- Formatted terminal output
-section :: Text -> m a -> m a
-sectionTableM :: Int -> Text -> [(Text, m Text)] -> m ()
-statusIndicator :: Int -> Text -> Text -> m ()
-```
-
 ---
 
 ### Layer 5: Core (HWM.Core.*)

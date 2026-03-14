@@ -9,7 +9,7 @@ workspace:
     - .
     prefix: hwm
 environments:
-  builder: stack
+  builder: nix/cabal
   default: stable
   nix: true
   profiles:
@@ -33,6 +33,12 @@ environments:
           fastsum: 0.1.1.1
           list-extras: 0.4.1.6
           type-aligned: 0.9.6
+    ci-windows:
+      ghc: 9.6.3
+      builder: cabal
+    ci-nix:
+      ghc: 9.6.3
+      builder: nix
   stack: true
 registry:
   aeson: '               >=  1.5.6.0     &&  <=  2.2.3.0'
@@ -69,17 +75,13 @@ registry:
   zip-archive: '         >=  0.4.2.1     &&  <=  0.4.3.2'
 release:
   artifacts:
-    hwm: libs/(root):hwm
+    hwm: libs/_root_:hwm
   publish:
     main:
-    - libs/(root)
+    - libs/_root_
 scripts:
-  build: stack build --fast
-  clean: stack clean
   format: sh scripts/format.sh
   format:fix: sh scripts/format.sh --fix
-  install: stack install
   lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
-  test: stack test --fast
-  test:update: GOLDEN_UPDATE=1 stack test --fast
+  test:update: GOLDEN_UPDATE=1 hwm test --fast

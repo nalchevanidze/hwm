@@ -7,74 +7,47 @@ on:
     branches: [main]
 
 jobs:
-  setup:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
-        ghc: [9.6.3]
-    runs-on: ${{ matrix.os }}
-    name: Setup ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-        with:
-          ghc: ${{ matrix.ghc }}
-
-      # Build ONLY dependencies. If this succeeds, the cache is SAVED.
-      - name: Install dependencies
-        shell: bash
-        run: stack build --fast --test --only-dependencies
-
   build:
-    needs: setup
-    strategy:
-      matrix:
-        include:
-          - ghc: 9.6.3
-            env: stable
-      fail-fast: false
     runs-on: ubuntu-latest
-    name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
+    name: Build
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-        with:
-          ghc: ${{ matrix.ghc }}
 
       - name: Build
-        run: stack build --fast
+        shell: bash
+        run: hwm build --fast
 
       - name: Test
-        run: stack test --fast
+        shell: bash
+        run: hwm test --fast
 
-  archive:
-    needs: setup
+  artifacts:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu, macos, windows]
     name: Artifact ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+
       - name: Test Archiving
         shell: bash
         run: hwm release artifacts
 
-  hlint:
+  style:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: lint
+
+      - name: Lint
         run: curl -sSL https://raw.githubusercontent.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
 
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s
+      - name: Format
+        run: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s
 
 concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}

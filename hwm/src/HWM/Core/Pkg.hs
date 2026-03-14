@@ -109,7 +109,7 @@ makePkg pkgGroup root prefix memberName = do
   let cabalFile = joinPath [pkgDirPath, cabal]
   let hpackFile = if "package.yaml" `elem` files then Just (joinPath [pkgDirPath, "package.yaml"]) else Nothing
   let pkgName = PkgName (toText $ dropExtension cabal)
-  pure $ Pkg {pkgMemberId = if memberName == "." then "(root)" else memberName, ..}
+  pure $ Pkg {pkgMemberId = if memberName == "." then "_root_" else memberName, ..}
 
 scanPkgs :: (MonadIO m, MonadError Issue m) => FilePath -> m [Pkg]
 scanPkgs root = do

@@ -13,7 +13,7 @@ import HWM.Domain.ConfigT (ConfigT, updateConfig)
 import HWM.Domain.Environments (getTestedRange)
 import HWM.Domain.Registry (askRegistry, mapDeps, mapWithName)
 import HWM.Integrations.Toolchain.Package (syncPackages)
-import HWM.Runtime.UI (indent, printGenTable, putLine, section, sectionTableM)
+import HWM.Runtime.UI (putLine, section, sectionTableM, uiFormatTable)
 import Options.Applicative
 import Relude
 
@@ -32,13 +32,13 @@ runRegistryAudit RegistryAuditOptions {..} = do
   sectionTableM "audit" [("mode", pure (if auditFix then if auditForce then chalk Yellow "fix (force)" else chalk Cyan "fix" else "check"))]
 
   let dependencyAudits = filter (auditHasAny (/= Valid)) $ mapWithName (auditBounds range) originalRegistry
-  section "registry" $ printGenTable $ formatAudit <$> dependencyAudits
-  let errorCount = length $ filter (auditHasAny (== Conflict)) dependencyAudits
 
   if null dependencyAudits
     then do
-      indent 1 $ putLine "all dependencies are up to date."
+      section "registry" $ putLine "all dependencies are up to date."
     else do
+      section "registry" $ uiFormatTable $ formatAudit <$> dependencyAudits
+      let errorCount = length $ filter (auditHasAny (== Conflict)) dependencyAudits
       if auditFix
         then ((\cf -> pure $ cf {cfgRegistry = Just $ mapDeps (updateDepBounds auditForce range) originalRegistry}) `updateConfig`) $ do
           syncPackages

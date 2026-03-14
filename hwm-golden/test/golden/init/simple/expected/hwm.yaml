@@ -14,8 +14,5 @@ environments:
 registry:
   base: '>=  4.7  &&  <  5.0'
 scripts:
-  build: stack build --fast
-  install: stack install
   lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
-  test: stack test {TARGET} --fast

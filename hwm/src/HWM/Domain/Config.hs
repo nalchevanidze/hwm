@@ -12,10 +12,11 @@ module HWM.Domain.Config
   ( Config (..),
     getRegistryBounds,
     defaultScripts,
+    getScript,
   )
 where
 
-import Control.Monad.Except (MonadError)
+import Control.Monad.Except (MonadError (..))
 import Data.Aeson (FromJSON (..), ToJSON (toJSON), genericParseJSON, genericToJSON)
 import qualified Data.Map as Map
 import HWM.Core.Common (Check (..), Name)
@@ -84,8 +85,10 @@ instance
 defaultScripts :: Map Name Text
 defaultScripts =
   Map.fromList
-    [ ("build", "stack build --fast"),
-      ("test", "stack test {TARGET} --fast"),
-      ("install", "stack install"),
-      ("lint", "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .")
-    ]
+    [("lint", "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .")]
+
+getScript :: (MonadError e f, IsString e) => Name -> Config -> f Text
+getScript name cfg =
+  case cfgScripts cfg >>= Map.lookup name of
+    Just script -> pure script
+    Nothing -> throwError $ fromString $ toString $ "Script not found: " <> name

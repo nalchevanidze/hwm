@@ -20,5 +20,5 @@ instance ParseCLI EnvSetDefaultOptions where
 runEnvSetDefault :: EnvSetDefaultOptions -> ConfigT ()
 runEnvSetDefault EnvSetDefaultOptions {..} = do
   _ <- getBuildEnvironment (Just envName)
-  let setDefaultEnv cfg = cfg {cfgEnvironments = (cfgEnvironments cfg) {envDefault = envName}}
+  let setDefaultEnv cfg = cfg {cfgEnvironments = (cfgEnvironments cfg) {envsDefault = envName}}
   updateConfig (pure . setDefaultEnv) $ printEnvironments Nothing

@@ -10,8 +10,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Environments
-  ( Enviroment (..),
-    Environments (..),
+  ( Environments (..),
+    EnviromentProfile (..),
     BuildEnvironment (..),
     StackEnvironment (..),
     getBuildEnvironments,
@@ -20,11 +20,15 @@ module HWM.Domain.Environments
     printEnvironments,
     getTestedRange,
     removeEnvironmentByName,
-    newEnv,
     existsEnviroment,
     environmentHash,
     NixEnvironment (..),
     Feature (..),
+    selectEnvironments,
+    overrideBuilder,
+    mkEnvironments,
+    mkEnvironment,
+    addProfile,
   )
 where
 
@@ -56,34 +60,43 @@ import Relude
 type Extras = VersionMap
 
 data Environments = Environments
-  { envBuilder :: Maybe Builder,
-    envDefault :: Name,
-    envNix :: Maybe Bool,
-    envStack :: Maybe Bool,
-    envProfiles :: Map Name Enviroment
+  { envsBuilder :: Maybe Builder,
+    envsDefault :: Name,
+    envsNix :: Maybe Bool,
+    envsStack :: Maybe Bool,
+    envsProfiles :: Map Name EnviromentProfile
   }
   deriving
     ( Generic,
       Show
     )
 
-newEnv :: Version -> Enviroment
-newEnv ghc =
-  Enviroment
-    { ghc = ghc,
-      exclude = Nothing,
-      stack = Nothing,
-      nix = Nothing
+addProfile :: Name -> EnviromentProfile -> Environments -> Environments
+addProfile name profile envs = envs {envsProfiles = Map.insert name profile (envsProfiles envs)}
+
+mkEnvironment :: Version -> EnviromentProfile
+mkEnvironment ghc =
+  EnviromentProfile
+    { profileGhc = ghc,
+      profileExclude = Nothing,
+      profileStack = Nothing,
+      profileNix = Nothing,
+      profileBuilder = Nothing
     }
+
+mkEnvironments :: Version -> Environments
+mkEnvironments ghc =
+  let defaultEnv = ("default", mkEnvironment ghc)
+   in Environments {envsDefault = fst defaultEnv, envsProfiles = Map.fromList [defaultEnv], envsStack = Nothing, envsNix = Nothing, envsBuilder = Nothing}
 
 environmentHash :: Environments -> Signature
 environmentHash Environments {..} =
-  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< unfeature <=< stack) (toList envProfiles)
+  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< unfeature <=< profileStack) (toList envsProfiles)
   where
     toSig (pkg, v) = format pkg <> "-" <> format v
 
 prefix :: String
-prefix = "env"
+prefix = "envs"
 
 instance FromJSON Environments where
   parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced prefix)
@@ -104,15 +117,15 @@ instance
   where
   check Environments {..} = do
     fileSig <- askEnv
-    traverse_ (checkTarget fileSig) envProfiles
+    traverse_ (checkTarget fileSig) envsProfiles
     where
       signature = environmentHash Environments {..}
-      checkTarget fileSig Enviroment {..}
+      checkTarget fileSig EnviromentProfile {..}
         | fileSig == signature = checkExclude
         -- checking all hkgRefs is expensive, so we skip it if the signature matches
-        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs (extraDeps =<< unfeature =<< stack)), checkExclude]
+        | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs (extraDeps =<< unfeature =<< profileStack)), checkExclude]
         where
-          checkExclude = checkWorkspaceRefs (fromMaybe [] exclude)
+          checkExclude = checkWorkspaceRefs (fromMaybe [] profileExclude)
 
 data Feature a = Enabled a | Disabled deriving (Generic, Show, Ord, Eq)
 
@@ -146,11 +159,12 @@ instance FromJSON NixEnvironment where
   parseJSON (Object _) = pure NixEnvironment
   parseJSON _ = fail "Invalid Nix environment configuration. Expected an object or a boolean."
 
-data Enviroment = Enviroment
-  { ghc :: Version,
-    exclude :: Maybe [WorkspaceRef],
-    stack :: Maybe (Feature StackEnvironment),
-    nix :: Maybe (Feature NixEnvironment)
+data EnviromentProfile = EnviromentProfile
+  { profileGhc :: Version,
+    profileExclude :: Maybe [WorkspaceRef],
+    profileStack :: Maybe (Feature StackEnvironment),
+    profileNix :: Maybe (Feature NixEnvironment),
+    profileBuilder :: Maybe Builder
   }
   deriving
     ( Generic,
@@ -159,11 +173,14 @@ data Enviroment = Enviroment
       Eq
     )
 
-instance FromJSON Enviroment where
-  parseJSON = genericParseJSON aesonYAMLOptions
+profilePrefix :: String
+profilePrefix = "profile"
 
-instance ToJSON Enviroment where
-  toJSON = genericToJSON aesonYAMLOptions
+instance FromJSON EnviromentProfile where
+  parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced profilePrefix)
+
+instance ToJSON EnviromentProfile where
+  toJSON = genericToJSON (aesonYAMLOptionsAdvanced profilePrefix)
 
 data StackEnvironment = StackEnvironment
   { resolver :: Maybe Name,
@@ -196,6 +213,9 @@ data BuildEnvironment = BuildEnvironment
       Eq
     )
 
+overrideBuilder :: Builder -> BuildEnvironment -> BuildEnvironment
+overrideBuilder builder env = env {buildBuilder = builder}
+
 instance Format BuildEnvironment where
   format BuildEnvironment {..} = buildName <> " (" <> format buildGHC <> ")"
 
@@ -209,24 +229,24 @@ getBuildEnvironments ::
   m [BuildEnvironment]
 getBuildEnvironments = do
   globalEnv <- askEnv
-  envs <- envProfiles <$> askEnv
+  envs <- envsProfiles <$> askEnv
   for (Map.toList envs) $ \(name, env) -> do
     pkgs <- allPackages
     pure
       BuildEnvironment
         { buildPkgs = excludePkgs env pkgs,
           buildName = name,
-          buildExtraDeps = extraDeps =<< unfeature =<< stack env,
-          buildResolver = fromMaybe (eraStackageResolverName $ selectEra (ghc env)) (resolver =<< unfeature =<< stack env),
-          buildGHC = ghc env,
-          buildAllowNewer = stack env >>= unfeature >>= allowNewer,
-          buildStack = isEnabled (envStack globalEnv) (stack env),
-          buildNix = isEnabled (envNix globalEnv) (nix env),
-          buildBuilder = fromMaybe CabalBuilder (envBuilder globalEnv)
+          buildExtraDeps = extraDeps =<< unfeature =<< profileStack env,
+          buildResolver = fromMaybe (eraStackageResolverName $ selectEra (profileGhc env)) (resolver =<< unfeature =<< profileStack env),
+          buildGHC = profileGhc env,
+          buildAllowNewer = profileStack env >>= unfeature >>= allowNewer,
+          buildStack = isEnabled (envsStack globalEnv) (profileStack env),
+          buildNix = isEnabled (envsNix globalEnv) (profileNix env),
+          buildBuilder = fromMaybe (CabalBuilder False) (profileBuilder env <|> envsBuilder globalEnv)
         }
   where
     excludePkgs build pkgs =
-      let excluseion = fromMaybe [] (exclude build)
+      let excluseion = fromMaybe [] (profileExclude build)
        in filter (not . (\pkg -> any (`isMember` pkg) excluseion)) pkgs
 
 getBuildEnvironment ::
@@ -241,7 +261,7 @@ getBuildEnvironment ::
   m BuildEnvironment
 getBuildEnvironment inputName = do
   envs <- getBuildEnvironments
-  defaultname <- envDefault <$> askEnv
+  defaultname <- envsDefault <$> askEnv
   case inputName of
     Just name -> matchEnv envs name (select envs name)
     Nothing -> do
@@ -284,13 +304,13 @@ instance Format HkgRef where
 
 existsEnviroment :: (MonadReader env m, Has env Environments) => Name -> m Bool
 existsEnviroment n = do
-  envs <- envProfiles <$> askEnv
+  envs <- envsProfiles <$> askEnv
   pure $ isJust $ Map.lookup n envs
 
 printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env Workspace, Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
 printEnvironments name = do
   active <- getBuildEnvironment name
-  def <- envDefault <$> askEnv
+  def <- envsDefault <$> askEnv
   environments <- getBuildEnvironments
   sectionEnvironments (Just $ format def) $ forTable_ environments $ \env ->
     ( format env,
@@ -310,4 +330,9 @@ getTestedRange = do
 -- | Remove an environment from the matrix by name
 removeEnvironmentByName :: Name -> Environments -> Environments
 removeEnvironmentByName envName matrix =
-  matrix {envProfiles = Map.delete envName (envProfiles matrix)}
+  matrix {envsProfiles = Map.delete envName (envsProfiles matrix)}
+
+selectEnvironments :: (MonadError Issue m, MonadIO m, MonadReader env m, Has env Workspace, Has env Environments, Has env Cache) => [Name] -> m [BuildEnvironment]
+selectEnvironments ["all"] = getBuildEnvironments
+selectEnvironments [] = getBuildEnvironment Nothing >>= \env -> pure [env]
+selectEnvironments names = for names (getBuildEnvironment . Just)

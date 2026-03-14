@@ -5,7 +5,7 @@
 module HWM.CLI.Command.Registry.Add (runRegistryAdd, RegistryAddOptions (..)) where
 
 import qualified Data.Text as T
-import HWM.Core.Formatting (Color (..), Format (..), chalk, padDots)
+import HWM.Core.Formatting (Color (..), Format (..), chalk)
 import HWM.Core.Parsing (ParseCLI (..), parse, parseOptions)
 import HWM.Core.Pkg (PkgName (..))
 import HWM.Domain.Bounds (deriveBounds)
@@ -16,7 +16,7 @@ import HWM.Domain.Environments (getTestedRange)
 import HWM.Domain.Registry (addDependency, lookupBounds)
 import HWM.Domain.Workspace (forWorkspaceTuple, resolveWorkspaces)
 import HWM.Integrations.Toolchain.Package
-import HWM.Runtime.UI (putLine, section, sectionTableM)
+import HWM.Runtime.UI (minRowSize, section, sectionTableM, uiRow)
 import Options.Applicative (argument, help, long, metavar, short, str)
 import Relude
 
@@ -41,7 +41,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
     Nothing -> do
       range <- getTestedRange
       section "discovery" $ do
-        putLine $ padDots 16 "registry" <> "missing (initiating lookup)"
+        uiRow minRowSize "registry" "missing (initiating lookup)"
 
       bounds <- deriveBounds opsPkgName range
       let dependency = Dependency opsPkgName bounds
@@ -49,7 +49,7 @@ runRegistryAdd RegistryAddOptions {opsPkgName, opsWorkspace} = do
       ((\cf -> pure cf {cfgRegistry = Just $ addDependency dependency (fromMaybe mempty (cfgRegistry cf))}) `updateConfig`) $ addDepToPackage workspaces dependency
     Just bounds -> do
       section "discovery" $ do
-        putLine $ padDots 16 "registry" <> format bounds <> " (already registered)"
+        uiRow minRowSize "registry" (format bounds <> " (already registered)")
       addDepToPackage workspaces (Dependency opsPkgName bounds)
   where
     addDepToPackage ws dependency = unless (null ws) $ forWorkspaceTuple ws $ addPkgDependency dependency

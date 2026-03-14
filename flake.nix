@@ -35,6 +35,7 @@
               cabal-install
               haskell-language-server
               hlint
+              stack
             ];
           };
         });

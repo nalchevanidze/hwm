@@ -29,11 +29,15 @@ module HWM.Core.Formatting
     toCamelCase,
     formatTableRow,
     StatusM,
+    slugifyList,
+    andMore,
+    minRowSize,
   )
 where
 
 import Data.Aeson (Value, encode)
 import Data.ByteString.Lazy.Char8 (unpack)
+import Data.Char (isAlphaNum)
 import Data.Foldable (maximum)
 import qualified Data.List as List
 import Data.Text (pack)
@@ -140,8 +144,11 @@ formatStatus = T.intercalate (chalk Dim " ") . map formatItem . sortBy (comparin
   where
     formatItem (label, s) = statusIcon s <> " " <> chalk (labelColor s) label
 
+minRowSize :: Int
+minRowSize = 16
+
 genMaxLen :: [Text] -> Int
-genMaxLen names = if null names then 16 else maximum (map T.length names) + 4
+genMaxLen names = if null names then minRowSize else maximum (map T.length names) + 4
 
 separator :: Int -> Text
 separator size = chalk Gray $ T.replicate size "─"
@@ -178,16 +185,15 @@ renderSummaryStatus Invalid = boxed Red "errors"
 renderSummaryStatus _ = boxed BrightGreen "success"
 
 subPathSign :: Text
-subPathSign = chalk Dim "└─- "
+subPathSign = chalk Dim "└── "
+
+slugifyList :: [Text] -> Text
+slugifyList = T.intercalate "-" . map slugify
 
 slugify :: Text -> Text
 slugify = T.map replaceChar . T.toLower
   where
-    replaceChar c
-      | c == ' ' = '-'
-      | c == '_' = '-'
-      | c == '.' = '-'
-      | otherwise = c
+    replaceChar c | isAlphaNum c = c | otherwise = '-'
 
 commonPrefix :: [Text] -> (Maybe Text, [Text])
 commonPrefix [] = (Nothing, [])
@@ -270,3 +276,6 @@ toCamelCase txt = T.concat $ capitalizeLs $ T.splitOn "-" $ T.replace "_" "-" tx
       case T.uncons t of
         Nothing -> ""
         Just (c, rest) -> T.toUpper (T.singleton c) <> rest
+
+andMore :: Text -> [Text] -> Text
+andMore x xs = x <> if null xs then "" else " and " <> show (length xs) <> " more"

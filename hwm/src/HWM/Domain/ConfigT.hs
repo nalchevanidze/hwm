@@ -135,7 +135,7 @@ updateConfigM f xs m = do
 runConfigT :: ConfigT () -> Options -> IO ()
 runConfigT m opts@Options {..} = do
   config <- resolveResultTSilent (readYaml optionsHwm)
-  cache <- loadCache (envDefault (cfgEnvironments config))
+  cache <- loadCache (envsDefault (cfgEnvironments config))
   fileSignature <- getFileSignature optionsHwm
   let currentSignature = environmentHash (cfgEnvironments config)
   pkgs <- resolveResultTSilent (pkgRegistry (cfgWorkspace config))

@@ -83,6 +83,18 @@ parseCommand =
         "Display the current workspace version or bump it (patch, minor, major).",
         Version <$> parseCLI
       ),
+      ( "build",
+        "Build the current workspace or specific targets.",
+        Build <$> parseCLI
+      ),
+      ( "install",
+        "Install the current workspace or specific targets.",
+        Install <$> parseCLI
+      ),
+      ( "test",
+        "Test the current workspace or specific targets.",
+        Test <$> parseCLI
+      ),
       ( "release",
         "Manage delivery: build artifacts or publish release trains.",
         Release <$> parseCLI

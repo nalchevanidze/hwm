@@ -7,11 +7,11 @@
 module HWM.Runtime.Process
   ( inheritRun,
     exec,
-    execAsync,
     Exec (..),
-    runInBackground,
     ExecOptions (..),
-    Envs,
+    EnvVars,
+    execInBackground,
+    mkExec,
   )
 where
 
@@ -19,17 +19,18 @@ import Control.Concurrent.Async
 import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Color (Dim), Status (..), chalk, statusIcon)
+import HWM.Core.Formatting (Status (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Runtime.Files (prepareDir)
-import HWM.Runtime.Logging (logCommandEnd, logCommandStart, logPath, logRoot)
-import HWM.Runtime.UI (runSpinner, statusIndicator)
+import HWM.Runtime.Logging (genLogId, logCommandEnd, logCommandStart, logPath, logRoot)
+import HWM.Runtime.UI
 import Relude
 import System.Environment (getEnvironment)
 import qualified System.IO as TIO
 import System.Process (readProcessWithExitCode)
 import System.Process.Typed
   ( ExitCode (..),
+    Process,
     proc,
     runProcess_,
     setEnv,
@@ -41,6 +42,9 @@ import System.Process.Typed
     withProcessWait,
   )
 
+mkExec :: (Applicative m) => Text -> [Text] -> m (Exec m)
+mkExec name args = pure $ Exec name args [] Nothing
+
 exec :: (MonadIO m) => Text -> [Text] -> m (Bool, String)
 exec name args = do
   (code, _, out) <- liftIO (readProcessWithExitCode (toString name) (map toString args) "")
@@ -48,63 +52,65 @@ exec name args = do
     ExitSuccess {} -> pure (True, out)
     ExitFailure {} -> pure (False, out)
 
-data Exec = Exec
+data Exec m = Exec
   { execCmd :: Text,
     execArgs :: [Text],
-    execEnv :: [(String, String)]
+    execEnv :: [(String, String)],
+    postCommand :: Maybe (m ())
   }
 
-type Envs = [(String, String)]
+type EnvVars = [(String, String)]
 
 data ExecOptions = ExecOptions
-  { logId :: Name,
-    loopIO :: Maybe (IO ())
+  { envName :: Name,
+    formatFX :: Text -> Text -> Text,
+    fxEnabled :: Bool
   }
 
-execAsync :: (MonadIO m) => Exec -> ExecOptions -> m [Issue]
-execAsync Exec {..} ExecOptions {..} = do
+processHandle :: IO a -> Bool -> Handle -> Process stdin stdout stderr -> IO ExitCode
+processHandle f True logHandle p = do
+  spinner <- async f
+  status <- waitExitCode p
+  cancel spinner
+  logCommandEnd logHandle status
+  pure status
+processHandle _ False logHandle p = do
+  status <- waitExitCode p
+  logCommandEnd logHandle status
+  pure status
+
+execInBackground :: (MonadUI m, MonadError Issue m, MonadIO m) => Exec m -> ExecOptions -> m ()
+execInBackground Exec {..} ExecOptions {..} = do
+  logId <- genLogId envName
+  let fx = formatFX (toText $ logPath logId)
   let processLogPath = logPath logId
   prepareDir logRoot
   let cmd = execCmd <> " " <> T.unwords execArgs
   currentEnv <- liftIO getEnvironment
   let targetEnv = execEnv <> currentEnv
-  liftIO $ do
-    status <- TIO.withFile processLogPath TIO.WriteMode $ \logHandle -> do
-      logCommandStart logHandle cmd
-      let processConfig =
-            setEnv targetEnv
-              $ setStdout (useHandleOpen logHandle)
-              $ setStderr (useHandleOpen logHandle)
-              $ shell (toString cmd)
-      withProcessWait processConfig $ \p -> do
-        spinner <- maybe (pure Nothing) (fmap Just . async) loopIO
-        status <- waitExitCode p
-        maybe (pure ()) cancel spinner
-        logCommandEnd logHandle status
-        pure status
-    pure $ case status of
-      ExitSuccess -> []
-      _ ->
-        [ Issue
-            { issueTopic = logId,
-              issueMessage = "Command failed",
-              issueSeverity = SeverityError,
-              issueDetails = Just CommandIssue {issueCommand = cmd, issueLogFile = processLogPath}
-            }
-        ]
+  status <- liftIO $ TIO.withFile processLogPath TIO.WriteMode $ \logHandle -> do
+    unless fxEnabled (uiIndicator fx fxEnabled Nothing)
+    logCommandStart logHandle cmd
+    let config = setEnv targetEnv $ setStdout (useHandleOpen logHandle) $ setStderr (useHandleOpen logHandle) $ shell (toString cmd)
+    withProcessWait config $ processHandle (uiIndicator fx fxEnabled Nothing) fxEnabled logHandle
+  case status of
+    ExitSuccess -> do
+      liftIO $ uiIndicator fx fxEnabled (Just Checked)
+      sequence_ postCommand
+    _ -> do
+      liftIO $ uiIndicator fx fxEnabled (Just Invalid)
+      throwError
+        Issue
+          { issueTopic = logId,
+            issueMessage = "Command failed",
+            issueSeverity = SeverityError,
+            issueDetails = Just CommandIssue {issueCommand = cmd, issueLogFile = processLogPath}
+          }
 
-inheritRun :: (MonadIO m) => Exec -> m ()
+inheritRun :: (MonadIO m, MonadUI m) => Exec m -> m ()
 inheritRun Exec {..} = do
   currentEnv <- liftIO getEnvironment
   let targetEnv = execEnv <> currentEnv
   let processConfig = setEnv targetEnv $ proc "/bin/sh" (["-c", toString execCmd] <> map toString execArgs)
   liftIO (runProcess_ processConfig)
-
-runInBackground :: (MonadIO m, MonadError Issue m) => Exec -> Name -> Int -> m ()
-runInBackground e label padding = do
-  let logsSuffix = chalk Dim (" logs: " <> toText (logPath label))
-  let exOptions = ExecOptions {logId = label, loopIO = Just (runSpinner padding label logsSuffix)}
-  issues <- execAsync e exOptions
-  let statusMsg = statusIcon (if null issues then Checked else Invalid)
-  statusIndicator padding label (statusMsg <> logsSuffix)
-  traverse_ throwError issues
+  sequence_ postCommand

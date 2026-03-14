@@ -13,20 +13,20 @@ import Control.Monad.Except (MonadError (..))
 import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon, subPathSign)
+import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon)
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
-import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (fromEither)
-import HWM.Domain.Build (Builder (..), BuilderCommand (..), runBuilderCommand)
+import HWM.Domain.Build (BuildFlag (GHCOptionsFlag), Builder (..), BuilderCommand (..), TargetScope (ScopePkgs))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
-import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment)
+import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatch)
+import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment, overrideBuilder)
 import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, selectedArtifacts)
 import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
 import HWM.Runtime.Network (getGHUploadUrl, uploadToGitHub)
-import HWM.Runtime.UI (indent, putLine, section, sectionTableM)
+import HWM.Runtime.UI (indent, section, sectionTableM, uiSpace, uiSubPath)
 import Options.Applicative (argument, help, long, metavar, option, showDefault, str, strOption, switch, value)
 import Relude
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
@@ -66,10 +66,6 @@ genBindaryDir name = do
   let path = joinPath [".hwm/release/binaries", toString name]
   prepeareDir path
   pure path
-
-ghcOptions :: [Text] -> [Text]
-ghcOptions [] = []
-ghcOptions xs = map ("--ghc-options=" <>) xs
 
 defaultOutputDir :: FilePath
 defaultOutputDir = ".hwm/dist"
@@ -113,7 +109,7 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
     ]
 
   plans <- section "build" $ traverse (buildPkg outputDir builder) cfgs
-  putLine ""
+  uiSpace
 
   section "archive" $ pure ()
   artifacts <- for plans $ \(name, plan) -> do
@@ -122,23 +118,24 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       $ section name
       $ for_ archives
       $ \ArchiveInfo {..} -> do
-        putLine $ subPathSign <> format archivePath
-        putLine $ subPathSign <> format sha256Path
+        uiSubPath archivePath
+        uiSubPath sha256Path
     pure (name, archives)
 
   for_ uploadUrl $ \url -> section "publish (Github)"
     $ for_ artifacts
     $ \(name, archives) -> section name $ for_ archives $ \ArchiveInfo {..} -> do
       uploadToGitHub url archivePath
-      putLine $ subPathSign <> format archivePath
+      uiSubPath archivePath
       uploadToGitHub url sha256Path
-      putLine $ subPathSign <> format sha256Path
+      uiSubPath sha256Path
 
 buildPkg :: FilePath -> Builder -> (Name, ArtifactConfig) -> ConfigT (Text, ArchivingPlan)
 buildPkg outputDir builder (name, ArtifactConfig {..}) = do
   binaryDir <- genBindaryDir name
   let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
   optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
-  Pkg {..} <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
-  runBuilderCommand builder False (Install pkgName binaryDir) (ghcOptions arcGhcOptions)
+  pkg <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
+  env <- overrideBuilder builder <$> getBuildEnvironment Nothing
+  dispatch (DispatcheCommand (Install binaryDir) (ScopePkgs [pkg]) (map GHCOptionsFlag arcGhcOptions)) env
   pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
