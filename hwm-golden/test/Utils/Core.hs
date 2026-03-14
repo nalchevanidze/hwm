@@ -4,10 +4,9 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Utils.Core (assertNotModified, diffChanges, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
+module Utils.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad (forM_, when)
 import Data.Aeson (ToJSON)
 import Data.Aeson.Types (FromJSON)
 import qualified Data.ByteString as BS
@@ -159,9 +158,9 @@ sanitizeCabal =
     . filter (not . T.isPrefixOf "-- This file has been generated")
     . T.lines
 
-sanitizeAllCabals :: FilePath -> IO ()
-sanitizeAllCabals testDir = do
-  cabalFiles <- glob (testDir <> "/**/*.cabal")
+sanitizeAllCabals ::  IO ()
+sanitizeAllCabals  = do
+  cabalFiles <- glob "./**/*.cabal"
   forM_ cabalFiles $ \path -> do
     content <- TIO.readFile path
     let sanitized = sanitizeCabal content

@@ -10,7 +10,7 @@ import System.Directory (makeAbsolute)
 import System.FilePath ((</>))
 import qualified System.IO as IO
 import Test.Hspec (Expectation, shouldBe)
-import Utils.Core (diffChanges, inWorkDir, runHWM, saveSnapshot, trackChanges)
+import Utils.Core (diffChanges, inWorkDir, runHWM, saveSnapshot, trackChanges, sanitizeAllCabals)
 
 data Golden = Golden
   { cmd :: String,
@@ -30,6 +30,7 @@ goldenTest Golden {..} = do
   updateMode <- isUpdateMode
   inWorkDir project scenarioDir $ do
     (changes, out) <- trackChanges (runHWM cmd)
+    sanitizeAllCabals
     if updateMode
       then do
         saveSnapshot changes expectedDir
