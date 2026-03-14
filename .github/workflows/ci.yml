@@ -29,14 +29,7 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Windows
-        if: matrix.os == 'windows'
-        uses: ./.github/actions/setup-windows
-
-      - name: Setup Non-Windows
-        if: matrix.os != 'windows'
-        uses: ./.github/actions/setup
+      - uses: ./.github/actions/setup
 
       - name: Test Archiving
         run: hwm release artifacts
