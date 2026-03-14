@@ -155,7 +155,7 @@ formatFlag _ (CustomBuildFlag txt) = [txt]
 toExec :: (MonadIO m, MonadError Issue m) => Name -> Builder -> BuilderCommand -> TargetScope -> [BuildFlag] -> [(String, String)] -> m (Exec m)
 toExec envName builder cmd scope flags envs = do
   p <- detectPlatform
-  Exec {..} <- toAction envName p builder cmd scope
+  Exec {..} <- toAction (NixContext envName p) builder cmd scope
   pure $ inNixDevelop envName nixEnabled $ Exec execCmd (execArgs <> concatMap (formatFlag builder) flags) envs postCommand
   where
     nixEnabled = CabalBuilder {inNixDevelopment = True} == builder
@@ -177,25 +177,29 @@ handleScope :: Bool -> TargetScope -> [Text]
 handleScope isCabal ScopeGlobal = ["all" | isCabal]
 handleScope _ (ScopePkgs pkgs) = map (format . pkgName) pkgs
 
-toAction :: (MonadError Issue m, MonadIO m) => Name -> Platform -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
+data NixContext = NixContext
+  { envName :: Name,
+    platform :: Platform
+  }
+
+toAction :: (MonadError Issue m, MonadIO m) => NixContext -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack and Cabal ignore the system string
-toAction _ _ StackBuilder Build scope = mkExec "stack" (["build"] <> handleScope False scope)
-toAction _ _ CabalBuilder {} Build scope = mkExec "cabal" (["build"] <> handleScope True scope)
-toAction _ _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope False scope <> ["--local-bin-path", format dirPath])
-toAction _ _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> handleScope True scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
-toAction _ _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope False scope)
-toAction _ _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> handleScope True scope)
+toAction _ StackBuilder Build scope = mkExec "stack" (["build"] <> handleScope False scope)
+toAction _ CabalBuilder {} Build scope = mkExec "cabal" (["build"] <> handleScope True scope)
+toAction _ StackBuilder Install {..} scope = mkExec "stack" (["install"] <> handleScope False scope <> ["--local-bin-path", format dirPath])
+toAction _ CabalBuilder {} Install {..} scope = mkExec "cabal" (["install"] <> handleScope True scope <> ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"])
+toAction _ StackBuilder Test scope = mkExec "stack" (["test"] <> handleScope False scope)
+toAction _ CabalBuilder {} Test scope = mkExec "cabal" (["test"] <> handleScope True scope)
 -- Nix uses the system string
-toAction envName _ NixBuilder Build scope = mkExec "nix" $ ["build"] <> nixScope envName scope
+toAction ctx NixBuilder Build scope = mkExec "nix" $ ["build"] <> nixScope (envName ctx) scope
 -- Start Nix Install
-toAction _ _ NixBuilder Install {..} ScopeGlobal = pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result-global")] [] (Just $ extractGlobalNixArtifacts dirPath)
-toAction _ _ NixBuilder Install {..} (ScopePkgs [pkg]) =
-  pure $ Exec "nix" ["build", ".#" <> format (pkgName pkg), "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifact (pkgName pkg) dirPath)
-toAction _ _ NixBuilder Install {} (ScopePkgs _) = throwError "Multiple package install is not supported with Nix builder."
+toAction _ NixBuilder Install {..} ScopeGlobal = pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result-global")] [] (Just $ extractGlobalNixArtifacts dirPath)
+toAction _ NixBuilder Install {..} (ScopePkgs [pkg]) = pure $ Exec "nix" ["build", ".#" <> format (pkgName pkg), "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifact (pkgName pkg) dirPath)
+toAction _ NixBuilder Install {} (ScopePkgs _) = throwError "Multiple package install is not supported with Nix builder."
 -- end Nix Install
-toAction _ _ NixBuilder Test ScopeGlobal = mkExec "nix" ["flake", "check"]
+toAction _ NixBuilder Test ScopeGlobal = mkExec "nix" ["flake", "check"]
 -- Map over the list of packages (ac) to build multiple test checks at once!
-toAction _ p NixBuilder Test (ScopePkgs pkgs) =
+toAction ctx NixBuilder Test (ScopePkgs pkgs) =
   mkExec "nix"
     $ ["build", "-L", "--no-link"]
-    <> map (\pkg -> ".#checks." <> toNixSystem p <> "." <> format (pkgName pkg)) pkgs
+    <> map (\pkg -> ".#checks." <> toNixSystem (platform ctx) <> "." <> format (pkgName pkg)) pkgs
