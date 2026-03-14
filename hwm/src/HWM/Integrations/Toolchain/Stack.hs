@@ -97,6 +97,16 @@ syncStackYaml = do
           ..
         }
 
+setupStackMatrixEnvironment :: BuildEnvironment -> ConfigT EnvVars
+setupStackMatrixEnvironment env = do
+  genStackMatrixConfig env
+  getStackMatrixEnvVars (buildName env)
+
+getStackMatrixEnvVars :: Name -> ConfigT EnvVars
+getStackMatrixEnvVars envName = do
+  yamlPath <- stackMatrixPath envName
+  pure [("STACK_YAML", yamlPath)]
+
 stackMatrixPath :: Name -> ConfigT FilePath
 stackMatrixPath name = liftIO $ makeAbsolute $ ".hwm/matrix/stack-" <> toString name <> ".yaml"
 
@@ -116,16 +126,6 @@ genStackMatrixConfig BuildEnvironment {..} = do
           ..
         }
   pure ()
-
-setupStackMatrixEnvironment :: BuildEnvironment -> ConfigT EnvVars
-setupStackMatrixEnvironment env = do
-  genStackMatrixConfig env
-  getStackMatrixEnvVars (buildName env)
-
-getStackMatrixEnvVars :: Name -> ConfigT EnvVars
-getStackMatrixEnvVars envName = do
-  yamlPath <- stackMatrixPath envName
-  pure [("STACK_YAML", yamlPath)]
 
 scanStackFiles :: (MonadIO m, MonadError Issue m) => Options -> FilePath -> m [(Name, Stack)]
 scanStackFiles opts root = do
