@@ -60,11 +60,11 @@ import Relude
 type Extras = VersionMap
 
 data Environments = Environments
-  { envBuilder :: Maybe Builder,
-    envDefault :: Name,
-    envNix :: Maybe Bool,
-    envStack :: Maybe Bool,
-    envProfiles :: Map Name EnviromentProfile
+  { envsBuilder :: Maybe Builder,
+    envsDefault :: Name,
+    envsNix :: Maybe Bool,
+    envsStack :: Maybe Bool,
+    envsProfiles :: Map Name EnviromentProfile
   }
   deriving
     ( Generic,
@@ -72,7 +72,7 @@ data Environments = Environments
     )
 
 addProfile :: Name -> EnviromentProfile -> Environments -> Environments
-addProfile name profile envs = envs {envProfiles = Map.insert name profile (envProfiles envs)}
+addProfile name profile envs = envs {envsProfiles = Map.insert name profile (envsProfiles envs)}
 
 mkEnvironment :: Version -> EnviromentProfile
 mkEnvironment ghc =
@@ -87,16 +87,16 @@ mkEnvironment ghc =
 mkEnvironments :: Version -> Environments
 mkEnvironments ghc =
   let defaultEnv = ("default", mkEnvironment ghc)
-   in Environments {envDefault = fst defaultEnv, envProfiles = Map.fromList [defaultEnv], envStack = Nothing, envNix = Nothing, envBuilder = Nothing}
+   in Environments {envsDefault = fst defaultEnv, envsProfiles = Map.fromList [defaultEnv], envsStack = Nothing, envsNix = Nothing, envsBuilder = Nothing}
 
 environmentHash :: Environments -> Signature
 environmentHash Environments {..} =
-  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< unfeature <=< stack) (toList envProfiles)
+  genSignature $ Set.toList $ Set.fromList $ map toSig $ concatMap Map.toList $ mapMaybe (extraDeps <=< unfeature <=< stack) (toList envsProfiles)
   where
     toSig (pkg, v) = format pkg <> "-" <> format v
 
 prefix :: String
-prefix = "env"
+prefix = "envs"
 
 instance FromJSON Environments where
   parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced prefix)
@@ -117,7 +117,7 @@ instance
   where
   check Environments {..} = do
     fileSig <- askEnv
-    traverse_ (checkTarget fileSig) envProfiles
+    traverse_ (checkTarget fileSig) envsProfiles
     where
       signature = environmentHash Environments {..}
       checkTarget fileSig EnviromentProfile {..}
@@ -226,7 +226,7 @@ getBuildEnvironments ::
   m [BuildEnvironment]
 getBuildEnvironments = do
   globalEnv <- askEnv
-  envs <- envProfiles <$> askEnv
+  envs <- envsProfiles <$> askEnv
   for (Map.toList envs) $ \(name, env) -> do
     pkgs <- allPackages
     pure
@@ -237,9 +237,9 @@ getBuildEnvironments = do
           buildResolver = fromMaybe (eraStackageResolverName $ selectEra (ghc env)) (resolver =<< unfeature =<< stack env),
           buildGHC = ghc env,
           buildAllowNewer = stack env >>= unfeature >>= allowNewer,
-          buildStack = isEnabled (envStack globalEnv) (stack env),
-          buildNix = isEnabled (envNix globalEnv) (nix env),
-          buildBuilder = fromMaybe (CabalBuilder False) (envBuilder globalEnv)
+          buildStack = isEnabled (envsStack globalEnv) (stack env),
+          buildNix = isEnabled (envsNix globalEnv) (nix env),
+          buildBuilder = fromMaybe (CabalBuilder False) (envsBuilder globalEnv)
         }
   where
     excludePkgs build pkgs =
@@ -258,7 +258,7 @@ getBuildEnvironment ::
   m BuildEnvironment
 getBuildEnvironment inputName = do
   envs <- getBuildEnvironments
-  defaultname <- envDefault <$> askEnv
+  defaultname <- envsDefault <$> askEnv
   case inputName of
     Just name -> matchEnv envs name (select envs name)
     Nothing -> do
@@ -301,13 +301,13 @@ instance Format HkgRef where
 
 existsEnviroment :: (MonadReader env m, Has env Environments) => Name -> m Bool
 existsEnviroment n = do
-  envs <- envProfiles <$> askEnv
+  envs <- envsProfiles <$> askEnv
   pure $ isJust $ Map.lookup n envs
 
 printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env Workspace, Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
 printEnvironments name = do
   active <- getBuildEnvironment name
-  def <- envDefault <$> askEnv
+  def <- envsDefault <$> askEnv
   environments <- getBuildEnvironments
   sectionEnvironments (Just $ format def) $ forTable_ environments $ \env ->
     ( format env,
@@ -327,7 +327,7 @@ getTestedRange = do
 -- | Remove an environment from the matrix by name
 removeEnvironmentByName :: Name -> Environments -> Environments
 removeEnvironmentByName envName matrix =
-  matrix {envProfiles = Map.delete envName (envProfiles matrix)}
+  matrix {envsProfiles = Map.delete envName (envsProfiles matrix)}
 
 selectEnvironments :: (MonadError Issue m, MonadIO m, MonadReader env m, Has env Workspace, Has env Environments, Has env Cache) => [Name] -> m [BuildEnvironment]
 selectEnvironments ["all"] = getBuildEnvironments
