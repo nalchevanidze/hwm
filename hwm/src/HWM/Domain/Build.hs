@@ -133,10 +133,6 @@ data TargetScope
   | ScopePkgs [Pkg] -- User typed: hwm build -w=libs/... (Build these)
   deriving (Eq, Show)
 
-isCustom :: BuilderCommand -> Bool
-isCustom Custom {} = True
-isCustom _ = False
-
 data BuilderCommand
   = Build
   | Test
