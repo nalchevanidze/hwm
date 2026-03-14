@@ -33,6 +33,20 @@ jobs:
         shell: bash
         run: hwm release artifacts
 
+  archive-windows:
+    name: Artifact Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-windows
+      - name: Upload Artifacts
+        run: hwm release artifacts --github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   hlint:
     runs-on: ubuntu-latest
     steps:
