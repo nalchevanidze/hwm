@@ -33,6 +33,14 @@ environments:
           fastsum: 0.1.1.1
           list-extras: 0.4.1.6
           type-aligned: 0.9.6
+    windows:
+      ghc: 9.6.3
+      builder: stack
+      stack:
+        extra-deps:
+          fastsum: 0.1.1.1
+          list-extras: 0.4.1.6
+          type-aligned: 0.9.6
   stack: true
 registry:
   aeson: '               >=  1.5.6.0     &&  <=  2.2.3.0'
