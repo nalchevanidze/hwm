@@ -14,7 +14,7 @@ where
 import Data.List (intersect, (\\))
 import HWM.Core.Formatting (Color (..), Format (..), andMore, chalk)
 import HWM.Core.Pkg (Pkg (..))
-import HWM.Domain.Build (BuildFlag (..), Builder (..), BuilderCommand (..), TargetScope (..), comandLogId, isCustom, postBuildAction, toExec)
+import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..), TargetScope (..), comandLabel, postBuildAction, toExec)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..))
 import HWM.Domain.Workspace (printPkgWSRef)
@@ -35,10 +35,8 @@ dispatch (DispatcheCommand cmd tscope flags) env@BuildEnvironment {..} = do
   genStackMatrixConfig env
   envs <- getStackMatrixEnvVars buildName
   exec <- toExec buildBuilder cmd scope flags envs
-  execInBackground nixEnabled exec (comandLogId cmd) buildName minRowSize
+  execInBackground exec (comandLabel cmd) buildName minRowSize
   postBuildAction buildBuilder cmd scope
-  where
-    nixEnabled = buildNix && (buildBuilder /= NixBuilder || isCustom cmd)
 
 excludePackages :: [Pkg] -> TargetScope -> ConfigT TargetScope
 excludePackages _ ScopeGlobal = pure ScopeGlobal

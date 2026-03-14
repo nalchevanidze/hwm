@@ -10,7 +10,7 @@ module HWM.Domain.Build
     TargetScope (..),
     toExec,
     postBuildAction,
-    comandLogId,
+    comandLabel,
     isCustom,
     BuildFlag (..),
   )
@@ -60,11 +60,11 @@ instance Format Builder where
 data Cmd = ExecCmd Text [Text] EnvVars | CusomCmd Text
   deriving (Eq, Show)
 
-comandLogId :: BuilderCommand -> Text
-comandLogId Build {} = "build"
-comandLogId Test {} = "test"
-comandLogId Install {} = "build"
-comandLogId Custom {} = "comand"
+comandLabel :: BuilderCommand -> Text
+comandLabel Build {} = "build"
+comandLabel Test {} = "test"
+comandLabel Install {} = "build"
+comandLabel Custom {} = "comand"
 
 postBuildAction :: (MonadIO m, MonadError Issue m) => Builder -> BuilderCommand -> TargetScope -> m ()
 postBuildAction NixBuilder Install {..} ScopeGlobal = extractGlobalNixArtifacts dirPath
@@ -173,11 +173,17 @@ toExec :: (MonadIO m, MonadError Issue m) => Builder -> BuilderCommand -> Target
 toExec builder cmd scope flags envs = do
   p <- detectPlatform
   Exec {..} <- toAction p builder cmd scope
-  pure $ Exec execCmd (execArgs <> concatMap (formatFlag builder) flags) envs
+  pure $ inNixDevelop nixEnabled $ Exec execCmd (execArgs <> concatMap (formatFlag builder) flags) envs
+  where
+    nixEnabled = CabalBuilder {inNixDevelopment = True} == builder
 
 handleScope :: TargetScope -> [Text]
 handleScope ScopeGlobal = []
 handleScope (ScopePkgs pkgs) = map (format . pkgName) pkgs
+
+inNixDevelop :: Bool -> Exec -> Exec
+inNixDevelop True (Exec cmd ops env) = Exec "nix" (["develop", "--command", cmd] <> ops) env
+inNixDevelop False e = e
 
 toAction :: (MonadError Issue m) => Platform -> Builder -> BuilderCommand -> TargetScope -> m Exec
 -- Stack and Cabal ignore the system string

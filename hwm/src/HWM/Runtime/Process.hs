@@ -110,16 +110,12 @@ inheritRun Exec {..} = do
   let processConfig = setEnv targetEnv $ proc "/bin/sh" (["-c", toString execCmd] <> map toString execArgs)
   liftIO (runProcess_ processConfig)
 
-inNixDevelop :: Bool -> Exec -> Exec
-inNixDevelop True (Exec cmd ops env) = Exec "nix" (["develop", "--command", cmd] <> ops) env
-inNixDevelop False e = e
-
-execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Bool -> Exec -> Name -> Name -> Int -> m ()
-execInBackground useNix e label env padding = do
+execInBackground :: (MonadIO m, MonadUI m, MonadError Issue m) => Exec -> Name -> Name -> Int -> m ()
+execInBackground e label env padding = do
   ci <- isCI
   ind <- uiIndentLevel
   execAsync
-    (inNixDevelop useNix e)
+    e
     ExecOptions
       { envName = env,
         formatFX = \path icon -> indentBlockNum ind (padDots padding label <> icon <> chalk Dim (" logs: " <> path)),
