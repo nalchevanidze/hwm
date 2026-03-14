@@ -41,18 +41,18 @@
             packages = p: [ p.foo p.bar ];
             buildInputs = with pkgs.simpleFooWorkspacePackages; [
               cabal-install
-              haskell-language-server
               hlint
               stack
+              haskell-language-server
             ];
           };
           foo = pkgs.simpleFooWorkspacePackages.shellFor {
             packages = p: [ p.foo p.bar ];
             buildInputs = with pkgs.simpleFooWorkspacePackages; [
               cabal-install
-              haskell-language-server
               hlint
               stack
+              haskell-language-server
             ];
           };
         });
