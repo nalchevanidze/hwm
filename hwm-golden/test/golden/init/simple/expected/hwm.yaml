@@ -16,4 +16,3 @@ registry:
 scripts:
   lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
-  test: stack test {TARGET} --fast
