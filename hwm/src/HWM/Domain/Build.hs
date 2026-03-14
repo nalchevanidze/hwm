@@ -168,7 +168,9 @@ inNixDevelop envName True (Exec cmd ops env post) = Exec "nix" (["develop", toNi
 inNixDevelop _ False e = e
 
 nixScope :: (Format p) => p -> TargetScope -> [Text]
-nixScope _ ScopeGlobal = [] -- TODO: should handle environment-specific global builds
+nixScope envName ScopeGlobal =
+  let envSuffix = toCamelCase (format envName)
+   in [".#env-" <> envSuffix <> "-all"]
 nixScope envName (ScopePkgs pkgs) =
   let envSuffix = toCamelCase (format envName)
    in map (\pkg -> ".#" <> format (pkgName pkg) <> "-" <> envSuffix) pkgs
