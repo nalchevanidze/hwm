@@ -67,7 +67,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
                 <> generateOverlay ctxs
             )
             ( forAllSystems "packages" (generatePublicPackages ctx (buildPkgs benv))
-                <> forAllSystems "devShells" (generateDevShell benv projectName)
+                <> forAllSystems "devShells" (concatMap (uncurry generateDevShell) ctxs)
             )
             False
       )
@@ -85,9 +85,9 @@ generatePublicPackages ctx@(projectName, _) pkgs = map renderPublicPackage pkgs 
       let defaultPkg = maybeToList $ find ((projectName ==) . format . pkgName) pkgs
        in map (\pkg -> "default = " <> pkgsNixName ctx <> "." <> format (pkgName pkg) <> ";") defaultPkg
 
-generateDevShell :: BuildEnvironment -> Name -> [Text]
-generateDevShell BuildEnvironment {buildPkgs = []} _ = [] -- Handle empty workspace
-generateDevShell benv@BuildEnvironment {..} projectName =
+generateDevShell :: Name -> BuildEnvironment -> [Text]
+generateDevShell _ BuildEnvironment {buildPkgs = []} = [] -- Handle empty workspace
+generateDevShell projectName benv@BuildEnvironment {..} =
   [ "default = " <> pkgsNixName (projectName, benv) <> ".shellFor {",
     "  packages = p: [ " <> renderPackageList buildPkgs <> " ];",
     "  buildInputs = with " <> pkgsNixName (projectName, benv) <> "; ["
