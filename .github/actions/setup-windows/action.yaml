@@ -1,4 +1,4 @@
-name: Setup
+name: Setup Windows
 inputs:
   ghc:
     description: GHC Version
@@ -10,10 +10,7 @@ runs:
   steps:
     - name: Set Stack Root
       shell: bash
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          echo "STACK_ROOT=${{ github.workspace }}\.stack" >> $GITHUB_ENV
-        fi
+      run: echo "STACK_ROOT=${{ github.workspace }}\.stack" >> $GITHUB_ENV
 
     - name: Install GHC
       uses: haskell-actions/setup@v2.9.0
