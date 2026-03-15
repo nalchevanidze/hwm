@@ -97,14 +97,16 @@ extractNixArtifact pkgName dir = forNixLink dir $ \resultLink -> do
 extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
 extractGlobalNixArtifacts dir =
   forNixLink dir $ \resultLink -> do
-    let binDir = resultLink </> "bin"
-    hasBin <- liftIO $ doesPathExist binDir
-    if hasBin
-      then do
-        files <- liftIO $ listDirectory binDir
-        for_ files $ \file -> copyBinary (binDir </> file) (dir </> file)
-      else
-        throwError "Global build succeeded, but no 'bin/' directory was found in the output."
+    binDir <- detectPath [resultLink </> "bin"]
+    files <- liftIO $ listDirectory binDir
+    for_ files $ \file -> copyBinary (binDir </> file) (dir </> file)
+
+detectPath :: (MonadIO m, MonadError Issue m) => [FilePath] -> m FilePath
+detectPath searchPaths = do
+  source <- findM (liftIO . doesFileExist) searchPaths
+  case source of
+    Just path -> pure path
+    Nothing -> throwError $ fromString $ "Nix build succeeded, but path not found inside the Nix store: " <> show searchPaths
 
 findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
 findM _ [] = pure Nothing
