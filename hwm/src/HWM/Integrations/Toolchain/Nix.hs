@@ -6,6 +6,7 @@
 module HWM.Integrations.Toolchain.Nix (syncNixFile) where
 
 import qualified Data.Text as T
+import HWM.CLI.Command.Init (InitOptions (projectName))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Status, format, toCamelCase)
 import HWM.Core.Options (Options (..))
@@ -25,19 +26,30 @@ syncNixFile = do
   benvs <- filter buildNix <$> getBuildEnvironments
   syncFile (optionsNix ops) (deriveFlakeNix (cfgName, benv) (map (cfgName,) benvs))
 
+genName :: (Text, Text) -> Text
+genName (name, subName) = toCamelCase (name <> T.toTitle subName <> "WorkspacePackages")
+
 renderName :: Context -> Text
-renderName (name, BuildEnvironment {..}) = toCamelCase (name <> T.toTitle (format buildName) <> "WorkspacePackages")
+renderName (name, BuildEnvironment {..}) = genName (name, format buildName)
 
 pkgsNixName :: Context -> Text
 pkgsNixName ctx = "pkgs." <> renderName ctx
 
 type Context = (Name, BuildEnvironment)
 
-generateOverlay :: [Context] -> [Text]
-generateOverlay benvs =
+generateOverlay :: Context -> [Context] -> [Text]
+generateOverlay static benvs =
   ["haskellOverlay = final: prev: {"]
     <> concatMap rendergOverlayItem benvs
+    <> rendergOverlayStatic static
     <> ["};"]
+
+rendergOverlayStatic :: Context -> [Text]
+rendergOverlayStatic (projectName, BuildEnvironment {..}) =
+  [ "  " <> genName (projectName, "static") <> " = prev.pkgsStatic.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
+  ]
+    <> map renderPackage buildPkgs
+    <> ["  });"]
 
 rendergOverlayItem :: Context -> [Text]
 rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
@@ -63,7 +75,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
             ( [ "supportedSystems = [ \"x86_64-linux\" \"aarch64-linux\" \"x86_64-darwin\" \"aarch64-darwin\" ];",
                 "forAllSystems = nixpkgs.lib.genAttrs supportedSystems;"
               ]
-                <> generateOverlay ctxs
+                <> generateOverlay ctx ctxs
             )
             ( forAllSystems "packages" (generatePublicPackages projectName benv (map snd ctxs))
                 <> forAllSystems "devShells" (generateDevShell True ctx <> concatMap (generateDevShell False) ctxs)
