@@ -173,7 +173,7 @@ getNixtScope (ScopePkgs [pkg]) = pure $ pkgName pkg
 getNixtScope _ = throwError "BuildArtifact command with Nix builder is only supported for a single package"
 
 buildNixArtifact :: FilePath -> PkgName -> m () -> Exec m
-buildNixArtifact dirPath scope m = Exec "nix" ["build", ".#" <> format scope <> "-static", "-o", format (dirPath </> "result")] [] (Just m)
+buildNixArtifact dirPath scope m = Exec "nix" ["build", ".#" <> format scope <> "-release", "-o", format (dirPath </> "result")] [] (Just m)
 
 toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
