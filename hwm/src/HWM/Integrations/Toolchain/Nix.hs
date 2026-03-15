@@ -6,7 +6,6 @@
 module HWM.Integrations.Toolchain.Nix (syncNixFile) where
 
 import qualified Data.Text as T
-import HWM.CLI.Command.Init (InitOptions (projectName))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Status, format, toCamelCase)
 import HWM.Core.Options (Options (..))
