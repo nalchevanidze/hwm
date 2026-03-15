@@ -62,6 +62,17 @@ comandLabel Build {} = "build"
 comandLabel Test {} = "test"
 comandLabel Install {} = "build"
 
+assertNixLink :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
+assertNixLink path = do
+  isLink <- liftIO $ doesPathExist path
+  unless isLink
+    $ throwError
+    $ fromString
+      ( "Nix build completed, but did not create an output at: "
+          <> path
+          <> "\n(This usually means the Nix derivation is empty or build failed silently.)"
+      )
+
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
 extractNixArtifact pkgName distDir = do
   let resultLink = distDir </> "result"
@@ -69,13 +80,7 @@ extractNixArtifact pkgName distDir = do
       pkgStr = toString (format pkgName)
 
   liftIO $ createDirectoryIfMissing True distDir
-  isLink <- liftIO $ doesPathExist resultLink
-  unless isLink
-    $ throwError
-    $ fromString
-    $ "Nix build completed, but did not create an output at: "
-    <> resultLink
-    <> "\n(This usually means the Nix derivation is empty or 'exec' hid a build failure.)"
+  assertNixLink resultLink
   let searchPaths =
         [ resultLink </> "bin" </> pkgStr, -- Standard Haskell (Cabal/Stack)
           resultLink </> pkgStr, -- Simple/Single-binary derivation
@@ -100,11 +105,10 @@ extractNixArtifact pkgName distDir = do
 extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
 extractGlobalNixArtifacts distDir = do
   let resultLink = distDir </> "result-global"
-      binDir = resultLink </> "bin"
 
-  isLink <- liftIO $ doesPathExist resultLink
-  unless isLink $ throwError "Nix global build failed to produce a result symlink."
-
+  assertNixLink resultLink
+  
+  let binDir = resultLink </> "bin"
   hasBin <- liftIO $ doesPathExist binDir
   if hasBin
     then do
