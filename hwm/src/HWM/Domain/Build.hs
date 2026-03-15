@@ -183,7 +183,7 @@ toAction ctx NixBuilder Test scope = nixBuild ctx scope
 toAction _ CabalBuilder {..} Install {..} scope
   | inNixDevelopment = throwError "Install command with Nix development environment is not supported"
   | otherwise = installCabal scope dirPath
-toAction _ StackBuilder Install {..} scope = mkStack "install" scope ["--local-bin-path", format dirPath]
+toAction _ StackBuilder Install {..} scope = installStack scope dirPath
 toAction _ NixBuilder Install {..} scope =
   case scope of
     ScopePkgs [pkg] -> pure $ nixBuildCopy dirPath [".#" <> format (pkgName pkg)] (extractNixArtifact (pkgName pkg) dirPath)
