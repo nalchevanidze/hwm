@@ -16,6 +16,10 @@
           hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
           hwm = hfinal.callCabal2nix "hwm" ./hwm {};
         });
+        hwmStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+          hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+          hwm = hfinal.callCabal2nix "hwm" ./hwm {};
+        });
       };
     in
     {
@@ -29,6 +33,12 @@
           hwm = pkgs.hwmCiNixWorkspacePackages.hwm;
           hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
+
+          # --- THE SHIP TARGET: Portable Static Binary ---
+          # Run: nix build .#ship
+          # This is the one you can safely upload to a server!
+          artifact-hwm = pkgs.hwmStaticWorkspacePackages.hwm;
+
           env-ciNix-all = pkgs.symlinkJoin {
             name = "ci-nix-workspace";
             paths = [ 
