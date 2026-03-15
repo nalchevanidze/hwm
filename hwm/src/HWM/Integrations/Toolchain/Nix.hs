@@ -213,11 +213,14 @@ braces :: [Text] -> [Text]
 braces body =
   ["{"] <> map ("  " <>) body <> ["}"]
 
+fun :: Text -> [Text] -> [Text]
+fun name body = [name <> " {"] <> map ("  " <>) body <> ["};"]
+
 genSymlinkJoin :: Text -> Text -> [Text] -> [Text]
 genSymlinkJoin varName name pkgs =
-  [ varName <> " = pkgs.symlinkJoin {",
-    "  name = \"" <> name <> "\";",
-    "  paths = ["
-  ]
-    <> map ("    " <>) pkgs
-    <> [" ];", "};"]
+  fun
+    (varName <> " = pkgs.symlinkJoin")
+    ( ["name = \"" <> name <> "\";", "paths = ["]
+        <> map ("  " <>) pkgs
+        <> ["];"]
+    )
