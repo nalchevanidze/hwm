@@ -145,15 +145,15 @@ nixScope envName (ScopePkgs pkgs) =
   let envSuffix = toCamelCase (format envName)
    in map (\pkg -> ".#" <> format (pkgName pkg) <> "-" <> envSuffix) pkgs
 
-handleScope :: Bool -> TargetScope -> [Text]
-handleScope isCabal ScopeGlobal = ["all" | isCabal]
+handleScope :: Maybe Text -> TargetScope -> [Text]
+handleScope fb ScopeGlobal = maybeToList fb
 handleScope _ (ScopePkgs pkgs) = map (format . pkgName) pkgs
 
 mkStack :: (Applicative m) => Text -> TargetScope -> [Text] -> m (Exec m)
-mkStack cmd scope ops = mkExec "stack" ([cmd] <> handleScope False scope <> ops)
+mkStack cmd scope ops = mkExec "stack" ([cmd] <> handleScope Nothing scope <> ops)
 
-mkCabal :: (Applicative m) => Text -> TargetScope -> [Text] -> m (Exec m)
-mkCabal cmd scope ops = mkExec "cabal" ([cmd] <> handleScope True scope <> ops)
+mkCabal :: (Applicative m) => Bool -> Text -> TargetScope -> [Text] -> m (Exec m)
+mkCabal install cmd scope ops = mkExec "cabal" ([cmd] <> handleScope (if install then Just "all" else Just "all:exe") scope <> ops)
 
 newtype Env = Env {envName :: Name}
 
@@ -168,15 +168,15 @@ toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand 
 toAction _ StackBuilder Build scope = mkStack "build" scope []
 toAction _ StackBuilder Test scope = mkStack "test" scope []
 -- Cabal
-toAction _ CabalBuilder {} Build scope = mkCabal "build" scope []
-toAction _ CabalBuilder {} Test scope = mkCabal "test" scope []
+toAction _ CabalBuilder {} Build scope = mkCabal False "build" scope []
+toAction _ CabalBuilder {} Test scope = mkCabal False "test" scope []
 -- Nix
 toAction ctx NixBuilder Build scope = nixBuild ctx scope
 toAction ctx NixBuilder Test scope = nixBuild ctx scope
 -- INSTALL
 toAction _ CabalBuilder {..} Install {..} scope
   | inNixDevelopment = throwError "Install command with Nix development environment is not supported"
-  | otherwise = mkCabal "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
+  | otherwise = mkCabal True "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
 toAction _ StackBuilder Install {..} scope = mkStack "install" scope ["--local-bin-path", format dirPath]
 toAction _ NixBuilder Install {..} scope =
   case scope of
