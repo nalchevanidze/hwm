@@ -76,13 +76,15 @@ forNixLink dir f = do
   f linkPath
   liftIO $ removePathForcibly linkPath
 
-executablePerrmisions :: (MonadIO m) => FilePath -> m ()
-executablePerrmisions path = liftIO $ do
+copyBinary :: (MonadIO m) => FilePath -> FilePath -> m ()
+copyBinary fromPath toPath = liftIO $ do
+  liftIO $ copyFile fromPath toPath
   let properPerms =
         setOwnerReadable True
           $ setOwnerWritable True
           $ setOwnerExecutable True emptyPermissions
-  setPermissions path properPerms
+  setPermissions toPath properPerms
+
 
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
 extractNixArtifact pkgName dir = forNixLink dir $ \resultLink -> do
@@ -92,8 +94,7 @@ extractNixArtifact pkgName dir = forNixLink dir $ \resultLink -> do
   case maybeSource of
     Just sourcePath -> do
       let finalDest = dir </> toString pkgName
-      liftIO $ copyFile sourcePath finalDest
-      executablePerrmisions finalDest
+      copyBinary sourcePath finalDest
     Nothing -> throwError $ fromString $ "Nix build succeeded, but binary '" <> pkgStr <> "' not found inside the Nix store path.\n"
 
 extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
