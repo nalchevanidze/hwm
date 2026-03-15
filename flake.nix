@@ -105,7 +105,7 @@
           };
         });
 
-    devShells = forAllSystems (system:
+      devShells = forAllSystems (system:
         let
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
