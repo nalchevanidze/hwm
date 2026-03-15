@@ -36,13 +36,6 @@ pkgsNixName ctx = "pkgs." <> renderName ctx
 
 type Context = (Name, BuildEnvironment)
 
-generateOverlay :: Context -> [Context] -> [Text]
-generateOverlay static benvs =
-  ["haskellOverlay = final: prev: {"]
-    <> concatMap rendergOverlayItem benvs
-    <> rendergOverlayStatic static
-    <> ["};"]
-
 stripExecutables :: (Semigroup a, IsString a) => a -> a
 stripExecutables x = "prev.haskell.lib.justStaticExecutables (" <> x <> ")"
 
@@ -116,6 +109,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
             ( [ "supportedSystems = [ " <> T.intercalate " " (map show systems) <> " ];",
                 "forAllSystems = nixpkgs.lib.genAttrs supportedSystems;"
               ]
+                -- OVERLAY
                 <> generateOverlay ctx ctxs
             )
             -- PACKAGES
@@ -127,6 +121,14 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
             )
             False
       )
+
+-- OVERLAY
+generateOverlay :: Context -> [Context] -> [Text]
+generateOverlay static benvs =
+  ["haskellOverlay = final: prev: {"]
+    <> concatMap rendergOverlayItem benvs
+    <> rendergOverlayStatic static
+    <> ["};"]
 
 -- PACKAGES
 genPackages :: Context -> [Context] -> [Text]
