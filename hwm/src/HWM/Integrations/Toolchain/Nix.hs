@@ -108,8 +108,8 @@ genPackages releasePkgs ctx@(projectName, defaultEnv) allEnvs =
     <> concatMap genEnvPackages allEnvs
     <> concatMap allEnvPackages allEnvs
     <> genStaticPackages ctx
-    <> map genReleasePkg releasePkgs
-    <> genReleaseGroup releasePkgs
+    <> map (genReleasePkg ctx) releasePkgs
+    <> genReleaseGroup ctx releasePkgs
   where
     defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
 
@@ -129,18 +129,18 @@ allEnvPackages ctx@(_, env) =
     (format (buildName env) <> "-workspace")
     (map (\pkg -> "pkgs." <> genNixName ctx <> "." <> format (pkgName pkg)) (buildPkgs env))
 
-genReleasePkg :: Text -> Text
-genReleasePkg name = "release-" <> name <> " = " <> genReleasePkgBody name <> ";"
+genReleasePkg :: Context -> Text -> Text
+genReleasePkg ctx name = "release-" <> name <> " = " <> genReleasePkgBody ctx name <> ";"
 
-genReleasePkgBody :: Text -> Text
-genReleasePkgBody name = "mkReleaseArtifact \"" <> name <> "\" pkgs.hwmCiNixWorkspacePackages." <> name <> " pkgs.hwmStaticWorkspacePackages." <> name
+genReleasePkgBody :: Context -> Text -> Text
+genReleasePkgBody ctx name = "mkReleaseArtifact \"" <> name <> "\" pkgs." <> genNixName ctx <> "." <> name <> " pkgs." <> genName (fst ctx, "static") <> "." <> name
 
-genReleaseGroup :: [Text] -> [Text]
-genReleaseGroup pkgs =
+genReleaseGroup :: Context -> [Text] -> [Text]
+genReleaseGroup ctx pkgs =
   genSymlinkJoin
     "release"
     "release-artifacts"
-    (map (\pkg -> "(" <> genReleasePkgBody pkg <> ")") pkgs)
+    (map (\pkg -> "(" <> genReleasePkgBody ctx pkg <> ")") pkgs)
 
 -- DEVSHELL
 genDevShell :: Bool -> Context -> [Text]
