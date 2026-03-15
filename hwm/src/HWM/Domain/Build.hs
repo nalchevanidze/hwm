@@ -153,7 +153,7 @@ mkStack :: (Applicative m) => Text -> TargetScope -> [Text] -> m (Exec m)
 mkStack cmd scope ops = mkExec "stack" ([cmd] <> handleScope Nothing scope <> ops)
 
 mkCabal :: (Applicative m) => Bool -> Text -> TargetScope -> [Text] -> m (Exec m)
-mkCabal install cmd scope ops = mkExec "cabal" ([cmd] <> handleScope (if install then Just "all" else Just "all:exe") scope <> ops)
+mkCabal install cmd scope ops = mkExec "cabal" ([cmd] <> handleScope (if install then Just "all:exe" else Just "all") scope <> ops)
 
 newtype Env = Env {envName :: Name}
 
