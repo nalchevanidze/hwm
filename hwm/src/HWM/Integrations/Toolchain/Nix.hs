@@ -102,13 +102,12 @@ renderPackageBody pkg = " hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\
 -- PACKAGES
 genPackages :: Context -> [Context] -> [Text]
 genPackages ctx@(projectName, defaultEnv) allEnvs =
-  map (\pkg -> "default = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") defaultPkg
-    <> map (\pkg -> format (pkgName pkg) <> " = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
+  map (\pkg -> "default = pkgs." <> genNixName ctx <> "." <> format (pkgName pkg) <> ";") defaultPkg
+    <> map (\pkg -> format (pkgName pkg) <> " = pkgs." <> genNixName ctx <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
     <> concatMap genEnviromentPackages allEnvs
     <> genStaticPackages ctx
   where
     defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
-    defaultOverlay = genNixName (projectName, defaultEnv)
 
 artifactEngine :: [Text]
 artifactEngine =
