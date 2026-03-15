@@ -72,8 +72,8 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
           "outputs = { self, nixpkgs, haskell-nix }:"
         ]
           <> letBlock
-            ( [ "supportedSystems = [ \"x86_64-linux\" \"aarch64-linux\" \"x86_64-darwin\" \"aarch64-darwin\" ];",
-                "forAllSystems = nixpkgs.lib.genAttrs supportedSystems;"
+            ( [ "supportedSystems = [ " <> T.intercalate " " (map show systems) <> " ];",
+                "forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);"
               ]
                 <> generateOverlay ctx ctxs
             )
@@ -83,6 +83,14 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
             )
             False
       )
+
+systems :: [Text]
+systems =
+  [ "x86_64-linux",
+    "aarch64-linux",
+    "x86_64-darwin",
+    "aarch64-darwin"
+  ]
 
 braces :: [Text] -> [Text]
 braces body =
