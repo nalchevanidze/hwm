@@ -85,16 +85,13 @@ copyBinary fromPath toPath = liftIO $ do
           $ setOwnerExecutable True emptyPermissions
   setPermissions toPath properPerms
 
-
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
 extractNixArtifact pkgName dir = forNixLink dir $ \resultLink -> do
   let pkgStr = toString (format pkgName)
   let searchPaths = [resultLink </> "bin" </> pkgStr, resultLink </> pkgStr, resultLink]
-  maybeSource <- findM (liftIO . doesFileExist) searchPaths
-  case maybeSource of
-    Just sourcePath -> do
-      let finalDest = dir </> toString pkgName
-      copyBinary sourcePath finalDest
+  source <- findM (liftIO . doesFileExist) searchPaths
+  case source of
+    Just path -> copyBinary path (dir </> toString pkgName)
     Nothing -> throwError $ fromString $ "Nix build succeeded, but binary '" <> pkgStr <> "' not found inside the Nix store path.\n"
 
 extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
