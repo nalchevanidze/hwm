@@ -16,7 +16,11 @@
         hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
         hwm = hfinal.callCabal2nix "hwm" ./hwm {};
       });
-      hwmStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+      hwmCiNixStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+        hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
+        hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
+      });
+      hwmCiWindowsStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
         hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
         hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
       });

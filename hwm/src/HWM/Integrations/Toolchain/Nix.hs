@@ -101,7 +101,7 @@ rendergOverlayStatic :: Context -> BuildEnvironment -> [Text]
 rendergOverlayStatic Context {..} BuildEnvironment {..} =
   overlayFun
     projectName
-    (buildName <> "Static")
+    (buildName <> "-static")
     ["pkgsStatic", "haskell", "packages", formatNixGhc buildGHC]
     (map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
 
