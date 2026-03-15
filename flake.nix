@@ -25,10 +25,8 @@
     {
       packages = forAllSystems (system:
         let
-          # Instantiate nixpkgs for the current system, applying our custom Haskell overlay
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
-          
-          # --- THE RELEASE ARTIFACT ENGINE ---
+
           # This function decides HOW to package the binary based on the OS running the build.
           mkReleaseArtifact = pkgName: basePkg: staticPkg:
             if pkgs.stdenv.hostPlatform.isLinux then
@@ -80,19 +78,11 @@
           hwm-golden-static = pkgs.hwmStaticWorkspacePackages.hwm-golden;
           hwm-static = pkgs.hwmStaticWorkspacePackages.hwm;
 
-          # --- FINAL PRODUCTION RELEASE TARGETS ---
-          # Triggers the `mkReleaseArtifact` logic.
-          # Run `nix build .#release` to get the portable folder tailored for your current OS.
           release-hwm = mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm;
-          
-          # The master release collection. 
-          # CI will zip the contents of this output folder to ship your software.
           release = pkgs.symlinkJoin {
             name = "hwm-release-artifacts";
             paths = [
               (mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm)
-              # If you ever want to release hwm-golden, simply add it here:
-              # (mkReleaseArtifact "hwm-golden" pkgs.hwmCiNixWorkspacePackages.hwm-golden pkgs.hwmStaticWorkspacePackages.hwm-golden)
             ];
           };
         });
