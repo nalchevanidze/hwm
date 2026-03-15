@@ -25,7 +25,7 @@ import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue)
 import HWM.Runtime.Process (EnvVars, Exec (..), mkExec)
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, doesPathExist, emptyPermissions, listDirectory, removePathForcibly, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
+import System.Directory (copyFile, doesFileExist, doesPathExist, emptyPermissions, listDirectory, removePathForcibly, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import System.FilePath ((</>))
 
 data Builder
