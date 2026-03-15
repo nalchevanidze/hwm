@@ -149,16 +149,11 @@ genEnviromentPackages (projectName, env) =
   let overlay = genNixName (projectName, env)
       envRaw = format (buildName env)
       envName = toCamelCase envRaw
-      pathList = map (\pkg -> "    pkgs." <> overlay <> "." <> format (pkgName pkg)) (buildPkgs env)
    in map (genPackage overlay envName) (buildPkgs env)
-        <> [ "env-" <> envName <> "-all = pkgs.symlinkJoin {",
-             "  name = \"" <> envRaw <> "-workspace\";",
-             "  paths = [ "
-           ]
-        <> pathList
-        <> [ " ];",
-             "};"
-           ]
+        <> genSymlinkJoin
+          ("env-" <> envName <> "-all")
+          (envRaw <> "-workspace")
+          (map (\pkg -> "pkgs." <> overlay <> "." <> format (pkgName pkg)) (buildPkgs env))
 
 -- DEVSHELL
 genDevShell :: Bool -> Context -> [Text]
@@ -202,3 +197,12 @@ letBlock h body end =
 braces :: [Text] -> [Text]
 braces body =
   ["{"] <> map ("  " <>) body <> ["}"]
+
+genSymlinkJoin :: Text -> Text -> [Text] -> [Text]
+genSymlinkJoin varName name pkgs =
+  [ varName <> " = pkgs.symlinkJoin {",
+    "  name = \"" <> name <> "\";",
+    "  paths = ["
+  ]
+    <> map ("    " <>) pkgs
+    <> [" ];", "};"]
