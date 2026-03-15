@@ -163,6 +163,12 @@ nixBuild ctx scope = mkExec "nix" $ ["build", "--no-link"] <> nixScope (envName 
 nixBuildCopy :: FilePath -> [Text] -> m () -> Exec m
 nixBuildCopy dirPath scope m = Exec "nix" (["build"] <> scope <> ["-o", format (dirPath </> "result")]) [] (Just m)
 
+installCabal :: (Applicative m, Format a) => TargetScope -> a -> m (Exec m)
+installCabal scope dirPath = mkCabal True "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
+
+installStack :: (Applicative m, Format a) => TargetScope -> a -> m (Exec m)
+installStack scope dirPath = mkStack "install" scope ["--local-bin-path", format dirPath]
+
 toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
 toAction _ StackBuilder Build scope = mkStack "build" scope []
@@ -176,7 +182,7 @@ toAction ctx NixBuilder Test scope = nixBuild ctx scope
 -- INSTALL
 toAction _ CabalBuilder {..} Install {..} scope
   | inNixDevelopment = throwError "Install command with Nix development environment is not supported"
-  | otherwise = mkCabal True "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
+  | otherwise = installCabal scope dirPath
 toAction _ StackBuilder Install {..} scope = mkStack "install" scope ["--local-bin-path", format dirPath]
 toAction _ NixBuilder Install {..} scope =
   case scope of
