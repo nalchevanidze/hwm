@@ -13,6 +13,7 @@ module HWM.Domain.Release
     getArtifact,
     selectedArtifacts,
     resolveArtifactConfig,
+    getArtifactEnvironments,
   )
 where
 
