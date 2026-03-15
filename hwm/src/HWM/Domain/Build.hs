@@ -88,11 +88,8 @@ copyBinary fromPath toPath = liftIO $ do
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
 extractNixArtifact pkgName dir = forNixLink dir $ \resultLink -> do
   let pkgStr = toString (format pkgName)
-  let searchPaths = [resultLink </> "bin" </> pkgStr, resultLink </> pkgStr, resultLink]
-  source <- findM (liftIO . doesFileExist) searchPaths
-  case source of
-    Just path -> copyBinary path (dir </> toString pkgName)
-    Nothing -> throwError $ fromString $ "Nix build succeeded, but binary '" <> pkgStr <> "' not found inside the Nix store path.\n"
+  source <- detectPath [resultLink </> "bin" </> pkgStr, resultLink </> pkgStr, resultLink]
+  copyBinary source (dir </> toString pkgName)
 
 extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
 extractGlobalNixArtifacts dir =
