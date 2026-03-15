@@ -73,7 +73,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
         ]
           <> letBlock
             ( [ "supportedSystems = [ " <> T.intercalate " " (map show systems) <> " ];",
-                "forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);"
+                "forAllSystems = nixpkgs.lib.genAttrs supportedSystems;"
               ]
                 <> generateOverlay ctx ctxs
             )
