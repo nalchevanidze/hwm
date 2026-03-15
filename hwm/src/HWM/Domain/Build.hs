@@ -85,21 +85,20 @@ executablePerrmisions path = liftIO $ do
   setPermissions path properPerms
 
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
-extractNixArtifact pkgName distDir = forNixLink distDir $ \resultLink -> do
+extractNixArtifact pkgName dir = forNixLink dir $ \resultLink -> do
   let pkgStr = toString (format pkgName)
-  liftIO $ createDirectoryIfMissing True distDir
   let searchPaths = [resultLink </> "bin" </> pkgStr, resultLink </> pkgStr, resultLink]
   maybeSource <- findM (liftIO . doesFileExist) searchPaths
   case maybeSource of
     Just sourcePath -> do
-      let finalDest = distDir </> toString pkgName
+      let finalDest = dir </> toString pkgName
       liftIO $ copyFile sourcePath finalDest
       executablePerrmisions finalDest
     Nothing -> throwError $ fromString $ "Nix build succeeded, but binary '" <> pkgStr <> "' not found inside the Nix store path.\n"
 
 extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
-extractGlobalNixArtifacts distDir =
-  forNixLink distDir $ \resultLink -> do
+extractGlobalNixArtifacts dir =
+  forNixLink dir $ \resultLink -> do
     let binDir = resultLink </> "bin"
     hasBin <- liftIO $ doesPathExist binDir
     if hasBin
@@ -107,7 +106,7 @@ extractGlobalNixArtifacts distDir =
         files <- liftIO $ listDirectory binDir
         for_ files $ \file -> do
           let sourcePath = binDir </> file
-          let destPath = distDir </> file
+          let destPath = dir </> file
           liftIO $ copyFile sourcePath destPath
       else
         throwError "Global build succeeded, but no 'bin/' directory was found in the output."
