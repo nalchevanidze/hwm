@@ -60,9 +60,9 @@ deriveFlakeNix releasePkgs ctx@(projectName, benv) ctxs =
                 <> genOverlay ctx ctxs
             )
             -- PACKAGES
-            ( forAllSystems "packages" artifactEngine (genPackages releasePkgs ctx ctxs)
+            ( forAllSystems "packages" (nixPkgs <> artifactEngine) (genPackages releasePkgs ctx ctxs)
                 -- DEVSHELLS
-                <> forAllSystems "devShells" [] (genDevShell True ctx <> concatMap (genDevShell False) ctxs)
+                <> forAllSystems "devShells" nixPkgs (genDevShell True ctx <> concatMap (genDevShell False) ctxs)
                 -- CHECKS
                 <> ["checks = forAllSystems (system: self.packages.${system});"]
             )
@@ -191,13 +191,11 @@ artifactEngine =
   ]
 
 -- SYNTAX
+nixPkgs :: [Text]
+nixPkgs = ["pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };"]
+
 forAllSystems :: Text -> [Text] -> [Text] -> [Text]
-forAllSystems system lets body =
-  [system <> " = forAllSystems (system:"]
-    <> letBlock
-      (["pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };"] <> lets)
-      body
-      True
+forAllSystems system h body = [system <> " = forAllSystems (system:"] <> letBlock h body True
 
 letBlock :: [Text] -> [Text] -> Bool -> [Text]
 letBlock h body end = ["let"] <> indent h <> ["in", "{"] <> indent body <> if end then ["});"] else ["};"]
