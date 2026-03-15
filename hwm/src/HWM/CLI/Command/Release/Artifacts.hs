@@ -137,5 +137,5 @@ buildPkg outputDir builder (name, ArtifactConfig {..}) = do
   optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
   pkg <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
   env <- overrideBuilder builder <$> getBuildEnvironment Nothing
-  dispatch (DispatcheCommand (Install binaryDir) (ScopePkgs [pkg]) (map GHCOptionsFlag arcGhcOptions)) env
+  dispatch (DispatcheCommand (BuildArtifact binaryDir) (ScopePkgs [pkg]) (map GHCOptionsFlag arcGhcOptions)) env
   pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
