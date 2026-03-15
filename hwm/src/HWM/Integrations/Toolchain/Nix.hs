@@ -83,11 +83,14 @@ rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
 
 rendergOverlayStatic :: Context -> [Text]
 rendergOverlayStatic (projectName, BuildEnvironment {..}) =
-  fun
-    (genName (projectName, "static"))
-    (concatName ["prev.pkgsStatic.haskell.packages", formatNixGhc buildGHC, "extend"])
-    "hfinal: hprev:"
+  overlayFun
+    projectName
+    "static"
+    ["pkgsStatic.haskell.packages", formatNixGhc buildGHC]
     (map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
+
+overlayFun :: Text -> Text -> [Text] -> [Text] -> [Text]
+overlayFun name scond extend = fun (genName (name, scond)) (concatName $ ["prev"] <> extend <> ["extend"]) "hfinal: hprev:"
 
 stripExecutables :: (Semigroup a, IsString a) => a -> a
 stripExecutables x = "prev.haskell.lib.justStaticExecutables (" <> x <> ")"
