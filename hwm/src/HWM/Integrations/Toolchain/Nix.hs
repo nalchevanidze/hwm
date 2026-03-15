@@ -112,8 +112,8 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
               ]
                 <> generateOverlay ctx ctxs
             )
-            ( forAllSystems "packages" (generatePublicPackages projectName benv (map snd ctxs))
-                <> forAllSystems "devShells" (generateDevShell True ctx <> concatMap (generateDevShell False) ctxs)
+            ( forAllSystems "packages" artifactEngine (generatePublicPackages projectName benv (map snd ctxs))
+                <> forAllSystems "devShells" [] (generateDevShell True ctx <> concatMap (generateDevShell False) ctxs)
                 <> ["checks = forAllSystems (system: self.packages.${system});"]
             )
             False
@@ -192,10 +192,10 @@ letBlock h body end =
     <> map ("    " <>) body
     <> if end then ["  });"] else ["  };"]
 
-forAllSystems :: Text -> [Text] -> [Text]
-forAllSystems system body =
+forAllSystems :: Text -> [Text] -> [Text] -> [Text]
+forAllSystems system lets body =
   [system <> " = forAllSystems (system:"]
     <> letBlock
-      ["pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };"]
+      (["pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };"] <> lets)
       body
       True
