@@ -71,16 +71,18 @@ deriveFlakeNix releasePkgs ctx@(projectName, benv) ctxs =
 
 -- OVERLAY
 genOverlay :: Context -> [Context] -> [Text]
-genOverlay static benvs = scoped "haskellOverlay = final: prev:" (
-  concatMap rendergOverlayItem benvs <> rendergOverlayStatic static
-  )
+genOverlay static benvs =
+  scoped
+    "haskellOverlay = final: prev:"
+    ( concatMap rendergOverlayItem benvs <> rendergOverlayStatic static
+    )
 
 rendergOverlayItem :: Context -> [Text]
 rendergOverlayItem (name, BuildEnvironment {..}) =
   overlayFun
     name
     buildName
-    ["haskell.packages", formatNixGhc buildGHC]
+    ["haskell", "packages", formatNixGhc buildGHC]
     (map (renderPackageDef renderPackageBody) buildPkgs)
 
 rendergOverlayStatic :: Context -> [Text]
@@ -88,7 +90,7 @@ rendergOverlayStatic (projectName, BuildEnvironment {..}) =
   overlayFun
     projectName
     "static"
-    ["pkgsStatic.haskell.packages", formatNixGhc buildGHC]
+    ["pkgsStatic", "haskell", "packages", formatNixGhc buildGHC]
     (map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
 
 overlayFun :: Text -> Text -> [Text] -> [Text] -> [Text]
@@ -101,7 +103,7 @@ renderPackageDef :: (Pkg -> Text) -> Pkg -> Text
 renderPackageDef body pkg = format (pkgName pkg) <> " =  " <> body pkg <> ";"
 
 renderPackageBody :: Pkg -> Text
-renderPackageBody pkg = " hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {}"
+renderPackageBody pkg = "hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {}"
 
 -- PACKAGES
 genPackages :: [Text] -> Context -> [Context] -> [Text]
