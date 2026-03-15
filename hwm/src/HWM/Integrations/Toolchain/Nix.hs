@@ -106,6 +106,7 @@ genPackages ctx@(projectName, defaultEnv) allEnvs =
     <> map (\pkg -> format (pkgName pkg) <> " = pkgs." <> genNixName ctx <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
     <> concatMap genEnviromentPackages allEnvs
     <> genStaticPackages ctx
+    <> ["release-hwm = mkReleaseArtifact \"hwm\" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm;"]
   where
     defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
 
