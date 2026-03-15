@@ -7,33 +7,17 @@
 
   outputs = { self, nixpkgs }:
     let
-      # 1. Define the architectures this flake supports natively.
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-      
-      # 2. Pure Nix helper function to generate attributes for all supported systems 
-      #    (replacing the need for flake-utils).
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-      
-      # 3. The Haskell Overlay: This overrides the default nixpkgs with our specific 
-      #    GHC versions and local Cabal packages.
       haskellOverlay = final: prev: {
-        
-        # --- CI ENVIRONMENT (Fast, Dynamic Linking) ---
         hwmCiNixWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
           hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
           hwm = hfinal.callCabal2nix "hwm" ./hwm {};
         });
-        
-        # --- STABLE ENVIRONMENT ---
         hwmStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
           hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
           hwm = hfinal.callCabal2nix "hwm" ./hwm {};
         });
-        
-        # --- STATIC ENVIRONMENT (Slow, Fully Independent Binaries) ---
-        # We use `pkgsStatic` for musl compilation on Linux.
-        # We wrap it in `justStaticExecutables` to strip out heavy libraries/docs 
-        # and keep only the tiny executable binary.
         hwmStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
           hwm-golden = prev.haskell.lib.justStaticExecutables (hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
           hwm = prev.haskell.lib.justStaticExecutables (hfinal.callCabal2nix "hwm" ./hwm {});
