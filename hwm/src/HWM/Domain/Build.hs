@@ -73,6 +73,14 @@ assertNixLink path = do
           <> "\n(This usually means the Nix derivation is empty or build failed silently.)"
       )
 
+executablePerrmisions :: (MonadIO m) => FilePath -> m ()
+executablePerrmisions path = liftIO $ do
+  let properPerms =
+        setOwnerReadable True
+          $ setOwnerWritable True
+          $ setOwnerExecutable True emptyPermissions
+  setPermissions path properPerms
+
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
 extractNixArtifact pkgName distDir = do
   let resultLink = distDir </> "result"
@@ -85,13 +93,7 @@ extractNixArtifact pkgName distDir = do
     Just sourcePath -> do
       let finalDest = distDir </> toString pkgName
       liftIO $ copyFile sourcePath finalDest
-      -- Ensure the user can execute it (Nix store is read-only)
-      liftIO $ do
-        let properPerms =
-              setOwnerReadable True
-                $ setOwnerWritable True
-                $ setOwnerExecutable True emptyPermissions
-        setPermissions finalDest properPerms
+      executablePerrmisions finalDest
       -- Cleanup: Remove the 'result' symlink to keep the folder clean
       liftIO $ removeFile resultLink
     Nothing -> throwError $ fromString $ "Nix build succeeded, but binary '" <> pkgStr <> "' not found inside the Nix store path.\n"
