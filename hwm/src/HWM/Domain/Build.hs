@@ -62,16 +62,19 @@ comandLabel Build {} = "build"
 comandLabel Test {} = "test"
 comandLabel Install {} = "build"
 
-assertNixLink :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
-assertNixLink path = do
-  isLink <- liftIO $ doesPathExist path
+forNixLink :: (MonadIO m, MonadError Issue m) => FilePath -> (FilePath -> m ()) -> m ()
+forNixLink dir f = do
+  let linkPath = dir </> "result"
+  isLink <- liftIO $ doesPathExist linkPath
   unless isLink
     $ throwError
     $ fromString
       ( "Nix build completed, but did not create an output at: "
-          <> path
+          <> linkPath
           <> "\n(This usually means the Nix derivation is empty or build failed silently.)"
       )
+  f linkPath
+  liftIO $ removePathForcibly linkPath
 
 executablePerrmisions :: (MonadIO m) => FilePath -> m ()
 executablePerrmisions path = liftIO $ do
@@ -82,11 +85,9 @@ executablePerrmisions path = liftIO $ do
   setPermissions path properPerms
 
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
-extractNixArtifact pkgName distDir = do
-  let resultLink = distDir </> "result"
-      pkgStr = toString (format pkgName)
+extractNixArtifact pkgName distDir = forNixLink distDir $ \resultLink -> do
+  let pkgStr = toString (format pkgName)
   liftIO $ createDirectoryIfMissing True distDir
-  assertNixLink resultLink
   let searchPaths = [resultLink </> "bin" </> pkgStr, resultLink </> pkgStr, resultLink]
   maybeSource <- findM (liftIO . doesFileExist) searchPaths
   case maybeSource of
@@ -94,26 +95,22 @@ extractNixArtifact pkgName distDir = do
       let finalDest = distDir </> toString pkgName
       liftIO $ copyFile sourcePath finalDest
       executablePerrmisions finalDest
-      -- Cleanup: Remove the 'result' symlink to keep the folder clean
-      liftIO $ removeFile resultLink
     Nothing -> throwError $ fromString $ "Nix build succeeded, but binary '" <> pkgStr <> "' not found inside the Nix store path.\n"
 
 extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
-extractGlobalNixArtifacts distDir = do
-  let resultLink = distDir </> "result"
-  assertNixLink resultLink
-  let binDir = resultLink </> "bin"
-  hasBin <- liftIO $ doesPathExist binDir
-  if hasBin
-    then do
-      files <- liftIO $ listDirectory binDir
-      for_ files $ \file -> do
-        let sourcePath = binDir </> file
-        let destPath = distDir </> file
-        liftIO $ copyFile sourcePath destPath
-    else
-      throwError "Global Nix install succeeded, but no 'bin/' directory was found in the output."
-  liftIO $ removePathForcibly resultLink
+extractGlobalNixArtifacts distDir =
+  forNixLink distDir $ \resultLink -> do
+    let binDir = resultLink </> "bin"
+    hasBin <- liftIO $ doesPathExist binDir
+    if hasBin
+      then do
+        files <- liftIO $ listDirectory binDir
+        for_ files $ \file -> do
+          let sourcePath = binDir </> file
+          let destPath = distDir </> file
+          liftIO $ copyFile sourcePath destPath
+      else
+        throwError "Global Nix install succeeded, but no 'bin/' directory was found in the output."
 
 findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
 findM _ [] = pure Nothing
