@@ -119,7 +119,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
                 <> generateOverlay ctx ctxs
             )
             -- PACKAGES
-            ( forAllSystems "packages" artifactEngine (genPackages projectName benv (map snd ctxs))
+            ( forAllSystems "packages" artifactEngine (genPackages ctx ctxs)
                 -- DEVSHELLS
                 <> forAllSystems "devShells" [] (genDevShell True ctx <> concatMap (genDevShell False) ctxs)
                 -- CHECKS
@@ -129,12 +129,12 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
       )
 
 -- PACKAGES
-genPackages :: Name -> BuildEnvironment -> [BuildEnvironment] -> [Text]
-genPackages projectName defaultEnv allEnvs =
+genPackages :: Context -> [Context] -> [Text]
+genPackages ctx@(projectName, defaultEnv) allEnvs =
   map (\pkg -> "default = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") defaultPkg
     <> map (\pkg -> format (pkgName pkg) <> " = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
-    <> concatMap (genEnviromentPackages . (projectName,)) allEnvs
-    <> genStaticPackages (projectName, defaultEnv)
+    <> concatMap genEnviromentPackages allEnvs
+    <> genStaticPackages ctx
   where
     defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
     defaultOverlay = renderName (projectName, defaultEnv)
