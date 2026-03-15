@@ -131,15 +131,13 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
 -- PACKAGES
 genPackages :: Name -> BuildEnvironment -> [BuildEnvironment] -> [Text]
 genPackages projectName defaultEnv allEnvs =
-  defaultPkgAlias <> basePkgs <> matrixPkgs
+  map (\pkg -> "default = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") defaultPkg
+    <> map (\pkg -> format (pkgName pkg) <> " = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
+    <> concatMap (genEnviromentPackages . (projectName,)) allEnvs
+    <> genStaticPackages (projectName, defaultEnv)
   where
+    defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
     defaultOverlay = renderName (projectName, defaultEnv)
-    defaultPkgAlias =
-      let defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
-       in map (\pkg -> "default = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") defaultPkg
-    basePkgs =
-      map (\pkg -> format (pkgName pkg) <> " = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
-    matrixPkgs = concatMap (genEnviromentPackages . (projectName,)) allEnvs <> genStaticPackages (projectName, defaultEnv)
 
 genPackage :: Text -> Text -> Pkg -> Text
 genPackage overlay envName pkg = format (pkgName pkg) <> "-" <> envName <> " = pkgs." <> overlay <> "." <> format (pkgName pkg) <> ";"
