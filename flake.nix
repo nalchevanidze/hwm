@@ -64,16 +64,14 @@
           hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
           
-          # Group target: builds the entire CI workspace at once
           env-ciNix-all = pkgs.symlinkJoin {
             name = "ci-nix-workspace";
             paths = [ 
               pkgs.hwmCiNixWorkspacePackages.hwm-golden
               pkgs.hwmCiNixWorkspacePackages.hwm
-            ];
+           ];
           };
           
-          # --- STABLE TARGETS ---
           hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
           hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
           env-stable-all = pkgs.symlinkJoin {
