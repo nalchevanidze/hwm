@@ -46,6 +46,36 @@ generateOverlay static benvs =
 stripExecutables :: (Semigroup a, IsString a) => a -> a
 stripExecutables x = "prev.haskell.lib.justStaticExecutables (" <> x <> ")"
 
+artifactEngine :: [Text]
+artifactEngine =
+  [ "          # --- THE RELEASE ARTIFACT ENGINE ---",
+    "          # This function decides HOW to package the binary based on the OS running the build.",
+    "          mkReleaseArtifact = pkgName: basePkg: staticPkg:",
+    "            if pkgs.stdenv.hostPlatform.isLinux then",
+    "              # LINUX: Return the fully static (musl), zero-dependency executable",
+    "              staticPkg",
+    "            else if pkgs.stdenv.hostPlatform.isDarwin then",
+    "              # MACOS: We \"Bundle\" the dynamic dependencies since strict static is hard on Mac.",
+    "              pkgs.runCommand \"${pkgName}-macos-bundle\" {",
+    "                nativeBuildInputs = [ pkgs.macdylibbundler pkgs.darwin.autoSignDarwinBinariesHook ];",
+    "              } ''",
+    "                mkdir -p $out/bin",
+    "",
+    "                # 1. Copy the fast, dynamically linked binary (stripping docs/libs first)",
+    "                cp ${pkgs.haskell.lib.justStaticExecutables basePkg}/bin/${pkgName} $out/bin/${pkgName}",
+    "                chmod 755 $out/bin/${pkgName}",
+    "",
+    "                # 2. Run dylibbundler to pull all Nix store .dylibs into the local folder",
+    "                dylibbundler -b --no-codesign -x $out/bin/${pkgName} -d $out/bin -p '@executable_path'",
+    "",
+    "                # 3. Re-sign the binary so Apple Silicon (M1/M2/M3) allows it to run natively",
+    "                signDarwinBinariesInAllOutputs",
+    "              ''",
+    "            else",
+    "              # Fallback for unexpected systems",
+    "              basePkg;"
+  ]
+
 rendergOverlayStatic :: Context -> [Text]
 rendergOverlayStatic (projectName, BuildEnvironment {..}) =
   [ "  " <> genName (projectName, "static") <> " = prev.pkgsStatic.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
