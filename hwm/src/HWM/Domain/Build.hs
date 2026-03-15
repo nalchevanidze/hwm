@@ -76,7 +76,6 @@ assertNixLink path = do
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
 extractNixArtifact pkgName distDir = do
   let resultLink = distDir </> "result"
-      finalDest = distDir </> toString pkgName
       pkgStr = toString (format pkgName)
 
   liftIO $ createDirectoryIfMissing True distDir
@@ -88,6 +87,7 @@ extractNixArtifact pkgName distDir = do
         ]
   maybeSource <- findM (liftIO . doesFileExist) searchPaths
 
+  let finalDest = distDir </> toString pkgName
   case maybeSource of
     Just sourcePath -> do
       liftIO $ copyFile sourcePath finalDest
@@ -107,7 +107,7 @@ extractGlobalNixArtifacts distDir = do
   let resultLink = distDir </> "result-global"
 
   assertNixLink resultLink
-  
+
   let binDir = resultLink </> "bin"
   hasBin <- liftIO $ doesPathExist binDir
   if hasBin
