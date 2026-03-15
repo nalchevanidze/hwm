@@ -57,30 +57,30 @@
           hwm = pkgs.hwmCiNixWorkspacePackages.hwm;
           hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
+          hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
+          hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
           env-ciNix-all = pkgs.symlinkJoin {
             name = "ci-nix-workspace";
-            paths = [ 
+            paths = [
               pkgs.hwmCiNixWorkspacePackages.hwm-golden
               pkgs.hwmCiNixWorkspacePackages.hwm
            ];
           };
-          hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
-          hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
           env-stable-all = pkgs.symlinkJoin {
             name = "stable-workspace";
-            paths = [ 
+            paths = [
               pkgs.hwmStableWorkspacePackages.hwm-golden
               pkgs.hwmStableWorkspacePackages.hwm
            ];
           };
           hwm-golden-static = pkgs.hwmStaticWorkspacePackages.hwm-golden;
           hwm-static = pkgs.hwmStaticWorkspacePackages.hwm;
-          release-hwm = mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm;
+          release-hwm = mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm";
           release = pkgs.symlinkJoin {
-            name = "hwm-release-artifacts";
+            name = "release-artifacts";
             paths = [
               (mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm)
-            ];
+           ];
           };
         });
       devShells = forAllSystems (system:
