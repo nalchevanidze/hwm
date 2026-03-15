@@ -17,7 +17,7 @@
       ];
       
       # 2. The "Pro" Helper: Loops through the systems array
-      forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
+      "forAllSystems = nixpkgs.lib.genAttrs supportedSystems;"
     in
     {
       # 3. We wrap 'packages' in our helper
