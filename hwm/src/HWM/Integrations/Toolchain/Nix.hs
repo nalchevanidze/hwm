@@ -94,6 +94,14 @@ renderPackageDef body pkg = "    " <> format (pkgName pkg) <> " =  " <> body pkg
 renderPackageBody :: Pkg -> Text
 renderPackageBody pkg = " hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {}"
 
+systems :: [Text]
+systems =
+  [ "x86_64-linux",
+    "aarch64-linux",
+    "x86_64-darwin",
+    "aarch64-darwin"
+  ]
+
 deriveFlakeNix :: Context -> [Context] -> Text
 deriveFlakeNix ctx@(projectName, benv) ctxs =
   T.unlines
@@ -110,28 +118,19 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
               ]
                 <> generateOverlay ctx ctxs
             )
-            ( forAllSystems "packages" artifactEngine (generatePublicPackages projectName benv (map snd ctxs))
-                <> forAllSystems "devShells" [] (generateDevShell True ctx <> concatMap (generateDevShell False) ctxs)
+            -- PACKAGES
+            ( forAllSystems "packages" artifactEngine (genPackages projectName benv (map snd ctxs))
+                -- DEVSHELLS
+                <> forAllSystems "devShells" [] (genDevShell True ctx <> concatMap (genDevShell False) ctxs)
+                -- CHECKS
                 <> ["checks = forAllSystems (system: self.packages.${system});"]
             )
             False
       )
 
-systems :: [Text]
-systems =
-  [ "x86_64-linux",
-    "aarch64-linux",
-    "x86_64-darwin",
-    "aarch64-darwin"
-  ]
-
-braces :: [Text] -> [Text]
-braces body =
-  ["{"] <> map ("  " <>) body <> ["}"]
-
--- Notice the new signature: we pass the default environment, then all environments
-generatePublicPackages :: Name -> BuildEnvironment -> [BuildEnvironment] -> [Text]
-generatePublicPackages projectName defaultEnv allEnvs =
+-- PACKAGES
+genPackages :: Name -> BuildEnvironment -> [BuildEnvironment] -> [Text]
+genPackages projectName defaultEnv allEnvs =
   defaultPkgAlias <> basePkgs <> matrixPkgs
   where
     defaultOverlay = renderName (projectName, defaultEnv)
@@ -140,21 +139,21 @@ generatePublicPackages projectName defaultEnv allEnvs =
        in map (\pkg -> "default = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") defaultPkg
     basePkgs =
       map (\pkg -> format (pkgName pkg) <> " = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
-    matrixPkgs = concatMap (generateMatrixPkgs . (projectName,)) allEnvs <> generateStaticPkgs (projectName, defaultEnv)
+    matrixPkgs = concatMap (genEnviromentPackages . (projectName,)) allEnvs <> genStaticPackages (projectName, defaultEnv)
 
-individualPkg :: Text -> Text -> Pkg -> Text
-individualPkg overlay envName pkg = format (pkgName pkg) <> "-" <> envName <> " = pkgs." <> overlay <> "." <> format (pkgName pkg) <> ";"
+genPackage :: Text -> Text -> Pkg -> Text
+genPackage overlay envName pkg = format (pkgName pkg) <> "-" <> envName <> " = pkgs." <> overlay <> "." <> format (pkgName pkg) <> ";"
 
-generateStaticPkgs :: Context -> [Text]
-generateStaticPkgs (projectname, env) = map (individualPkg (genName (projectname, "static")) "static") (buildPkgs env)
+genStaticPackages :: Context -> [Text]
+genStaticPackages (projectname, env) = map (genPackage (genName (projectname, "static")) "static") (buildPkgs env)
 
-generateMatrixPkgs :: (Name, BuildEnvironment) -> [Text]
-generateMatrixPkgs (projectName, env) =
+genEnviromentPackages :: (Name, BuildEnvironment) -> [Text]
+genEnviromentPackages (projectName, env) =
   let overlay = renderName (projectName, env)
       envRaw = format (buildName env)
       envName = toCamelCase envRaw
       pathList = map (\pkg -> "    pkgs." <> overlay <> "." <> format (pkgName pkg)) (buildPkgs env)
-   in map (individualPkg overlay envName) (buildPkgs env)
+   in map (genPackage overlay envName) (buildPkgs env)
         <> [ "env-" <> envName <> "-all = pkgs.symlinkJoin {",
              "  name = \"" <> envRaw <> "-workspace\";",
              "  paths = [ "
@@ -164,9 +163,10 @@ generateMatrixPkgs (projectName, env) =
              "};"
            ]
 
-generateDevShell :: Bool -> Context -> [Text]
-generateDevShell _ (_, BuildEnvironment {buildPkgs = []}) = [] -- Handle empty workspace
-generateDevShell isDefault (projectName, benv@BuildEnvironment {..}) =
+-- DEVSHELL
+genDevShell :: Bool -> Context -> [Text]
+genDevShell _ (_, BuildEnvironment {buildPkgs = []}) = [] -- Handle empty workspace
+genDevShell isDefault (projectName, benv@BuildEnvironment {..}) =
   [ name <> " = " <> pkgsNixName (projectName, benv) <> ".shellFor {",
     "  packages = p: [ " <> renderPackageList buildPkgs <> " ];",
     "  buildInputs = with " <> pkgsNixName (projectName, benv) <> "; ["
@@ -180,6 +180,15 @@ generateDevShell isDefault (projectName, benv@BuildEnvironment {..}) =
     libs = ["cabal-install", "hlint"] <> ["stack" | buildStack] <> ["haskell-language-server" | buildHie]
     renderPackageList = T.intercalate " " . map (\pkg -> "p." <> format (pkgName pkg))
 
+-- SYNTAX
+forAllSystems :: Text -> [Text] -> [Text] -> [Text]
+forAllSystems system lets body =
+  [system <> " = forAllSystems (system:"]
+    <> letBlock
+      (["pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };"] <> lets)
+      body
+      True
+
 letBlock :: [Text] -> [Text] -> Bool -> [Text]
 letBlock h body end =
   ["  let"]
@@ -190,10 +199,6 @@ letBlock h body end =
     <> map ("    " <>) body
     <> if end then ["  });"] else ["  };"]
 
-forAllSystems :: Text -> [Text] -> [Text] -> [Text]
-forAllSystems system lets body =
-  [system <> " = forAllSystems (system:"]
-    <> letBlock
-      (["pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };"] <> lets)
-      body
-      True
+braces :: [Text] -> [Text]
+braces body =
+  ["{"] <> map ("  " <>) body <> ["}"]
