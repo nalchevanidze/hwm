@@ -98,10 +98,13 @@ generatePublicPackages projectName defaultEnv allEnvs =
        in map (\pkg -> "default = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") defaultPkg
     basePkgs =
       map (\pkg -> format (pkgName pkg) <> " = pkgs." <> defaultOverlay <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
-    matrixPkgs = concatMap (generateMatrixPkgs . (projectName,)) allEnvs
+    matrixPkgs = concatMap (generateMatrixPkgs . (projectName,)) allEnvs <> generateStaticPkgs (projectName, defaultEnv)
 
 individualPkg :: Text -> Text -> Pkg -> Text
 individualPkg overlay envName pkg = format (pkgName pkg) <> "-" <> envName <> " = pkgs." <> overlay <> "." <> format (pkgName pkg) <> ";"
+
+generateStaticPkgs :: Context -> [Text]
+generateStaticPkgs (projectname, env) = map (individualPkg (genName (projectname, "static")) "static") (buildPkgs env)
 
 generateMatrixPkgs :: (Name, BuildEnvironment) -> [Text]
 generateMatrixPkgs (projectName, env) =

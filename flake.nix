@@ -33,12 +33,6 @@
           hwm = pkgs.hwmCiNixWorkspacePackages.hwm;
           hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
-
-          # --- THE SHIP TARGET: Portable Static Binary ---
-          # Run: nix build .#ship
-          # This is the one you can safely upload to a server!
-          artifact-hwm = pkgs.hwmStaticWorkspacePackages.hwm;
-
           env-ciNix-all = pkgs.symlinkJoin {
             name = "ci-nix-workspace";
             paths = [ 
@@ -55,6 +49,8 @@
               pkgs.hwmStableWorkspacePackages.hwm
            ];
           };
+          hwm-golden-static = pkgs.hwmStaticWorkspacePackages.hwm-golden;
+          hwm-static = pkgs.hwmStaticWorkspacePackages.hwm;
         });
       devShells = forAllSystems (system:
         let
