@@ -127,16 +127,12 @@ genPackages context ctx@(projectName, defaultEnv) allEnvs =
     <> map (\pkg -> format (pkgName pkg) <> " = pkgs." <> genNixName ctx <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
     <> concatMap genEnvPackages allEnvs
     <> concatMap allEnvPackages allEnvs
-    <> genStaticPackages ctx
     <> concatMap (genReleasePkgs context) (release context)
   where
     defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
 
 genPackage :: Text -> Text -> Pkg -> Text
 genPackage overlay envName pkg = format (pkgName pkg) <> "-" <> envName <> " = pkgs." <> overlay <> "." <> format (pkgName pkg) <> ";"
-
-genStaticPackages :: BCOntext -> [Text]
-genStaticPackages (projectname, env) = map (genPackage (genName (projectname, "static")) "static") (buildPkgs env)
 
 genEnvPackages :: BCOntext -> [Text]
 genEnvPackages ctx@(_, env) = map (genPackage (genNixName ctx) (toCamelCase (format (buildName env)))) (buildPkgs env)
