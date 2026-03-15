@@ -12,19 +12,23 @@ module HWM.Domain.Release
     ReleaseArtifactConfigs,
     getArtifact,
     selectedArtifacts,
+    resolveArtifactConfig,
   )
 where
 
 import Control.Monad.Error.Class (MonadError (..))
 import Data.Aeson (FromJSON (..), ToJSON (toJSON), genericParseJSON, genericToJSON)
 import qualified Data.Map as Map
+import qualified Data.Text as T
 import Data.Yaml (Value (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), formatTemplate)
+import HWM.Core.Has (Has)
 import HWM.Core.Parsing (Parse (..))
+import HWM.Core.Pkg (Pkg)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
-import HWM.Domain.Workspace (WorkspaceRef)
+import HWM.Domain.Workspace (Workspace, WorkspaceRef, resolveWorkspaces)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import HWM.Runtime.Platform (Platform (..))
 import Relude
@@ -113,6 +117,13 @@ data ArtifactConfig = ArtifactConfig
       Ord,
       Eq
     )
+
+resolveArtifactConfig :: (MonadError Issue m, Has env Workspace, MonadReader env m, MonadIO m) => ArtifactConfig -> m (Text, Pkg)
+resolveArtifactConfig ArtifactConfig {..} = do
+  let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
+  optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
+  pkg <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
+  pure (executableName, pkg)
 
 data ArchiveFormat = Zip | TarGz
   deriving (Generic, Show, Ord, Eq)
