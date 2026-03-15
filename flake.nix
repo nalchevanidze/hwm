@@ -79,13 +79,8 @@
       };
       hwm-golden-static = pkgs.hwmStaticWorkspacePackages.hwm-golden;
       hwm-static = pkgs.hwmStaticWorkspacePackages.hwm;
-      hwm-release = mkReleaseArtifact "hwm" pkgs.hwmStableWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm;
-      release = pkgs.symlinkJoin {
-        name = "release-artifacts";
-        paths = [
-          (mkReleaseArtifact "hwm" pkgs.hwmStableWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm)
-        ];
-      };
+      hwm-ci-nix-release = mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmCiNixStaticWorkspacePackages.hwm;
+      hwm-ci-windows-release = mkReleaseArtifact "hwm" pkgs.hwmCiWindowsWorkspacePackages.hwm pkgs.hwmCiWindowsStaticWorkspacePackages.hwm;
     });
     devShells = forAllSystems (system:
     let

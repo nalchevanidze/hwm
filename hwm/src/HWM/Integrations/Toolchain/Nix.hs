@@ -44,7 +44,9 @@ systems =
     "aarch64-darwin"
   ]
 
-type Release = [(Pkg, [BuildEnvironment])]
+type ReleasePkg = (Pkg, [BuildEnvironment])
+
+type Release = [ReleasePkg]
 
 data Context = Context
   { release :: Release,
@@ -70,7 +72,7 @@ deriveFlakeNix context ctx@(projectName, benv) ctxs =
                 <> genOverlay context
             )
             -- PACKAGES
-            ( forAllSystems "packages" (nixPkgs <> artifactEngine) (genPackages (map fst (release context)) ctx ctxs)
+            ( forAllSystems "packages" (nixPkgs <> artifactEngine) (genPackages context ctx ctxs)
                 -- DEVSHELLS
                 <> forAllSystems "devShells" nixPkgs (genDevShell True ctx <> concatMap (genDevShell False) ctxs)
                 -- CHECKS
@@ -92,21 +94,22 @@ genOverlay ctx@Context {..} =
 rendergOverlayItem :: BCOntext -> [Text]
 rendergOverlayItem (name, BuildEnvironment {..}) =
   overlayFun
-    name
-    buildName
+    (genName (name, buildName))
     ["haskell", "packages", formatNixGhc buildGHC]
     (map (renderPackageDef renderPackageBody) buildPkgs)
 
+genStaticEnvName :: Text -> BuildEnvironment -> Text
+genStaticEnvName projectName buildEnv = genName (projectName, format (buildName buildEnv) <> "-static")
+
 rendergOverlayStatic :: Context -> BuildEnvironment -> [Text]
-rendergOverlayStatic Context {..} BuildEnvironment {..} =
+rendergOverlayStatic Context {..} env@BuildEnvironment {..} =
   overlayFun
-    projectName
-    (buildName <> "-static")
+    (genStaticEnvName projectName env)
     ["pkgsStatic", "haskell", "packages", formatNixGhc buildGHC]
     (map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
 
-overlayFun :: Text -> Text -> [Text] -> [Text] -> [Text]
-overlayFun name scond extend = fun (genName (name, scond)) (concatName $ ["prev"] <> extend <> ["extend"]) "hfinal: hprev:"
+overlayFun :: Text -> [Text] -> [Text] -> [Text]
+overlayFun name extend = fun name (concatName $ ["prev"] <> extend <> ["extend"]) "hfinal: hprev:"
 
 stripExecutables :: (Semigroup a, IsString a) => a -> a
 stripExecutables x = "prev.haskell.lib.justStaticExecutables ( " <> x <> ")"
@@ -118,15 +121,14 @@ renderPackageBody :: Pkg -> Text
 renderPackageBody pkg = "hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {}"
 
 -- PACKAGES
-genPackages :: [Pkg] -> BCOntext -> [BCOntext] -> [Text]
-genPackages releasePkgs ctx@(projectName, defaultEnv) allEnvs =
+genPackages :: Context -> BCOntext -> [BCOntext] -> [Text]
+genPackages context ctx@(projectName, defaultEnv) allEnvs =
   map (\pkg -> "default = pkgs." <> genNixName ctx <> "." <> format (pkgName pkg) <> ";") defaultPkg
     <> map (\pkg -> format (pkgName pkg) <> " = pkgs." <> genNixName ctx <> "." <> format (pkgName pkg) <> ";") (buildPkgs defaultEnv)
     <> concatMap genEnvPackages allEnvs
     <> concatMap allEnvPackages allEnvs
     <> genStaticPackages ctx
-    <> map (genReleasePkg ctx) releasePkgs
-    <> genReleaseGroup ctx releasePkgs
+    <> concatMap (genReleasePkgs context) (release context)
   where
     defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
 
@@ -146,18 +148,23 @@ allEnvPackages ctx@(_, env) =
     (format (buildName env) <> "-workspace")
     (map (\pkg -> "pkgs." <> genNixName ctx <> "." <> format (pkgName pkg)) (buildPkgs env))
 
-genReleasePkg :: BCOntext -> Pkg -> Text
-genReleasePkg ctx pkg = format (pkgName pkg) <> "-release = " <> genReleasePkgBody ctx pkg <> ";"
+genReleasePkgs :: Context -> ReleasePkg -> [Text]
+genReleasePkgs ctx (pkg, envs) = map (genReleasePkg ctx pkg) envs
 
-genReleasePkgBody :: BCOntext -> Pkg -> Text
-genReleasePkgBody ctx pkg = "mkReleaseArtifact \"" <> format (pkgName pkg) <> "\" pkgs." <> genNixName ctx <> "." <> format (pkgName pkg) <> " pkgs." <> genName (fst ctx, "static") <> "." <> format (pkgName pkg)
+genReleasePkg :: Context -> Pkg -> BuildEnvironment -> Text
+genReleasePkg ctx pkg env = name <> "-release = " <> genReleasePkgBody ctx pkg env <> ";"
+  where
+    name = format (pkgName pkg) <> "-" <> buildName env
 
-genReleaseGroup :: BCOntext -> [Pkg] -> [Text]
-genReleaseGroup ctx pkgs =
-  genSymlinkJoin
-    "release"
-    "release-artifacts"
-    (map (\pkg -> "(" <> genReleasePkgBody ctx pkg <> ")") pkgs)
+genReleasePkgBody :: Context -> Pkg -> BuildEnvironment -> Text
+genReleasePkgBody Context {..} pkg env = "mkReleaseArtifact \"" <> format (pkgName pkg) <> "\" pkgs." <> genNixName (projectName, env) <> "." <> format (pkgName pkg) <> " pkgs." <> genStaticEnvName projectName env <> "." <> format (pkgName pkg)
+
+-- genReleaseGroup :: BCOntext -> [Pkg] -> [Text]
+-- genReleaseGroup ctx pkgs =
+--   genSymlinkJoin
+--     "release"
+--     "release-artifacts"
+--     (map (\pkg -> "(" <> genReleasePkgBody ctx pkg <> ")") pkgs)
 
 -- DEVSHELL
 genDevShell :: Bool -> BCOntext -> [Text]
