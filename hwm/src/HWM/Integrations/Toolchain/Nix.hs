@@ -97,10 +97,10 @@ overlayFun :: Text -> Text -> [Text] -> [Text] -> [Text]
 overlayFun name scond extend = fun (genName (name, scond)) (concatName $ ["prev"] <> extend <> ["extend"]) "hfinal: hprev:"
 
 stripExecutables :: (Semigroup a, IsString a) => a -> a
-stripExecutables x = "prev.haskell.lib.justStaticExecutables (" <> x <> ")"
+stripExecutables x = "prev.haskell.lib.justStaticExecutables ( " <> x <> ")"
 
 renderPackageDef :: (Pkg -> Text) -> Pkg -> Text
-renderPackageDef body pkg = format (pkgName pkg) <> " =  " <> body pkg <> ";"
+renderPackageDef body pkg = format (pkgName pkg) <> " = " <> body pkg <> ";"
 
 renderPackageBody :: Pkg -> Text
 renderPackageBody pkg = "hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {}"
