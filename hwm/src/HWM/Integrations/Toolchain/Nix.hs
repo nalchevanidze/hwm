@@ -71,13 +71,14 @@ deriveFlakeNix releasePkgs ctx@(projectName, benv) ctxs =
 
 -- OVERLAY
 genOverlay :: Context -> [Context] -> [Text]
-genOverlay static benvs = fun "haskellOverlay = final: prev:" (concatMap rendergOverlayItem benvs <> rendergOverlayStatic static)
+genOverlay static benvs = scoped "haskellOverlay = final: prev:" (concatMap rendergOverlayItem benvs <> rendergOverlayStatic static)
 
 rendergOverlayItem :: Context -> [Text]
 rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
-  [genNixName ctx <> " = prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"]
-    <> map (renderPackageDef renderPackageBody) buildPkgs
-    <> ["});"]
+  fun
+    (genNixName ctx)
+    ("prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev:")
+    (map (renderPackageDef renderPackageBody) buildPkgs)
 
 rendergOverlayStatic :: Context -> [Text]
 rendergOverlayStatic (projectName, BuildEnvironment {..}) =
@@ -198,12 +199,15 @@ letBlock h body end = ["let"] <> indent h <> ["in", "{"] <> indent body <> if en
 braces :: [Text] -> [Text]
 braces body = ["{"] <> indent body <> ["}"]
 
-fun :: Text -> [Text] -> [Text]
-fun name body = [name <> " {"] <> indent body <> ["};"]
+scoped :: Text -> [Text] -> [Text]
+scoped name body = [name <> " {"] <> indent body <> ["};"]
+
+fun :: Text -> Text -> [Text] -> [Text]
+fun varName args body = [varName <> " = " <> args <> " {"] <> indent body <> ["});"]
 
 genSymlinkJoin :: Text -> Text -> [Text] -> [Text]
 genSymlinkJoin varName name pkgs =
-  fun
+  scoped
     (varName <> " = pkgs.symlinkJoin")
     (["name = \"" <> name <> "\";", "paths = ["] <> indent pkgs <> ["];"])
 
