@@ -169,6 +169,12 @@ mkCabal cmd scope ops = mkExec "cabal" ([cmd] <> handleScope True scope <> ops)
 
 newtype Env = Env {envName :: Name}
 
+nixBuild :: (Applicative m) => Env -> TargetScope -> m (Exec m)
+nixBuild ctx scope = mkExec "nix" $ ["build", "--no-link"] <> nixScope (envName ctx) scope
+
+nixBuildCopy :: FilePath -> [Text] -> m () -> Exec m
+nixBuildCopy dirPath scope m = Exec "nix" (["build"] <> scope <> ["-o", format (dirPath </> "result")]) [] (Just m)
+
 toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
 toAction _ StackBuilder Build scope = mkStack "build" scope []
@@ -179,10 +185,13 @@ toAction _ CabalBuilder {} Install {..} scope = mkCabal "install" scope ["--inst
 toAction _ CabalBuilder {} Build scope = mkCabal "build" scope []
 toAction _ CabalBuilder {} Test scope = mkCabal "test" scope []
 -- Nix
-toAction ctx NixBuilder Build scope = mkExec "nix" $ ["build", "--no-link"] <> nixScope (envName ctx) scope
-toAction ctx NixBuilder Test scope = mkExec "nix" $ ["build", "--no-link"] <> nixScope (envName ctx) scope
+toAction ctx NixBuilder Build scope = nixBuild ctx scope
+toAction ctx NixBuilder Test scope = nixBuild ctx scope
 toAction _ NixBuilder Install {..} scope =
   case scope of
-    ScopeGlobal -> pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifacts dirPath)
-    ScopePkgs [pkg] -> pure $ Exec "nix" ["build", ".#" <> format (pkgName pkg), "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifact (pkgName pkg) dirPath)
+    ScopeGlobal -> pure $ nixBuildCopy dirPath [".#"] (extractNixArtifacts dirPath)
+    ScopePkgs [pkg] -> pure $ nixBuildCopy dirPath [".#" <> format (pkgName pkg)] (extractNixArtifact (pkgName pkg) dirPath)
     ScopePkgs _ -> throwError "Multiple package install is not supported with Nix builder."
+
+
+
