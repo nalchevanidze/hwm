@@ -110,7 +110,6 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
             ( [ "supportedSystems = [ " <> T.intercalate " " (map show systems) <> " ];",
                 "forAllSystems = nixpkgs.lib.genAttrs supportedSystems;"
               ]
-                <> artifactEngine
                 <> generateOverlay ctx ctxs
             )
             ( forAllSystems "packages" (generatePublicPackages projectName benv (map snd ctxs))
