@@ -80,7 +80,7 @@ registry:
 release:
   artifacts:
     hwm: 
-      enviroments: [ci-nix, ci-windows]
+      environments: [ci-nix, ci-windows]
       source: libs/_root_:hwm
   publish:
     main:
