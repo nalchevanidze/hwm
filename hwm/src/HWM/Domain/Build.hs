@@ -87,9 +87,9 @@ extractNixArtifact pkgName distDir = do
         ]
   maybeSource <- findM (liftIO . doesFileExist) searchPaths
 
-  let finalDest = distDir </> toString pkgName
   case maybeSource of
     Just sourcePath -> do
+      let finalDest = distDir </> toString pkgName
       liftIO $ copyFile sourcePath finalDest
       -- Ensure the user can execute it (Nix store is read-only)
       liftIO $ do
