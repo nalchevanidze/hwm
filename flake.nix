@@ -52,9 +52,9 @@
               basePkg;
         in
         {
-          default = pkgs.hwmCiNixWorkspacePackages.hwm;
-          hwm-golden = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
-          hwm = pkgs.hwmCiNixWorkspacePackages.hwm;
+          default = pkgs.hwmStableWorkspacePackages.hwm;
+          hwm-golden = pkgs.hwmStableWorkspacePackages.hwm-golden;
+          hwm = pkgs.hwmStableWorkspacePackages.hwm;
           hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
           hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
@@ -75,11 +75,11 @@
           };
           hwm-golden-static = pkgs.hwmStaticWorkspacePackages.hwm-golden;
           hwm-static = pkgs.hwmStaticWorkspacePackages.hwm;
-          release-hwm = mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm;
+          release-hwm = mkReleaseArtifact "hwm" pkgs.hwmStableWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm;
           release = pkgs.symlinkJoin {
             name = "release-artifacts";
             paths = [
-              (mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm)
+              (mkReleaseArtifact "hwm" pkgs.hwmStableWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm)
            ];
           };
         });
@@ -88,9 +88,9 @@
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
         {
-          default = pkgs.hwmCiNixWorkspacePackages.shellFor {
+          default = pkgs.hwmStableWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
-            buildInputs = with pkgs.hwmCiNixWorkspacePackages; [
+            buildInputs = with pkgs.hwmStableWorkspacePackages; [
               cabal-install
               hlint
               stack
