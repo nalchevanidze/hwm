@@ -48,9 +48,7 @@ stripExecutables x = "prev.haskell.lib.justStaticExecutables (" <> x <> ")"
 
 artifactEngine :: [Text]
 artifactEngine =
-  [ "# --- THE RELEASE ARTIFACT ENGINE ---",
-    "# This function decides HOW to package the binary based on the OS running the build.",
-    "mkReleaseArtifact = pkgName: basePkg: staticPkg:",
+  [ "mkReleaseArtifact = pkgName: basePkg: staticPkg:",
     "  if pkgs.stdenv.hostPlatform.isLinux then",
     "    # LINUX: Return the fully static (musl), zero-dependency executable",
     "    staticPkg",
