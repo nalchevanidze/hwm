@@ -79,10 +79,8 @@
             paths = [ 
               pkgs.hwmStableWorkspacePackages.hwm-golden
               pkgs.hwmStableWorkspacePackages.hwm
-            ];
+           ];
           };
-          
-          # --- RAW STATIC TARGETS (For Linux Debugging) ---
           hwm-golden-static = pkgs.hwmStaticWorkspacePackages.hwm-golden;
           hwm-static = pkgs.hwmStaticWorkspacePackages.hwm;
 
