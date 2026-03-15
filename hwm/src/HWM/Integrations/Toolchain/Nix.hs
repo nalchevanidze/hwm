@@ -11,9 +11,9 @@ import HWM.Core.Formatting (Status, format, toCamelCase)
 import HWM.Core.Options (Options (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Version (Era (eraNixpkgs), formatNixGhc, selectEra)
-import HWM.Domain.Config (Config (Config, cfgName, cfgRelease))
+import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..))
-import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment, getBuildEnvironments)
+import HWM.Domain.Environments (BuildEnvironment (..), Environments (envsDefault), getBuildEnvironment, getBuildEnvironments)
 import HWM.Runtime.Files (syncFile)
 import Relude
 
@@ -21,7 +21,7 @@ syncNixFile :: ConfigT Status
 syncNixFile = do
   Config {..} <- asks config
   ops <- asks options
-  benv <- getBuildEnvironment Nothing
+  benv <- getBuildEnvironment (Just $ envsDefault cfgEnvironments)
   benvs <- filter buildNix <$> getBuildEnvironments
   releasePkgs <- pure ["hwm"] -- TODO: Get this from the release configuration once we support multiple artifacts.
   syncFile (optionsNix ops) (deriveFlakeNix releasePkgs (cfgName, benv) (map (cfgName,) benvs))
