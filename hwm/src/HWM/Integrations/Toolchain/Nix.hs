@@ -77,14 +77,16 @@ rendergOverlayItem :: Context -> [Text]
 rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
   fun
     (genNixName ctx)
-    ("prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev:")
+    (concatName ["prev.haskell.packages", formatNixGhc buildGHC, "extend"])
+    "hfinal: hprev:"
     (map (renderPackageDef renderPackageBody) buildPkgs)
 
 rendergOverlayStatic :: Context -> [Text]
 rendergOverlayStatic (projectName, BuildEnvironment {..}) =
   fun
     (genName (projectName, "static"))
-    ("prev.pkgsStatic.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev:")
+    (concatName ["prev.pkgsStatic.haskell.packages", formatNixGhc buildGHC, "extend"])
+    "hfinal: hprev:"
     (map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
 
 stripExecutables :: (Semigroup a, IsString a) => a -> a
@@ -187,6 +189,10 @@ artifactEngine =
   ]
 
 -- SYNTAX
+
+concatName :: [Text] -> Text
+concatName = T.intercalate "."
+
 nixPkgs :: [Text]
 nixPkgs = ["pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };"]
 
@@ -202,8 +208,8 @@ braces body = ["{"] <> indent body <> ["}"]
 scoped :: Text -> [Text] -> [Text]
 scoped name body = [name <> " {"] <> indent body <> ["};"]
 
-fun :: Text -> Text -> [Text] -> [Text]
-fun varName args body = [varName <> " = " <> args <> " {"] <> indent body <> ["});"]
+fun :: Text -> Text -> Text -> [Text] -> [Text]
+fun varName name args body = [varName <> " = " <> name <> " (" <> args <> " {"] <> indent body <> ["});"]
 
 genSymlinkJoin :: Text -> Text -> [Text] -> [Text]
 genSymlinkJoin varName name pkgs =
