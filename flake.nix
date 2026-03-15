@@ -63,7 +63,6 @@
           hwm = pkgs.hwmCiNixWorkspacePackages.hwm;
           hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
-          
           env-ciNix-all = pkgs.symlinkJoin {
             name = "ci-nix-workspace";
             paths = [ 
@@ -71,7 +70,6 @@
               pkgs.hwmCiNixWorkspacePackages.hwm
            ];
           };
-          
           hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
           hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
           env-stable-all = pkgs.symlinkJoin {
@@ -100,7 +98,6 @@
             ];
           };
         });
-
       devShells = forAllSystems (system:
         let
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
