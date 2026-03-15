@@ -43,22 +43,28 @@ generateOverlay static benvs =
     <> rendergOverlayStatic static
     <> ["};"]
 
+stripExecutables :: (Semigroup a, IsString a) => a -> a
+stripExecutables x = "prev.haskell.lib.justStaticExecutables (" <> x <> ")"
+
 rendergOverlayStatic :: Context -> [Text]
 rendergOverlayStatic (projectName, BuildEnvironment {..}) =
   [ "  " <> genName (projectName, "static") <> " = prev.pkgsStatic.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
   ]
-    <> map renderPackage buildPkgs
+    <> map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs
     <> ["  });"]
 
 rendergOverlayItem :: Context -> [Text]
 rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
   [ "  " <> renderName ctx <> " = prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
   ]
-    <> map renderPackage buildPkgs
+    <> map (renderPackageDef renderPackageBody) buildPkgs
     <> ["  });"]
 
-renderPackage :: Pkg -> Text
-renderPackage pkg = "    " <> format (pkgName pkg) <> " = hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {};"
+renderPackageDef :: (Pkg -> Text) -> Pkg -> Text
+renderPackageDef body pkg = "    " <> format (pkgName pkg) <> " =  " <> body pkg <> ";"
+
+renderPackageBody :: Pkg -> Text
+renderPackageBody pkg = " hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {}"
 
 deriveFlakeNix :: Context -> [Context] -> Text
 deriveFlakeNix ctx@(projectName, benv) ctxs =
