@@ -167,8 +167,8 @@ getNixtScope :: (MonadError Issue m, MonadIO m) => TargetScope -> m PkgName
 getNixtScope (ScopePkgs [pkg]) = pure $ pkgName pkg
 getNixtScope _ = throwError "BuildArtifact command with Nix builder is only supported for a single package"
 
-buildNixArtifact :: FilePath -> PkgName -> m () -> Exec m
-buildNixArtifact dirPath scope m = Exec "nix" ["build", ".#" <> format scope <> "-release", "-o", format (dirPath </> "result")] [] (Just m)
+buildNixArtifact :: Name -> FilePath -> PkgName -> m () -> Exec m
+buildNixArtifact envName dirPath scope m = Exec "nix" ["build", ".#" <> format scope <> "-" <> format envName <> "-release", "-o", format (dirPath </> "result")] [] (Just m)
 
 toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
@@ -187,8 +187,8 @@ toAction _ CabalBuilder {..} Install {..} scope
 toAction _ StackBuilder Install {..} scope = installStack scope dirPath
 toAction _ NixBuilder Install {} _ = throwError "Install command with Nix builder is not supported"
 --
-toAction _ NixBuilder BuildArtifact {..} scope = do
+toAction ctx NixBuilder BuildArtifact {..} scope = do
   pkgName <- getNixtScope scope
-  pure $ buildNixArtifact dirPath pkgName (extractNixArtifact pkgName dirPath)
+  pure $ buildNixArtifact (envName ctx) dirPath pkgName (extractNixArtifact pkgName dirPath)
 toAction _ StackBuilder BuildArtifact {..} scope = installStack scope dirPath
 toAction _ CabalBuilder {} BuildArtifact {..} scope = installCabal scope dirPath
