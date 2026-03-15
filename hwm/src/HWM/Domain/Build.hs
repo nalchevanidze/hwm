@@ -104,7 +104,7 @@ extractNixArtifact pkgName distDir = do
 
 extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
 extractGlobalNixArtifacts distDir = do
-  let resultLink = distDir </> "result-global"
+  let resultLink = distDir </> "result"
 
   assertNixLink resultLink
 
@@ -203,6 +203,6 @@ toAction ctx NixBuilder Build scope = mkExec "nix" $ ["build", "--no-link"] <> n
 toAction ctx NixBuilder Test scope = mkExec "nix" $ ["build", "--no-link"] <> nixScope (envName ctx) scope
 toAction _ NixBuilder Install {..} scope =
   case scope of
-    ScopeGlobal -> pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result-global")] [] (Just $ extractGlobalNixArtifacts dirPath)
+    ScopeGlobal -> pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result")] [] (Just $ extractGlobalNixArtifacts dirPath)
     ScopePkgs [pkg] -> pure $ Exec "nix" ["build", ".#" <> format (pkgName pkg), "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifact (pkgName pkg) dirPath)
     ScopePkgs _ -> throwError "Multiple package install is not supported with Nix builder."
