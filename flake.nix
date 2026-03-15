@@ -68,8 +68,8 @@
           env-ciNix-all = pkgs.symlinkJoin {
             name = "ci-nix-workspace";
             paths = [ 
-              pkgs.hwmCiNixWorkspacePackages.hwm-golden 
-              pkgs.hwmCiNixWorkspacePackages.hwm 
+              pkgs.hwmCiNixWorkspacePackages.hwm-golden
+              pkgs.hwmCiNixWorkspacePackages.hwm
             ];
           };
           
@@ -79,8 +79,8 @@
           env-stable-all = pkgs.symlinkJoin {
             name = "stable-workspace";
             paths = [ 
-              pkgs.hwmStableWorkspacePackages.hwm-golden 
-              pkgs.hwmStableWorkspacePackages.hwm 
+              pkgs.hwmStableWorkspacePackages.hwm-golden
+              pkgs.hwmStableWorkspacePackages.hwm
             ];
           };
           
