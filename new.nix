@@ -7,13 +7,7 @@
   outputs = { self, nixpkgs, haskell-nix }:
     let
       # 1. Define the specific systems HWM supports
-      systems = [ 
-        "x86_64-linux" 
-        "aarch64-linux" 
-        "x86_64-darwin" 
-        "aarch64-darwin" 
-      ];
-      
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       # 2. The "Pro" Helper: Loops through the systems array
       "forAllSystems = nixpkgs.lib.genAttrs supportedSystems;"
     in
