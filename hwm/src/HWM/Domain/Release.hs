@@ -20,6 +20,7 @@ import Control.Monad.Error.Class (MonadError (..))
 import Data.Aeson (FromJSON (..), ToJSON (toJSON), genericParseJSON, genericToJSON)
 import qualified Data.Map as Map
 import qualified Data.Text as T
+import Data.Traversable (for)
 import Data.Yaml (Value (..))
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), formatTemplate)
@@ -28,7 +29,9 @@ import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg)
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Version)
+import HWM.Domain.Environments (BuildEnvironment, Environments, getBuildEnvironment)
 import HWM.Domain.Workspace (Workspace, WorkspaceRef, resolveWorkspaces)
+import HWM.Runtime.Cache (Cache)
 import HWM.Runtime.Files (aesonYAMLOptionsAdvanced)
 import HWM.Runtime.Platform (Platform (..))
 import Relude
@@ -117,6 +120,14 @@ data ArtifactConfig = ArtifactConfig
       Ord,
       Eq
     )
+
+getArtifactEnvironments :: (Has env Cache, MonadError Issue m, Has env Environments, Has env Workspace, MonadReader env m, MonadIO m) => Release -> m [(Pkg, [BuildEnvironment])]
+getArtifactEnvironments Release {..} = do
+  let cfgs = toList (fromMaybe mempty rlsArtifacts)
+  for cfgs $ \(ArtifactConfig {..}) -> do
+    (_, pkg) <- resolveArtifactConfig ArtifactConfig {..}
+    envs <- for arcEnvironments (getBuildEnvironment . Just)
+    pure (pkg, envs)
 
 resolveArtifactConfig :: (MonadError Issue m, Has env Workspace, MonadReader env m, MonadIO m) => ArtifactConfig -> m (Text, Pkg)
 resolveArtifactConfig ArtifactConfig {..} = do
