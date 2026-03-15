@@ -200,27 +200,19 @@ forAllSystems system lets body =
       True
 
 letBlock :: [Text] -> [Text] -> Bool -> [Text]
-letBlock h body end =
-  ["  let"]
-    <> map ("    " <>) h
-    <> [ "  in",
-         "  {"
-       ]
-    <> map ("    " <>) body
-    <> if end then ["  });"] else ["  };"]
+letBlock h body end = ["let"] <> indent h <> ["in", "{"] <> indent body <> if end then ["});"] else ["};"]
 
 braces :: [Text] -> [Text]
-braces body =
-  ["{"] <> map ("  " <>) body <> ["}"]
+braces body = ["{"] <> indent body <> ["}"]
 
 fun :: Text -> [Text] -> [Text]
-fun name body = [name <> " {"] <> map ("  " <>) body <> ["};"]
+fun name body = [name <> " {"] <> indent body <> ["};"]
 
 genSymlinkJoin :: Text -> Text -> [Text] -> [Text]
 genSymlinkJoin varName name pkgs =
   fun
     (varName <> " = pkgs.symlinkJoin")
-    ( ["name = \"" <> name <> "\";", "paths = ["]
-        <> map ("  " <>) pkgs
-        <> ["];"]
-    )
+    (["name = \"" <> name <> "\";", "paths = ["] <> indent pkgs <> ["];"])
+
+indent :: [Text] -> [Text]
+indent = map ("  " <>)

@@ -4,118 +4,118 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
   };
   outputs = { self, nixpkgs }:
+  let
+    supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+    forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+    haskellOverlay = final: prev: {
+      hwmCiNixWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+        hwm-golden =   hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+        hwm =   hfinal.callCabal2nix "hwm" ./hwm {};
+      });
+      hwmStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+        hwm-golden =   hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+        hwm =   hfinal.callCabal2nix "hwm" ./hwm {};
+      });
+      hwmStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+        hwm-golden =  prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
+        hwm =  prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
+      });
+    };
+  in
+  {
+    packages = forAllSystems (system:
     let
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-      haskellOverlay = final: prev: {
-        hwmCiNixWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
-          hwm-golden =   hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
-          hwm =   hfinal.callCabal2nix "hwm" ./hwm {};
-        });
-        hwmStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
-          hwm-golden =   hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
-          hwm =   hfinal.callCabal2nix "hwm" ./hwm {};
-        });
-        hwmStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
-          hwm-golden =  prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
-          hwm =  prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
-        });
-      };
+      pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
+      mkReleaseArtifact = pkgName: basePkg: staticPkg:
+        if pkgs.stdenv.hostPlatform.isLinux then
+          # LINUX: Return the fully static (musl), zero-dependency executable
+          staticPkg
+        else if pkgs.stdenv.hostPlatform.isDarwin then
+          # MACOS: We "Bundle" the dynamic dependencies since strict static is hard on Mac.
+          pkgs.runCommand "${pkgName}-macos-bundle" {
+            nativeBuildInputs = [ pkgs.macdylibbundler pkgs.darwin.autoSignDarwinBinariesHook ];
+          } ''
+            mkdir -p $out/bin
+      
+            # 1. Copy the fast, dynamically linked binary (stripping docs/libs first)
+            cp ${pkgs.haskell.lib.justStaticExecutables basePkg}/bin/${pkgName} $out/bin/${pkgName}
+            chmod 755 $out/bin/${pkgName}
+      
+            # 2. Run dylibbundler to pull all Nix store .dylibs into the local folder
+            dylibbundler -b --no-codesign -x $out/bin/${pkgName} -d $out/bin -p '@executable_path'
+      
+            # 3. Re-sign the binary so Apple Silicon (M1/M2/M3) allows it to run natively
+            signDarwinBinariesInAllOutputs
+          ''
+        else
+          # Fallback for unexpected systems
+          basePkg;
     in
     {
-      packages = forAllSystems (system:
-        let
-          pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
-          mkReleaseArtifact = pkgName: basePkg: staticPkg:
-            if pkgs.stdenv.hostPlatform.isLinux then
-              # LINUX: Return the fully static (musl), zero-dependency executable
-              staticPkg
-            else if pkgs.stdenv.hostPlatform.isDarwin then
-              # MACOS: We "Bundle" the dynamic dependencies since strict static is hard on Mac.
-              pkgs.runCommand "${pkgName}-macos-bundle" {
-                nativeBuildInputs = [ pkgs.macdylibbundler pkgs.darwin.autoSignDarwinBinariesHook ];
-              } ''
-                mkdir -p $out/bin
-          
-                # 1. Copy the fast, dynamically linked binary (stripping docs/libs first)
-                cp ${pkgs.haskell.lib.justStaticExecutables basePkg}/bin/${pkgName} $out/bin/${pkgName}
-                chmod 755 $out/bin/${pkgName}
-          
-                # 2. Run dylibbundler to pull all Nix store .dylibs into the local folder
-                dylibbundler -b --no-codesign -x $out/bin/${pkgName} -d $out/bin -p '@executable_path'
-          
-                # 3. Re-sign the binary so Apple Silicon (M1/M2/M3) allows it to run natively
-                signDarwinBinariesInAllOutputs
-              ''
-            else
-              # Fallback for unexpected systems
-              basePkg;
-        in
-        {
-          default = pkgs.hwmStableWorkspacePackages.hwm;
-          hwm-golden = pkgs.hwmStableWorkspacePackages.hwm-golden;
-          hwm = pkgs.hwmStableWorkspacePackages.hwm;
-          hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
-          hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
-          hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
-          hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
-          env-ciNix-all = pkgs.symlinkJoin {
-            name = "ci-nix-workspace";
-            paths = [
-              pkgs.hwmCiNixWorkspacePackages.hwm-golden
-              pkgs.hwmCiNixWorkspacePackages.hwm
-           ];
-          };
-          env-stable-all = pkgs.symlinkJoin {
-            name = "stable-workspace";
-            paths = [
-              pkgs.hwmStableWorkspacePackages.hwm-golden
-              pkgs.hwmStableWorkspacePackages.hwm
-           ];
-          };
-          hwm-golden-static = pkgs.hwmStaticWorkspacePackages.hwm-golden;
-          hwm-static = pkgs.hwmStaticWorkspacePackages.hwm;
-          hwm-release = mkReleaseArtifact "hwm" pkgs.hwmStableWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm;
-          release = pkgs.symlinkJoin {
-            name = "release-artifacts";
-            paths = [
-              (mkReleaseArtifact "hwm" pkgs.hwmStableWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm)
-           ];
-          };
-        });
-      devShells = forAllSystems (system:
-        let
-          pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
-        in
-        {
-          default = pkgs.hwmStableWorkspacePackages.shellFor {
-            packages = p: [ p.hwm-golden p.hwm ];
-            buildInputs = with pkgs.hwmStableWorkspacePackages; [
-              cabal-install
-              hlint
-              stack
-              haskell-language-server
-            ];
-          };
-          ciNix = pkgs.hwmCiNixWorkspacePackages.shellFor {
-            packages = p: [ p.hwm-golden p.hwm ];
-            buildInputs = with pkgs.hwmCiNixWorkspacePackages; [
-              cabal-install
-              hlint
-              stack
-              haskell-language-server
-            ];
-          };
-          stable = pkgs.hwmStableWorkspacePackages.shellFor {
-            packages = p: [ p.hwm-golden p.hwm ];
-            buildInputs = with pkgs.hwmStableWorkspacePackages; [
-              cabal-install
-              hlint
-              stack
-              haskell-language-server
-            ];
-          };
-        });
-      checks = forAllSystems (system: self.packages.${system});
-    };
+      default = pkgs.hwmStableWorkspacePackages.hwm;
+      hwm-golden = pkgs.hwmStableWorkspacePackages.hwm-golden;
+      hwm = pkgs.hwmStableWorkspacePackages.hwm;
+      hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
+      hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
+      hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
+      hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
+      env-ciNix-all = pkgs.symlinkJoin {
+        name = "ci-nix-workspace";
+        paths = [
+          pkgs.hwmCiNixWorkspacePackages.hwm-golden
+          pkgs.hwmCiNixWorkspacePackages.hwm
+        ];
+      };
+      env-stable-all = pkgs.symlinkJoin {
+        name = "stable-workspace";
+        paths = [
+          pkgs.hwmStableWorkspacePackages.hwm-golden
+          pkgs.hwmStableWorkspacePackages.hwm
+        ];
+      };
+      hwm-golden-static = pkgs.hwmStaticWorkspacePackages.hwm-golden;
+      hwm-static = pkgs.hwmStaticWorkspacePackages.hwm;
+      hwm-release = mkReleaseArtifact "hwm" pkgs.hwmStableWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm;
+      release = pkgs.symlinkJoin {
+        name = "release-artifacts";
+        paths = [
+          (mkReleaseArtifact "hwm" pkgs.hwmStableWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm)
+        ];
+      };
+    });
+    devShells = forAllSystems (system:
+    let
+      pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
+    in
+    {
+      default = pkgs.hwmStableWorkspacePackages.shellFor {
+        packages = p: [ p.hwm-golden p.hwm ];
+        buildInputs = with pkgs.hwmStableWorkspacePackages; [
+          cabal-install
+          hlint
+          stack
+          haskell-language-server
+        ];
+      };
+      ciNix = pkgs.hwmCiNixWorkspacePackages.shellFor {
+        packages = p: [ p.hwm-golden p.hwm ];
+        buildInputs = with pkgs.hwmCiNixWorkspacePackages; [
+          cabal-install
+          hlint
+          stack
+          haskell-language-server
+        ];
+      };
+      stable = pkgs.hwmStableWorkspacePackages.shellFor {
+        packages = p: [ p.hwm-golden p.hwm ];
+        buildInputs = with pkgs.hwmStableWorkspacePackages; [
+          cabal-install
+          hlint
+          stack
+          haskell-language-server
+        ];
+      };
+    });
+    checks = forAllSystems (system: self.packages.${system});
+  };
 }
