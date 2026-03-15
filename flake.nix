@@ -99,9 +99,7 @@
           };
         });
 
-      # --- DEVELOPMENT ENVIRONMENTS ---
-      # Used by `nix develop` or Direnv to provide a shell with GHC, Cabal, and HLS.
-      devShells = forAllSystems (system:
+    devShells = forAllSystems (system:
         let
           pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
         in
@@ -115,7 +113,6 @@
               haskell-language-server
             ];
           };
-          
           ciNix = pkgs.hwmCiNixWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmCiNixWorkspacePackages; [
@@ -125,7 +122,6 @@
               haskell-language-server
             ];
           };
-          
           stable = pkgs.hwmStableWorkspacePackages.shellFor {
             packages = p: [ p.hwm-golden p.hwm ];
             buildInputs = with pkgs.hwmStableWorkspacePackages; [
@@ -136,9 +132,6 @@
             ];
           };
         });
-
-      # --- CHECKS ---
-      # Run `nix flake check` to verify everything defined in `packages` compiles correctly.
       checks = forAllSystems (system: self.packages.${system});
     };
 }
