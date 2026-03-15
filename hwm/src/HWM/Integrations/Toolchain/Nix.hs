@@ -28,8 +28,8 @@ syncNixFile = do
 genName :: (Text, Text) -> Text
 genName (name, subName) = toCamelCase (name <> T.toTitle subName <> "WorkspacePackages")
 
-renderName :: Context -> Text
-renderName (name, BuildEnvironment {..}) = genName (name, format buildName)
+genNixName :: Context -> Text
+genNixName (name, BuildEnvironment {..}) = genName (name, format buildName)
 
 type Context = (Name, BuildEnvironment)
 
@@ -78,7 +78,7 @@ genOverlay static benvs =
 
 rendergOverlayItem :: Context -> [Text]
 rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
-  [ "  " <> renderName ctx <> " = prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
+  [ "  " <> genNixName ctx <> " = prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
   ]
     <> map (renderPackageDef renderPackageBody) buildPkgs
     <> ["  });"]
@@ -108,7 +108,7 @@ genPackages ctx@(projectName, defaultEnv) allEnvs =
     <> genStaticPackages ctx
   where
     defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
-    defaultOverlay = renderName (projectName, defaultEnv)
+    defaultOverlay = genNixName (projectName, defaultEnv)
 
 artifactEngine :: [Text]
 artifactEngine =
@@ -146,7 +146,7 @@ genStaticPackages (projectname, env) = map (genPackage (genName (projectname, "s
 
 genEnviromentPackages :: (Name, BuildEnvironment) -> [Text]
 genEnviromentPackages (projectName, env) =
-  let overlay = renderName (projectName, env)
+  let overlay = genNixName (projectName, env)
       envRaw = format (buildName env)
       envName = toCamelCase envRaw
       pathList = map (\pkg -> "    pkgs." <> overlay <> "." <> format (pkgName pkg)) (buildPkgs env)
@@ -178,7 +178,7 @@ genDevShell isDefault ctx@(_, BuildEnvironment {..}) =
     renderPackageList = T.intercalate " " . map (\pkg -> "p." <> format (pkgName pkg))
 
 devShellPackageName :: Context -> Text
-devShellPackageName ctx = "pkgs." <> renderName ctx
+devShellPackageName ctx = "pkgs." <> genNixName ctx
 
 -- SYNTAX
 forAllSystems :: Text -> [Text] -> [Text] -> [Text]
