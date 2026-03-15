@@ -130,7 +130,7 @@ allEnvPackages ctx@(_, env) =
     (map (\pkg -> "pkgs." <> genNixName ctx <> "." <> format (pkgName pkg)) (buildPkgs env))
 
 genReleasePkg :: Context -> Text -> Text
-genReleasePkg ctx name = "release-" <> name <> " = " <> genReleasePkgBody ctx name <> ";"
+genReleasePkg ctx name = name <> "-release = " <> genReleasePkgBody ctx name <> ";"
 
 genReleasePkgBody :: Context -> Text -> Text
 genReleasePkgBody ctx name = "mkReleaseArtifact \"" <> name <> "\" pkgs." <> genNixName ctx <> "." <> name <> " pkgs." <> genName (fst ctx, "static") <> "." <> name
