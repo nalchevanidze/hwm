@@ -67,7 +67,10 @@
           # Group target: builds the entire CI workspace at once
           env-ciNix-all = pkgs.symlinkJoin {
             name = "ci-nix-workspace";
-            paths = [ pkgs.hwmCiNixWorkspacePackages.hwm-golden pkgs.hwmCiNixWorkspacePackages.hwm ];
+            paths = [ 
+              pkgs.hwmCiNixWorkspacePackages.hwm-golden 
+              pkgs.hwmCiNixWorkspacePackages.hwm 
+            ];
           };
           
           # --- STABLE TARGETS ---
@@ -75,7 +78,10 @@
           hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
           env-stable-all = pkgs.symlinkJoin {
             name = "stable-workspace";
-            paths = [ pkgs.hwmStableWorkspacePackages.hwm-golden pkgs.hwmStableWorkspacePackages.hwm ];
+            paths = [ 
+              pkgs.hwmStableWorkspacePackages.hwm-golden 
+              pkgs.hwmStableWorkspacePackages.hwm 
+            ];
           };
           
           # --- RAW STATIC TARGETS (For Linux Debugging) ---
