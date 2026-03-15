@@ -56,8 +56,6 @@
               basePkg;
         in
         {
-          # --- STANDARD CI TARGETS ---
-          # Used for fast, local development. Executed via `nix build .#hwm`
           default = pkgs.hwmCiNixWorkspacePackages.hwm;
           hwm-golden = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
           hwm = pkgs.hwmCiNixWorkspacePackages.hwm;
