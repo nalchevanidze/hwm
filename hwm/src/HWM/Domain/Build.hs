@@ -77,16 +77,10 @@ extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> 
 extractNixArtifact pkgName distDir = do
   let resultLink = distDir </> "result"
       pkgStr = toString (format pkgName)
-
   liftIO $ createDirectoryIfMissing True distDir
   assertNixLink resultLink
-  let searchPaths =
-        [ resultLink </> "bin" </> pkgStr, -- Standard Haskell (Cabal/Stack)
-          resultLink </> pkgStr, -- Simple/Single-binary derivation
-          resultLink -- Derivation is the binary itself
-        ]
+  let searchPaths = [resultLink </> "bin" </> pkgStr, resultLink </> pkgStr, resultLink]
   maybeSource <- findM (liftIO . doesFileExist) searchPaths
-
   case maybeSource of
     Just sourcePath -> do
       let finalDest = distDir </> toString pkgName
@@ -105,25 +99,18 @@ extractNixArtifact pkgName distDir = do
 extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
 extractGlobalNixArtifacts distDir = do
   let resultLink = distDir </> "result"
-
   assertNixLink resultLink
-
   let binDir = resultLink </> "bin"
   hasBin <- liftIO $ doesPathExist binDir
   if hasBin
     then do
-      -- Copy everything inside result-global/bin/
       files <- liftIO $ listDirectory binDir
       for_ files $ \file -> do
         let sourcePath = binDir </> file
         let destPath = distDir </> file
         liftIO $ copyFile sourcePath destPath
-    -- (Apply the same executable permissions here as before)
     else
-      -- Fallback if the default package is just a single binary at the root
       throwError "Global Nix install succeeded, but no 'bin/' directory was found in the output."
-
-  -- Clean up the symlink
   liftIO $ removePathForcibly resultLink
 
 findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
