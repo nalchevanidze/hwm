@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Domain.Release
@@ -15,12 +16,7 @@ module HWM.Domain.Release
 where
 
 import Control.Monad.Error.Class (MonadError (..))
-import Data.Aeson
-  ( FromJSON (..),
-    ToJSON (toJSON),
-    genericParseJSON,
-    genericToJSON,
-  )
+import Data.Aeson (FromJSON (..), ToJSON (toJSON), genericParseJSON, genericToJSON)
 import qualified Data.Map as Map
 import Data.Yaml (Value (..))
 import HWM.Core.Common (Name)
@@ -66,9 +62,47 @@ selectedArtifacts (Just target) cfgs = do
   pure [(target, cfg)]
 selectedArtifacts Nothing cfgs = pure $ Map.toList cfgs
 
+prefixArtifactConfigRaw :: String
+prefixArtifactConfigRaw = "_arc"
+
+instance FromJSON ArtifactConfigRaw where
+  parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced prefixArtifactConfigRaw)
+
+data ArtifactConfigRaw = ArtifactConfigRaw
+  { _arcSource :: Text,
+    _arcEnvironments :: Maybe [Name],
+    _arcFormats :: Maybe [ArchiveFormat],
+    _arcGhcOptions :: Maybe [Text],
+    _arcNameTemplate :: Maybe Text
+  }
+  deriving
+    ( Generic,
+      Show,
+      Ord,
+      Eq
+    )
+
+instance FromJSON ArtifactConfig where
+  parseJSON (String x) = pure $ defaultArchiveConfig x
+  parseJSON v = do
+    ArtifactConfigRaw {..} <- parseJSON v
+    pure
+      $ ArtifactConfig
+        { arcSource = _arcSource,
+          arcEnvironments = fromMaybe (arcEnvironments $ defaultArchiveConfig _arcSource) _arcEnvironments,
+          arcFormats = fromMaybe (arcFormats $ defaultArchiveConfig _arcSource) _arcFormats,
+          arcGhcOptions = fromMaybe (arcGhcOptions $ defaultArchiveConfig _arcSource) _arcGhcOptions,
+          arcNameTemplate = fromMaybe (arcNameTemplate $ defaultArchiveConfig _arcSource) _arcNameTemplate
+        }
+
+instance ToJSON ArtifactConfig where
+  toJSON v
+    | isDefaultArchiveConfig v = String (arcSource v)
+    | otherwise = genericToJSON (aesonYAMLOptionsAdvanced prefix) v
+
 data ArtifactConfig = ArtifactConfig
   { arcSource :: Text,
-    arcEnvironments :: Maybe [Name],
+    arcEnvironments :: [Name],
     arcFormats :: [ArchiveFormat],
     arcGhcOptions :: [Text],
     arcNameTemplate :: Text
@@ -111,7 +145,7 @@ defaultArchiveConfig :: Text -> ArtifactConfig
 defaultArchiveConfig src =
   ArtifactConfig
     { arcSource = src,
-      arcEnvironments = Nothing,
+      arcEnvironments = [],
       arcFormats = [TarGz, Zip],
       arcGhcOptions =
         [ "-O2", -- High-level optimization
@@ -124,12 +158,3 @@ defaultArchiveConfig src =
 
 isDefaultArchiveConfig :: ArtifactConfig -> Bool
 isDefaultArchiveConfig arc = arc == defaultArchiveConfig (arcSource arc)
-
-instance FromJSON ArtifactConfig where
-  parseJSON (String x) = pure $ defaultArchiveConfig x
-  parseJSON v = genericParseJSON (aesonYAMLOptionsAdvanced prefix) v
-
-instance ToJSON ArtifactConfig where
-  toJSON v
-    | isDefaultArchiveConfig v = String (arcSource v)
-    | otherwise = genericToJSON (aesonYAMLOptionsAdvanced prefix) v
