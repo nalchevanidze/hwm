@@ -82,16 +82,16 @@ rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
 
 rendergOverlayStatic :: Context -> [Text]
 rendergOverlayStatic (projectName, BuildEnvironment {..}) =
-  [ genName (projectName, "static") <> " = prev.pkgsStatic.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
-  ]
-    <> map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs
-    <> ["});"]
+  fun
+    (genName (projectName, "static"))
+    ("prev.pkgsStatic.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev:")
+    (map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
 
 stripExecutables :: (Semigroup a, IsString a) => a -> a
 stripExecutables x = "prev.haskell.lib.justStaticExecutables (" <> x <> ")"
 
 renderPackageDef :: (Pkg -> Text) -> Pkg -> Text
-renderPackageDef body pkg = "  " <> format (pkgName pkg) <> " =  " <> body pkg <> ";"
+renderPackageDef body pkg = format (pkgName pkg) <> " =  " <> body pkg <> ";"
 
 renderPackageBody :: Pkg -> Text
 renderPackageBody pkg = " hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {}"
