@@ -31,61 +31,7 @@ genName (name, subName) = toCamelCase (name <> T.toTitle subName <> "WorkspacePa
 renderName :: Context -> Text
 renderName (name, BuildEnvironment {..}) = genName (name, format buildName)
 
-pkgsNixName :: Context -> Text
-pkgsNixName ctx = "pkgs." <> renderName ctx
-
 type Context = (Name, BuildEnvironment)
-
-stripExecutables :: (Semigroup a, IsString a) => a -> a
-stripExecutables x = "prev.haskell.lib.justStaticExecutables (" <> x <> ")"
-
-artifactEngine :: [Text]
-artifactEngine =
-  [ "mkReleaseArtifact = pkgName: basePkg: staticPkg:",
-    "  if pkgs.stdenv.hostPlatform.isLinux then",
-    "    # LINUX: Return the fully static (musl), zero-dependency executable",
-    "    staticPkg",
-    "  else if pkgs.stdenv.hostPlatform.isDarwin then",
-    "    # MACOS: We \"Bundle\" the dynamic dependencies since strict static is hard on Mac.",
-    "    pkgs.runCommand \"${pkgName}-macos-bundle\" {",
-    "      nativeBuildInputs = [ pkgs.macdylibbundler pkgs.darwin.autoSignDarwinBinariesHook ];",
-    "    } ''",
-    "      mkdir -p $out/bin",
-    "",
-    "      # 1. Copy the fast, dynamically linked binary (stripping docs/libs first)",
-    "      cp ${pkgs.haskell.lib.justStaticExecutables basePkg}/bin/${pkgName} $out/bin/${pkgName}",
-    "      chmod 755 $out/bin/${pkgName}",
-    "",
-    "      # 2. Run dylibbundler to pull all Nix store .dylibs into the local folder",
-    "      dylibbundler -b --no-codesign -x $out/bin/${pkgName} -d $out/bin -p '@executable_path'",
-    "",
-    "      # 3. Re-sign the binary so Apple Silicon (M1/M2/M3) allows it to run natively",
-    "      signDarwinBinariesInAllOutputs",
-    "    ''",
-    "  else",
-    "    # Fallback for unexpected systems",
-    "    basePkg;"
-  ]
-
-rendergOverlayStatic :: Context -> [Text]
-rendergOverlayStatic (projectName, BuildEnvironment {..}) =
-  [ "  " <> genName (projectName, "static") <> " = prev.pkgsStatic.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
-  ]
-    <> map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs
-    <> ["  });"]
-
-rendergOverlayItem :: Context -> [Text]
-rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
-  [ "  " <> renderName ctx <> " = prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
-  ]
-    <> map (renderPackageDef renderPackageBody) buildPkgs
-    <> ["  });"]
-
-renderPackageDef :: (Pkg -> Text) -> Pkg -> Text
-renderPackageDef body pkg = "    " <> format (pkgName pkg) <> " =  " <> body pkg <> ";"
-
-renderPackageBody :: Pkg -> Text
-renderPackageBody pkg = " hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {}"
 
 systems :: [Text]
 systems =
@@ -130,6 +76,29 @@ genOverlay static benvs =
     <> rendergOverlayStatic static
     <> ["};"]
 
+rendergOverlayItem :: Context -> [Text]
+rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
+  [ "  " <> renderName ctx <> " = prev.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
+  ]
+    <> map (renderPackageDef renderPackageBody) buildPkgs
+    <> ["  });"]
+
+rendergOverlayStatic :: Context -> [Text]
+rendergOverlayStatic (projectName, BuildEnvironment {..}) =
+  [ "  " <> genName (projectName, "static") <> " = prev.pkgsStatic.haskell.packages." <> formatNixGhc buildGHC <> ".extend (hfinal: hprev: {"
+  ]
+    <> map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs
+    <> ["  });"]
+
+stripExecutables :: (Semigroup a, IsString a) => a -> a
+stripExecutables x = "prev.haskell.lib.justStaticExecutables (" <> x <> ")"
+
+renderPackageDef :: (Pkg -> Text) -> Pkg -> Text
+renderPackageDef body pkg = "    " <> format (pkgName pkg) <> " =  " <> body pkg <> ";"
+
+renderPackageBody :: Pkg -> Text
+renderPackageBody pkg = " hfinal.callCabal2nix \"" <> format (pkgName pkg) <> "\" ./" <> format (pkgDirPath pkg) <> " {}"
+
 -- PACKAGES
 genPackages :: Context -> [Context] -> [Text]
 genPackages ctx@(projectName, defaultEnv) allEnvs =
@@ -140,6 +109,34 @@ genPackages ctx@(projectName, defaultEnv) allEnvs =
   where
     defaultPkg = filter ((projectName ==) . format . pkgName) (buildPkgs defaultEnv)
     defaultOverlay = renderName (projectName, defaultEnv)
+
+artifactEngine :: [Text]
+artifactEngine =
+  [ "mkReleaseArtifact = pkgName: basePkg: staticPkg:",
+    "  if pkgs.stdenv.hostPlatform.isLinux then",
+    "    # LINUX: Return the fully static (musl), zero-dependency executable",
+    "    staticPkg",
+    "  else if pkgs.stdenv.hostPlatform.isDarwin then",
+    "    # MACOS: We \"Bundle\" the dynamic dependencies since strict static is hard on Mac.",
+    "    pkgs.runCommand \"${pkgName}-macos-bundle\" {",
+    "      nativeBuildInputs = [ pkgs.macdylibbundler pkgs.darwin.autoSignDarwinBinariesHook ];",
+    "    } ''",
+    "      mkdir -p $out/bin",
+    "",
+    "      # 1. Copy the fast, dynamically linked binary (stripping docs/libs first)",
+    "      cp ${pkgs.haskell.lib.justStaticExecutables basePkg}/bin/${pkgName} $out/bin/${pkgName}",
+    "      chmod 755 $out/bin/${pkgName}",
+    "",
+    "      # 2. Run dylibbundler to pull all Nix store .dylibs into the local folder",
+    "      dylibbundler -b --no-codesign -x $out/bin/${pkgName} -d $out/bin -p '@executable_path'",
+    "",
+    "      # 3. Re-sign the binary so Apple Silicon (M1/M2/M3) allows it to run natively",
+    "      signDarwinBinariesInAllOutputs",
+    "    ''",
+    "  else",
+    "    # Fallback for unexpected systems",
+    "    basePkg;"
+  ]
 
 genPackage :: Text -> Text -> Pkg -> Text
 genPackage overlay envName pkg = format (pkgName pkg) <> "-" <> envName <> " = pkgs." <> overlay <> "." <> format (pkgName pkg) <> ";"
@@ -166,10 +163,10 @@ genEnviromentPackages (projectName, env) =
 -- DEVSHELL
 genDevShell :: Bool -> Context -> [Text]
 genDevShell _ (_, BuildEnvironment {buildPkgs = []}) = [] -- Handle empty workspace
-genDevShell isDefault (projectName, benv@BuildEnvironment {..}) =
-  [ name <> " = " <> pkgsNixName (projectName, benv) <> ".shellFor {",
+genDevShell isDefault ctx@(_, BuildEnvironment {..}) =
+  [ name <> " = " <> devShellPackageName ctx <> ".shellFor {",
     "  packages = p: [ " <> renderPackageList buildPkgs <> " ];",
-    "  buildInputs = with " <> pkgsNixName (projectName, benv) <> "; ["
+    "  buildInputs = with " <> devShellPackageName ctx <> "; ["
   ]
     <> map ("    " <>) libs
     <> [ "  ];",
@@ -179,6 +176,9 @@ genDevShell isDefault (projectName, benv@BuildEnvironment {..}) =
     name = if isDefault then "default" else toCamelCase (format buildName)
     libs = ["cabal-install", "hlint"] <> ["stack" | buildStack] <> ["haskell-language-server" | buildHie]
     renderPackageList = T.intercalate " " . map (\pkg -> "p." <> format (pkgName pkg))
+
+devShellPackageName :: Context -> Text
+devShellPackageName ctx = "pkgs." <> renderName ctx
 
 -- SYNTAX
 forAllSystems :: Text -> [Text] -> [Text] -> [Text]
