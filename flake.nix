@@ -75,7 +75,7 @@
           };
           hwm-golden-static = pkgs.hwmStaticWorkspacePackages.hwm-golden;
           hwm-static = pkgs.hwmStaticWorkspacePackages.hwm;
-          release-hwm = mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm";
+          release-hwm = mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmStaticWorkspacePackages.hwm;
           release = pkgs.symlinkJoin {
             name = "release-artifacts";
             paths = [
