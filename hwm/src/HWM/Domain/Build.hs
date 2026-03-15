@@ -102,10 +102,7 @@ extractGlobalNixArtifacts dir =
     if hasBin
       then do
         files <- liftIO $ listDirectory binDir
-        for_ files $ \file -> do
-          let sourcePath = binDir </> file
-          let destPath = dir </> file
-          liftIO $ copyFile sourcePath destPath
+        for_ files $ \file -> copyBinary (binDir </> file) (dir </> file)
       else
         throwError "Global build succeeded, but no 'bin/' directory was found in the output."
 
