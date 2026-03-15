@@ -68,6 +68,7 @@ selectedArtifacts Nothing cfgs = pure $ Map.toList cfgs
 
 data ArtifactConfig = ArtifactConfig
   { arcSource :: Text,
+    arcEnvironments :: Maybe [Name],
     arcFormats :: [ArchiveFormat],
     arcGhcOptions :: [Text],
     arcNameTemplate :: Text
@@ -110,6 +111,7 @@ defaultArchiveConfig :: Text -> ArtifactConfig
 defaultArchiveConfig src =
   ArtifactConfig
     { arcSource = src,
+      arcEnvironments = Nothing,
       arcFormats = [TarGz, Zip],
       arcGhcOptions =
         [ "-O2", -- High-level optimization
