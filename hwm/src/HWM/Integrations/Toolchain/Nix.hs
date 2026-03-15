@@ -71,14 +71,16 @@ deriveFlakeNix releasePkgs ctx@(projectName, benv) ctxs =
 
 -- OVERLAY
 genOverlay :: Context -> [Context] -> [Text]
-genOverlay static benvs = scoped "haskellOverlay = final: prev:" (concatMap rendergOverlayItem benvs <> rendergOverlayStatic static)
+genOverlay static benvs = scoped "haskellOverlay = final: prev:" (
+  concatMap rendergOverlayItem benvs <> rendergOverlayStatic static
+  )
 
 rendergOverlayItem :: Context -> [Text]
-rendergOverlayItem ctx@(_, BuildEnvironment {..}) =
-  fun
-    (genNixName ctx)
-    (concatName ["prev.haskell.packages", formatNixGhc buildGHC, "extend"])
-    "hfinal: hprev:"
+rendergOverlayItem (name, BuildEnvironment {..}) =
+  overlayFun
+    name
+    buildName
+    ["haskell.packages", formatNixGhc buildGHC]
     (map (renderPackageDef renderPackageBody) buildPkgs)
 
 rendergOverlayStatic :: Context -> [Text]
