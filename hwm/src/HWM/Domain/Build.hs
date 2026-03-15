@@ -87,17 +87,12 @@ copyBinary fromPath toPath = liftIO $ do
   setPermissions toPath properPerms
 
 extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
-extractNixArtifact pkgName dir = forNixLink dir $ \resultLink -> do
-  let pkgStr = toString (format pkgName)
-  let searchPaths = [resultLink </> "bin" </> pkgStr, resultLink </> pkgStr, resultLink]
-  source <- findM (liftIO . doesFileExist) searchPaths
-  case source of
-    Just path -> copyBinary path (dir </> toString pkgName)
-    Nothing -> throwError $ fromString $ "Nix build succeeded, but binary '" <> pkgStr <> "' not found inside the Nix store path.\n"
-
-findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
-findM _ [] = pure Nothing
-findM p (x : xs) = ifM (p x) (pure $ Just x) (findM p xs)
+extractNixArtifact pkgName dir = forNixLink dir $ \link -> do
+  let bin = link </> "bin" </> toString pkgName
+  exists <- liftIO $ doesFileExist bin
+  if exists
+    then copyBinary bin (dir </> toString pkgName)
+    else throwError $ fromString $ "Nix build succeeded, but binary '" <> bin <> "' not found inside the Nix store path.\n"
 
 data TargetScope
   = ScopeGlobal -- User typed: hwm build (Build everything)
