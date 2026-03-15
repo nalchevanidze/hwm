@@ -178,20 +178,19 @@ nixBuildCopy dirPath scope m = Exec "nix" (["build"] <> scope <> ["-o", format (
 toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
 toAction _ StackBuilder Build scope = mkStack "build" scope []
-toAction _ StackBuilder Install {..} scope = mkStack "install" scope ["--local-bin-path", format dirPath]
 toAction _ StackBuilder Test scope = mkStack "test" scope []
 -- Cabal
-toAction _ CabalBuilder {} Install {..} scope = mkCabal "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
 toAction _ CabalBuilder {} Build scope = mkCabal "build" scope []
 toAction _ CabalBuilder {} Test scope = mkCabal "test" scope []
 -- Nix
 toAction ctx NixBuilder Build scope = nixBuild ctx scope
 toAction ctx NixBuilder Test scope = nixBuild ctx scope
+-- INSTALL
+toAction _ CabalBuilder {..} Install {..} scope
+  | inNixDevelopment = throwError "Install command with Nix development environment is not supported"
+  | otherwise = mkCabal "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
+toAction _ StackBuilder Install {..} scope = mkStack "install" scope ["--local-bin-path", format dirPath]
 toAction _ NixBuilder Install {..} scope =
   case scope of
-    ScopeGlobal -> pure $ nixBuildCopy dirPath [".#"] (extractNixArtifacts dirPath)
     ScopePkgs [pkg] -> pure $ nixBuildCopy dirPath [".#" <> format (pkgName pkg)] (extractNixArtifact (pkgName pkg) dirPath)
-    ScopePkgs _ -> throwError "Multiple package install is not supported with Nix builder."
-
-
-
+    _ -> throwError "Install command with Nix builder is not supported"
