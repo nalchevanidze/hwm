@@ -110,7 +110,7 @@ extractGlobalNixArtifacts distDir =
           let destPath = distDir </> file
           liftIO $ copyFile sourcePath destPath
       else
-        throwError "Global Nix install succeeded, but no 'bin/' directory was found in the output."
+        throwError "Global build succeeded, but no 'bin/' directory was found in the output."
 
 findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
 findM _ [] = pure Nothing
