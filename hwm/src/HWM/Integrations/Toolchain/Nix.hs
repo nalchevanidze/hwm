@@ -110,7 +110,7 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
                 "forAllSystems = nixpkgs.lib.genAttrs supportedSystems;"
               ]
                 -- OVERLAY
-                <> generateOverlay ctx ctxs
+                <> genOverlay ctx ctxs
             )
             -- PACKAGES
             ( forAllSystems "packages" artifactEngine (genPackages ctx ctxs)
@@ -123,8 +123,8 @@ deriveFlakeNix ctx@(projectName, benv) ctxs =
       )
 
 -- OVERLAY
-generateOverlay :: Context -> [Context] -> [Text]
-generateOverlay static benvs =
+genOverlay :: Context -> [Context] -> [Text]
+genOverlay static benvs =
   ["haskellOverlay = final: prev: {"]
     <> concatMap rendergOverlayItem benvs
     <> rendergOverlayStatic static
