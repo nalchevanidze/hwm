@@ -9,8 +9,6 @@ module HWM.CLI.Command.Release.Artifacts
   )
 where
 
-import Control.Monad.Except (MonadError (..))
-import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon)
@@ -22,7 +20,6 @@ import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatch)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment, overrideBuilder)
 import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, resolveArtifactConfig, selectedArtifacts)
-import HWM.Domain.Workspace (resolveWorkspaces)
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
 import HWM.Runtime.Network (getGHUploadUrl, uploadToGitHub)
