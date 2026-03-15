@@ -5,8 +5,8 @@ github: nalchevanidze/hwm
 workspace:
   libs:
     members:
-    - golden
-    - .
+      - golden
+      - .
     prefix: hwm
 environments:
   builder: nix/cabal
@@ -79,13 +79,16 @@ registry:
   zip-archive: '         >=  0.4.2.1     &&  <=  0.4.3.2'
 release:
   artifacts:
-    hwm: libs/_root_:hwm
+    hwm: 
+      enviroments: [ci-nix, ci-windows]
+      source: libs/_root_:hwm
   publish:
     main:
-    - libs/_root_
+      - libs/_root_
 scripts:
   format: sh scripts/format.sh
   format:fix: sh scripts/format.sh --fix
-  lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
+  lint:
+    curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
   test:update: GOLDEN_UPDATE=1 hwm test --fast
