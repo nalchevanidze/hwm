@@ -10,29 +10,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # ==========================================
-    # UNIX: Pure Nix Setup (macOS & Ubuntu)
-    # ==========================================
-    - name: Install Nix
-      if: runner.os != 'Windows'
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Magic Nix Cache
-      if: runner.os != 'Windows'
-      uses: DeterminateSystems/magic-nix-cache-action@main
-
-    - name: Build and Install HWM (Pure Nix)
-      if: runner.os != 'Windows'
-      shell: bash
-      run: |
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        nix profile install .
-        hwm --version
-        hwm sync ci-nix
-
-    # ==========================================
-    # WINDOWS: Cabal Setup
-    # ==========================================
     - name: Setup Haskell (GHC & Cabal)
       if: runner.os == 'Windows'
       id: setup-haskell

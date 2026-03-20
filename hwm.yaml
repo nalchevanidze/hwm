@@ -17,7 +17,7 @@ environments:
     ci-nix:
       ghc: 9.6.3
       builder: nix
-    ci-windows:
+    ci-cabal:
       ghc: 9.6.3
       builder: cabal
       nix: false
@@ -80,7 +80,7 @@ registry:
 release:
   artifacts:
     hwm: 
-      environments: [ci-nix, ci-windows]
+      environments: [ci-nix, ci-cabal]
       source: libs/_root_:hwm
   publish:
     main:
