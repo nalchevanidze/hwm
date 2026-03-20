@@ -101,7 +101,7 @@ if [[ -z "$BIN_DIR" ]]; then
 fi
 mkdir -p "$BIN_DIR"
 
-if [ -n "$GITHUB_PATH" ]; then
+if [[ -n "${GITHUB_PATH:-}" ]]; then
   echo "$BIN_DIR" >> "$GITHUB_PATH"
   echo "Added $BIN_DIR to GITHUB_PATH"
 fi

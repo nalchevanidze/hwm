@@ -10,67 +10,16 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # ==========================================
-    # UNIX: Pure Nix Setup (macOS & Ubuntu)
-    # ==========================================
     - name: Install Nix
-      if: runner.os != 'Windows'
       uses: DeterminateSystems/nix-installer-action@main
 
     - name: Magic Nix Cache
-      if: runner.os != 'Windows'
       uses: DeterminateSystems/magic-nix-cache-action@main
 
     - name: Build and Install HWM (Pure Nix)
-      if: runner.os != 'Windows'
       shell: bash
       run: |
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         nix profile install .
         hwm --version
         hwm sync ci-nix
-
-    # ==========================================
-    # WINDOWS: Cabal Setup
-    # ==========================================
-    - name: Setup Haskell (GHC & Cabal)
-      if: runner.os == 'Windows'
-      id: setup-haskell
-      uses: haskell-actions/setup@v2
-      with:
-        ghc-version: ${{ inputs.ghc }}
-        cabal-version: 'latest'
-
-    - name: Update Hackage & Freeze
-      if: runner.os == 'Windows'
-      shell: bash
-      run: |
-        cabal update
-        cabal freeze
-
-    - name: Cache Cabal Dependencies
-      if: runner.os == 'Windows'
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ steps.setup-haskell.outputs.cabal-store }}
-          dist-newstyle
-        key: ${{ runner.os }}-ghc-${{ inputs.ghc }}-cabal-${{ hashFiles('cabal.project.freeze') }}
-        restore-keys: ${{ runner.os }}-ghc-${{ inputs.ghc }}-cabal-
-
-    - name: Build and Install HWM (Cabal)
-      if: runner.os == 'Windows'
-      shell: bash
-      run: |
-        # Install the executable locally
-        cabal install exe:hwm --installdir="$HOME/.local/bin" --overwrite-policy=always
-
-        # Add local bin to PATH for the rest of the workflow
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-    - name: Sync HWM (Windows specific)
-      if: runner.os == 'Windows'
-      shell: bash
-      run: |
-        hwm --version
-        hwm sync ci-windows

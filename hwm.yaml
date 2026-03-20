@@ -5,37 +5,25 @@ github: nalchevanidze/hwm
 workspace:
   libs:
     members:
-    - golden
-    - .
+      - golden
+      - .
     prefix: hwm
 environments:
-  builder: nix/cabal
+  builder: stack
   default: stable
   hie: true
   nix: true
   profiles:
+    local-nix:
+      ghc: 9.6.3
+      builder: nix/cabal
     ci-nix:
       ghc: 9.6.3
       builder: nix
-    ci-windows:
+    ci-cabal:
       ghc: 9.6.3
       builder: cabal
       nix: false
-    legacy:
-      ghc: 8.10.7
-      hie: false
-      nix: false
-      stack:
-        extra-deps:
-          aeson: 1.4.4.0
-          base-orphans: 0.8.1
-          fastsum: 0.1.0.0
-          megaparsec: 7.0.5
-          modern-uri: 0.3.0.0
-          relude: 0.3.0
-          retry: 0.8.1.0
-          time-compat: 1.9.2.2
-          websockets: 0.12.6.0
     stable:
       ghc: 9.6.3
       stack:
@@ -79,13 +67,16 @@ registry:
   zip-archive: '         >=  0.4.2.1     &&  <=  0.4.3.2'
 release:
   artifacts:
-    hwm: libs/_root_:hwm
+    hwm: 
+      environments: [ci-nix, ci-cabal]
+      source: libs/_root_:hwm
   publish:
     main:
-    - libs/_root_
+      - libs/_root_
 scripts:
   format: sh scripts/format.sh
   format:fix: sh scripts/format.sh --fix
-  lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
+  lint:
+    curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
   test:update: GOLDEN_UPDATE=1 hwm test --fast

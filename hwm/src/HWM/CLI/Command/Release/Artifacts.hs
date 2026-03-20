@@ -9,20 +9,18 @@ module HWM.CLI.Command.Release.Artifacts
   )
 where
 
-import Control.Monad.Except (MonadError (..))
-import qualified Data.Text as T
 import Data.Traversable (for)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon)
 import HWM.Core.Parsing (Parse (..), ParseCLI (..), parseLS)
 import HWM.Core.Result (fromEither)
-import HWM.Domain.Build (BuildFlag (GHCOptionsFlag), Builder (..), BuilderCommand (..), TargetScope (ScopePkgs))
+import HWM.Domain.Build (BuildFlag (GHCOptionsFlag), Builder (..), BuilderCommand (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatch)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment, overrideBuilder)
-import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, selectedArtifacts)
-import HWM.Domain.Workspace (resolveWorkspaces)
+import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, resolveArtifactConfig, selectedArtifacts)
+import HWM.Domain.Schema (TargetScope (ScopePkgs))
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
 import HWM.Runtime.Network (getGHUploadUrl, uploadToGitHub)
@@ -131,11 +129,9 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
       uiSubPath sha256Path
 
 buildPkg :: FilePath -> Builder -> (Name, ArtifactConfig) -> ConfigT (Text, ArchivingPlan)
-buildPkg outputDir builder (name, ArtifactConfig {..}) = do
+buildPkg outputDir builder (name, cfg@ArtifactConfig {..}) = do
   binaryDir <- genBindaryDir name
-  let (workspaceId, executableName) = second (T.drop 1) (T.breakOn ":" arcSource)
-  optTarget <- listToMaybe . concatMap snd <$> resolveWorkspaces [workspaceId]
-  pkg <- maybe (throwError $ fromString $ toString $ "Package \"" <> workspaceId <> "\" not found in any workspace. Check package name and workspace configuration.") pure optTarget
+  (executableName, pkg) <- resolveArtifactConfig cfg
   env <- overrideBuilder builder <$> getBuildEnvironment Nothing
-  dispatch (DispatcheCommand (Install binaryDir) (ScopePkgs [pkg]) (map GHCOptionsFlag arcGhcOptions)) env
+  dispatch (DispatcheCommand (BuildArtifact binaryDir) (ScopePkgs [pkg]) (map GHCOptionsFlag arcGhcOptions)) env
   pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})

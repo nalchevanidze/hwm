@@ -4,134 +4,158 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
   };
   outputs = { self, nixpkgs }:
+  let
+    supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+    forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+    haskellOverlay = final: prev: {
+      morpheusGraphqlLegacyWorkspacePackages = prev.haskell.packages.ghc84.extend (hfinal: hprev: {
+        morpheus-graphql-benchmarks = hfinal.callCabal2nix "morpheus-graphql-benchmarks" ./helpers/benchmarks {};
+        morpheus-graphql-app = hfinal.callCabal2nix "morpheus-graphql-app" ./morpheus-graphql-app {};
+        morpheus-graphql-code-gen-utils = hfinal.callCabal2nix "morpheus-graphql-code-gen-utils" ./morpheus-graphql-code-gen-utils {};
+        morpheus-graphql-server = hfinal.callCabal2nix "morpheus-graphql-server" ./morpheus-graphql-server {};
+        morpheus-graphql-tests = hfinal.callCabal2nix "morpheus-graphql-tests" ./morpheus-graphql-tests {};
+        morpheus-graphql-core = hfinal.callCabal2nix "morpheus-graphql-core" ./morpheus-graphql-core {};
+        morpheus-graphql-subscriptions = hfinal.callCabal2nix "morpheus-graphql-subscriptions" ./morpheus-graphql-subscriptions {};
+        morpheus-graphql-code-gen = hfinal.callCabal2nix "morpheus-graphql-code-gen" ./morpheus-graphql-code-gen {};
+        morpheus-graphql-client = hfinal.callCabal2nix "morpheus-graphql-client" ./morpheus-graphql-client {};
+        morpheus-graphql = hfinal.callCabal2nix "morpheus-graphql" ./morpheus-graphql {};
+      });
+      morpheusGraphqlStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+        morpheus-graphql-benchmarks = hfinal.callCabal2nix "morpheus-graphql-benchmarks" ./helpers/benchmarks {};
+        morpheus-graphql-app = hfinal.callCabal2nix "morpheus-graphql-app" ./morpheus-graphql-app {};
+        morpheus-graphql-code-gen-utils = hfinal.callCabal2nix "morpheus-graphql-code-gen-utils" ./morpheus-graphql-code-gen-utils {};
+        morpheus-graphql-server = hfinal.callCabal2nix "morpheus-graphql-server" ./morpheus-graphql-server {};
+        morpheus-graphql-tests = hfinal.callCabal2nix "morpheus-graphql-tests" ./morpheus-graphql-tests {};
+        morpheus-graphql-core = hfinal.callCabal2nix "morpheus-graphql-core" ./morpheus-graphql-core {};
+        morpheus-graphql-subscriptions = hfinal.callCabal2nix "morpheus-graphql-subscriptions" ./morpheus-graphql-subscriptions {};
+        morpheus-graphql-code-gen = hfinal.callCabal2nix "morpheus-graphql-code-gen" ./morpheus-graphql-code-gen {};
+        morpheus-graphql-client = hfinal.callCabal2nix "morpheus-graphql-client" ./morpheus-graphql-client {};
+        morpheus-graphql = hfinal.callCabal2nix "morpheus-graphql" ./morpheus-graphql {};
+      });
+    };
+  in
+  {
+    packages = forAllSystems (system:
     let
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-      haskellOverlay = final: prev: {
-        morpheusGraphqlLegacyWorkspacePackages = prev.haskell.packages.ghc84.extend (hfinal: hprev: {
-          morpheus-graphql-benchmarks = hfinal.callCabal2nix "morpheus-graphql-benchmarks" ./helpers/benchmarks {};
-          morpheus-graphql-app = hfinal.callCabal2nix "morpheus-graphql-app" ./morpheus-graphql-app {};
-          morpheus-graphql-code-gen-utils = hfinal.callCabal2nix "morpheus-graphql-code-gen-utils" ./morpheus-graphql-code-gen-utils {};
-          morpheus-graphql-server = hfinal.callCabal2nix "morpheus-graphql-server" ./morpheus-graphql-server {};
-          morpheus-graphql-tests = hfinal.callCabal2nix "morpheus-graphql-tests" ./morpheus-graphql-tests {};
-          morpheus-graphql-core = hfinal.callCabal2nix "morpheus-graphql-core" ./morpheus-graphql-core {};
-          morpheus-graphql-subscriptions = hfinal.callCabal2nix "morpheus-graphql-subscriptions" ./morpheus-graphql-subscriptions {};
-          morpheus-graphql-code-gen = hfinal.callCabal2nix "morpheus-graphql-code-gen" ./morpheus-graphql-code-gen {};
-          morpheus-graphql-client = hfinal.callCabal2nix "morpheus-graphql-client" ./morpheus-graphql-client {};
-          morpheus-graphql = hfinal.callCabal2nix "morpheus-graphql" ./morpheus-graphql {};
-        });
-        morpheusGraphqlStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
-          morpheus-graphql-benchmarks = hfinal.callCabal2nix "morpheus-graphql-benchmarks" ./helpers/benchmarks {};
-          morpheus-graphql-app = hfinal.callCabal2nix "morpheus-graphql-app" ./morpheus-graphql-app {};
-          morpheus-graphql-code-gen-utils = hfinal.callCabal2nix "morpheus-graphql-code-gen-utils" ./morpheus-graphql-code-gen-utils {};
-          morpheus-graphql-server = hfinal.callCabal2nix "morpheus-graphql-server" ./morpheus-graphql-server {};
-          morpheus-graphql-tests = hfinal.callCabal2nix "morpheus-graphql-tests" ./morpheus-graphql-tests {};
-          morpheus-graphql-core = hfinal.callCabal2nix "morpheus-graphql-core" ./morpheus-graphql-core {};
-          morpheus-graphql-subscriptions = hfinal.callCabal2nix "morpheus-graphql-subscriptions" ./morpheus-graphql-subscriptions {};
-          morpheus-graphql-code-gen = hfinal.callCabal2nix "morpheus-graphql-code-gen" ./morpheus-graphql-code-gen {};
-          morpheus-graphql-client = hfinal.callCabal2nix "morpheus-graphql-client" ./morpheus-graphql-client {};
-          morpheus-graphql = hfinal.callCabal2nix "morpheus-graphql" ./morpheus-graphql {};
-        });
-      };
+      pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
+      mkReleaseArtifact = pkgName: basePkg: staticPkg:
+        if pkgs.stdenv.hostPlatform.isLinux then
+          # LINUX: Return the fully static (musl), zero-dependency executable
+          staticPkg
+        else if pkgs.stdenv.hostPlatform.isDarwin then
+          # MACOS: We "Bundle" the dynamic dependencies since strict static is hard on Mac.
+          pkgs.runCommand "${pkgName}-macos-bundle" {
+            nativeBuildInputs = [ pkgs.macdylibbundler pkgs.darwin.autoSignDarwinBinariesHook ];
+          } ''
+            mkdir -p $out/bin
+      
+            # 1. Copy the fast, dynamically linked binary (stripping docs/libs first)
+            cp ${pkgs.haskell.lib.justStaticExecutables basePkg}/bin/${pkgName} $out/bin/${pkgName}
+            chmod 755 $out/bin/${pkgName}
+      
+            # 2. Run dylibbundler to pull all Nix store .dylibs into the local folder
+            dylibbundler -b --no-codesign -x $out/bin/${pkgName} -d $out/bin -p '@executable_path'
+      
+            # 3. Re-sign the binary so Apple Silicon (M1/M2/M3) allows it to run natively
+            signDarwinBinariesInAllOutputs
+          ''
+        else
+          # Fallback for unexpected systems
+          basePkg;
     in
     {
-      packages = forAllSystems (system:
-        let
-          pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
-        in
-        {
-          default = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql;
-          morpheus-graphql-benchmarks = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-benchmarks;
-          morpheus-graphql-app = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-app;
-          morpheus-graphql-code-gen-utils = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen-utils;
-          morpheus-graphql-server = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-server;
-          morpheus-graphql-tests = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-tests;
-          morpheus-graphql-core = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-core;
-          morpheus-graphql-subscriptions = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-subscriptions;
-          morpheus-graphql-code-gen = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen;
-          morpheus-graphql-client = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-client;
-          morpheus-graphql = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql;
-          morpheus-graphql-benchmarks-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-benchmarks;
-          morpheus-graphql-app-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-app;
-          morpheus-graphql-code-gen-utils-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-code-gen-utils;
-          morpheus-graphql-server-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-server;
-          morpheus-graphql-tests-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-tests;
-          morpheus-graphql-core-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-core;
-          morpheus-graphql-subscriptions-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-subscriptions;
-          morpheus-graphql-code-gen-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-code-gen;
-          morpheus-graphql-client-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-client;
-          morpheus-graphql-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql;
-          env-legacy-all = pkgs.symlinkJoin {
-            name = "legacy-workspace";
-            paths = [ 
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-benchmarks
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-app
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-code-gen-utils
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-server
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-tests
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-core
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-subscriptions
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-code-gen
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-client
-              pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql
-           ];
-          };
-          morpheus-graphql-benchmarks-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-benchmarks;
-          morpheus-graphql-app-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-app;
-          morpheus-graphql-code-gen-utils-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen-utils;
-          morpheus-graphql-server-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-server;
-          morpheus-graphql-tests-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-tests;
-          morpheus-graphql-core-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-core;
-          morpheus-graphql-subscriptions-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-subscriptions;
-          morpheus-graphql-code-gen-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen;
-          morpheus-graphql-client-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-client;
-          morpheus-graphql-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql;
-          env-stable-all = pkgs.symlinkJoin {
-            name = "stable-workspace";
-            paths = [ 
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-benchmarks
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-app
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen-utils
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-server
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-tests
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-core
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-subscriptions
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-client
-              pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql
-           ];
-          };
-        });
-      devShells = forAllSystems (system:
-        let
-          pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
-        in
-        {
-          default = pkgs.morpheusGraphqlStableWorkspacePackages.shellFor {
-            packages = p: [ p.morpheus-graphql-benchmarks p.morpheus-graphql-app p.morpheus-graphql-code-gen-utils p.morpheus-graphql-server p.morpheus-graphql-tests p.morpheus-graphql-core p.morpheus-graphql-subscriptions p.morpheus-graphql-code-gen p.morpheus-graphql-client p.morpheus-graphql ];
-            buildInputs = with pkgs.morpheusGraphqlStableWorkspacePackages; [
-              cabal-install
-              hlint
-              haskell-language-server
-            ];
-          };
-          legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.shellFor {
-            packages = p: [ p.morpheus-graphql-benchmarks p.morpheus-graphql-app p.morpheus-graphql-code-gen-utils p.morpheus-graphql-server p.morpheus-graphql-tests p.morpheus-graphql-core p.morpheus-graphql-subscriptions p.morpheus-graphql-code-gen p.morpheus-graphql-client p.morpheus-graphql ];
-            buildInputs = with pkgs.morpheusGraphqlLegacyWorkspacePackages; [
-              cabal-install
-              hlint
-              haskell-language-server
-            ];
-          };
-          stable = pkgs.morpheusGraphqlStableWorkspacePackages.shellFor {
-            packages = p: [ p.morpheus-graphql-benchmarks p.morpheus-graphql-app p.morpheus-graphql-code-gen-utils p.morpheus-graphql-server p.morpheus-graphql-tests p.morpheus-graphql-core p.morpheus-graphql-subscriptions p.morpheus-graphql-code-gen p.morpheus-graphql-client p.morpheus-graphql ];
-            buildInputs = with pkgs.morpheusGraphqlStableWorkspacePackages; [
-              cabal-install
-              hlint
-              haskell-language-server
-            ];
-          };
-        });
-      checks = forAllSystems (system: self.packages.${system});
-    };
+      default = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql;
+      morpheus-graphql-benchmarks = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-benchmarks;
+      morpheus-graphql-app = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-app;
+      morpheus-graphql-code-gen-utils = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen-utils;
+      morpheus-graphql-server = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-server;
+      morpheus-graphql-tests = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-tests;
+      morpheus-graphql-core = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-core;
+      morpheus-graphql-subscriptions = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-subscriptions;
+      morpheus-graphql-code-gen = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen;
+      morpheus-graphql-client = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-client;
+      morpheus-graphql = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql;
+      morpheus-graphql-benchmarks-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-benchmarks;
+      morpheus-graphql-app-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-app;
+      morpheus-graphql-code-gen-utils-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-code-gen-utils;
+      morpheus-graphql-server-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-server;
+      morpheus-graphql-tests-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-tests;
+      morpheus-graphql-core-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-core;
+      morpheus-graphql-subscriptions-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-subscriptions;
+      morpheus-graphql-code-gen-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-code-gen;
+      morpheus-graphql-client-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-client;
+      morpheus-graphql-legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql;
+      morpheus-graphql-benchmarks-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-benchmarks;
+      morpheus-graphql-app-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-app;
+      morpheus-graphql-code-gen-utils-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen-utils;
+      morpheus-graphql-server-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-server;
+      morpheus-graphql-tests-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-tests;
+      morpheus-graphql-core-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-core;
+      morpheus-graphql-subscriptions-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-subscriptions;
+      morpheus-graphql-code-gen-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen;
+      morpheus-graphql-client-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-client;
+      morpheus-graphql-stable = pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql;
+      env-legacy-all = pkgs.symlinkJoin {
+        name = "legacy-workspace";
+        paths = [
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-benchmarks
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-app
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-code-gen-utils
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-server
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-tests
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-core
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-subscriptions
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-code-gen
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql-client
+          pkgs.morpheusGraphqlLegacyWorkspacePackages.morpheus-graphql
+        ];
+      };
+      env-stable-all = pkgs.symlinkJoin {
+        name = "stable-workspace";
+        paths = [
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-benchmarks
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-app
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen-utils
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-server
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-tests
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-core
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-subscriptions
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-code-gen
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql-client
+          pkgs.morpheusGraphqlStableWorkspacePackages.morpheus-graphql
+        ];
+      };
+    });
+    devShells = forAllSystems (system:
+    let
+      pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
+    in
+    {
+      default = pkgs.morpheusGraphqlStableWorkspacePackages.shellFor {
+        packages = p: [ p.morpheus-graphql-benchmarks p.morpheus-graphql-app p.morpheus-graphql-code-gen-utils p.morpheus-graphql-server p.morpheus-graphql-tests p.morpheus-graphql-core p.morpheus-graphql-subscriptions p.morpheus-graphql-code-gen p.morpheus-graphql-client p.morpheus-graphql ];
+        buildInputs = with pkgs.morpheusGraphqlStableWorkspacePackages; [
+          cabal-install
+          hlint
+          haskell-language-server
+        ];
+      };
+      legacy = pkgs.morpheusGraphqlLegacyWorkspacePackages.shellFor {
+        packages = p: [ p.morpheus-graphql-benchmarks p.morpheus-graphql-app p.morpheus-graphql-code-gen-utils p.morpheus-graphql-server p.morpheus-graphql-tests p.morpheus-graphql-core p.morpheus-graphql-subscriptions p.morpheus-graphql-code-gen p.morpheus-graphql-client p.morpheus-graphql ];
+        buildInputs = with pkgs.morpheusGraphqlLegacyWorkspacePackages; [
+          cabal-install
+          hlint
+          haskell-language-server
+        ];
+      };
+      stable = pkgs.morpheusGraphqlStableWorkspacePackages.shellFor {
+        packages = p: [ p.morpheus-graphql-benchmarks p.morpheus-graphql-app p.morpheus-graphql-code-gen-utils p.morpheus-graphql-server p.morpheus-graphql-tests p.morpheus-graphql-core p.morpheus-graphql-subscriptions p.morpheus-graphql-code-gen p.morpheus-graphql-client p.morpheus-graphql ];
+        buildInputs = with pkgs.morpheusGraphqlStableWorkspacePackages; [
+          cabal-install
+          hlint
+          haskell-language-server
+        ];
+      };
+    });
+    checks = forAllSystems (system: self.packages.${system});
+  };
 }

@@ -15,11 +15,12 @@ where
 
 import HWM.Core.Common (Name)
 import HWM.Core.Parsing (ParseCLI (..), parseOptions)
-import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..), TargetScope (..))
+import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..))
 import HWM.Domain.Config (getScript)
 import HWM.Domain.ConfigT (ConfigT, config)
 import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatchForEach)
 import HWM.Domain.Environments (selectEnvironments)
+import HWM.Domain.Schema (TargetScope (..))
 import HWM.Domain.Workspace (printPkgWSRef, resolveWorkspaces)
 import HWM.Runtime.Files (getLocalBinDir, warnBindDir)
 import HWM.Runtime.Process (Exec (..), inheritRun)

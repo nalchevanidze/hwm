@@ -1,0 +1,48 @@
+name: Setup Artifacts
+description: 'Installs Nix for Unix, or GHC/Cabal for Windows, and sets up HWM'
+
+inputs:
+  ghc:
+    description: GHC Version (Used for Windows/Cabal fallback)
+    required: false
+    default: '9.6.3'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Haskell (GHC & Cabal)
+      id: setup-haskell
+      uses: haskell-actions/setup@v2
+      with:
+        ghc-version: ${{ inputs.ghc }}
+        cabal-version: 'latest'
+
+    - name: Update Hackage & Freeze
+      shell: bash
+      run: |
+        cabal update
+        cabal freeze
+
+    - name: Cache Cabal Dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ steps.setup-haskell.outputs.cabal-store }}
+          dist-newstyle
+        key: ${{ runner.os }}-ghc-${{ inputs.ghc }}-cabal-${{ hashFiles('cabal.project.freeze') }}
+        restore-keys: ${{ runner.os }}-ghc-${{ inputs.ghc }}-cabal-
+
+    - name: Build and Install HWM (Cabal)
+      shell: bash
+      run: |
+        # Install the executable locally
+        cabal install exe:hwm --installdir="$HOME/.local/bin" --overwrite-policy=always
+
+        # Add local bin to PATH for the rest of the workflow
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Sync HWM (Windows specific)
+      shell: bash
+      run: |
+        hwm --version
+        hwm sync ci-cabal

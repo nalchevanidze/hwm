@@ -7,7 +7,6 @@
 module HWM.Domain.Build
   ( Builder (..),
     BuilderCommand (..),
-    TargetScope (..),
     BuildFlag (..),
     toExec,
     comandLabel,
@@ -19,14 +18,14 @@ import Control.Monad.Except (throwError)
 import Data.Aeson (FromJSON (..), ToJSON (toJSON))
 import Data.Aeson.Types (Value (..))
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Format (..), toCamelCase)
+import HWM.Core.Formatting (Format (..))
 import HWM.Core.Parsing (Parse (..))
-import HWM.Core.Pkg (Pkg (..), PkgName)
+import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue)
+import HWM.Domain.Schema (TargetScope (..))
+import HWM.Integrations.Toolchain.Nix.Build (NixEnv (..), inNixDevelop, nixBuild)
 import HWM.Runtime.Process (EnvVars, Exec (..), mkExec)
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, doesPathExist, emptyPermissions, listDirectory, removeFile, removePathForcibly, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
-import System.FilePath ((</>))
 
 data Builder
   = CabalBuilder {inNixDevelopment :: Bool}
@@ -61,80 +60,13 @@ comandLabel :: BuilderCommand -> Text
 comandLabel Build {} = "build"
 comandLabel Test {} = "test"
 comandLabel Install {} = "build"
-
-extractNixArtifact :: (MonadIO m, MonadError Issue m) => PkgName -> FilePath -> m ()
-extractNixArtifact pkgName distDir = do
-  let resultLink = distDir </> "result"
-      finalDest = distDir </> toString pkgName
-      pkgStr = toString (format pkgName)
-
-  liftIO $ createDirectoryIfMissing True distDir
-  isLink <- liftIO $ doesPathExist resultLink
-  unless isLink
-    $ throwError
-    $ fromString
-    $ "Nix build completed, but did not create an output at: "
-    <> resultLink
-    <> "\n(This usually means the Nix derivation is empty or 'exec' hid a build failure.)"
-  let searchPaths =
-        [ resultLink </> "bin" </> pkgStr, -- Standard Haskell (Cabal/Stack)
-          resultLink </> pkgStr, -- Simple/Single-binary derivation
-          resultLink -- Derivation is the binary itself
-        ]
-  maybeSource <- findM (liftIO . doesFileExist) searchPaths
-
-  case maybeSource of
-    Just sourcePath -> do
-      liftIO $ copyFile sourcePath finalDest
-      -- Ensure the user can execute it (Nix store is read-only)
-      liftIO $ do
-        let properPerms =
-              setOwnerReadable True
-                $ setOwnerWritable True
-                $ setOwnerExecutable True emptyPermissions
-        setPermissions finalDest properPerms
-      -- Cleanup: Remove the 'result' symlink to keep the folder clean
-      liftIO $ removeFile resultLink
-    Nothing -> throwError $ fromString $ "Nix build succeeded, but binary '" <> pkgStr <> "' not found inside the Nix store path.\n"
-
-extractGlobalNixArtifacts :: (MonadIO m, MonadError Issue m) => FilePath -> m ()
-extractGlobalNixArtifacts distDir = do
-  let resultLink = distDir </> "result-global"
-      binDir = resultLink </> "bin"
-
-  isLink <- liftIO $ doesPathExist resultLink
-  unless isLink $ throwError "Nix global build failed to produce a result symlink."
-
-  hasBin <- liftIO $ doesPathExist binDir
-  if hasBin
-    then do
-      -- Copy everything inside result-global/bin/
-      files <- liftIO $ listDirectory binDir
-      for_ files $ \file -> do
-        let sourcePath = binDir </> file
-        let destPath = distDir </> file
-        liftIO $ copyFile sourcePath destPath
-    -- (Apply the same executable permissions here as before)
-    else
-      -- Fallback if the default package is just a single binary at the root
-      throwError "Global Nix install succeeded, but no 'bin/' directory was found in the output."
-
-  -- Clean up the symlink
-  liftIO $ removePathForcibly resultLink
-
-findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
-findM _ [] = pure Nothing
-findM p (x : xs) = ifM (p x) (pure $ Just x) (findM p xs)
-
-data TargetScope
-  = ScopeGlobal -- User typed: hwm build (Build everything)
-  | ScopePkgs [Pkg] -- User typed: hwm build -w=libs/... (Build these)
-  deriving (Eq, Show)
+comandLabel BuildArtifact {} = "build"
 
 data BuilderCommand
   = Build
   | Test
   | Install {dirPath :: FilePath}
+  | BuildArtifact {dirPath :: FilePath}
   deriving (Eq, Show)
 
 data BuildFlag
@@ -144,7 +76,7 @@ data BuildFlag
   deriving (Eq, Show)
 
 formatFlag :: Builder -> BuildFlag -> [Text]
--- WARNING: Nix does not accept '--ghc-options' via CLI; it must be set in the flake.
+-- Nix does not accept '--ghc-options' via CLI; it must be set in the flake.
 formatFlag NixBuilder _ = []
 formatFlag CabalBuilder {} BuildFastFlag = ["--disable-optimization"]
 formatFlag StackBuilder BuildFastFlag = ["--fast"]
@@ -153,52 +85,44 @@ formatFlag _ (CustomBuildFlag txt) = [txt]
 
 toExec :: (MonadIO m, MonadError Issue m) => Name -> Builder -> BuilderCommand -> TargetScope -> [BuildFlag] -> [(String, String)] -> m (Exec m)
 toExec envName builder cmd scope flags envs = do
-  Exec {..} <- toAction (Env envName) builder cmd scope
+  Exec {..} <- toAction (NixEnv envName) builder cmd scope
   pure $ inNixDevelop envName nixEnabled $ Exec execCmd (execArgs <> concatMap (formatFlag builder) flags) envs postCommand
   where
     nixEnabled = CabalBuilder {inNixDevelopment = True} == builder
 
-toNixEnv :: Text -> Text
-toNixEnv name = ".#" <> toCamelCase name
-
-inNixDevelop :: Name -> Bool -> Exec m -> Exec m
-inNixDevelop envName True (Exec cmd ops env post) = Exec "nix" (["develop", toNixEnv envName, "--command", cmd] <> ops) env post
-inNixDevelop _ False e = e
-
-nixScope :: (Format p) => p -> TargetScope -> [Text]
-nixScope envName ScopeGlobal =
-  let envSuffix = toCamelCase (format envName)
-   in [".#env-" <> envSuffix <> "-all"]
-nixScope envName (ScopePkgs pkgs) =
-  let envSuffix = toCamelCase (format envName)
-   in map (\pkg -> ".#" <> format (pkgName pkg) <> "-" <> envSuffix) pkgs
-
-handleScope :: Bool -> TargetScope -> [Text]
-handleScope isCabal ScopeGlobal = ["all" | isCabal]
+handleScope :: Maybe Text -> TargetScope -> [Text]
+handleScope fb ScopeGlobal = maybeToList fb
 handleScope _ (ScopePkgs pkgs) = map (format . pkgName) pkgs
 
 mkStack :: (Applicative m) => Text -> TargetScope -> [Text] -> m (Exec m)
-mkStack cmd scope ops = mkExec "stack" ([cmd] <> handleScope False scope <> ops)
+mkStack cmd scope ops = mkExec "stack" ([cmd] <> handleScope Nothing scope <> ops)
 
-mkCabal :: (Applicative m) => Text -> TargetScope -> [Text] -> m (Exec m)
-mkCabal cmd scope ops = mkExec "cabal" ([cmd] <> handleScope True scope <> ops)
+mkCabal :: (Applicative m) => Bool -> Text -> TargetScope -> [Text] -> m (Exec m)
+mkCabal install cmd scope ops = mkExec "cabal" ([cmd] <> handleScope (if install then Just "all:exes" else Just "all") scope <> ops)
 
-newtype Env = Env {envName :: Name}
+installCabal :: (Applicative m, Format a) => TargetScope -> a -> m (Exec m)
+installCabal scope dirPath = mkCabal True "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
 
-toAction :: (MonadError Issue m, MonadIO m) => Env -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
+installStack :: (Applicative m, Format a) => TargetScope -> a -> m (Exec m)
+installStack scope dirPath = mkStack "install" scope ["--local-bin-path", format dirPath]
+
+toAction :: (MonadError Issue m, MonadIO m) => NixEnv -> Builder -> BuilderCommand -> TargetScope -> m (Exec m)
 -- Stack
 toAction _ StackBuilder Build scope = mkStack "build" scope []
-toAction _ StackBuilder Install {..} scope = mkStack "install" scope ["--local-bin-path", format dirPath]
 toAction _ StackBuilder Test scope = mkStack "test" scope []
 -- Cabal
-toAction _ CabalBuilder {} Install {..} scope = mkCabal "install" scope ["--install-method=copy", "--installdir", format dirPath, "--overwrite-policy=always"]
-toAction _ CabalBuilder {} Build scope = mkCabal "build" scope []
-toAction _ CabalBuilder {} Test scope = mkCabal "test" scope []
+toAction _ CabalBuilder {} Build scope = mkCabal False "build" scope []
+toAction _ CabalBuilder {} Test scope = mkCabal False "test" scope []
 -- Nix
-toAction ctx NixBuilder Build scope = mkExec "nix" $ ["build", "--no-link"] <> nixScope (envName ctx) scope
-toAction ctx NixBuilder Test scope = mkExec "nix" $ ["build", "--no-link"] <> nixScope (envName ctx) scope
-toAction _ NixBuilder Install {..} scope =
-  case scope of
-    ScopeGlobal -> pure $ Exec "nix" ["build", ".#", "-o", format (dirPath </> "result-global")] [] (Just $ extractGlobalNixArtifacts dirPath)
-    ScopePkgs [pkg] -> pure $ Exec "nix" ["build", ".#" <> format (pkgName pkg), "-o", format (dirPath </> "result")] [] (Just $ extractNixArtifact (pkgName pkg) dirPath)
-    ScopePkgs _ -> throwError "Multiple package install is not supported with Nix builder."
+toAction ctx NixBuilder Build scope = nixBuild ctx scope
+toAction ctx NixBuilder Test scope = nixBuild ctx scope
+-- INSTALL
+toAction _ CabalBuilder {..} Install {..} scope
+  | inNixDevelopment = throwError "Install command with Nix development environment is not supported"
+  | otherwise = installCabal scope dirPath
+toAction _ StackBuilder Install {..} scope = installStack scope dirPath
+toAction _ NixBuilder Install {} _ = throwError "Install command with Nix builder is not supported"
+--
+toAction _ NixBuilder BuildArtifact {} _ = throwError "Nix Binaries is not supported yet"
+toAction _ StackBuilder BuildArtifact {..} scope = installStack scope dirPath
+toAction _ CabalBuilder {} BuildArtifact {..} scope = installCabal scope dirPath

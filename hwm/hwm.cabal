@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -69,6 +69,7 @@ library
       HWM.Domain.Environments
       HWM.Domain.Registry
       HWM.Domain.Release
+      HWM.Domain.Schema
       HWM.Domain.Workspace
       HWM.Integrations.Scaffold
       HWM.Integrations.Toolchain.Cabal
@@ -76,6 +77,7 @@ library
       HWM.Integrations.Toolchain.Hie
       HWM.Integrations.Toolchain.Hpack
       HWM.Integrations.Toolchain.Nix
+      HWM.Integrations.Toolchain.Nix.Build
       HWM.Integrations.Toolchain.Package
       HWM.Integrations.Toolchain.Stack
       HWM.Runtime.Archive
