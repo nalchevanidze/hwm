@@ -23,7 +23,7 @@ import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue)
 import HWM.Domain.Schema (TargetScope (..))
-import HWM.Integrations.Toolchain.Nix.Build (NixEnv (..), genNixBinary, inNixDevelop, nixBuild)
+import HWM.Integrations.Toolchain.Nix.Build (NixEnv (..), inNixDevelop, nixBuild)
 import HWM.Runtime.Process (EnvVars, Exec (..), mkExec)
 import Relude
 
