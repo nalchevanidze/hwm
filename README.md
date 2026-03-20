@@ -231,6 +231,8 @@ HWM introduces **Release Trains**, a high-integrity system for decoupling worksp
 
 Transform raw binaries into hashed, compressed distribution units using your preferred engine. HWM ensures every artifact is strictly validated before the publication phase begins.
 
+NOTE: artifact generations is currently disabled for `nix` and `nix/cabal` builders. 
+
 ```yaml
 environments:
   builder: stack # or nix or cabal
