@@ -7,7 +7,6 @@
 module HWM.Domain.Build
   ( Builder (..),
     BuilderCommand (..),
-    TargetScope (..),
     BuildFlag (..),
     toExec,
     comandLabel,
@@ -23,6 +22,7 @@ import HWM.Core.Formatting (Format (..), toCamelCase)
 import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue)
+import HWM.Domain.Schema (TargetScope (..))
 import HWM.Runtime.Process (EnvVars, Exec (..), mkExec)
 import Relude
 import System.Directory (copyFile, doesFileExist, doesPathExist, emptyPermissions, removePathForcibly, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
@@ -93,11 +93,6 @@ extractNixArtifact pkgName dir = forNixLink dir $ \link -> do
   if exists
     then copyBinary bin (dir </> toString pkgName)
     else throwError $ fromString $ "Nix build succeeded, but binary '" <> bin <> "' not found inside the Nix store path.\n"
-
-data TargetScope
-  = ScopeGlobal -- User typed: hwm build (Build everything)
-  | ScopePkgs [Pkg] -- User typed: hwm build -w=libs/... (Build these)
-  deriving (Eq, Show)
 
 data BuilderCommand
   = Build
