@@ -20,6 +20,7 @@ import HWM.Domain.Config (getScript)
 import HWM.Domain.ConfigT (ConfigT, config)
 import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatchForEach)
 import HWM.Domain.Environments (selectEnvironments)
+import HWM.Domain.Schema (TargetScope (..))
 import HWM.Domain.Workspace (printPkgWSRef, resolveWorkspaces)
 import HWM.Runtime.Files (getLocalBinDir, warnBindDir)
 import HWM.Runtime.Process (Exec (..), inheritRun)
@@ -34,7 +35,6 @@ import Options.Applicative
   )
 import Options.Applicative.Builder (switch)
 import Relude
-import HWM.Domain.Schema (TargetScope (..))
 
 newtype ScriptOptions = ScriptOptions {scriptOptions :: [Text]} deriving (Show)
 

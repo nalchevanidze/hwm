@@ -18,13 +18,13 @@ import HWM.Core.Pkg (Pkg (..))
 import HWM.Domain.Build (BuildFlag (..), Builder (..), BuilderCommand (..), comandLabel, toExec)
 import HWM.Domain.ConfigT (ConfigT)
 import HWM.Domain.Environments (BuildEnvironment (..))
+import HWM.Domain.Schema (TargetScope (..))
 import HWM.Domain.Workspace (printPkgWSRef)
 import HWM.Integrations.Toolchain.Cabal (setupCabalMatrixEnvironment)
 import HWM.Integrations.Toolchain.Stack (setupStackMatrixEnvironment)
 import HWM.Runtime.Process (EnvVars, ExecOptions (..), execInBackground)
 import HWM.Runtime.UI (MonadUI (..), minRowSize, sectionEnvironments, section_, uiRow)
 import Relude
-import HWM.Domain.Schema (TargetScope (..))
 
 data DispatcheCommand = DispatcheCommand
   { builderCommand :: BuilderCommand,

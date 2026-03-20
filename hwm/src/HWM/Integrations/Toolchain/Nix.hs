@@ -86,8 +86,7 @@ genOverlay :: Context -> [Text]
 genOverlay ctx@Context {..} =
   scoped
     "haskellOverlay = final: prev:"
-    ( concatMap rendergOverlayItem enviroments <> concatMap (rendergOverlayStatic ctx) staticEnvs
-    )
+    (concatMap rendergOverlayItem enviroments <> concatMap (rendergOverlayStatic ctx) staticEnvs)
   where
     staticEnvs = Set.toList $ Set.fromList (concatMap snd release)
 
