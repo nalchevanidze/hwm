@@ -12,6 +12,10 @@
         hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
         hwm = hfinal.callCabal2nix "hwm" ./hwm {};
       });
+      hwmLocalNixWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+        hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+        hwm = hfinal.callCabal2nix "hwm" ./hwm {};
+      });
       hwmStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
         hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
         hwm = hfinal.callCabal2nix "hwm" ./hwm {};
@@ -61,6 +65,8 @@
       hwm = pkgs.hwmStableWorkspacePackages.hwm;
       hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
       hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
+      hwm-golden-localNix = pkgs.hwmLocalNixWorkspacePackages.hwm-golden;
+      hwm-localNix = pkgs.hwmLocalNixWorkspacePackages.hwm;
       hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
       hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
       env-ciNix-all = pkgs.symlinkJoin {
@@ -68,6 +74,13 @@
         paths = [
           pkgs.hwmCiNixWorkspacePackages.hwm-golden
           pkgs.hwmCiNixWorkspacePackages.hwm
+        ];
+      };
+      env-localNix-all = pkgs.symlinkJoin {
+        name = "local-nix-workspace";
+        paths = [
+          pkgs.hwmLocalNixWorkspacePackages.hwm-golden
+          pkgs.hwmLocalNixWorkspacePackages.hwm
         ];
       };
       env-stable-all = pkgs.symlinkJoin {
@@ -97,6 +110,15 @@
       ciNix = pkgs.hwmCiNixWorkspacePackages.shellFor {
         packages = p: [ p.hwm-golden p.hwm ];
         buildInputs = with pkgs.hwmCiNixWorkspacePackages; [
+          cabal-install
+          hlint
+          stack
+          haskell-language-server
+        ];
+      };
+      localNix = pkgs.hwmLocalNixWorkspacePackages.shellFor {
+        packages = p: [ p.hwm-golden p.hwm ];
+        buildInputs = with pkgs.hwmLocalNixWorkspacePackages; [
           cabal-install
           hlint
           stack
