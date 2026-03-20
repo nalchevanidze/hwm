@@ -1,4 +1,4 @@
-name: Setup
+name: Setup Artifacts
 description: 'Installs Nix for Unix, or GHC/Cabal for Windows, and sets up HWM'
 
 inputs:
@@ -11,7 +11,6 @@ runs:
   using: 'composite'
   steps:
     - name: Setup Haskell (GHC & Cabal)
-      if: runner.os == 'Windows'
       id: setup-haskell
       uses: haskell-actions/setup@v2
       with:
@@ -19,14 +18,12 @@ runs:
         cabal-version: 'latest'
 
     - name: Update Hackage & Freeze
-      if: runner.os == 'Windows'
       shell: bash
       run: |
         cabal update
         cabal freeze
 
     - name: Cache Cabal Dependencies
-      if: runner.os == 'Windows'
       uses: actions/cache@v4
       with:
         path: |
@@ -36,7 +33,6 @@ runs:
         restore-keys: ${{ runner.os }}-ghc-${{ inputs.ghc }}-cabal-
 
     - name: Build and Install HWM (Cabal)
-      if: runner.os == 'Windows'
       shell: bash
       run: |
         # Install the executable locally
@@ -46,7 +42,6 @@ runs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Sync HWM (Windows specific)
-      if: runner.os == 'Windows'
       shell: bash
       run: |
         hwm --version
