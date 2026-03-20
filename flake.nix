@@ -16,11 +16,11 @@
         hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
         hwm = hfinal.callCabal2nix "hwm" ./hwm {};
       });
-      hwmCiNixStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+      hwmCiCabalStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
         hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
         hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
       });
-      hwmCiWindowsStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+      hwmCiNixStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
         hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
         hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
       });
@@ -78,7 +78,7 @@
         ];
       };
       hwm-ci-nix-release = mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmCiNixStaticWorkspacePackages.hwm;
-      hwm-ci-windows-release = mkReleaseArtifact "hwm" pkgs.hwmCiWindowsWorkspacePackages.hwm pkgs.hwmCiWindowsStaticWorkspacePackages.hwm;
+      hwm-ci-cabal-release = mkReleaseArtifact "hwm" pkgs.hwmCiCabalWorkspacePackages.hwm pkgs.hwmCiCabalStaticWorkspacePackages.hwm;
     });
     devShells = forAllSystems (system:
     let
