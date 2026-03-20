@@ -15,7 +15,7 @@ where
 
 import HWM.Core.Common (Name)
 import HWM.Core.Parsing (ParseCLI (..), parseOptions)
-import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..), TargetScope (..))
+import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..))
 import HWM.Domain.Config (getScript)
 import HWM.Domain.ConfigT (ConfigT, config)
 import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatchForEach)
@@ -34,6 +34,7 @@ import Options.Applicative
   )
 import Options.Applicative.Builder (switch)
 import Relude
+import HWM.Domain.Schema (TargetScope (..))
 
 newtype ScriptOptions = ScriptOptions {scriptOptions :: [Text]} deriving (Show)
 
