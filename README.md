@@ -85,6 +85,17 @@ hwm status
 - **Artifacts environment caveat:** `release.artifacts[*].environments` is not yet honored by `hwm release artifacts` (current command uses the active/default environment).
 - **Environment safety caveat:** removing environments is not yet protected against deleting the default/last profile.
 
+## ✅ Current Support Matrix (by builder)
+
+| Capability | cabal | stack | nix | nix/cabal |
+|---|---:|---:|---:|---:|
+| `hwm build` / `hwm test` | ✅ | ✅ | ✅ | ✅ |
+| `hwm install` | ✅ | ✅ | ❌ | ❌ |
+| `hwm release artifacts --builder=...` | ✅ | ✅ | ❌ | ✅ |
+| `hwm release publish` (Hackage) | ✅* | ✅* | ✅* | ✅* |
+
+\* `hwm release publish` is builder-independent by design (Cabal `sdist` + Hackage upload flow).
+
 ## 🛠️ Key Workflows
 
 ### 1. The Global Registry & Dependency Sync

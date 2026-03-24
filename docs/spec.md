@@ -75,6 +75,17 @@ Transparency note:
 
 > Important naming detail: the command is **`environments`** (plural), not `environment`.
 
+### 3.1 Support matrix (current behavior)
+
+| Capability | cabal | stack | nix | nix/cabal |
+|---|---:|---:|---:|---:|
+| `hwm build` / `hwm test` | ✅ | ✅ | ✅ | ✅ |
+| `hwm install` | ✅ | ✅ | ❌ (explicit error) | ❌ (explicit error) |
+| `hwm release artifacts --builder=...` | ✅ | ✅ | ❌ (explicit error) | ✅ |
+| `hwm release publish` | ✅* | ✅* | ✅* | ✅* |
+
+\* `release publish` is builder-independent by design (Cabal `sdist`-based, Hackage-oriented).
+
 ---
 
 ## 4) Command reference
