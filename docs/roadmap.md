@@ -10,28 +10,26 @@ If something is already implemented, it should not stay on this roadmap.
 
 ## Priority roadmap
 
-## 1) Nix parity for install and publish
+## 1) Nix parity for install
 
 ### Goal
-Bring `nix` and `nix/cabal` to feature parity for delivery workflows.
+Bring `nix` and `nix/cabal` to feature parity for install workflows.
 
 ### Why
-Today, install/publish operations for these builder modes are not fully supported and may fail with explicit errors. We should close this gap.
+Today, `install` for these builder modes is unsupported (explicit errors). We should close this gap.
 
 ### Planned outcomes
 
 - Support `hwm install` for:
   - `builder: nix`
   - `builder: nix/cabal`
-- Support `hwm release publish` flows when workspace is using Nix-driven builders.
-- Keep deterministic behavior and clear logs for Nix paths/artifacts.
+- Keep deterministic behavior and clear logs for Nix install outputs.
 - Preserve current fail-fast errors until full support is complete.
 
 ### Acceptance criteria
 
 - `hwm install --env=<nix-env>` works end-to-end.
-- `hwm release publish <group>` works in Nix/Nix-Cabal environments.
-- CI examples include at least one nix install path and one nix publish path.
+- CI examples include at least one nix install path.
 
 ---
 
@@ -86,6 +84,8 @@ Remove behavior surprises that can frustrate users.
   - align generated `hie.yaml` with active builder/profile (not stack-only assumptions)
 - Improve generated-file UX:
   - clearly communicate overwrite/ephemeral behavior for generated files
+- Protect environment integrity:
+  - prevent removing the default/last environment without an explicit migration path
 - Improve cross-platform script execution behavior (avoid hard dependency on `/bin/sh` semantics where possible)
 
 ### Acceptance criteria
@@ -93,7 +93,34 @@ Remove behavior surprises that can frustrate users.
 - CLI typos produce command-oriented errors, not script-not-found confusion.
 - `hwm run` argument behavior is explicit and predictable.
 - `hie.yaml` generation is builder/profile-aware.
+- removing environments cannot leave config in an invalid default-env state.
 - docs include a single transparent “known limitations/behavior notes” section.
+
+---
+
+## 5) Release behavior consistency (deep-dive findings)
+
+### Goal
+Make release/install behavior predictable and aligned with configuration intent.
+
+### Problematic behaviors observed
+
+- `release.artifacts[*].environments` is currently not honored by `hwm release artifacts` (active/default env is used instead).
+- `--output-dir` handling in artifacts flow should be audited for consistency with directory preparation behavior.
+- `--ghc-options` parser/help UX should be aligned (help suggests repeatable flags, parser currently expects a single CSV option).
+
+### Planned outcomes
+
+- Keep publish behavior explicitly documented as Cabal-`sdist`/Hackage-oriented.
+- Make artifact builds honor per-artifact environments.
+- Ensure output-dir semantics are consistent and test-covered.
+- Align CLI parser behavior with help text for release flags.
+
+### Acceptance criteria
+
+- release behavior is deterministic and matches docs/examples.
+- artifact environment targeting works as declared in `hwm.yaml`.
+- CLI help and parser behavior match exactly.
 
 ---
 

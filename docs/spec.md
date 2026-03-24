@@ -332,13 +332,14 @@ Notes:
 - command builds binaries, archives them, and emits `.sha256` files
 - with `--github`, uploads archive and checksum assets to GitHub release URL
 - current limitation: `release artifacts --builder=nix` is not supported and fails with an explicit error
+- current limitation: artifact config field `environments` is not yet enforced by command dispatch (active/default env is used)
 
 ### `release publish`
 
 - publishes groups configured under `release.publish`
 - performs source dist checks and topological publish ordering
 - target argument selects one publish group; omitted publishes all configured groups
-- publishing with `nix` / `nix/cabal` builder flows is currently unsupported and will fail with an explicit error when attempted
+- publishing is Cabal `sdist` based by design (builder-independent, Hackage-oriented)
 
 > Important: there is no top-level `hwm publish`; publishing is under `hwm release publish`.
 
@@ -469,7 +470,8 @@ Typical behavior:
 - `hwm run` is shell-based and argument forwarding uses shell positional parameters.
 - Generated files are managed artifacts and may be rewritten on `hwm sync`.
 - Install with `nix`/`nix/cabal` is currently unsupported and fails with explicit errors.
-- Publish with `nix`/`nix/cabal` workflows is currently unsupported and may fail with explicit errors.
+- `release publish` is Cabal-`sdist` based by design (builder-independent, Hackage-oriented).
+- environment remove flow does not yet guard against deleting the default/last profile; this can leave config in an invalid state until fixed.
 
 ---
 

@@ -80,7 +80,10 @@ hwm status
 - **Script execution model:** `hwm run` executes scripts via shell (`/bin/sh -c ...`) and forwards extra args as positional parameters.
 - **IDE generation caveat:** generated `hie.yaml` is currently stack-cradle oriented.
 - **Generated files are ephemeral:** `hwm sync` rewrites generated files (`cabal.project`, `stack.yaml`, `flake.nix`, `hie.yaml`) according to `hwm.yaml`.
-- **Nix delivery gap (current):** install/publish workflows with `nix` and `nix/cabal` are not fully supported yet and may fail with explicit errors.
+- **Nix install gap (current):** `hwm install` with `nix`/`nix/cabal` is not supported and fails with explicit errors.
+- **Publish model:** `hwm release publish` is intentionally Cabal `sdist` based (builder-independent, Hackage-oriented).
+- **Artifacts environment caveat:** `release.artifacts[*].environments` is not yet honored by `hwm release artifacts` (current command uses the active/default environment).
+- **Environment safety caveat:** removing environments is not yet protected against deleting the default/last profile.
 
 ## 🛠️ Key Workflows
 
@@ -241,8 +244,10 @@ HWM introduces **Release Trains**, a high-integrity system for decoupling worksp
 
 Transform raw binaries into hashed, compressed distribution units using your preferred engine. HWM ensures every artifact is strictly validated before the publication phase begins.
 
-NOTE: publishing/install flows are currently not supported for `nix` and `nix/cabal` builders.
-If attempted, HWM will fail with an explicit error.
+NOTE:
+- `hwm install` with `nix`/`nix/cabal` is currently unsupported and fails with an explicit error.
+- `hwm release publish` is intentionally Cabal `sdist` based for Hackage publishing (builder-independent).
+- `hwm release artifacts --builder=nix` is currently unsupported.
 
 ```yaml
 environments:
