@@ -51,6 +51,11 @@ Equivalent to:
 hwm run <SCRIPT> [ARGS...]
 ```
 
+Transparency note:
+
+- this fallback also catches command typos
+- typoed commands may surface as script resolution errors
+
 ---
 
 ## 3) Top-level commands (implemented)
@@ -134,6 +139,10 @@ hwm sync [ENV]
   - `hie.yaml` (if environment hie feature enabled)
 - Syncs package files (`syncPackages` pipeline)
 
+Current implementation note:
+
+- generated `hie.yaml` uses stack cradle format and is not yet fully builder/profile-specific
+
 ---
 
 ## 4.4 `hwm run`
@@ -151,7 +160,9 @@ hwm run <SCRIPT> [ARGS...]
 - Passes `[ARGS...]` to the shell invocation as positional arguments
 - Errors if script name does not exist
 
-> Note: script commands that need forwarded args must consume shell positional parameters explicitly.
+> Notes:
+> - script commands that need forwarded args must consume shell positional parameters explicitly
+> - execution path is shell-based (`/bin/sh -c ...`) in current implementation
 
 ---
 
@@ -320,7 +331,7 @@ Notes:
 - `--format` and `--ghc-options` are comma-separated lists
 - command builds binaries, archives them, and emits `.sha256` files
 - with `--github`, uploads archive and checksum assets to GitHub release URL
-- current limitation: `release artifacts` publish/install flows with `--builder=nix` or `--builder=nix/cabal` are not supported and will fail with explicit errors
+- current limitation: `release artifacts --builder=nix` is not supported and fails with an explicit error
 
 ### `release publish`
 
@@ -448,12 +459,17 @@ Typical behavior:
 
 ---
 
-## 8) Known naming/compatibility clarifications
+## 8) Known naming/compatibility/behavior clarifications
 
 - Use `hwm environments ...` (plural).
 - Use `hwm release publish ...`, not `hwm publish`.
 - Use `hwm registry audit ...`, not `hwm outdated`.
 - `environments add` currently takes `<GHC_VERSION>` directly.
+- Unknown top-level command tokens are treated as script names (`hwm run ...` fallback).
+- `hwm run` is shell-based and argument forwarding uses shell positional parameters.
+- Generated files are managed artifacts and may be rewritten on `hwm sync`.
+- Install with `nix`/`nix/cabal` is currently unsupported and fails with explicit errors.
+- Publish with `nix`/`nix/cabal` workflows is currently unsupported and may fail with explicit errors.
 
 ---
 

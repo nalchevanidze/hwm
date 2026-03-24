@@ -2,7 +2,7 @@
 
 > **Infrastructure-as-Code for your Haskell Workspaces.**
 
-**HWM is a universal, build-tool agnostic orchestrator.** It is the missing link that unites the tools you already rely on (`cabal`, `stack`, `nix`, `hls`), transforming them into a single declarative pipeline.
+**HWM is a build-tool orchestration layer for Haskell workspaces.** It connects tools you already rely on (`cabal`, `stack`, `nix`, `hls`) behind a single declarative config, with some current capability gaps documented below.
 
 **Think of HWM as Terraform for your local Haskell repository.** Whether you are a Nix purist, a Stack loyalist, or rely purely on Cabal, HWM ensures the state of your project files matches your declared intent across all environments.
 
@@ -11,7 +11,7 @@ HWM is an **active workspace maintainer** that provides:
 - **The Universal Translator:** Write one `hwm.yaml`. HWM automatically derives and generates `cabal.project`, `stack.yaml`, `hie.yaml`, `flake.nix`, and `.cabal` files.
 - **Zero Lock-in:** HWM materializes standard configuration files directly at your project root. You can uninstall HWM at any time, and your repository will still build perfectly using standard native tools.
 - **Smart Bounds Synchronization:** Maintain a beautifully aligned, single-source-of-truth dependency registry. HWM automatically injects these bounds across your entire monorepo.
-- **Zero-Overhead IDE Support:** Because standard files are generated at the root, Haskell Language Server (HLS) works instantly. HWM automatically generates `hie.yaml` tailored to your active toolchains.
+- **IDE Config Generation:** HWM generates `hie.yaml` at the project root when enabled. _Current implementation note: cradle generation is stack-oriented and not yet fully builder/profile-aware._
 - **Flexible Toolchain Toggles(v0.2.0):** You are in total control. Explicitly enable or disable `stack`, `nix` globally, or toggle them on a per-profile basis.
 
 <p align="center">
@@ -72,6 +72,15 @@ hwm status
 <p align="center">
 <img src="images/init.png" alt="HWM Init Auto-Discovery" width="600">
 </p>
+
+## ⚠️ Current Behavior Notes (Transparency)
+
+- **Unknown command fallback:** `hwm <token>` is treated as `hwm run <token>` if `<token>` is not a top-level command.
+  - This means command typos can appear as script lookup failures.
+- **Script execution model:** `hwm run` executes scripts via shell (`/bin/sh -c ...`) and forwards extra args as positional parameters.
+- **IDE generation caveat:** generated `hie.yaml` is currently stack-cradle oriented.
+- **Generated files are ephemeral:** `hwm sync` rewrites generated files (`cabal.project`, `stack.yaml`, `flake.nix`, `hie.yaml`) according to `hwm.yaml`.
+- **Nix delivery gap (current):** install/publish workflows with `nix` and `nix/cabal` are not fully supported yet and may fail with explicit errors.
 
 ## 🛠️ Key Workflows
 

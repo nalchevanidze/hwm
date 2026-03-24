@@ -69,6 +69,34 @@ Reduce long-term dependency drift in large monorepos.
 
 ---
 
+## 4) UX transparency and conceptual consistency
+
+### Goal
+Remove behavior surprises that can frustrate users.
+
+### Planned outcomes
+
+- Improve unknown command handling:
+  - avoid silently treating typos as script names unless script exists
+  - provide clearer CLI typo errors and suggestions
+- Improve script runner UX:
+  - document and/or redesign arg forwarding behavior
+  - reduce shell-specific surprises
+- Improve HLS integration consistency:
+  - align generated `hie.yaml` with active builder/profile (not stack-only assumptions)
+- Improve generated-file UX:
+  - clearly communicate overwrite/ephemeral behavior for generated files
+- Improve cross-platform script execution behavior (avoid hard dependency on `/bin/sh` semantics where possible)
+
+### Acceptance criteria
+
+- CLI typos produce command-oriented errors, not script-not-found confusion.
+- `hwm run` argument behavior is explicit and predictable.
+- `hie.yaml` generation is builder/profile-aware.
+- docs include a single transparent “known limitations/behavior notes” section.
+
+---
+
 ## Contributing
 
 If you want to implement roadmap items:
