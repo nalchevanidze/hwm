@@ -103,8 +103,11 @@ hwm registry audit --fix
 Managing monorepos with dozens of packages is finally clean. HWM uses `prefix` grouping to elegantly decouple your internal structure from your globally unique Hackage package names.
 
 ```bash
-# Interactively or directly scaffold a new package in a specific group
+# 1) Create a workspace group
 hwm workspace add libs
+
+# 2) Scaffold a package inside the group
+hwm workspace add libs/core
 ```
 
 <p align="center">
@@ -196,7 +199,7 @@ hwm test --env=all
 </p>
 
 **Manual Environment & IDE Switching:**
-HWM ensures your IDE (HLS) always matches your build environment. When you run `hwm sync`, it doesn't just update the build files; it rewrites `hie.yaml`.
+When you run `hwm sync`, HWM updates build files and (when `hie` is enabled) rewrites `hie.yaml`.
 
 ```bash
 # Instantly overwrites stack.yaml, flake.nix, and hie.yaml for GHC 8.10
@@ -215,13 +218,11 @@ scripts:
 
 ```
 
-Pass arguments seamlessly to your underlying tools:
+Argument forwarding note:
 
-```bash
-# Translates to: hwm test --fast -- --only "JSON Parser"
-hwm run test -- --only "JSON Parser"
+`hwm run <script> [ARGS...]` passes extra args to the shell invocation as positional parameters.
+If your script needs them, handle them explicitly in the script command.
 
-```
 
 ### 5. Release & Distribution
 
@@ -231,7 +232,8 @@ HWM introduces **Release Trains**, a high-integrity system for decoupling worksp
 
 Transform raw binaries into hashed, compressed distribution units using your preferred engine. HWM ensures every artifact is strictly validated before the publication phase begins.
 
-NOTE: artifact generations is currently disabled for `nix` and `nix/cabal` builders. 
+NOTE: publishing/install flows are currently not supported for `nix` and `nix/cabal` builders.
+If attempted, HWM will fail with an explicit error.
 
 ```yaml
 environments:
@@ -261,7 +263,7 @@ release:
 hwm version minor
 
 # Build local binaries and hashes with builder of choice
-hwm release artifacts --builder=nix
+hwm release artifacts --builder=cabal
 
 # Push a train to Hackage (Requires HACKAGE_AUTH_TOKEN in environment with a valid API token)
 hwm release publish main

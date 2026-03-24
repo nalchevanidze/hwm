@@ -148,8 +148,10 @@ hwm run <SCRIPT> [ARGS...]
 
 - Looks up `<SCRIPT>` in `scripts` map in `hwm.yaml`
 - Executes script command with inherited stdio
-- Appends `[ARGS...]` as extra CLI args
+- Passes `[ARGS...]` to the shell invocation as positional arguments
 - Errors if script name does not exist
+
+> Note: script commands that need forwarded args must consume shell positional parameters explicitly.
 
 ---
 
@@ -189,6 +191,7 @@ If omitted, scope is global.
 - Builder can be `cabal`, `stack`, `nix`, or `nix/cabal`
 - `install` is not supported by `nix`
 - `install` is not supported by `nix/cabal` mode
+- unsupported install combinations fail fast with an explicit error
 
 ---
 
@@ -317,12 +320,14 @@ Notes:
 - `--format` and `--ghc-options` are comma-separated lists
 - command builds binaries, archives them, and emits `.sha256` files
 - with `--github`, uploads archive and checksum assets to GitHub release URL
+- current limitation: `release artifacts` publish/install flows with `--builder=nix` or `--builder=nix/cabal` are not supported and will fail with explicit errors
 
 ### `release publish`
 
 - publishes groups configured under `release.publish`
 - performs source dist checks and topological publish ordering
 - target argument selects one publish group; omitted publishes all configured groups
+- publishing with `nix` / `nix/cabal` builder flows is currently unsupported and will fail with an explicit error when attempted
 
 > Important: there is no top-level `hwm publish`; publishing is under `hwm release publish`.
 
@@ -339,7 +344,7 @@ Top-level fields used by current implementation:
 - `github: Text?`
 - `bounds: Bounds?`
 - `registry: Registry?`
-- `scripts: Map Text Text?`
+- `scripts: Map Text Text` (optional map; values are non-null strings)
 - `release: Release?`
 
 ### 5.1 Workspace
