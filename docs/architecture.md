@@ -1,773 +1,262 @@
-# HWM Architecture Documentation
+# HWM Architecture Documentation (Implementation-Aligned)
 
-**Target Audience:** AI Agents, System Architects, Core Contributors
-**Version:** 0.0.1
-**Last Updated:** February 15, 2026
-
----
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                       CLI Entry Point                        │
-│                        (app/Main.hs)                         │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Command Parser & Router                      │
-│                 (HWM.CLI.App + Command)                      │
-├─────────────────────────────────────────────────────────────┤
-│   init | sync | run | outdated | version | publish | status │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Configuration Monad (ConfigT)                │
-│              State: Config + Cache + Options                 │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-        ┌───────────────┼───────────────┬───────────────┐
-        ▼               ▼               ▼               ▼
-    ┌────────┐     ┌──────────┐    ┌─────────┐    ┌──────────┐
-    │ Domain │     │Toolchain │    │ Runtime │    │   Core   │
-    │ Models │     │Integration    │ Services│    │ Utilities│
-    └────────┘     └──────────┘    └─────────┘    └──────────┘
-```
+**Target Audience:** AI agents, maintainers, contributors  
+**Baseline:** current tracked code in this repository  
+**Version:** 0.2.x aligned  
+**Last Updated:** 2026-03-24
 
 ---
 
-## Layer Responsibilities
+## 1. High-level architecture
 
-### Layer 1: CLI (HWM.CLI.*)
-
-**Purpose:** User interface, argument parsing, command dispatch
-
-**Modules:**
-- App.hs - Main entry, optparse-applicative setup
-- Command.hs - Command dispatcher
-- Init.hs - Bootstrap hwm.yaml generation
-- Sync.hs - Sync implementation
-- Run.hs - Script execution
-- Outdated.hs - Dependency updates
-- Version.hs - Version management
-- Publish.hs - Hackage publishing
-- Status.hs - Status display
-
-**Key Types:**
-```haskell
-data Command
-  = Init {initOptions :: InitOptions}
-  | Sync {tag :: Maybe Name}
-  | Run {runOptions :: ScriptOptions}
-  | Outdated {fix :: Bool}
-  | Version {bump :: Maybe Bump}
-  | Publish {groupName :: Maybe Name}
-  | Status
-
-data InitOptions = InitOptions
-  { forceOverride :: Bool
-  , projectName :: Maybe Text
-  }
-
-data ScriptOptions = ScriptOptions
-  { scriptName :: Name
-  , scriptTargets :: [Name]
-  , scriptEnvs :: [Name]
-  , scriptOptions :: [Text]
-  }
-
-data Options = Options
-  { quiet :: Bool
-  , stack :: FilePath
-  , hie :: FilePath
-  , config :: FilePath
-  }
+```text
+Main (hwm/app/Main.hs)
+  -> CLI App Parser (HWM.CLI.App)
+  -> Command Router (HWM.CLI.Command)
+  -> Config Runtime (HWM.Domain.ConfigT)
+  -> Domain Logic + Integrations + Runtime Services
 ```
+
+Layered organization (logical):
+
+1. **CLI layer** (`HWM.CLI.*`)  
+   Parsing commands/options and invoking handlers.
+2. **Domain layer** (`HWM.Domain.*`)  
+   Core models and orchestration logic (config, environments, workspace, registry, release, build dispatch).
+3. **Integration layer** (`HWM.Integrations.Toolchain.*`)  
+   Tool-specific generation/execution for Stack/Cabal/Nix/Hie/Hpack/GitHub.
+4. **Runtime layer** (`HWM.Runtime.*`)  
+   Files, cache, network, process execution, UI, logging.
+5. **Core primitives** (`HWM.Core.*`)  
+   Shared types/parsing/formatting/versioning/results/options.
 
 ---
 
-### Layer 2: Domain (HWM.Domain.*)
+## 2. CLI surface and routing
 
-**Purpose:** Core business logic, domain models
+### 2.1 Entry point
 
-#### Config.hs
+- `hwm/app/Main.hs` delegates to `HWM.CLI.App.main`.
 
-```haskell
-data Config = Config
-  { name :: Name, version :: Version, bounds :: Bounds
-  , workspace :: [WorkGroup], matrix :: Matrix
-  , registry :: Dependencies, scripts :: Map Name Text
-  }
+### 2.2 Parser
 
-getRule :: PkgName -> PkgRegistry -> Config -> m Bounds
-```
+`HWM.CLI.App` defines top-level commands:
 
-#### Workspace.hs
+- `init`, `status`, `sync`, `run`
+- `workspace`, `environments`, `registry`
+- `version`, `build`, `install`, `test`, `release`
 
-```haskell
-data WorkGroup = WorkGroup
-  { name :: Name, dir :: Maybe FilePath, members :: [Name]
-  , prefix :: Maybe Text, publish :: Maybe Bool
-  }
+Global flags:
 
-type PkgRegistry = Map PkgName WorkGroup
+- `--version`, `--quiet`
 
--- Resolves directory as: {dir}/{prefix}-{member}
-memberPkgs :: WorkGroup -> m [Pkg]
-resolveTargets :: [WorkGroup] -> [Name] -> m [Pkg]
-```
+Fallback behavior:
 
-#### Matrix.hs
+- `hwm <script> ...` parses as `run` shortcut.
 
-```haskell
-data Matrix = Matrix
-  { defaultEnvironment :: Name, environments :: [BuildEnv] }
+### 2.3 Router
 
-data BuildEnv = BuildEnv
-  { name :: Name, ghc :: Version, resolver :: Name
-  , extraDeps :: Maybe (Map PkgName Version)
-  , exclude :: Maybe [Text], allowNewer :: Maybe Bool
-  }
+`HWM.CLI.Command` maps parsed commands to handlers in `ConfigT`.
 
-data BuildEnvironment = BuildEnvironment
-  { buildEnv :: BuildEnv, buildPkgs :: [Pkg]
-  , buildName :: Name, buildExtraDeps :: Maybe VersionMap
-  , buildResolver :: Name
-  }
+---
 
-getBuildEnvironment :: Maybe Name -> m BuildEnvironment
-getBuildEnvroments :: m [BuildEnvironment]
-```
+## 3. Runtime execution model (`ConfigT`)
 
-#### Dependencies.hs & Bounds.hs
+`ConfigT` is the application monad:
 
 ```haskell
-data Dependency = Dependency { name :: PkgName, bounds :: Bounds }
-newtype Dependencies = Dependencies (Map PkgName Bounds)
-
-data Restriction = Min | Max
-data Bound = Bound { restriction :: Restriction, orEquals :: Bool, version :: Version }
-newtype Bounds = Bounds [Bound]
-
--- Example: Version 0.28.0 -> ">=0.28.0 && <0.29.0"
-versionBounds :: Version -> Bounds
-```
-
-#### ConfigT.hs
-
-```haskell
-data Env m = Env
-  { options :: Options
-  , config :: Config
-  , cache :: Cache
-  , pkgs :: PkgRegistry
-  }
-
 newtype ConfigT a = ConfigT (ReaderT Env (ResultT (UIT IO)) a)
-
-runConfigT :: ConfigT () -> Options -> IO ()
-updateConfig :: (Config -> ConfigT Config) -> ConfigT b -> ConfigT b
 ```
 
-**Features:**
-- Read-only environment via ReaderT
-- Mutable cache (TVar-backed)
-- Error accumulation (ResultT)
-- UI operations via UIT monad
-- Has type class for polymorphic access
+`Env` includes:
+
+- `options :: Options`
+- `config :: Config`
+- `cache :: Cache`
+- `pkgs :: PkgRegistry`
+- `fileSignature :: Signature`
+
+### Key properties
+
+- **Read-mostly context:** config/options/registry access via `Reader` + `Has` pattern
+- **Issue/error handling:** via `ResultT` + `Issue`
+- **Terminal UI:** via `UIT`/`MonadUI`
+- **Config consistency check:** `runConfigT` compares file signature and environment signature, triggers validation/save when needed
+- **Cache persistence:** loaded at startup, saved on success
 
 ---
 
-### Layer 3: Integration (HWM.Integrations.Toolchain.\*)
+## 4. Domain model
 
-**Purpose:** External tool integration
+### 4.1 Config
 
-#### Package.hs
+`HWM.Domain.Config.Config` fields:
 
-**package.yaml Synchronization:**
+- `cfgName`, `cfgVersion`
+- `cfgWorkspace`
+- `cfgEnvironments`
+- optional: `cfgGithub`, `cfgBounds`, `cfgRegistry`, `cfgScripts`, `cfgRelease`
 
-### Layer 3: Integration (HWM.Integrations.Toolchain.*)
+### 4.2 Workspace
 
-**Purpose:** External tool integration
+`Workspace = Map Name WorkGroup`, where `WorkGroup` has:
 
-#### Package.hs - package.yaml Synchronization
+- optional `dir`
+- `members`
+- optional `prefix`
 
-```haskell
-data Package = Package
-  { name :: PkgName, version :: Version, library :: Maybe Library
-  , dependencies :: Dependencies, tests :: Maybe Libraries
-  , executables :: Maybe Libraries, benchmarks :: Maybe Libraries
-  , internalLibraries :: Maybe Libraries, foreignLibraries :: Maybe Libraries
-  }
+Resolution supports `group` and `group/member` targets.
 
-syncPackages :: ConfigT ()
-updatePackage :: Pkg -> Maybe Package -> ConfigT Package
-```
+### 4.3 Environments
 
-#### Stack.hs - stack.yaml Generation
+`Environments` contains:
 
-```haskell
-data Stack = Stack
-  { packages :: [FilePath], resolver :: Name
-  , allowNewer :: Maybe Bool, saveHackageCreds :: Maybe Bool
-  , extraDeps :: Maybe [Name], compiler :: Maybe Text
-  }
+- `envsDefault`
+- `envsProfiles :: Map Name EnviromentProfile`
+- optional global toggles/builder (`envsNix`, `envsStack`, `envsHie`, `envsBuilder`)
 
-syncStackYaml :: ConfigT ()
-createEnvYaml :: Name -> ConfigT ()
-sdist :: Pkg -> ConfigT [Issue]
-upload :: Pkg -> ConfigT (Status, [Issue])
-```
+`BuildEnvironment` is resolved per profile with:
 
-#### Hie.hs - hie.yaml Generation
+- GHC, resolver, packages, builder
+- feature toggles (stack/nix/hie)
+- package exclusion handling
 
-```haskell
-data Component = Component { path :: FilePath, component :: Name }
+### 4.4 Registry and bounds
 
-syncHie :: ConfigT ()
-genComponents :: Pkg -> ConfigT [Component]
-```
+Registry is a map `PkgName -> Bounds`, exposed through:
 
-Maps lib → `{pkg}:lib`, test → `{pkg}:test:{name}`, exe → `{pkg}:exe:{name}`
+- add / lookup / list helpers
+- audit/update flows against tested ranges
 
-#### Cabal.hs & Lib.hs
+### 4.5 Build dispatch
 
-```haskell
--- Invokes hpack library to generate .cabal from package.yaml
-syncCabal :: Pkg -> ConfigT Status
+`HWM.Domain.Dispatcher` builds executable command plans per environment:
 
-data Library = Library
-  { sourceDirs :: Name, dependencies :: Maybe Dependencies
-  , __unknownFields :: Maybe Object  -- Preserves unknown fields
-  }
+- prepares toolchain env vars (`STACK_YAML` or `CABAL_PROJECT_FILE`)
+- applies builder-specific command transformation
+- executes through runtime process/logging subsystem
 
-updateLibrary :: Library -> ConfigT Library
-```
+> Current behavior: environment runs are dispatched sequentially by `dispatchForEach` (not multi-env parallel execution).
 
 ---
 
-### Layer 4: Runtime (HWM.Runtime.*)
+## 5. Integration layer details
 
-**Purpose:** System interactions (I/O, processes, state)
+### 5.1 Stack (`Integrations.Toolchain.Stack`)
 
-#### Cache.hs - State & Hackage Queries
+Responsibilities:
 
-```haskell
-data Registry = Registry
-  { currentEnv :: Name
-  , versions :: Map PkgName (NonEmpty Version)
-  }
+- read and write `stack.yaml`
+- create matrix stack files in `.hwm/matrix/stack-<env>.yaml`
+- infer environments from stack files during `init`
 
-newtype Cache = Cache (TVar Registry)
+### 5.2 Cabal (`Integrations.Toolchain.Cabal`)
 
-loadCache :: Name -> IO Cache
-saveCache :: Cache -> IO ()
-getVersions :: PkgName -> m (NonEmpty Version)
-```
+Responsibilities:
 
-Caches Hackage queries at `https://hackage.haskell.org/package/{pkg}/preferred`
+- generate `cabal.project`
+- parse/update cabal package descriptions
+- run `sdist` for release publishing
+- optional environment matrix setup via `CABAL_PROJECT_FILE`
 
-#### Files.hs - File I/O
+### 5.3 Package synchronization (`Integrations.Toolchain.Package`)
 
-```haskell
-readYaml :: FromJSON a => FilePath -> m a
-writeYaml :: ToJSON a => FilePath -> a -> m ()
-rewrite_ :: (FromJSON a, ToJSON b) => FilePath -> (Maybe a -> m b) -> m ()
+Responsibilities:
 
--- YAML options: camelCase → kebab-case, omit Nothing fields
-aesonYAMLOptions :: Options
-```
+- validate and sync package dependency/version consistency
+- inject dependencies (`registry add` flow)
+- sync across hpack/cabal sources
 
-#### Process.hs - Command Execution
+### 5.4 Hie (`Integrations.Toolchain.Hie`)
 
-```haskell
-inheritRun :: FilePath -> Text -> ConfigT ()  -- Interactive
-silentRun :: FilePath -> Text -> ConfigT (Bool, Text)  -- Captured
-```
----
+Responsibilities:
 
-### Layer 5: Core (HWM.Core.*)
+- generate `hie.yaml` cradle components from package source dirs
 
-**Purpose:** Shared utilities, type classes
+### 5.5 Nix (`Integrations.Toolchain.Nix`, `Nix.Build`)
 
-```haskell
--- Common.hs
-type Name = Text
-class Check m a where check :: a -> m ()
+Responsibilities:
 
--- Version.hs
-data Version = Version { major :: Int, minor :: Int, revision :: [Int] }
-data Bump = Major | Minor | Patch
-nextVersion :: Bump -> Version -> Version
+- generate `flake.nix`
+- define per-environment package/dev-shell/check outputs
+- support Nix build command generation
 
--- Pkg.hs
-data Pkg = Pkg { pkgName :: PkgName, pkgVersion :: Version, pkgGroup :: Name, pkgMemberId :: Name, pkgDirPath :: FilePath }
-newtype PkgName = PkgName Text
-pkgId :: Pkg -> Text  -- Derived: pkgGroup <> "/" <> pkgMemberId
+Limitations reflected in code:
 
--- Result.hs
-data Issue = Issue { issueTopic :: Name, issueMessage :: Text, issueSeverity :: Severity, issueDetails :: Maybe IssueDetails }
-data Severity = SeverityWarning | SeverityError
-type ResultT m a = ExceptT Issue m a
+- `install` with Nix builder is unsupported
+- artifact build path for pure Nix builder has explicit unsupported branch in build command path
 
--- Has.hs
-class Has env a where obtain :: env -> a
-askEnv :: (MonadReader env m, Has env a) => m a
+### 5.6 GitHub helper (`Integrations.Toolchain.Github`)
 
--- Formatting.hs & Parsing.hs
-class Format a where format :: a -> Text
-class Parse a where parse :: Text -> m a
-data Color = Red | Green | Yellow | Cyan | Magenta | Gray | Bold
-chalk :: Color -> Text -> Text
-```
+Responsibilities:
 
----
-```
-
-#### Logging.hs
-
-**Error Logging:**
-
-```haskell
-log :: Name -> [(Text, Text)] -> Text -> ConfigT FilePath
-logError :: Name -> [(Text, Text)] -> Text -> ConfigT FilePath
-```
-
-**Log Format:**
-
-```
-=== ENVIRONMENT ===
-stable (9.6.3)
-
-=== COMMAND ===
-stack build morpheus-graphql-core --fast
-
-=== OUTPUT ===
-[... captured output ...]
-```
-
-**Log Location:** `.hwm/logs/{env}-{timestamp}.log`
-
-#### UI.hs
-
-**Terminal Output:**
-
-```haskell
--- Section headers
-section :: Text -> m a -> m a
-sectionWorkspace :: m a -> m a
-sectionEnvironments :: m a -> m a
-
--- Tables
-sectionTableM :: Int -> Text -> [(Text, m Text)] -> m ()
-forTable :: Int -> [a] -> (a -> (Text, Text)) -> m ()
-
--- Status indicators
-statusIndicator :: Int -> Text -> Text -> m ()
-putLine :: Text -> m ()
-indent :: Int -> m a -> m a
-```
-
-**Output Format:**
-
-```
-┌─ section title ───────────────────────────────
-│ key ··········· value
-│ another-key ··· another value
-├─┬─ nested section ────────────────────────────
-│ │ item ········· ✓
-│ └──────────────────────────────────────────────
-```
+- safety check release tagging (`ensureIsLatestTag`)
 
 ---
 
-### Layer 5: Core (HWM.Core.*)
+## 6. Runtime services
 
-**Purpose:** Shared utilities, type classes
+### 6.1 Files (`Runtime.Files`)
 
-```haskell
--- Common.hs
-type Name = Text
-class Check m a where check :: a -> m ()
+- YAML read/rewrite helpers
+- structural rewrite with status (`Checked`/`Updated`)
+- hash header support (`# hash: ...`)
+- safe directory prep and sync helpers
 
--- Version.hs
-data Version = Version { major :: Int, minor :: Int, revision :: [Int] }
-data Bump = Major | Minor | Patch
-nextVersion :: Bump -> Version -> Version
+### 6.2 Cache (`Runtime.Cache`)
 
--- Pkg.hs
-data Pkg = Pkg { pkgName :: PkgName, pkgVersion :: Version, pkgGroup :: Name, pkgMemberId :: Name, pkgDirPath :: FilePath }
-newtype PkgName = PkgName Text
-pkgId :: Pkg -> Text  -- Derived: pkgGroup <> "/" <> pkgMemberId
+- TVar-backed cache registry:
+  - `currentEnv`
+  - resolved package versions
+- persisted to `.hwm/cache/state.json`
+- includes stackage snapshot and hackage version fetch helpers
 
--- Result.hs
-data Issue = Issue { issueTopic :: Name, issueMessage :: Text, issueSeverity :: Severity, issueDetails :: Maybe IssueDetails }
-data Severity = SeverityWarning | SeverityError
-type ResultT m a = ExceptT Issue m a
+### 6.3 Process (`Runtime.Process`)
 
--- Has.hs
-class Has env a where obtain :: env -> a
-askEnv :: (MonadReader env m, Has env a) => m a
+- executes commands with environment vars
+- writes command logs to `.hwm/logs/*.log`
+- supports spinner/status UI feedback and error conversion to `Issue`
+- `inheritRun` for script-style direct process execution
 
--- Formatting.hs & Parsing.hs
-class Format a where format :: a -> Text
-class Parse a where parse :: Text -> m a
-data Color = Red | Green | Yellow | Cyan | Magenta | Gray | Bold
-chalk :: Color -> Text -> Text
-```
+### 6.4 UI (`Runtime.UI`)
 
----
+- section/table/subpath rendering
+- summary rendering for warnings/errors
+- CI mode support for log extraction on failures
 
-## Data Flow Diagrams
+### 6.5 Logging (`Runtime.Logging`)
 
-### Init Command Flow
+- start/end command event logging
+- timestamped log ids and log path conventions
+- log rotation utility
 
-```
-User: hwm init [-f|--force] [NAME]
-        │
-        ├─> Parse Options
-        │   └─> InitOptions { forceOverride, projectName }
-        │
-        ├─> Check Preconditions
-        │   └─> Verify hwm.yaml doesn't exist (or --force)
-        │
-        ├─> Discover Stack Files
-        │   ├─> Find stack.yaml, stack-*.yaml
-        │   └─> Skip .hwm/matrix/stack-*.yaml
-        │
-        ├─> Parse Stack Configurations & Discover Packages
-        │   ├─> Extract resolver, packages, extra-deps, allow-newer
-        │   └─> Resolve GHC version from resolver
-        │
-        ├─> Analyze & Group Packages
-        │   ├─> Detect common prefixes and directory patterns
-        │   └─> Build WorkGroup list
-        │
-        ├─> Infer Metadata
-        │   ├─> Project name (from arg or directory name)
-        │   ├─> Project version (max from packages)
-        │   └─> Generate version bounds
-        │
-        ├─> Build Matrix & Registry
-        │   ├─> Create BuildEnv for each stack file
-        │   ├─> Derive registry from package dependencies
-        │   └─> Generate default scripts
-        │
-        ├─> Write Config
-        │   └─> Save hwm.yaml with hash
-        │
-        └─> Run Status
-            └─> Display initial workspace state
-```
+### 6.6 Network (`Runtime.Network`, `Runtime.Snapshots`)
 
-**Key Functions:**
-```haskell
-initWorkspace :: InitOptions -> Options -> IO ()
-scanStackFiles :: (MonadIO m, MonadError Issue m) => Options -> FilePath -> m (NonEmpty (Name, Stack))
-deriveRegistry :: (Monad m, MonadError Issue m, MonadIO m) => [Pkg] -> m (Dependencies, DependencyGraph)
-buildMatrix :: [Pkg] -> [FilePath] -> IO Matrix
-buildWorkspaceGroups :: (Monad m, MonadError Issue m) => DependencyGraph -> [Pkg] -> m [WorkGroup]
-```
-
-### Sync Command Flow
-
-1. Parse tag (environment name)
-2. Load configuration and cache
-3. Get/set build environment
-4. Generate files:
-   - `syncStackYaml` → stack.yaml
-   - `syncHie` → hie.yaml
-   - `syncPackages` → package.yaml + .cabal files
-5. Save cache
-
-### Run Command Flow
-
-1. Parse script name, targets, environments, args
-2. Resolve script template from config
-3. Resolve targets (packages) and environments
-4. Create environment-specific stack files in `.hwm/matrix/`
-5. Execute in parallel (if multi-env) or sequentially
-6. Capture output to `.hwm/logs/{env}.log`
-7. Display summary (exit 1 if failures)
-
-### Outdated Command Flow
-
-1. Clear version cache (if `--fix`)
-2. For each dependency: query Hackage, compare with current bounds
-3. If `--fix`: update hwm.yaml registry, recompute hash, run sync
-4. Display outdated packages
+- GitHub release upload URL resolution + asset upload
+- Hackage upload/token handling
+- Stackage snapshot suggestion APIs
 
 ---
 
-## Type System Architecture
+## 7. Release architecture
 
-### Monad Stack
+Release domain has two tracks:
 
-```
-ConfigT a
-  = ReaderT Env (ResultT (UIT IO)) a
-  = ReaderT Env (ExceptT Issue (UIT IO)) a
-```
+1. **Artifacts** (`hwm release artifacts`)  
+   Build selected artifact targets, archive outputs (`zip`/`tar.gz`), emit checksums, optional GitHub upload.
 
-**Capabilities:**
-- `MonadReader Env`: Access config, cache, options, pkgs
-- `MonadError Issue`: Error handling with accumulation
-- `MonadIO`: File I/O, process execution, network requests
-- `MonadUI`: Formatted terminal output with indentation
-
-### Has Type Class Pattern
-
-```haskell
-class Has env a where
-  obtain :: env -> a
-
--- Instances for Env
-instance Has (Env m) Config where obtain = config
-instance Has (Env m) Cache where obtain = cache
-instance Has (Env m) Options where obtain = options
-instance Has (Env m) [WorkGroup] where obtain = workspace . config
-instance Has (Env m) Matrix where obtain = matrix . config
-
--- Usage
-askEnv :: (MonadReader env m, Has env a) => m a
-askEnv = asks obtain
-```
-
-**Benefits:** Type-safe polymorphic environment access
-
-### Error Handling Pattern
-
-```haskell
-data Issue = Issue
-  { issueTopic :: Name
-  , issueMessage :: Text
-  , issueSeverity :: Severity
-  , issueDetails :: Maybe IssueDetails
-  }
-
-data Severity = SeverityWarning | SeverityError
-
--- Fatal error
-throwError :: Issue -> ConfigT a
-
--- Warning (continues)
-injectIssue :: Issue -> ConfigT ()
-
--- Result accumulation
-type ResultT m a = ExceptT Issue m a
-```
+2. **Publish** (`hwm release publish`)  
+   Resolve publish groups, produce sdists, validate, topologically order by dependencies, upload to Hackage.
 
 ---
 
-## File Generation
+## 8. Correctness check vs previous architecture doc
 
-### Atomic Rewrite Pattern
+The previous architecture document was **not fully correct** for current code. Main mismatches fixed here:
 
-```haskell
-rewrite_ :: (FromJSON a, ToJSON b) => FilePath -> (Maybe a -> m b) -> m ()
-rewrite_ path transform = do
-  existing <- tryReadYaml path
-  new <- transform existing
-  temp <- generateTempPath path
-  writeYaml temp new
-  renameFile temp path  -- Atomic on POSIX
-```
+- mentioned obsolete commands (`outdated`, top-level `publish`)
+- used old domain naming (`matrix`) instead of current `environments`
+- omitted `release` command tree and task commands (`build/install/test`)
+- implied flows and structures that no longer match current modules/types
 
-Ensures no partial writes, preserves file on error.
-
-### Unknown Field Preservation
-
-```haskell
-data Library = Library
-  { sourceDirs :: Name
-  , dependencies :: Maybe Dependencies
-  , __unknownFields :: Maybe Object  -- Preserves unknown YAML fields
-  }
-```
-
-Round-trip preserves fields not defined in Haskell types.
-
----
-
-## State Management
-
-### Cache (TVar-Based)
-
-```haskell
-newtype Cache = Cache (TVar Registry)
-
-data Registry = Registry
-  { currentEnv :: Name
-  , versions :: Map PkgName (NonEmpty Version)
-  }
-
--- Read (no lock)
-getRegistry :: m Registry
-
--- Modify (atomic)
-updateRegistry :: (Registry -> Registry) -> m ()
-
--- Persist to .hwm/cache/state.json
-saveCache :: Cache -> IO ()
-```
-
-### Hash Integrity
-
-```haskell
--- Compute SHA256 hash of config
-computeHash :: Config -> Text
-
--- Verify on load, warn on mismatch
-hasHashChanged :: Config -> Maybe Text -> Bool
-
--- Write with hash comment
-saveConfig :: Config -> Options -> m ()
-```
-
-Detects manual edits to hwm.yaml.
-
----
-
-## Performance & Concurrency
-
-### Caching Strategy
-- **Config:** Loaded once, immutable during execution
-- **PkgRegistry:** Built once from workspace groups
-- **Hackage versions:** Cached in TVar, persisted to `.hwm/cache/state.json`
-- **File system:** Relies on OS page cache
-
-### Parallel Execution
-
-```haskell
--- Multi-environment runs use async
-runMultiEnv envs cmd = do
-  tasks <- for envs $ \env -> async (runInEnv env cmd)
-  results <- traverse wait tasks
-  analyzeResults results
-```
-
-- Each environment uses separate stack invocation
-- Outputs logged to `.hwm/logs/{env}.log`
-- Cache TVar provides thread-safe shared state
-
----
-
-## Security
-
-### File System
-- Atomic writes via temp file + rename
-- Path normalization prevents traversal
-- No overwrites without explicit force flags
-
-### Process Execution
-- Uses `typed-process` (no shell injection)
-- Explicit STACK_YAML environment variable
-- Output captured and sanitized
-
-### Network
-- HTTPS-only via `req` library
-- Credentials never logged
-
----
-
-## Extension Guide
-
-### Adding New Commands
-
-1. Define command in `HWM.CLI.Command`:
-   ```haskell
-   data Command = ... | MyCmd {myOpts :: MyOptions}
-   ```
-
-2. Add parser in `HWM.CLI.App`:
-   ```haskell
-   parseCommand = commands [
-     ...
-     , ("mycmd", "Description", MyCmd <$> parseMyOptions)
-   ]
-   ```
-
-3. Implement handler in `HWM.CLI.Command.MyCommand`:
-   ```haskell
-   runMyCommand :: MyOptions -> ConfigT ()
-   ```
-
-4. Add to dispatcher in `HWM.CLI.Command`:
-   ```haskell
-   command (MyCmd opts) = runMyCommand opts
-   ```
-
-### Adding Config Fields
-
-1. Update `Config` in `HWM.Domain.Config`:
-   ```haskell
-   data Config = Config { ..., myField :: MyType }
-   deriving (Generic, FromJSON, ToJSON)
-   ```
-
-2. Add validation if needed:
-   ```haskell
-   instance Check m Config where
-     check Config{myField} = validateMyField myField
-   ```
-
-### Adding Toolchain Integration
-
-1. Create module `HWM.Integrations.Toolchain.MyTool`
-2. Define sync function:
-   ```haskell
-   syncMyTool :: ConfigT ()
-   ```
-3. Call from `HWM.CLI.Command.Sync`
-
----
-
-## Troubleshooting
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| "Package not found" | Incorrect workspace resolution | Verify `dir` + `prefix` + `member` paths |
-| "Hash mismatch" | Manual hwm.yaml edit | Run `hwm sync` to recompute hash |
-| "Environment not found" | Invalid environment name | Check `matrix.environments[].name` |
-| "Hackage timeout" | Network/rate limiting | Check `.hwm/cache/state.json` or retry |
-
----
-
-## Dependency Graph
-
-```
-Core (no internal deps)
-  ↓
-Runtime (depends on Core)
-  ↓
-Domain (depends on Core + Runtime)
-  ↓
-Integrations (depends on Domain)
-  ↓
-CLI (depends on all)
-```
-
-**Detailed:**
-
-```
-Common ← Version ← Pkg ← Formatting ← Parsing ← Result ← Has ← Options
-  ↓
-Cache ← Files ← Process ← Logging ← UI
-  ↓
-Bounds ← Dependencies ← Workspace ← Matrix ← Config ← ConfigT
-  ↓
-Lib ← Package ← Stack ← Hie ← Cabal
-  ↓
-Command.* ← Command ← App ← Main
-```
-
----
-
----
-
-**Document Version:** 1.0  
-**HWM Version:** 0.0.1  
-**Completeness:** Comprehensive (all subsystems documented)  
-**Status:** Production Ready
+This document is now aligned with current implementation.

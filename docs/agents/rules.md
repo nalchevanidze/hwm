@@ -69,7 +69,8 @@ add changes in the file always in the same style as the existing code. and alway
 
 ## 🔍 5. Research Protocol
 
-- **Step 1:** Search the codebase for the feature/pattern you are about to implement.
+
+- **Step 1:** Search the codebase for the feature/pattern you are about to implement ignored files from `.gitignore`.
 - **Step 2:** Identify the `Issue` type in the error handling logic that matches your failure cases.
 - **Step 3:** Implement using the nested directory mapping.
 - **Step 4:** **Execute `stack build`.**

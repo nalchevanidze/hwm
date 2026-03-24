@@ -1,112 +1,136 @@
-# HWM Feature Roadmap
+# HWM Roadmap
 
-**Audience:** Contributors, Maintainers, Planners
-**Last Updated:** February 15, 2026
+**Audience:** Contributors, maintainers, planners  
+**Last Updated:** 2026-03-24
 
-This document outlines potential features and enhancements for HWM. These are suggestions for future consideration, not commitments.
+This document tracks **future work only**.
+If something is already implemented, it should not stay on this roadmap.
 
 ---
 
-## Init Enhancements
+## Priority roadmap
 
-**Options:**
+## 1) Nix parity for install
 
-- `--name=NAME`
-- `--default-env=ENV`
-- `--no-scripts`
-- `--dry-run`
+### Goal
+Bring `nix` and `nix/cabal` to feature parity for install workflows.
 
-**Interactive mode:**
+### Why
+Today, `install` for these builder modes is unsupported (explicit errors). We should close this gap.
 
-```bash
-hwm init --interactive
+### Planned outcomes
 
-🚀 HWM Workspace Initialization
+- Support `hwm install` for:
+  - `builder: nix`
+  - `builder: nix/cabal`
+- Keep deterministic behavior and clear logs for Nix install outputs.
+- Preserve current fail-fast errors until full support is complete.
 
-Project name (morpheus-graphql): [enter]
-Project version (0.28.0): [enter]
-Default environment (stable): [enter]
-Infer registry from Hackage? (y/n): y
-Generate default scripts? (y/n): y
+### Acceptance criteria
 
-✓ Configuration complete!
-Preview:
-  - 2 workspace groups (libs, examples)
-  - 3 environments (legacy, stable, nightly)
-  - 24 registry entries
+- `hwm install --env=<nix-env>` works end-to-end.
+- CI examples include at least one nix install path.
 
-Write to hwm.yaml? (y/n)
-```
-
-## Registry Management
-
-Automate tedious Haskell maintenance tasks:
-
-**Unused Dependency Detection:**
-
-```bash
-hwm registry prune --unused
-```
-
-## Deep Nix Integration
-
-Maintaining a `flake.nix` for a multi-package, multi-GHC monorepo is notoriously painful. HWM will act as the ultimate bridge, generating idiomatic Nix configurations directly from `hwm.yaml` with zero boilerplate.
-
-**Planned Capabilities:**
-
-- **Matrix to DevShells:** HWM environments map directly to Nix. Run `nix develop .#stable` (GHC 9.6) or `nix develop .#legacy` (GHC 8.10) without writing custom overlays.
-- **Auto-Exported Packages:** Every workspace member (`lib` or `app`) is automatically exposed as a buildable Nix derivation.
-- **Snapshot Translation:** HWM registry bounds and Stackage snapshots translate to pinned Nixpkgs inputs, guaranteeing `nix build` matches `stack build`.
-
-**CLI Usage:**
-
-```bash
-hwm init --nix  # Scaffold workspace with flake.nix
-hwm sync --nix  # Synchronize flake alongside cabal/stack
-```
-
-**The Value:** True hybrid workflows. Nix power-users get full reproducibility, while the rest of the team continues using standard Cabal/Stack. Both use the exact same single source of truth.
-
-
-## 🗺️ Roadmap: Professional Distribution (v0.1.0)
-
-### **The Goal**
-
-Transition from manual "side-loading" via `install.sh` to a standard, versioned distribution model using **Homebrew** for macOS and Linux.
 ---
 
-### **1. Artifact Maturity (Current Work)**
+## 2) Cabal-first source inclusion (reduce `package.yaml` dependency)
 
-* **Standardized Pipeline:** Finalize `hwm release artifacts` to produce consistent, versioned `.tar.gz` and `.sha256` pairs.
-* **Release Automation:** Integrate ` --github` to ensure the cloud binaries are always the source of truth.
+### Goal
+Make `.cabal` files self-sufficient by automatically maintaining source/module inclusion patterns.
 
-### **2. The Homebrew Integration**
+### Why
+Many workspaces want to avoid `package.yaml`/hpack and rely directly on `.cabal` files.
 
-* **Create `homebrew-hwm`:** Establish a dedicated GitHub repository (e.g., `nalchevanidze/homebrew-hwm`) to act as your personal "Tap."
-* **Formula Automation:** Add a post-build hook in HWM that:
-1. Calculates the SHA-256 of the new release.
-2. Updates the Ruby formula (`hwm.rb`) with the new URL and checksum.
-3. Pushes the change to the Tap repository automatically.
+### Planned outcomes
 
+- Add automatic source inclusion support for `.cabal`-managed packages using a glob strategy (initial target: `*/*.hs`, with extension points for broader patterns).
+- Keep generated/updated `.cabal` metadata aligned with discovered source files.
+- Enable workflows where `package.yaml` is optional or unnecessary for standard package layouts.
 
-* **Deprecate `install.sh`:** Replace the manual script with a simple one-liner for users:
-```bash
-brew tap nalchevanidze/hwm && brew install hwm
-```
+### Acceptance criteria
 
-### **3. Strategic Benefits**
+- `hwm sync` updates `.cabal` package source/module inclusion from project files.
+- New packages can be maintained without requiring `package.yaml`.
+- Behavior is documented with migration examples from hpack to cabal-only setups.
 
-* **Automatic Updates:** Users gain `brew upgrade hwm`, removing the need for them to manually re-run an installation script.
-* **Environment Safety:** Homebrew handles `$PATH` conflicts and ensures the binary is placed in `/usr/local/bin` or `/opt/homebrew/bin` correctly.
-* **Security:** Cryptographic signing (via the `.sha256` seal) becomes a first-class citizen of the installation process.
+---
+
+## 3) Registry maintenance ergonomics
+
+### Goal
+Reduce long-term dependency drift in large monorepos.
+
+### Planned outcomes
+
+- Add `hwm registry prune --unused` (or equivalent) to identify/remove stale registry entries.
+- Add clearer reporting for “in registry but unused in workspace.”
+
+---
+
+## 4) UX transparency and conceptual consistency
+
+### Goal
+Remove behavior surprises that can frustrate users.
+
+### Planned outcomes
+
+- Improve unknown command handling:
+  - avoid silently treating typos as script names unless script exists
+  - provide clearer CLI typo errors and suggestions
+- Improve script runner UX:
+  - document and/or redesign arg forwarding behavior
+  - reduce shell-specific surprises
+- Improve HLS integration consistency:
+  - align generated `hie.yaml` with active builder/profile (not stack-only assumptions)
+- Improve generated-file UX:
+  - clearly communicate overwrite/ephemeral behavior for generated files
+- Protect environment integrity:
+  - prevent removing the default/last environment without an explicit migration path
+- Improve cross-platform script execution behavior (avoid hard dependency on `/bin/sh` semantics where possible)
+
+### Acceptance criteria
+
+- CLI typos produce command-oriented errors, not script-not-found confusion.
+- `hwm run` argument behavior is explicit and predictable.
+- `hie.yaml` generation is builder/profile-aware.
+- removing environments cannot leave config in an invalid default-env state.
+- docs include a single transparent “known limitations/behavior notes” section.
+
+---
+
+## 5) Release behavior consistency (deep-dive findings)
+
+### Goal
+Make release/install behavior predictable and aligned with configuration intent.
+
+### Problematic behaviors observed
+
+- `release.artifacts[*].environments` is currently not honored by `hwm release artifacts` (active/default env is used instead).
+- `--output-dir` handling in artifacts flow should be audited for consistency with directory preparation behavior.
+- `--ghc-options` parser/help UX should be aligned (help suggests repeatable flags, parser currently expects a single CSV option).
+
+### Planned outcomes
+
+- Keep publish behavior explicitly documented as Cabal-`sdist`/Hackage-oriented.
+- Make artifact builds honor per-artifact environments.
+- Ensure output-dir semantics are consistent and test-covered.
+- Align CLI parser behavior with help text for release flags.
+
+### Acceptance criteria
+
+- release behavior is deterministic and matches docs/examples.
+- artifact environment targeting works as declared in `hwm.yaml`.
+- CLI help and parser behavior match exactly.
+
+---
 
 ## Contributing
 
-Interested in implementing a feature?
+If you want to implement roadmap items:
 
-1. Open an issue to discuss the approach.
-2. Check alignment with HWM philosophy.
-3. Submit a PR with tests and documentation.
-4. Update this roadmap when features are completed.
+1. Open an issue with a short design proposal.
+2. Confirm CLI/API compatibility impact.
+3. Submit PR with tests and docs.
+4. Update this roadmap by moving delivered items into release notes/changelog and removing them from active roadmap.
 
-Features listed here are **suggestions**, not commitments. Prioritization depends on community needs and maintainer availability.
+Roadmap items are priorities, not guarantees; order may change based on user demand and maintainer capacity.

@@ -2,7 +2,7 @@
 
 > **Infrastructure-as-Code for your Haskell Workspaces.**
 
-**HWM is a universal, build-tool agnostic orchestrator.** It is the missing link that unites the tools you already rely on (`cabal`, `stack`, `nix`, `hls`), transforming them into a single declarative pipeline.
+**HWM is a build-tool orchestration layer for Haskell workspaces.** It connects tools you already rely on (`cabal`, `stack`, `nix`, `hls`) behind a single declarative config, with some current capability gaps documented below.
 
 **Think of HWM as Terraform for your local Haskell repository.** Whether you are a Nix purist, a Stack loyalist, or rely purely on Cabal, HWM ensures the state of your project files matches your declared intent across all environments.
 
@@ -11,7 +11,7 @@ HWM is an **active workspace maintainer** that provides:
 - **The Universal Translator:** Write one `hwm.yaml`. HWM automatically derives and generates `cabal.project`, `stack.yaml`, `hie.yaml`, `flake.nix`, and `.cabal` files.
 - **Zero Lock-in:** HWM materializes standard configuration files directly at your project root. You can uninstall HWM at any time, and your repository will still build perfectly using standard native tools.
 - **Smart Bounds Synchronization:** Maintain a beautifully aligned, single-source-of-truth dependency registry. HWM automatically injects these bounds across your entire monorepo.
-- **Zero-Overhead IDE Support:** Because standard files are generated at the root, Haskell Language Server (HLS) works instantly. HWM automatically generates `hie.yaml` tailored to your active toolchains.
+- **IDE Config Generation:** HWM generates `hie.yaml` at the project root when enabled. _Current implementation note: cradle generation is stack-oriented and not yet fully builder/profile-aware._
 - **Flexible Toolchain Toggles(v0.2.0):** You are in total control. Explicitly enable or disable `stack`, `nix` globally, or toggle them on a per-profile basis.
 
 <p align="center">
@@ -73,6 +73,29 @@ hwm status
 <img src="images/init.png" alt="HWM Init Auto-Discovery" width="600">
 </p>
 
+## ⚠️ Current Behavior Notes (Transparency)
+
+- **Unknown command fallback:** `hwm <token>` is treated as `hwm run <token>` if `<token>` is not a top-level command.
+  - This means command typos can appear as script lookup failures.
+- **Script execution model:** `hwm run` executes scripts via shell (`/bin/sh -c ...`) and forwards extra args as positional parameters.
+- **IDE generation caveat:** generated `hie.yaml` is currently stack-cradle oriented.
+- **Generated files are ephemeral:** `hwm sync` rewrites generated files (`cabal.project`, `stack.yaml`, `flake.nix`, `hie.yaml`) according to `hwm.yaml`.
+- **Nix install gap (current):** `hwm install` with `nix`/`nix/cabal` is not supported and fails with explicit errors.
+- **Publish model:** `hwm release publish` is intentionally Cabal `sdist` based (builder-independent, Hackage-oriented).
+- **Artifacts environment caveat:** `release.artifacts[*].environments` is not yet honored by `hwm release artifacts` (current command uses the active/default environment).
+- **Environment safety caveat:** removing environments is not yet protected against deleting the default/last profile.
+
+## ✅ Current Support Matrix (by builder)
+
+| Capability | cabal | stack | nix | nix/cabal |
+|---|---:|---:|---:|---:|
+| `hwm build` / `hwm test` | ✅ | ✅ | ✅ | ✅ |
+| `hwm install` | ✅ | ✅ | ❌ | ❌ |
+| `hwm release artifacts --builder=...` | ✅ | ✅ | ❌ | ✅ |
+| `hwm release publish` (Hackage) | ✅* | ✅* | ✅* | ✅* |
+
+\* `hwm release publish` is builder-independent by design (Cabal `sdist` + Hackage upload flow).
+
 ## 🛠️ Key Workflows
 
 ### 1. The Global Registry & Dependency Sync
@@ -103,8 +126,11 @@ hwm registry audit --fix
 Managing monorepos with dozens of packages is finally clean. HWM uses `prefix` grouping to elegantly decouple your internal structure from your globally unique Hackage package names.
 
 ```bash
-# Interactively or directly scaffold a new package in a specific group
+# 1) Create a workspace group
 hwm workspace add libs
+
+# 2) Scaffold a package inside the group
+hwm workspace add libs/core
 ```
 
 <p align="center">
@@ -196,7 +222,7 @@ hwm test --env=all
 </p>
 
 **Manual Environment & IDE Switching:**
-HWM ensures your IDE (HLS) always matches your build environment. When you run `hwm sync`, it doesn't just update the build files; it rewrites `hie.yaml`.
+When you run `hwm sync`, HWM updates build files and (when `hie` is enabled) rewrites `hie.yaml`.
 
 ```bash
 # Instantly overwrites stack.yaml, flake.nix, and hie.yaml for GHC 8.10
@@ -215,13 +241,11 @@ scripts:
 
 ```
 
-Pass arguments seamlessly to your underlying tools:
+Argument forwarding note:
 
-```bash
-# Translates to: hwm test --fast -- --only "JSON Parser"
-hwm run test -- --only "JSON Parser"
+`hwm run <script> [ARGS...]` passes extra args to the shell invocation as positional parameters.
+If your script needs them, handle them explicitly in the script command.
 
-```
 
 ### 5. Release & Distribution
 
@@ -231,7 +255,10 @@ HWM introduces **Release Trains**, a high-integrity system for decoupling worksp
 
 Transform raw binaries into hashed, compressed distribution units using your preferred engine. HWM ensures every artifact is strictly validated before the publication phase begins.
 
-NOTE: artifact generations is currently disabled for `nix` and `nix/cabal` builders. 
+NOTE:
+- `hwm install` with `nix`/`nix/cabal` is currently unsupported and fails with an explicit error.
+- `hwm release publish` is intentionally Cabal `sdist` based for Hackage publishing (builder-independent).
+- `hwm release artifacts --builder=nix` is currently unsupported.
 
 ```yaml
 environments:
@@ -261,7 +288,7 @@ release:
 hwm version minor
 
 # Build local binaries and hashes with builder of choice
-hwm release artifacts --builder=nix
+hwm release artifacts --builder=cabal
 
 # Push a train to Hackage (Requires HACKAGE_AUTH_TOKEN in environment with a valid API token)
 hwm release publish main
