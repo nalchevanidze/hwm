@@ -31,8 +31,12 @@
       [2m└── [0m[2mfile: morpheus-graphql/morpheus-graphql.cabal[0m
       [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-test[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for library. Missing in cabal: [] ; Missing in codebase: [Data/Morpheus.hs, Data/Morpheus/Document.hs, Data/Morpheus/Kind.hs, Data/Morpheus/NamedResolvers.hs, Data/Morpheus/Types.hs][0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for test:morpheus-graphql-test. Missing in cabal: [] ; Missing in codebase: [Feature/Holistic/API.hs, Feature/Input/DefaultValues.hs, Rendering/Schema.hs, Rendering/TestSchemaRendering.hs, Subscription/API.hs, Subscription/Case/ApolloRequest.hs, Subscription/Case/Publishing.hs, Subscription/Test.hs, Subscription/Utils.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
+  - missing in .cabal (1): Stub.hs
+  - missing in codebase (5): Data/Morpheus.hs, Data/Morpheus/Document.hs, Data/Morpheus/Kind.hs, Data/Morpheus/NamedResolvers.hs, Data/Morpheus/Types.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-test
+  - missing in .cabal (1): TestStub.hs
+  - missing in codebase (9): Feature/Holistic/API.hs, Feature/Input/DefaultValues.hs, Rendering/Schema.hs, Rendering/TestSchemaRendering.hs, Subscription/API.hs, Subscription/Case/ApolloRequest.hs, Subscription/Case/Publishing.hs, Subscription/Test.hs … (+1 more)[0m
   [2m• [0m[1mapp[0m
   [2m└── [0m[2m• [0m[33m5 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-app/morpheus-graphql-app.cabal[0m
@@ -43,15 +47,20 @@
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
           [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
           [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for library. Missing in cabal: [] ; Missing in codebase: [Data/Morpheus/App.hs, Data/Morpheus/App/Internal/Resolving.hs, Data/Morpheus/App/Internal/Resolving/Batching.hs, Data/Morpheus/App/Internal/Resolving/Cache.hs, Data/Morpheus/App/Internal/Resolving/Event.hs, Data/Morpheus/App/Internal/Resolving/MonadResolver.hs, Data/Morpheus/App/Internal/Resolving/Refs.hs, Data/Morpheus/App/Internal/Resolving/ResolveValue.hs, Data/Morpheus/App/Internal/Resolving/Resolver.hs, Data/Morpheus/App/Internal/Resolving/ResolverState.hs, Data/Morpheus/App/Internal/Resolving/RootResolverValue.hs, Data/Morpheus/App/Internal/Resolving/SchemaAPI.hs, Data/Morpheus/App/Internal/Resolving/Types.hs, Data/Morpheus/App/Internal/Resolving/Utils.hs, Data/Morpheus/App/Internal/Stitching.hs, Data/Morpheus/App/MapAPI.hs, Data/Morpheus/App/NamedResolvers.hs, Data/Morpheus/App/RenderIntrospection.hs, Data/Morpheus/Types/GQLWrapper.hs][0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for test:morpheus-graphql-app-test. Missing in cabal: [] ; Missing in codebase: [APIConstraints.hs, Batching.hs, DisableIntrospection.hs, Execution.hs, NamedResolvers.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
+  - missing in .cabal (1): Stub.hs
+  - missing in codebase (19): Data/Morpheus/App.hs, Data/Morpheus/App/Internal/Resolving.hs, Data/Morpheus/App/Internal/Resolving/Batching.hs, Data/Morpheus/App/Internal/Resolving/Cache.hs, Data/Morpheus/App/Internal/Resolving/Event.hs, Data/Morpheus/App/Internal/Resolving/MonadResolver.hs, Data/Morpheus/App/Internal/Resolving/Refs.hs, Data/Morpheus/App/Internal/Resolving/ResolveValue.hs … (+11 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-app-test
+  - missing in .cabal (1): TestStub.hs
+  - missing in codebase (5): APIConstraints.hs, Batching.hs, DisableIntrospection.hs, Execution.hs, NamedResolvers.hs[0m
   [2m• [0m[1mbenchmarks[0m
   [2m└── [0m[2m• [0m[33m2 dependency issue(s)[0m
       [2m└── [0m[2mfile: helpers/benchmarks/morpheus-graphql-benchmarks.cabal[0m
       [2m└── [0m[2m• [0m[2mbenchmarks:morpheus-graphql-bench[0m
           [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
           [2m└── [0mgraphql: [2m>= 0.5 && <  2.0.0 → unknown[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for bench:morpheus-graphql-bench. Missing in cabal: [] ; Missing in codebase: [Parser/GraphQL.hs, Parser/Morpheus.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for bench:morpheus-graphql-bench
+  - missing in codebase (2): Parser/GraphQL.hs, Parser/Morpheus.hs[0m
   [2m• [0m[1mclient[0m
   [2m└── [0m[2m• [0m[33m3 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-client/morpheus-graphql-client.cabal[0m
@@ -60,13 +69,23 @@
       [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-client-test[0m
           [2m└── [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for library. Missing in cabal: [] ; Missing in codebase: [Data/Morpheus/Client.hs, Data/Morpheus/Client/CodeGen/AST.hs, Data/Morpheus/Client/CodeGen/Declare.hs, Data/Morpheus/Client/CodeGen/Internal.hs, Data/Morpheus/Client/CodeGen/Interpreting/Arguments.hs, Data/Morpheus/Client/CodeGen/Interpreting/Core.hs, Data/Morpheus/Client/CodeGen/Interpreting/Global.hs, Data/Morpheus/Client/CodeGen/Interpreting/Local.hs, Data/Morpheus/Client/CodeGen/Interpreting/PreDeclarations.hs, Data/Morpheus/Client/CodeGen/QuasiQuoter.hs, Data/Morpheus/Client/CodeGen/TH.hs, Data/Morpheus/Client/CodeGen/Utils.hs, Data/Morpheus/Client/Fetch.hs, Data/Morpheus/Client/Fetch/GQLClient.hs, Data/Morpheus/Client/Fetch/Http.hs, Data/Morpheus/Client/Fetch/RequestType.hs, Data/Morpheus/Client/Fetch/ResponseStream.hs, Data/Morpheus/Client/Fetch/Types.hs, Data/Morpheus/Client/Fetch/WebSockets.hs, Data/Morpheus/Client/Schema/JSON/Parse.hs, Data/Morpheus/Client/Schema/JSON/TypeKind.hs, Data/Morpheus/Client/Schema/JSON/TypeRef.hs, Data/Morpheus/Client/Schema/JSON/Types.hs, Data/Morpheus/Client/Schema/Parse.hs][0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for test:morpheus-graphql-client-test. Missing in cabal: [] ; Missing in codebase: [Case/Enum/Test.hs, Case/Fragments/Test.hs, Case/Github/Test.hs, Case/Interface/Test.hs, Case/LocalGlobal/Api.hs, Case/LocalGlobal/Test.hs, Case/LowercaseTypeName/Test.hs, Case/ResponseTypes/Test.hs, Case/Scalar/Test.hs, Spec/Utils.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
+  - missing in .cabal (1): Stub.hs
+  - missing in codebase (24): Data/Morpheus/Client.hs, Data/Morpheus/Client/CodeGen/AST.hs, Data/Morpheus/Client/CodeGen/Declare.hs, Data/Morpheus/Client/CodeGen/Internal.hs, Data/Morpheus/Client/CodeGen/Interpreting/Arguments.hs, Data/Morpheus/Client/CodeGen/Interpreting/Core.hs, Data/Morpheus/Client/CodeGen/Interpreting/Global.hs, Data/Morpheus/Client/CodeGen/Interpreting/Local.hs … (+16 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-client-test
+  - missing in .cabal (1): TestStub.hs
+  - missing in codebase (10): Case/Enum/Test.hs, Case/Fragments/Test.hs, Case/Github/Test.hs, Case/Interface/Test.hs, Case/LocalGlobal/Api.hs, Case/LocalGlobal/Test.hs, Case/LowercaseTypeName/Test.hs, Case/ResponseTypes/Test.hs … (+2 more)[0m
   [2m• [0m[1mcode-gen[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for exe:morpheus. Missing in cabal: [] ; Missing in codebase: [CLI/Commands.hs, CLI/Config.hs, CLI/File.hs, CLI/Generator.hs][0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for library. Missing in cabal: [] ; Missing in codebase: [Data/Morpheus/CodeGen.hs, Data/Morpheus/CodeGen/Server.hs, Data/Morpheus/CodeGen/Server/Internal/AST.hs, Data/Morpheus/CodeGen/Server/Interpreting/Directive.hs, Data/Morpheus/CodeGen/Server/Interpreting/Transform.hs, Data/Morpheus/CodeGen/Server/Interpreting/Utils.hs, Data/Morpheus/CodeGen/Server/Printing/TH.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for exe:morpheus
+  - missing in .cabal (1): CliStub.hs
+  - missing in codebase (4): CLI/Commands.hs, CLI/Config.hs, CLI/File.hs, CLI/Generator.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
+  - missing in .cabal (1): Stub.hs
+  - missing in codebase (7): Data/Morpheus/CodeGen.hs, Data/Morpheus/CodeGen/Server.hs, Data/Morpheus/CodeGen/Server/Internal/AST.hs, Data/Morpheus/CodeGen/Server/Interpreting/Directive.hs, Data/Morpheus/CodeGen/Server/Interpreting/Transform.hs, Data/Morpheus/CodeGen/Server/Interpreting/Utils.hs, Data/Morpheus/CodeGen/Server/Printing/TH.hs[0m
   [2m• [0m[1mcode-gen-utils[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for library. Missing in cabal: [] ; Missing in codebase: [Data/Morpheus/CodeGen/Internal/AST.hs, Data/Morpheus/CodeGen/Internal/Flags.hs, Data/Morpheus/CodeGen/Internal/Name.hs, Data/Morpheus/CodeGen/Printer.hs, Data/Morpheus/CodeGen/TH.hs, Data/Morpheus/CodeGen/Utils.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
+  - missing in .cabal (1): Stub.hs
+  - missing in codebase (6): Data/Morpheus/CodeGen/Internal/AST.hs, Data/Morpheus/CodeGen/Internal/Flags.hs, Data/Morpheus/CodeGen/Internal/Name.hs, Data/Morpheus/CodeGen/Printer.hs, Data/Morpheus/CodeGen/TH.hs, Data/Morpheus/CodeGen/Utils.hs[0m
   [2m• [0m[1mcore[0m
   [2m└── [0m[2m• [0m[33m5 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-core/morpheus-graphql-core.cabal[0m
@@ -77,24 +96,36 @@
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
           [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
           [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for library. Missing in cabal: [] ; Missing in codebase: [Data/Mergeable.hs, Data/Mergeable/Internal/Merge.hs, Data/Mergeable/Internal/NameCollision.hs, Data/Mergeable/Internal/Resolution.hs, Data/Mergeable/IsMap.hs, Data/Mergeable/MergeMap.hs, Data/Mergeable/OrdMap.hs, Data/Mergeable/SafeHashMap.hs, Data/Morpheus/Core.hs, Data/Morpheus/Error.hs, Data/Morpheus/Error/Document/Interface.hs, Data/Morpheus/Error/Fragment.hs, Data/Morpheus/Error/Input.hs, Data/Morpheus/Error/Operation.hs, Data/Morpheus/Error/Selection.hs, Data/Morpheus/Error/Variable.hs, Data/Morpheus/Error/Warning.hs, Data/Morpheus/Ext/Empty.hs, Data/Morpheus/Ext/KeyOf.hs, Data/Morpheus/Ext/Result.hs, Data/Morpheus/Internal/Ext.hs, Data/Morpheus/Internal/Graph.hs, Data/Morpheus/Internal/Utils.hs, Data/Morpheus/Parser.hs, Data/Morpheus/Parsing/Document/TypeSystem.hs, Data/Morpheus/Parsing/Internal/Arguments.hs, Data/Morpheus/Parsing/Internal/Internal.hs, Data/Morpheus/Parsing/Internal/Pattern.hs, Data/Morpheus/Parsing/Internal/SourceText.hs, Data/Morpheus/Parsing/Internal/Terms.hs, Data/Morpheus/Parsing/Internal/Value.hs, Data/Morpheus/Parsing/Request/Operation.hs, Data/Morpheus/Parsing/Request/Parser.hs, Data/Morpheus/Parsing/Request/Selection.hs, Data/Morpheus/QuasiQuoter.hs, Data/Morpheus/Rendering/RenderGQL.hs, Data/Morpheus/Schema/DSL.hs, Data/Morpheus/Schema/Schema.hs, Data/Morpheus/Types/GQLScalar.hs, Data/Morpheus/Types/ID.hs, Data/Morpheus/Types/IO.hs, Data/Morpheus/Types/Internal/AST.hs, Data/Morpheus/Types/Internal/AST/Base.hs, Data/Morpheus/Types/Internal/AST/DirectiveLocation.hs, Data/Morpheus/Types/Internal/AST/Error.hs, Data/Morpheus/Types/Internal/AST/Fields.hs, Data/Morpheus/Types/Internal/AST/Name.hs, Data/Morpheus/Types/Internal/AST/OperationType.hs, Data/Morpheus/Types/Internal/AST/Selection.hs, Data/Morpheus/Types/Internal/AST/Stage.hs, Data/Morpheus/Types/Internal/AST/Type.hs, Data/Morpheus/Types/Internal/AST/TypeCategory.hs, Data/Morpheus/Types/Internal/AST/TypeSystem.hs, Data/Morpheus/Types/Internal/AST/Union.hs, Data/Morpheus/Types/Internal/AST/Value.hs, Data/Morpheus/Types/Internal/Config.hs, Data/Morpheus/Types/Internal/Validation.hs, Data/Morpheus/Types/Internal/Validation/Error.hs, Data/Morpheus/Types/Internal/Validation/Internal.hs, Data/Morpheus/Types/Internal/Validation/SchemaValidator.hs, Data/Morpheus/Types/Internal/Validation/Scope.hs, Data/Morpheus/Types/Internal/Validation/Validator.hs, Data/Morpheus/Types/SelectionTree.hs, Data/Morpheus/Validation/Document/Interface.hs, Data/Morpheus/Validation/Document/Validation.hs, Data/Morpheus/Validation/Internal/Arguments.hs, Data/Morpheus/Validation/Internal/Directive.hs, Data/Morpheus/Validation/Internal/Value.hs, Data/Morpheus/Validation/Query/Fragment.hs, Data/Morpheus/Validation/Query/FragmentPreconditions.hs, Data/Morpheus/Validation/Query/Selection.hs, Data/Morpheus/Validation/Query/UnionSelection.hs, Data/Morpheus/Validation/Query/Validation.hs, Data/Morpheus/Validation/Query/Variable.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
+  - missing in .cabal (1): Stub.hs
+  - missing in codebase (74): Data/Mergeable.hs, Data/Mergeable/Internal/Merge.hs, Data/Mergeable/Internal/NameCollision.hs, Data/Mergeable/Internal/Resolution.hs, Data/Mergeable/IsMap.hs, Data/Mergeable/MergeMap.hs, Data/Mergeable/OrdMap.hs, Data/Mergeable/SafeHashMap.hs … (+66 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-core-test
+  - missing in .cabal (1): TestStub.hs[0m
   [2m• [0m[1mserver[0m
   [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-server/morpheus-graphql-server.cabal[0m
       [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-server-test[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for library. Missing in cabal: [] ; Missing in codebase: [Data/Morpheus/Generic.hs, Data/Morpheus/Generic/Cons.hs, Data/Morpheus/Generic/Fields.hs, Data/Morpheus/Generic/GRep.hs, Data/Morpheus/Generic/GScan.hs, Data/Morpheus/Generic/Gmap.hs, Data/Morpheus/Generic/Proxy.hs, Data/Morpheus/Generic/RefType.hs, Data/Morpheus/Server.hs, Data/Morpheus/Server/CodeGen/Internal.hs, Data/Morpheus/Server/Deriving/App.hs, Data/Morpheus/Server/Deriving/Internal/Directive.hs, Data/Morpheus/Server/Deriving/Internal/Resolver.hs, Data/Morpheus/Server/Deriving/Internal/Type.hs, Data/Morpheus/Server/Deriving/Internal/Value.hs, Data/Morpheus/Server/Deriving/Kinded/Arguments.hs, Data/Morpheus/Server/Deriving/Kinded/Channels.hs, Data/Morpheus/Server/Deriving/Kinded/NamedResolver.hs, Data/Morpheus/Server/Deriving/Kinded/NamedResolverFun.hs, Data/Morpheus/Server/Deriving/Kinded/Resolver.hs, Data/Morpheus/Server/Deriving/Kinded/Type.hs, Data/Morpheus/Server/Deriving/Kinded/Value.hs, Data/Morpheus/Server/Deriving/Resolvers.hs, Data/Morpheus/Server/Deriving/Schema.hs, Data/Morpheus/Server/Deriving/Utils/GScan.hs, Data/Morpheus/Server/Deriving/Utils/Kinded.hs, Data/Morpheus/Server/Deriving/Utils/Types.hs, Data/Morpheus/Server/Deriving/Utils/Use.hs, Data/Morpheus/Server/Playground.hs, Data/Morpheus/Server/Resolvers.hs, Data/Morpheus/Server/Types.hs, Data/Morpheus/Server/Types/DirectiveDefinitions.hs, Data/Morpheus/Server/Types/Directives.hs, Data/Morpheus/Server/Types/GQLType.hs, Data/Morpheus/Server/Types/Internal.hs, Data/Morpheus/Server/Types/Kind.hs, Data/Morpheus/Server/Types/NamedResolvers.hs, Data/Morpheus/Server/Types/TypeName.hs, Data/Morpheus/Server/Types/Types.hs, Data/Morpheus/Server/Types/Visitors.hs][0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for test:morpheus-graphql-server-test. Missing in cabal: [] ; Missing in codebase: [Feature/Collision/CategoryCollisionFail.hs, Feature/Collision/CategoryCollisionSuccess.hs, Feature/Collision/NameCollision.hs, Feature/Collision/NameCollisionHelper.hs, Feature/Directive/Definition.hs, Feature/Directive/EnumVisitor.hs, Feature/Directive/FieldVisitor.hs, Feature/Directive/TypeVisitor.hs, Feature/Inference/Names.hs, Feature/Inference/ObjectAndEnum.hs, Feature/Inference/TaggedArguments.hs, Feature/Inference/TaggedArgumentsFail.hs, Feature/Inference/TypeGuards.hs, Feature/Inference/TypeInference.hs, Feature/Inference/UnionType.hs, Feature/Inference/WrappedType.hs, Feature/Input/Collections.hs, Feature/Input/Enums.hs, Feature/Input/Objects.hs, Feature/Input/Scalars.hs, Feature/Input/Variables.hs, Feature/NamedResolvers/API.hs, Feature/NamedResolvers/DB.hs, Feature/NamedResolvers/Deities.hs, Feature/NamedResolvers/DeitiesApp.hs, Feature/NamedResolvers/Entities.hs, Feature/NamedResolvers/EntitiesApp.hs, Feature/NamedResolvers/Realms.hs, Feature/NamedResolvers/RealmsApp.hs, Feature/NamedResolvers/Scalars.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
+  - missing in .cabal (1): Stub.hs
+  - missing in codebase (40): Data/Morpheus/Generic.hs, Data/Morpheus/Generic/Cons.hs, Data/Morpheus/Generic/Fields.hs, Data/Morpheus/Generic/GRep.hs, Data/Morpheus/Generic/GScan.hs, Data/Morpheus/Generic/Gmap.hs, Data/Morpheus/Generic/Proxy.hs, Data/Morpheus/Generic/RefType.hs … (+32 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-server-test
+  - missing in .cabal (1): TestStub.hs
+  - missing in codebase (30): Feature/Collision/CategoryCollisionFail.hs, Feature/Collision/CategoryCollisionSuccess.hs, Feature/Collision/NameCollision.hs, Feature/Collision/NameCollisionHelper.hs, Feature/Directive/Definition.hs, Feature/Directive/EnumVisitor.hs, Feature/Directive/FieldVisitor.hs, Feature/Directive/TypeVisitor.hs … (+22 more)[0m
   [2m• [0m[1msubscriptions[0m
   [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-subscriptions/morpheus-graphql-subscriptions.cabal[0m
       [2m└── [0m[2m• [0m[2mlibrary[0m
           [2m└── [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for library. Missing in cabal: [] ; Missing in codebase: [Data/Morpheus/Subscriptions.hs, Data/Morpheus/Subscriptions/Apollo.hs, Data/Morpheus/Subscriptions/ClientConnectionStore.hs, Data/Morpheus/Subscriptions/Event.hs, Data/Morpheus/Subscriptions/Internal.hs, Data/Morpheus/Subscriptions/Stream.hs, Data/Morpheus/Subscriptions/WebSockets.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
+  - missing in .cabal (1): Stub.hs
+  - missing in codebase (7): Data/Morpheus/Subscriptions.hs, Data/Morpheus/Subscriptions/Apollo.hs, Data/Morpheus/Subscriptions/ClientConnectionStore.hs, Data/Morpheus/Subscriptions/Event.hs, Data/Morpheus/Subscriptions/Internal.hs, Data/Morpheus/Subscriptions/Stream.hs, Data/Morpheus/Subscriptions/WebSockets.hs[0m
   [2m• [0m[1mtests[0m
   [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-tests/morpheus-graphql-tests.cabal[0m
       [2m└── [0m[2m• [0m[2mlibrary[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion is out of sync for library. Missing in cabal: [] ; Missing in codebase: [Test/Morpheus.hs, Test/Morpheus/File.hs, Test/Morpheus/JSONDiff.hs, Test/Morpheus/Response.hs, Test/Morpheus/Utils.hs][0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
+  - missing in .cabal (1): Stub.hs
+  - missing in codebase (5): Test/Morpheus.hs, Test/Morpheus/File.hs, Test/Morpheus/JSONDiff.hs, Test/Morpheus/Response.hs, Test/Morpheus/Utils.hs[0m
 

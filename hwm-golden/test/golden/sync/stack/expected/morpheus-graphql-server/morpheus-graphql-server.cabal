@@ -305,6 +305,7 @@ source-repository head
     location: https://github.com/nalchevanidze/morpheus-graphql
 
 library
+    exposed-modules:  Stub
     hs-source-dirs:   src
     other-modules:    Paths_morpheus_graphql_server
     default-language: Haskell2010
@@ -328,7 +329,10 @@ test-suite morpheus-graphql-server-test
     type:             exitcode-stdio-1.0
     main-is:          Spec.hs
     hs-source-dirs:   test
-    other-modules:    Paths_morpheus_graphql_server
+    other-modules:
+        Paths_morpheus_graphql_server
+        TestStub
+
     default-language: Haskell2010
     ghc-options:      -Wall
     build-depends:

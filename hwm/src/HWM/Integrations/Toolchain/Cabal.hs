@@ -163,18 +163,20 @@ mkSourceIssues pkg declared target = mapMaybe toIssue' (Set.toList labels)
         then Nothing
         else
           Just
-            $ "  - "
+            $ "  • "
             <> title
             <> " ("
             <> show (length xs)
-            <> "): "
+            <> ")"
             <> renderModules xs
 
     renderModules xs =
       let limit = 8
           shown = take limit (map moduleToFile xs)
           extra = length xs - length shown
-       in T.intercalate ", " shown <> if extra > 0 then " … (+" <> show extra <> " more)" else ""
+          leaves = map ("\n      └── " <>) shown
+          tailLine = ["\n      └── … (+" <> show extra <> " more)" | extra > 0]
+       in mconcat (leaves <> tailLine)
 
 moduleToFile :: ModuleName -> Text
 moduleToFile m = toText (ModuleName.toFilePath m <> ".hs")
