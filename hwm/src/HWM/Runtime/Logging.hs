@@ -12,6 +12,7 @@ import HWM.Core.Options (whenDebug)
 import HWM.Runtime.UI (MonadUI, putLine)
 import Relude
 import System.Directory (createDirectoryIfMissing, listDirectory, removeFile)
+import qualified System.Environment as Env
 import System.FilePath ((</>))
 import qualified System.IO as TIO
 import System.Process.Typed (ExitCode (..))
@@ -53,8 +54,12 @@ exitCodeSummary (ExitFailure code) = show code
 -- 1. Generate the Timestamp once per CLI run
 genLogId :: (MonadIO m) => Text -> m Text
 genLogId prefix = liftIO $ do
-  timestamp <- formatTime defaultTimeLocale "%Y%m%d-%H%M%S" <$> getCurrentTime
-  pure $ slugifyList [format timestamp, prefix]
+  fixed <- Env.lookupEnv "HWM_LOG_ID_FIXED"
+  case fixed of
+    Just seed -> pure $ slugifyList [toText seed, prefix]
+    Nothing -> do
+      timestamp <- formatTime defaultTimeLocale "%Y%m%d-%H%M%S" <$> getCurrentTime
+      pure $ slugifyList [format timestamp, prefix]
 
 -- 2. The Cleanup Function
 rotateLogs :: (MonadIO m) => m ()
