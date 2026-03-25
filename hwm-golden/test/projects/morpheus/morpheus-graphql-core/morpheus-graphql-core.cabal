@@ -159,81 +159,19 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus.Core
-      Data.Morpheus.Error
-      Data.Morpheus.Internal.Ext
-      Data.Morpheus.Internal.Utils
-      Data.Morpheus.QuasiQuoter
-      Data.Morpheus.Types.GQLScalar
-      Data.Morpheus.Types.ID
-      Data.Morpheus.Types.IO
-      Data.Morpheus.Types.Internal.AST
-      Data.Morpheus.Types.SelectionTree
+      Ghost.Core.Library.Miss01
+      Ghost.Core.Library.Miss02
+      Ghost.Core.Library.Miss03
+      Ghost.Core.Library.Miss04
+      Ghost.Core.Library.Miss05
+      Ghost.Core.Library.Miss06
+      Ghost.Core.Library.Miss07
+      Ghost.Core.Library.Miss08
+      Ghost.Core.Library.Miss09
+      Ghost.Core.Library.Miss10
+      Ghost.Core.Library.Miss11
+      Ghost.Core.Library.Miss12
   other-modules:
-      Data.Mergeable
-      Data.Mergeable.Internal.Merge
-      Data.Mergeable.Internal.NameCollision
-      Data.Mergeable.Internal.Resolution
-      Data.Mergeable.IsMap
-      Data.Mergeable.MergeMap
-      Data.Mergeable.OrdMap
-      Data.Mergeable.SafeHashMap
-      Data.Morpheus.Error.Document.Interface
-      Data.Morpheus.Error.Fragment
-      Data.Morpheus.Error.Input
-      Data.Morpheus.Error.Operation
-      Data.Morpheus.Error.Selection
-      Data.Morpheus.Error.Variable
-      Data.Morpheus.Error.Warning
-      Data.Morpheus.Ext.Empty
-      Data.Morpheus.Ext.KeyOf
-      Data.Morpheus.Ext.Result
-      Data.Morpheus.Internal.Graph
-      Data.Morpheus.Parser
-      Data.Morpheus.Parsing.Document.TypeSystem
-      Data.Morpheus.Parsing.Internal.Arguments
-      Data.Morpheus.Parsing.Internal.Internal
-      Data.Morpheus.Parsing.Internal.Pattern
-      Data.Morpheus.Parsing.Internal.SourceText
-      Data.Morpheus.Parsing.Internal.Terms
-      Data.Morpheus.Parsing.Internal.Value
-      Data.Morpheus.Parsing.Request.Operation
-      Data.Morpheus.Parsing.Request.Parser
-      Data.Morpheus.Parsing.Request.Selection
-      Data.Morpheus.Rendering.RenderGQL
-      Data.Morpheus.Schema.DSL
-      Data.Morpheus.Schema.Schema
-      Data.Morpheus.Types.Internal.AST.Base
-      Data.Morpheus.Types.Internal.AST.DirectiveLocation
-      Data.Morpheus.Types.Internal.AST.Error
-      Data.Morpheus.Types.Internal.AST.Fields
-      Data.Morpheus.Types.Internal.AST.Name
-      Data.Morpheus.Types.Internal.AST.OperationType
-      Data.Morpheus.Types.Internal.AST.Selection
-      Data.Morpheus.Types.Internal.AST.Stage
-      Data.Morpheus.Types.Internal.AST.Type
-      Data.Morpheus.Types.Internal.AST.TypeCategory
-      Data.Morpheus.Types.Internal.AST.TypeSystem
-      Data.Morpheus.Types.Internal.AST.Union
-      Data.Morpheus.Types.Internal.AST.Value
-      Data.Morpheus.Types.Internal.Config
-      Data.Morpheus.Types.Internal.Validation
-      Data.Morpheus.Types.Internal.Validation.Error
-      Data.Morpheus.Types.Internal.Validation.Internal
-      Data.Morpheus.Types.Internal.Validation.SchemaValidator
-      Data.Morpheus.Types.Internal.Validation.Scope
-      Data.Morpheus.Types.Internal.Validation.Validator
-      Data.Morpheus.Validation.Document.Interface
-      Data.Morpheus.Validation.Document.Validation
-      Data.Morpheus.Validation.Internal.Arguments
-      Data.Morpheus.Validation.Internal.Directive
-      Data.Morpheus.Validation.Internal.Value
-      Data.Morpheus.Validation.Query.Fragment
-      Data.Morpheus.Validation.Query.FragmentPreconditions
-      Data.Morpheus.Validation.Query.Selection
-      Data.Morpheus.Validation.Query.UnionSelection
-      Data.Morpheus.Validation.Query.Validation
-      Data.Morpheus.Validation.Query.Variable
       Paths_morpheus_graphql_core
   hs-source-dirs:
       src
@@ -260,6 +198,7 @@ test-suite morpheus-graphql-core-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Ghost.Core.Test.Miss
       Paths_morpheus_graphql_core
   hs-source-dirs:
       test

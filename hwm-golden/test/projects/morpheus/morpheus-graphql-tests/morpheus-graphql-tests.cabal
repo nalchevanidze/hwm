@@ -24,12 +24,9 @@ source-repository head
 
 library
   exposed-modules:
-      Test.Morpheus
+      Nested.Stub
+      Nested.Extra.SecondStub
   other-modules:
-      Test.Morpheus.File
-      Test.Morpheus.JSONDiff
-      Test.Morpheus.Response
-      Test.Morpheus.Utils
       Paths_morpheus_graphql_tests
   hs-source-dirs:
       src

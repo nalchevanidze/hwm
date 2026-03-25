@@ -217,12 +217,10 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus
-      Data.Morpheus.Document
-      Data.Morpheus.Kind
-      Data.Morpheus.NamedResolvers
-      Data.Morpheus.Types
+      Nested.Stub
+      Nested.Extra.SecondStub
   other-modules:
+      Ghost.Root.Library.Miss
       Paths_morpheus_graphql
   hs-source-dirs:
       src
@@ -250,15 +248,9 @@ test-suite morpheus-graphql-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Feature.Holistic.API
-      Feature.Input.DefaultValues
-      Rendering.Schema
-      Rendering.TestSchemaRendering
-      Subscription.API
-      Subscription.Case.ApolloRequest
-      Subscription.Case.Publishing
-      Subscription.Test
-      Subscription.Utils
+      Nested.TestStub
+      Nested.Extra.SecondTestStub
+      Ghost.Root.Test.Miss
       Paths_morpheus_graphql
   hs-source-dirs:
       test

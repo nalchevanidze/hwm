@@ -310,47 +310,8 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus.Server
-      Data.Morpheus.Server.CodeGen.Internal
-      Data.Morpheus.Server.Resolvers
-      Data.Morpheus.Server.Types
+      Nested.Stub
   other-modules:
-      Data.Morpheus.Generic
-      Data.Morpheus.Generic.Cons
-      Data.Morpheus.Generic.Fields
-      Data.Morpheus.Generic.Gmap
-      Data.Morpheus.Generic.GRep
-      Data.Morpheus.Generic.GScan
-      Data.Morpheus.Generic.Proxy
-      Data.Morpheus.Generic.RefType
-      Data.Morpheus.Server.Deriving.App
-      Data.Morpheus.Server.Deriving.Internal.Directive
-      Data.Morpheus.Server.Deriving.Internal.Resolver
-      Data.Morpheus.Server.Deriving.Internal.Type
-      Data.Morpheus.Server.Deriving.Internal.Value
-      Data.Morpheus.Server.Deriving.Kinded.Arguments
-      Data.Morpheus.Server.Deriving.Kinded.Channels
-      Data.Morpheus.Server.Deriving.Kinded.NamedResolver
-      Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
-      Data.Morpheus.Server.Deriving.Kinded.Resolver
-      Data.Morpheus.Server.Deriving.Kinded.Type
-      Data.Morpheus.Server.Deriving.Kinded.Value
-      Data.Morpheus.Server.Deriving.Resolvers
-      Data.Morpheus.Server.Deriving.Schema
-      Data.Morpheus.Server.Deriving.Utils.GScan
-      Data.Morpheus.Server.Deriving.Utils.Kinded
-      Data.Morpheus.Server.Deriving.Utils.Types
-      Data.Morpheus.Server.Deriving.Utils.Use
-      Data.Morpheus.Server.Playground
-      Data.Morpheus.Server.Types.DirectiveDefinitions
-      Data.Morpheus.Server.Types.Directives
-      Data.Morpheus.Server.Types.GQLType
-      Data.Morpheus.Server.Types.Internal
-      Data.Morpheus.Server.Types.Kind
-      Data.Morpheus.Server.Types.NamedResolvers
-      Data.Morpheus.Server.Types.TypeName
-      Data.Morpheus.Server.Types.Types
-      Data.Morpheus.Server.Types.Visitors
       Paths_morpheus_graphql_server
   hs-source-dirs:
       src
@@ -375,36 +336,6 @@ test-suite morpheus-graphql-server-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Feature.Collision.CategoryCollisionFail
-      Feature.Collision.CategoryCollisionSuccess
-      Feature.Collision.NameCollision
-      Feature.Collision.NameCollisionHelper
-      Feature.Directive.Definition
-      Feature.Directive.EnumVisitor
-      Feature.Directive.FieldVisitor
-      Feature.Directive.TypeVisitor
-      Feature.Inference.Names
-      Feature.Inference.ObjectAndEnum
-      Feature.Inference.TaggedArguments
-      Feature.Inference.TaggedArgumentsFail
-      Feature.Inference.TypeGuards
-      Feature.Inference.TypeInference
-      Feature.Inference.UnionType
-      Feature.Inference.WrappedType
-      Feature.Input.Collections
-      Feature.Input.Enums
-      Feature.Input.Objects
-      Feature.Input.Scalars
-      Feature.Input.Variables
-      Feature.NamedResolvers.API
-      Feature.NamedResolvers.DB
-      Feature.NamedResolvers.Deities
-      Feature.NamedResolvers.DeitiesApp
-      Feature.NamedResolvers.Entities
-      Feature.NamedResolvers.EntitiesApp
-      Feature.NamedResolvers.Realms
-      Feature.NamedResolvers.RealmsApp
-      Feature.NamedResolvers.Scalars
       Paths_morpheus_graphql_server
   hs-source-dirs:
       test

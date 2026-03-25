@@ -35,8 +35,8 @@ benchmark morpheus-graphql-bench
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Parser.GraphQL
-      Parser.Morpheus
+      Parser.Nested.BenchStub
+      Parser.Nested.Extra.BenchExtraStub
       Paths_morpheus_graphql_benchmarks
   hs-source-dirs:
       src

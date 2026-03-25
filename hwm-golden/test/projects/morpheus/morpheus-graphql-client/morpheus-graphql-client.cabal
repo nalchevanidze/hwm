@@ -57,31 +57,8 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus.Client
-      Data.Morpheus.Client.CodeGen.AST
-      Data.Morpheus.Client.CodeGen.Internal
+      Nested.Stub
   other-modules:
-      Data.Morpheus.Client.CodeGen.Declare
-      Data.Morpheus.Client.CodeGen.Interpreting.Arguments
-      Data.Morpheus.Client.CodeGen.Interpreting.Core
-      Data.Morpheus.Client.CodeGen.Interpreting.Global
-      Data.Morpheus.Client.CodeGen.Interpreting.Local
-      Data.Morpheus.Client.CodeGen.Interpreting.PreDeclarations
-      Data.Morpheus.Client.CodeGen.QuasiQuoter
-      Data.Morpheus.Client.CodeGen.TH
-      Data.Morpheus.Client.CodeGen.Utils
-      Data.Morpheus.Client.Fetch
-      Data.Morpheus.Client.Fetch.GQLClient
-      Data.Morpheus.Client.Fetch.Http
-      Data.Morpheus.Client.Fetch.RequestType
-      Data.Morpheus.Client.Fetch.ResponseStream
-      Data.Morpheus.Client.Fetch.Types
-      Data.Morpheus.Client.Fetch.WebSockets
-      Data.Morpheus.Client.Schema.JSON.Parse
-      Data.Morpheus.Client.Schema.JSON.TypeKind
-      Data.Morpheus.Client.Schema.JSON.TypeRef
-      Data.Morpheus.Client.Schema.JSON.Types
-      Data.Morpheus.Client.Schema.Parse
       Paths_morpheus_graphql_client
   hs-source-dirs:
       src
@@ -113,16 +90,6 @@ test-suite morpheus-graphql-client-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Case.Enum.Test
-      Case.Fragments.Test
-      Case.Github.Test
-      Case.Interface.Test
-      Case.LocalGlobal.Api
-      Case.LocalGlobal.Test
-      Case.LowercaseTypeName.Test
-      Case.ResponseTypes.Test
-      Case.Scalar.Test
-      Spec.Utils
       Paths_morpheus_graphql_client
   hs-source-dirs:
       test

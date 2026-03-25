@@ -10,7 +10,7 @@
 ./ [1mworkspace[0m
 
   • [1mhelpers[0m
-  [2m└── [0mbenchmarks [2m....[0m [36m⟳[0m [2mcabal[0m
+  [2m└── [0mbenchmarks [2m....[0m [32m✓[0m
 
   • [1mlibs[0m
   [2m└── [0mapp [2m...............[0m [36m⟳[0m [2mcabal[0m
