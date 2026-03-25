@@ -1,17 +1,17 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Golden.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, hasNoChanges, cleanupEmptyDeltaFiles, copyLocalFiles, inWorkDir, diff, runHWM, runHWMFail, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
-import Data.Aeson (ToJSON, Value, decode)
-import Data.Aeson.Types (FromJSON)
+import Data.Aeson (FromJSON (..), ToJSON (..), Value, (.:?), (.=), object, withObject)
+import Data.Aeson.Types ((.!=))
 import qualified Data.Yaml as Yaml
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.List as S
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -138,7 +138,25 @@ data ChangeReport = ChangeReport
     modifiedFiles :: [FilePath],
     invocations :: Maybe Value
   }
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ChangeReport where
+  toJSON ChangeReport {..} =
+    object
+      $ catMaybes
+        [ if null addedFiles then Nothing else Just ("addedFiles" .= addedFiles),
+          if null deletedFiles then Nothing else Just ("deletedFiles" .= deletedFiles),
+          if null modifiedFiles then Nothing else Just ("modifiedFiles" .= modifiedFiles),
+          ("invocations" .=) <$> invocations
+        ]
+
+instance FromJSON ChangeReport where
+  parseJSON = withObject "ChangeReport" $ \o ->
+    ChangeReport
+      <$> o .:? "addedFiles" .!= []
+      <*> o .:? "deletedFiles" .!= []
+      <*> o .:? "modifiedFiles" .!= []
+      <*> o .:? "invocations"
 
 buildChangeReport :: [(FilePath, UTCTime)] -> [(FilePath, UTCTime)] -> ChangeReport
 buildChangeReport oldState newState =
@@ -181,9 +199,9 @@ cleanupEmptyDeltaFiles :: FilePath -> IO ()
 cleanupEmptyDeltaFiles root = do
   deltaFiles <- glob (root </> "**/delta.yaml")
   forM_ deltaFiles $ \deltaFile -> do
-    report <- decode <$> LBS.readFile deltaFile
+    report <- Yaml.decodeFileEither deltaFile
     case report of
-      Just changes | hasNoChanges changes -> removeFile deltaFile
+      Right changes | hasNoChanges changes -> removeFile deltaFile
       _ -> pure ()
 
 saveSnapshot :: ChangeReport -> FilePath -> IO ()
