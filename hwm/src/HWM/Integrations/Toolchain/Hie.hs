@@ -192,12 +192,12 @@ validateComponentDetails expected actual =
 
     missingComponentErrors =
       [ "hie.yaml is missing components: " <> T.intercalate ", " missingComponentNames
-        | not (null missingComponentNames)
+      | not (null missingComponentNames)
       ]
 
     unknownComponentErrors =
       [ "hie.yaml has unknown components: " <> T.intercalate ", " unknownComponentNames
-        | not (null unknownComponentNames)
+      | not (null unknownComponentNames)
       ]
 
     wrongPathErrors = mapMaybe componentPathMismatch commonComponentNames

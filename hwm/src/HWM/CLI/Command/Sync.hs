@@ -32,8 +32,8 @@ sync tag = do
 syncTargets :: BuildEnvironment -> [(Text, ConfigT Status)]
 syncTargets env =
   [ (label, action mode)
-    | (mode, label, action) <- targets,
-      mode /= SyncModeIgnore
+  | (mode, label, action) <- targets,
+    mode /= SyncModeIgnore
   ]
   where
     modes = buildTargets env
@@ -43,4 +43,3 @@ syncTargets env =
         (targetNix modes, "flake.nix", syncNixFile),
         (targetHie modes, "hie.yaml", syncHie)
       ]
-

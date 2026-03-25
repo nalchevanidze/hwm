@@ -33,8 +33,8 @@ instance ParseCLI EnvRemoveOptions where
 runEnvRemove :: EnvRemoveOptions -> ConfigT ()
 runEnvRemove EnvRemoveOptions {..} =
   updateConfig
-    (\cfg@Config {..} -> do
-      nextEnvs <- removeEnvironmentByName envName envSetDefault cfgEnvironments
-      pure cfg {cfgEnvironments = nextEnvs}
+    ( \cfg@Config {..} -> do
+        nextEnvs <- removeEnvironmentByName envName envSetDefault cfgEnvironments
+        pure cfg {cfgEnvironments = nextEnvs}
     )
     (printEnvironments Nothing)

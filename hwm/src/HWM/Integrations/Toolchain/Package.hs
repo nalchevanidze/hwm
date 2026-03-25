@@ -18,8 +18,8 @@ where
 import qualified Data.Text as T
 import HWM.Core.Formatting (Status, StatusM, monadStatus)
 import HWM.Core.Pkg (IsPkg (..), PackageIO (..), Pkg (..), PkgName (PkgName), PkgSource (..), cabalSource, getVersionIssues, hpackSource)
-import HWM.Core.Sync (SyncMode (..))
 import HWM.Core.Result (Issue, MonadIssue (injectIssue))
+import HWM.Core.Sync (SyncMode (..))
 import HWM.Domain.Bounds (Bounds (Bounds))
 import HWM.Domain.Config (getRegistryBounds)
 import HWM.Domain.ConfigT (ConfigT, askVersion)
