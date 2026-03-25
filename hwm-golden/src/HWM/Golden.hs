@@ -3,8 +3,7 @@
 
 module HWM.Golden (Golden (..), goldenTest, goldenFailTest) where
 
-import Data.Aeson (decode, encode)
-import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Yaml as Yaml
 import HWM.Golden.Core (cleanupEmptyDeltaFiles, diffChanges, hasNoChanges, inWorkDir, runHWM, runHWMFail, sanitizeAllCabals, saveSnapshot, trackChanges)
 import Relude
 import System.Directory (doesFileExist, makeAbsolute, removeFile)
@@ -33,7 +32,7 @@ goldenRunWith runFn Golden {..} = do
   scenarioDir <- makeAbsolute $ "test/golden/" </> scenario
   let expectedDir = scenarioDir </> "expected"
   let stdoutFile = scenarioDir </> "stdout.ansi"
-  let deltaFile = scenarioDir </> "delta.json"
+  let deltaFile = scenarioDir </> "delta.yaml"
   updateMode <- isUpdateMode
   inWorkDir project scenarioDir $ do
     (changes, out) <- trackChanges (runFn cmd)
@@ -46,7 +45,7 @@ goldenRunWith runFn Golden {..} = do
           then do
             hasDelta <- doesFileExist deltaFile
             when hasDelta (removeFile deltaFile)
-          else LBS.writeFile deltaFile (encode changes)
+          else Yaml.encodeFile deltaFile changes
         cleanupEmptyDeltaFiles goldenRoot
       else do
         expectedStdout <- IO.readFile stdoutFile
@@ -54,11 +53,13 @@ goldenRunWith runFn Golden {..} = do
         hasDelta <- doesFileExist deltaFile
         if hasDelta
           then do
-            expectedDelta <- decode <$> LBS.readFile deltaFile
-            Just changes `shouldBe` expectedDelta
+            expectedDelta <- Yaml.decodeFileEither deltaFile
+            case expectedDelta of
+              Right delta -> changes `shouldBe` delta
+              Left parseErr -> expectationFailure ("Failed to parse delta.yaml: " <> show parseErr)
           else
             unless (hasNoChanges changes)
               $ expectationFailure
-              $ "Missing delta.json for non-empty changes: "
+              $ "Missing delta.yaml for non-empty changes: "
               <> show changes
         diffChanges expectedDir changes
