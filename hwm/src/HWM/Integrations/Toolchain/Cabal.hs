@@ -146,24 +146,35 @@ mkSourceIssues pkg declared target = mapMaybe toIssue' (Set.toList labels)
           expected = Map.findWithDefault Set.empty label target
           missingInCabal = Set.toList (Set.difference expected current)
           missingInCode = Set.toList (Set.difference current expected)
-          render ms = T.intercalate ", " (map moduleToFile ms)
-       in if null missingInCabal && null missingInCode
+          details = catMaybes [renderLine "missing in .cabal" missingInCabal, renderLine "missing in codebase" missingInCode]
+       in if null details
             then Nothing
             else
               Just
                 Issue
                   { issueTopic = P.pkgMemberId pkg,
                     issueSeverity = SeverityWarning,
-                    issueMessage =
-                      "Cabal source inclusion is out of sync for "
-                        <> label
-                        <> ". Missing in cabal: ["
-                        <> render missingInCabal
-                        <> "] ; Missing in codebase: ["
-                        <> render missingInCode
-                        <> "]",
+                    issueMessage = "Cabal source inclusion drift for " <> label <> "\n" <> T.intercalate "\n" details,
                     issueDetails = Nothing
                   }
+
+    renderLine title xs =
+      if null xs
+        then Nothing
+        else
+          Just
+            $ "  - "
+            <> title
+            <> " ("
+            <> show (length xs)
+            <> "): "
+            <> renderModules xs
+
+    renderModules xs =
+      let limit = 8
+          shown = take limit (map moduleToFile xs)
+          extra = length xs - length shown
+       in T.intercalate ", " shown <> if extra > 0 then " … (+" <> show extra <> " more)" else ""
 
 moduleToFile :: ModuleName -> Text
 moduleToFile m = toText (ModuleName.toFilePath m <> ".hs")
