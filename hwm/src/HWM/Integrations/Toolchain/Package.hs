@@ -39,7 +39,7 @@ import HWM.Domain.Dependencies
   )
 import qualified HWM.Domain.Dependencies as M
 import HWM.Domain.Workspace (allPackages, forWorkspace)
-import HWM.Integrations.Toolchain.Cabal (CabalPackage, newCabalPackage, readCabalPackage, validateHackage)
+import HWM.Integrations.Toolchain.Cabal (CabalPackage, newCabalPackage, readCabalPackage, validateCabalSourceInclusion, validateHackage)
 import HWM.Integrations.Toolchain.Hpack (HpackPackage, newHpackPackage, readHpackPackage)
 import Relude
 
@@ -110,7 +110,8 @@ validatePackages = forWorkspace $ forFormats hpack cabal
     cabal _ pkg = do
       s1 <- readCabalPackage pkg >>= validatePackage (cabalSource pkg)
       s2 <- validateHackage pkg
-      pure (s1 <> s2)
+      s3 <- validateCabalSourceInclusion pkg
+      pure (s1 <> s2 <> s3)
 
 hasNoIssues :: (IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT Bool
 hasNoIssues source pkg = do

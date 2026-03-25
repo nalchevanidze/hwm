@@ -10,18 +10,18 @@
 ./ [1mworkspace[0m
 
   • [1mhelpers[0m
-  [2m└── [0mbenchmarks [2m....[0m [32m✓[0m
+  [2m└── [0mbenchmarks [2m....[0m [36m⟳[0m [2mcabal[0m
 
   • [1mlibs[0m
-  [2m└── [0mapp [2m...............[0m [32m✓[0m
-  [2m└── [0mcode-gen-utils [2m....[0m [32m✓[0m
-  [2m└── [0mserver [2m............[0m [32m✓[0m
-  [2m└── [0mtests [2m.............[0m [32m✓[0m
-  [2m└── [0mcore [2m..............[0m [32m✓[0m
-  [2m└── [0msubscriptions [2m.....[0m [32m✓[0m
-  [2m└── [0mcode-gen [2m..........[0m [32m✓[0m
-  [2m└── [0mclient [2m............[0m [32m✓[0m
-  [2m└── [0m_root_ [2m............[0m [32m✓[0m
+  [2m└── [0mapp [2m...............[0m [36m⟳[0m [2mcabal[0m
+  [2m└── [0mcode-gen-utils [2m....[0m [36m⟳[0m [2mcabal[0m
+  [2m└── [0mserver [2m............[0m [36m⟳[0m [2mcabal[0m
+  [2m└── [0mtests [2m.............[0m [36m⟳[0m [2mcabal[0m
+  [2m└── [0mcore [2m..............[0m [36m⟳[0m [2mcabal[0m
+  [2m└── [0msubscriptions [2m.....[0m [36m⟳[0m [2mcabal[0m
+  [2m└── [0mcode-gen [2m..........[0m [36m⟳[0m [2mcabal[0m
+  [2m└── [0mclient [2m............[0m [36m⟳[0m [2mcabal[0m
+  [2m└── [0m_root_ [2m............[0m [36m⟳[0m [2mcabal[0m
 
 
 [1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
