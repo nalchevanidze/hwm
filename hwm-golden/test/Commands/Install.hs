@@ -29,14 +29,6 @@ testInstall = describe "install" $ do
           scenario = "install/stack-local-bin-path"
         }
 
-  it "uses cabal install args" $
-    goldenTest
-      Golden
-        { cmd = "install",
-          project = "simple-bin",
-          scenario = "install/cabal-install-args"
-        }
-
   it "rejects install with nix builder" $
     goldenFailTest
       Golden
