@@ -294,17 +294,26 @@ syncLibraryModules :: FilePath -> Library -> IO Library
 syncLibraryModules dir lib@Library {..} = do
   discovered <- discoverModules dir (map getSymbolicPath (hsSourceDirs libBuildInfo))
   let generated = filter isGeneratedModule (otherModules libBuildInfo)
-  pure
-    lib
-      { exposedModules = discovered,
-        libBuildInfo = libBuildInfo {otherModules = sort (Data.List.nub generated)}
-      }
+  let expected = sort (Data.List.nub (generated <> discovered))
+  let declared = sort (Data.List.nub (exposedModules <> otherModules libBuildInfo))
+  if moduleListsEqual declared expected
+    then pure lib
+    else
+      pure
+        lib
+          { exposedModules = discovered,
+            libBuildInfo = libBuildInfo {otherModules = sort (Data.List.nub generated)}
+          }
 
 syncForeignLibraryModules :: FilePath -> ForeignLib -> IO ForeignLib
 syncForeignLibraryModules dir foreignLib@ForeignLib {..} = do
   discovered <- discoverModules dir (map getSymbolicPath (hsSourceDirs foreignLibBuildInfo))
   let generated = filter isGeneratedModule (otherModules foreignLibBuildInfo)
-  pure foreignLib {foreignLibBuildInfo = foreignLibBuildInfo {otherModules = sort (Data.List.nub (generated <> discovered))}}
+  let expected = sort (Data.List.nub (generated <> discovered))
+  let declared = sort (Data.List.nub (otherModules foreignLibBuildInfo))
+  if moduleListsEqual declared expected
+    then pure foreignLib
+    else pure foreignLib {foreignLibBuildInfo = foreignLibBuildInfo {otherModules = expected}}
 
 syncExecutableModules :: FilePath -> Executable -> IO Executable
 syncExecutableModules dir exe@Executable {..} = do
@@ -312,19 +321,31 @@ syncExecutableModules dir exe@Executable {..} = do
   let mainModule = toModuleName modulePath
   let generated = filter isGeneratedModule (otherModules buildInfo)
   let discoveredWithoutMain = maybe discovered (`Data.List.delete` discovered) mainModule
-  pure exe {buildInfo = buildInfo {otherModules = sort (Data.List.nub (generated <> discoveredWithoutMain))}}
+  let expected = sort (Data.List.nub (generated <> discoveredWithoutMain))
+  let declared = sort (Data.List.nub (otherModules buildInfo))
+  if moduleListsEqual declared expected
+    then pure exe
+    else pure exe {buildInfo = buildInfo {otherModules = expected}}
 
 syncTestModules :: FilePath -> TestSuite -> IO TestSuite
 syncTestModules dir test@TestSuite {..} = do
   discovered <- discoverModules dir (map getSymbolicPath (hsSourceDirs testBuildInfo))
   let generated = filter isGeneratedModule (otherModules testBuildInfo)
-  pure test {testBuildInfo = testBuildInfo {otherModules = sort (Data.List.nub (generated <> discovered))}}
+  let expected = sort (Data.List.nub (generated <> discovered))
+  let declared = sort (Data.List.nub (otherModules testBuildInfo))
+  if moduleListsEqual declared expected
+    then pure test
+    else pure test {testBuildInfo = testBuildInfo {otherModules = expected}}
 
 syncBenchmarkModules :: FilePath -> Benchmark -> IO Benchmark
 syncBenchmarkModules dir bench@Benchmark {..} = do
   discovered <- discoverModules dir (map getSymbolicPath (hsSourceDirs benchmarkBuildInfo))
   let generated = filter isGeneratedModule (otherModules benchmarkBuildInfo)
-  pure bench {benchmarkBuildInfo = benchmarkBuildInfo {otherModules = sort (Data.List.nub (generated <> discovered))}}
+  let expected = sort (Data.List.nub (generated <> discovered))
+  let declared = sort (Data.List.nub (otherModules benchmarkBuildInfo))
+  if moduleListsEqual declared expected
+    then pure bench
+    else pure bench {benchmarkBuildInfo = benchmarkBuildInfo {otherModules = expected}}
 
 discoverModules :: FilePath -> [FilePath] -> IO [ModuleName]
 discoverModules dir sourceDirs = do
@@ -364,6 +385,9 @@ toModuleName path =
 
 isGeneratedModule :: ModuleName -> Bool
 isGeneratedModule moduleName = "Paths_" `isPrefixOf` ModuleName.toFilePath moduleName
+
+moduleListsEqual :: [ModuleName] -> [ModuleName] -> Bool
+moduleListsEqual a b = Set.fromList a == Set.fromList b
 
 class HasSourceDirs a where
   getSourceDirs :: [Text] -> a -> [(Text, Name)]
