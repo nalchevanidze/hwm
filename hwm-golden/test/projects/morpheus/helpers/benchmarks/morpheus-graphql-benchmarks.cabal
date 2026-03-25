@@ -19,14 +19,6 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-data-files:
-    samples/descriptions.gql
-    samples/github.gql
-    samples/huge-string.gql
-    samples/mythology.gql
-    samples/starwars.gql
-    samples/wrappers.gql
-
 source-repository head
   type: git
   location: https://github.com/nalchevanidze/morpheus-graphql

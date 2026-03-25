@@ -21,18 +21,6 @@ extra-source-files:
     README.md
     changelog.md
 data-files:
-    test/Case/Enum/schema.gql
-    test/Case/Fragments/query.gql
-    test/Case/Fragments/schema.gql
-    test/Case/Github/query.gql
-    test/Case/Github/schema.gql
-    test/Case/Interface/query.gql
-    test/Case/Interface/schema.gql
-    test/Case/LocalGlobal/schema.gql
-    test/Case/LocalGlobal/users1.gql
-    test/Case/LocalGlobal/users2.gql
-    test/Case/LowercaseTypeName/schema.gql
-    test/Case/Scalar/schema.gql
     test/Case/Enum/response.json
     test/Case/Fragments/response.json
     test/Case/Github/response.json

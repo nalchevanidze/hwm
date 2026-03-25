@@ -21,62 +21,6 @@ extra-source-files:
     README.md
     changelog.md
 data-files:
-    test/api-constraints/forbidden/query.gql
-    test/api-constraints/over-limit/query.gql
-    test/api-constraints/schema.gql
-    test/api-constraints/success/query.gql
-    test/api-constraints/under-limit/query.gql
-    test/api/deity/interface/query.gql
-    test/api/deity/schema.gql
-    test/api/deity/simple/query.gql
-    test/api/validation/fragment/fail-unknown-field-on-interface/query.gql
-    test/api/validation/fragment/on-interface-fail-without-casting/query.gql
-    test/api/validation/fragment/on-interface-inline/query.gql
-    test/api/validation/fragment/on-interface-type-casting-inline/query.gql
-    test/api/validation/fragment/on-interface-type-casting/query.gql
-    test/api/validation/fragment/on-interface/query.gql
-    test/api/validation/fragment/on-type/query.gql
-    test/api/validation/fragment/on-union-type/query.gql
-    test/api/validation/fragment/schema.gql
-    test/api/validation/input-coercion/list/list-many/query.gql
-    test/api/validation/input-coercion/list/list-single/query.gql
-    test/api/validation/input-coercion/list/schema.gql
-    test/api/validation/input-coercion/list/signle-value/query.gql
-    test/batching/object-lists/query.gql
-    test/batching/objects-fields/query.gql
-    test/batching/objects-lists-fields/query.gql
-    test/batching/schema.gql
-    test/disable-introspection/name/query.gql
-    test/disable-introspection/schema.gql
-    test/disable-introspection/schema/query.gql
-    test/disable-introspection/type/query.gql
-    test/execution/many/query.gql
-    test/execution/schema.gql
-    test/execution/single/query.gql
-    test/merge/schema/query-subscription-mutation/app-1.gql
-    test/merge/schema/query-subscription-mutation/app-2.gql
-    test/merge/schema/query-subscription-mutation/mutation/query.gql
-    test/merge/schema/query-subscription-mutation/query/query.gql
-    test/merge/schema/query-subscription-mutation/rendering.gql
-    test/merge/schema/simple-query/app-1.gql
-    test/merge/schema/simple-query/app-2.gql
-    test/merge/schema/simple-query/query/query.gql
-    test/merge/schema/simple-query/rendering.gql
-    test/named-resolvers/deities-ext/query.gql
-    test/named-resolvers/deities.gql
-    test/named-resolvers/deities/query.gql
-    test/named-resolvers/deity-by-id/query.gql
-    test/named-resolvers/deity-ext-by-id/query.gql
-    test/named-resolvers/deity-simple/query.gql
-    test/named-resolvers/entities.gql
-    test/named-resolvers/entities/query.gql
-    test/named-resolvers/entity-by-id/query.gql
-    test/named-resolvers/entity-ext-by-id/query.gql
-    test/named-resolvers/realm-by-id/query.gql
-    test/named-resolvers/realm-ext-by-id/query.gql
-    test/named-resolvers/realm-simple/query.gql
-    test/named-resolvers/realms.gql
-    test/named-resolvers/realms/query.gql
     test/api-constraints/forbidden/response.json
     test/api-constraints/over-limit/response.json
     test/api-constraints/success/response.json
