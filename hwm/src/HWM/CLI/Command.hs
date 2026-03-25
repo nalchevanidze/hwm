@@ -16,7 +16,7 @@ import HWM.CLI.Command.Environment.Root (EnvCommand, runEnv)
 import HWM.CLI.Command.Init (InitOptions (..), initWorkspace)
 import HWM.CLI.Command.Registry.Root (RegistryCommand, runRegistry)
 import HWM.CLI.Command.Release.Root (ReleaseCommand (..), runRelease)
-import HWM.CLI.Command.Run (ScriptOptions, TaskCommandOptions, runBuild, runInstall, runScript, runTest)
+import HWM.CLI.Command.Run (InstallCommandOptions, ScriptOptions, TaskCommandOptions, runBuild, runInstall, runScript, runTest)
 import HWM.CLI.Command.Status (showStatus)
 import HWM.CLI.Command.Sync (sync)
 import HWM.CLI.Command.Version (VersionOptions, runVersion)
@@ -39,7 +39,7 @@ data Command
   | Env EnvCommand
   | Workspace WorkspaceCommand
   | Release ReleaseCommand
-  | Install TaskCommandOptions
+  | Install InstallCommandOptions
   | Build TaskCommandOptions
   | Test TaskCommandOptions
   deriving (Show)

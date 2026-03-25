@@ -7,6 +7,7 @@ module HWM.CLI.Command.Run
   ( runScript,
     ScriptOptions,
     TaskCommandOptions,
+    InstallCommandOptions,
     runBuild,
     runInstall,
     runTest,
@@ -68,12 +69,29 @@ data TaskCommandOptions = TaskCommandOptions
   }
   deriving (Show)
 
+newtype InstallCommandOptions = InstallCommandOptions {installTaskOptions :: TaskLocalOptions}
+  deriving (Show)
+
+data TaskLocalOptions = TaskLocalOptions
+  { localWorkspaces :: [Name],
+    localFast :: Bool
+  }
+  deriving (Show)
+
 instance ParseCLI TaskCommandOptions where
   parseCLI =
     TaskCommandOptions
       <$> parseOptions (long "env" <> short 'e' <> metavar "ENV" <> help "Run in specific env (use 'all' for full matrix)")
       <*> many (argument str (metavar "WORKSPACE" <> help "Limit to package (core) or group (libs)"))
       <*> switch (long "fast" <> help "Enable fast mode")
+
+instance ParseCLI InstallCommandOptions where
+  parseCLI =
+    InstallCommandOptions
+      <$> ( TaskLocalOptions
+              <$> many (argument str (metavar "WORKSPACE" <> help "Limit to package (core) or group (libs)"))
+              <*> switch (long "fast" <> help "Enable fast mode")
+          )
 
 parseTargets :: [Name] -> ConfigT TargetScope
 parseTargets names = case names of
@@ -91,13 +109,13 @@ runBuild TaskCommandOptions {..} = do
   envs <- selectEnvironments opsEnvironments
   dispatchForEach (DispatcheCommand Build scope [BuildFastFlag | opsFast]) envs
 
-runInstall :: TaskCommandOptions -> ConfigT ()
-runInstall TaskCommandOptions {..} = do
-  scope <- parseTargets opsWorkspaces
-  envs <- selectEnvironments opsEnvironments
+runInstall :: InstallCommandOptions -> ConfigT ()
+runInstall (InstallCommandOptions TaskLocalOptions {..}) = do
+  scope <- parseTargets localWorkspaces
+  envs <- selectEnvironments []
   binDir <- getLocalBinDir
   warnBindDir binDir
-  dispatchForEach (DispatcheCommand (Install binDir) scope [BuildFastFlag | opsFast]) envs
+  dispatchForEach (DispatcheCommand (Install binDir) scope [BuildFastFlag | localFast]) envs
 
 runTest :: TaskCommandOptions -> ConfigT ()
 runTest TaskCommandOptions {..} = do

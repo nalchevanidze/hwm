@@ -191,6 +191,8 @@ hwm run <SCRIPT> [ARGS...]
 
 ## 4.5 `hwm build`, `hwm install`, `hwm test`
 
+> Note: `install` does not support `--env`; it always targets the current environment.
+
 ### Syntax
 
 ```bash
