@@ -1,10 +1,10 @@
 # Golden Test Plan: Missing Domains
 
-This document captures the golden-test expansion plan for missing domains and the methodology for testing `build`, `install`, and `test` safely and deterministically.
+This document tracks the golden-test expansion and current implementation status.
 
 ## Scope
 
-Missing domains to cover:
+Missing domains originally targeted:
 - `registry`
 - `version`
 - `build`
@@ -17,150 +17,153 @@ Goal:
 
 ---
 
-## Phase Plan
+## Phase Plan (with status)
 
 ### Phase A — Test Infrastructure
-1. Add new command test modules:
-   - `hwm-golden/test/Commands/Registry.hs`
-   - `hwm-golden/test/Commands/Version.hs`
-   - `hwm-golden/test/Commands/Build.hs`
-   - `hwm-golden/test/Commands/Install.hs`
-   - `hwm-golden/test/Commands/Test.hs`
-2. Register them in `hwm-golden/test/Main.hs`.
-3. Add deterministic toolchain stubs support for golden scenarios.
+- [ ] Add new command test module: `hwm-golden/test/Commands/Registry.hs`
+- [x] Add new command test module: `hwm-golden/test/Commands/Version.hs`
+- [x] Add new command test module: `hwm-golden/test/Commands/Build.hs`
+- [x] Add new command test module: `hwm-golden/test/Commands/Install.hs`
+- [x] Add new command test module: `hwm-golden/test/Commands/Test.hs`
+- [x] Register new modules in `hwm-golden/test/Main.hs`
+- [x] Deterministic toolchain stubs support
+  - Implemented via shared project stubs in `hwm-golden/test/projects/simple-bin/bin/*`
+  - No per-scenario `override/bin` duplication
 
 ### Phase B — Scenario Implementation
-4. Implement `version` matrix.
-5. Implement `registry` matrix.
-6. Implement `build` matrix.
-7. Implement `test` matrix.
-8. Implement `install` matrix (including unsupported combinations).
+- [x] Implement `version` matrix
+- [ ] Implement `registry` matrix
+- [x] Implement `build` matrix
+- [x] Implement `test` matrix
+- [x] Implement `install` matrix (including unsupported combinations)
 
 ### Phase C — Hardening
-9. Add edge/failure scenarios (unknown workspace/member, env fanout, exclusion behavior).
-10. Ensure output determinism (stable stdout + stable invocation logs).
+- [x] Add edge/failure scenarios for implemented domains
+  - unknown workspace/member
+  - env fanout (`--env all`)
+  - excluded package behavior
+  - unsupported install builder combinations
+- [x] Ensure output determinism
+  - fixed `HOME` and `PATH` in golden runner
+  - fixed log-id seed (`HWM_LOG_ID_FIXED`)
+  - command invocations captured in `invocations.yaml`
 
 ---
 
-## Scenario Matrix (Exhaustive Baseline)
+## Scenario Matrix (status)
 
 ### 1) Registry
 
 #### `registry add`
-- `registry/add/new-registry-only`
-- `registry/add/new-with-workspace`
-- `registry/add/already-registered`
-- `registry/add/reject-unknown-workspace` (fail)
+- [ ] `registry/add/new-registry-only`
+- [ ] `registry/add/new-with-workspace`
+- [ ] `registry/add/already-registered`
+- [ ] `registry/add/reject-unknown-workspace` (fail)
 
 #### `registry audit`
-- `registry/audit/check-clean`
-- `registry/audit/check-outdated`
-- `registry/audit/check-conflict` (fail)
-- `registry/audit/fix`
-- `registry/audit/fix-force`
+- [ ] `registry/audit/check-clean`
+- [ ] `registry/audit/check-outdated`
+- [ ] `registry/audit/check-conflict` (fail)
+- [ ] `registry/audit/fix`
+- [ ] `registry/audit/fix-force`
 
 #### `registry ls`
-- `registry/ls/all`
-- `registry/ls/search-hit`
-- `registry/ls/search-empty`
+- [ ] `registry/ls/all`
+- [ ] `registry/ls/search-hit`
+- [ ] `registry/ls/search-empty`
 
 ---
 
 ### 2) Version
-- `version/show-current`
-- `version/bump-patch`
-- `version/bump-minor`
-- `version/bump-major`
-- `version/set-fixed-higher`
-- `version/set-fixed-same`
-- `version/set-fixed-lower-warning`
-- `version/reject-invalid-bump` (fail)
+- [x] `version/show-current`
+- [x] `version/bump-patch`
+- [x] `version/bump-minor`
+- [x] `version/bump-major`
+- [x] `version/set-fixed-higher`
+- [x] `version/set-fixed-same`
+- [x] `version/set-fixed-lower-warning`
+- [x] `version/reject-invalid-bump` (fail)
 
 ---
 
 ### 3) Build
-- `build/default-global`
-- `build/env-specific`
-- `build/env-all`
-- `build/scope-group`
-- `build/scope-member`
-- `build/fast`
-- `build/reject-unknown-workspace` (fail)
-- `build/stack-dispatch-shape`
-- `build/nix-dispatch-shape`
-- `build/excluded-pkg`
+- [x] `build/default-global`
+- [x] `build/env-specific`
+- [x] `build/env-all`
+- [x] `build/scope-group`
+- [x] `build/scope-member`
+- [x] `build/fast`
+- [x] `build/reject-unknown-workspace` (fail)
+- [x] `build/stack-dispatch-shape`
+- [x] `build/nix-dispatch-shape`
+- [x] `build/excluded-pkg`
 
 ---
 
 ### 4) Install
-- `install/default-global`
-- `install/env-all`
-- `install/scope-member`
-- `install/fast`
-- `install/stack-local-bin-path`
-- `install/cabal-install-args`
-- `install/reject-nix-builder` (fail)
-- `install/reject-nix-cabal-builder` (fail)
+- [x] `install/default-global`
+- [x] `install/env-all`
+- [x] `install/scope-member`
+- [x] `install/fast`
+- [x] `install/stack-local-bin-path`
+- [x] `install/cabal-install-args`
+- [x] `install/reject-nix-builder` (fail)
+- [x] `install/reject-nix-cabal-builder` (fail)
 
 ---
 
 ### 5) Test
-- `test/default-global`
-- `test/env-all`
-- `test/scope-group`
-- `test/scope-member`
-- `test/fast`
-- `test/reject-unknown-workspace` (fail)
-- `test/stack-dispatch-shape`
-- `test/nix-dispatch-shape`
+- [x] `test/default-global`
+- [x] `test/env-all`
+- [x] `test/scope-group`
+- [x] `test/scope-member`
+- [x] `test/fast`
+- [x] `test/reject-unknown-workspace` (fail)
+- [x] `test/stack-dispatch-shape`
+- [x] `test/nix-dispatch-shape`
 
 ---
 
-## Methodology for `build` / `install` / `test`
+## Methodology for `build` / `install` / `test` (implemented)
 
-These commands call external tools (`cabal`, `stack`, `nix`). Golden tests should validate dispatch behavior, not perform real compilation.
+These commands call external tools (`cabal`, `stack`, `nix`). Golden tests validate dispatch behavior, not real compilation.
 
-### 1) Use scenario-local fake executables
-For each relevant scenario, provide in override:
-- `override/bin/cabal`
-- `override/bin/stack`
-- `override/bin/nix`
+### 1) Shared fake executables (project-level)
+Implemented in:
+- `hwm-golden/test/projects/simple-bin/bin/cabal`
+- `hwm-golden/test/projects/simple-bin/bin/stack`
+- `hwm-golden/test/projects/simple-bin/bin/nix`
 
-Each stub should:
-- record command + args + key env vars to `invocations.yaml`
-- exit with controlled status (0 for success scenarios; nonzero only where needed)
+Behavior:
+- records command + args + env markers to `invocations.yaml`
+- uses `cat` to include generated matrix files (`CABAL_PROJECT_FILE`, `STACK_YAML`) content in `invocations.yaml`
 
-### 2) Control runtime environment during golden run
-Set deterministic environment for each run:
-- prepend `./bin` to `PATH`
-- set `HOME=./.home` (stabilizes install-dir behavior)
+### 2) Avoid copying `.hwm`
+Golden runner now removes `.hwm` when copying fixtures into temp workdir.
 
-### 3) Assertions per scenario
-Golden checks should validate:
+### 3) Control runtime environment
+Golden runner sets deterministic env:
+- `PATH=<workdir>/bin:<workdir>/.home/.local/bin:$PATH`
+- `HOME=<workdir>/.home`
+- `HWM_LOG_ID_FIXED=golden`
+
+### 4) Assertions per scenario
+Golden checks validate:
 1. `stdout.ansi` (user-visible behavior)
-2. `expected/invocations.yaml` (dispatch contract)
-3. `delta.json` and `expected/*` (file change behavior)
-
-### 4) What to verify specifically
-
-#### Build/Test
-- environment selection (`default`, explicit, `all`)
-- target scope mapping (global/group/member)
-- fast-flag mapping by builder
-- builder command shape (cabal/stack/nix)
-
-#### Install
-- local bin path behavior
-- builder-specific install args
-- unsupported combinations fail early (`nix`, `nix/cabal` install)
-- PATH warning behavior where applicable
+2. `expected/invocations.yaml` (dispatch contract, including matrix file contents)
+3. `delta.json` and `expected/*` (file-change behavior)
 
 ---
 
 ## Coverage Targets (Golden)
 
-For missing domains after this plan:
+Current status for previously missing domains:
+- `version`: implemented
+- `build`: implemented
+- `install`: implemented
+- `test`: implemented
+- `registry`: pending
+
+Target remains:
 - Command coverage: **100%**
 - Behavior coverage target: **~85–95%**
-
-This gives broad confidence in CLI dispatch, option handling, scope/env routing, and failure semantics without flaky real builds.
