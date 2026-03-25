@@ -112,7 +112,8 @@ mkGoldenEnv = do
   let keep (k, _) = k /= "PATH" && k /= "HOME"
   pure $ [ ("PATH", pathValue),
            ("HOME", home),
-           ("HWM_LOG_ID_FIXED", "golden")
+           ("HWM_LOG_ID_FIXED", "golden"),
+           ("CI", "1")
          ]
     <> filter keep current
 
