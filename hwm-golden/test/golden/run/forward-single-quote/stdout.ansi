@@ -1,0 +1,6 @@
+it's ok
+❯ sh -c 'printf "%s\n" "$1"' -- 'it'"'"'s ok'
+
+
+[1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
+

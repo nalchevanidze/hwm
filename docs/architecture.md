@@ -112,7 +112,7 @@ Resolution supports `group` and `group/member` targets.
 `Environments` contains:
 
 - `envsDefault`
-- `envsProfiles :: Map Name EnviromentProfile`
+- `envsProfiles :: Map Name EnvironmentProfile`
 - optional global toggles/builder (`envsNix`, `envsStack`, `envsHie`, `envsBuilder`)
 
 `BuildEnvironment` is resolved per profile with:
@@ -172,6 +172,9 @@ Responsibilities:
 Responsibilities:
 
 - generate `hie.yaml` cradle components from package source dirs
+- select cradle type from active builder (`stack` vs `cabal`)
+- validate existing `hie.yaml` in check mode (cradle type, component presence, component paths)
+- in sync mode, rewrite `hie.yaml` only when invalid/missing for active builder+components
 
 ### 5.5 Nix (`Integrations.Toolchain.Nix`, `Nix.Build`)
 

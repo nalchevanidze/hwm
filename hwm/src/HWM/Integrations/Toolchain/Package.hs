@@ -7,6 +7,7 @@
 
 module HWM.Integrations.Toolchain.Package
   ( syncPackages,
+    syncPackagesByMode,
     validatePackages,
     addPkgDependency,
     newPackage,
@@ -17,6 +18,7 @@ where
 import qualified Data.Text as T
 import HWM.Core.Formatting (Status, StatusM, monadStatus)
 import HWM.Core.Pkg (IsPkg (..), PackageIO (..), Pkg (..), PkgName (PkgName), PkgSource (..), cabalSource, getVersionIssues, hpackSource)
+import HWM.Core.Sync (SyncMode (..))
 import HWM.Core.Result (Issue, MonadIssue (injectIssue))
 import HWM.Domain.Bounds (Bounds (Bounds))
 import HWM.Domain.Config (getRegistryBounds)
@@ -53,6 +55,11 @@ newPackage targetDir name = do
 
 syncPackages :: ConfigT ()
 syncPackages = forWorkspace $ updatePackage syncPackage syncPackage
+
+syncPackagesByMode :: SyncMode -> ConfigT ()
+syncPackagesByMode SyncModeSync = syncPackages
+syncPackagesByMode SyncModeCheck = validatePackages
+syncPackagesByMode SyncModeIgnore = pure ()
 
 syncPackage :: (MapDeps a, IsPkg a, HasDependencies a) => PkgSource -> a -> ConfigT (Maybe a)
 syncPackage pkg package = do

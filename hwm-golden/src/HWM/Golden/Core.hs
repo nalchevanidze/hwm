@@ -4,12 +4,13 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Golden.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
+module HWM.Golden.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, hasNoChanges, cleanupEmptyDeltaFiles, copyLocalFiles, inWorkDir, diff, runHWM, runHWMFail, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
-import Data.Aeson (ToJSON)
+import Data.Aeson (ToJSON, decode)
 import Data.Aeson.Types (FromJSON)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.List as S
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -17,7 +18,7 @@ import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime)
 import qualified GHC.IO.Exception as System.Exit
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removeFile, removePathForcibly, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
 import System.FilePath (takeDirectory, takeExtension, (</>))
 import System.FilePath.Glob (glob)
@@ -92,6 +93,13 @@ runHWM cmd = do
     $ expectationFailure ("Command failed with stdout: " <> out <> "stderr: " <> err)
   return out
 
+runHWMFail :: String -> IO String
+runHWMFail cmd = do
+  (exitCode, out, err) <- readCreateProcessWithExitCode (shell $ "hwm -- " <> cmd) ""
+  when (exitCode == System.Exit.ExitSuccess)
+    $ expectationFailure ("Command unexpectedly succeeded with stdout: " <> out)
+  return (out <> err)
+
 data ChangeReport = ChangeReport
   { addedFiles :: [FilePath],
     deletedFiles :: [FilePath],
@@ -119,6 +127,18 @@ trackChanges action = do
   afterFiles <- findManagedFiles "."
   newTimes <- mapM (\p -> (p,) <$> getModificationTime p) afterFiles
   pure (buildChangeReport oldTimes newTimes, a)
+
+hasNoChanges :: ChangeReport -> Bool
+hasNoChanges (ChangeReport added deleted modified) = null added && null deleted && null modified
+
+cleanupEmptyDeltaFiles :: FilePath -> IO ()
+cleanupEmptyDeltaFiles root = do
+  deltaFiles <- glob (root </> "**/delta.json")
+  forM_ deltaFiles $ \deltaFile -> do
+    report <- decode <$> LBS.readFile deltaFile
+    case report of
+      Just changes | hasNoChanges changes -> removeFile deltaFile
+      _ -> pure ()
 
 saveSnapshot :: ChangeReport -> FilePath -> IO ()
 saveSnapshot (ChangeReport added _ modified) dst = do

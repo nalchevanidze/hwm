@@ -11,7 +11,7 @@ import HWM.Core.Parsing (Parse (..), ParseCLI (..))
 import HWM.Core.Version (Version)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
-import HWM.Domain.Environments (addProfile, existsEnviroment, mkEnvironment, printEnvironments)
+import HWM.Domain.Environments (addProfile, existsEnvironment, mkEnvironment, printEnvironments)
 import HWM.Runtime.UI (minRowSize, section, uiRow)
 import Options.Applicative (help, metavar, strArgument)
 import Options.Applicative.Builder (argument, str)
@@ -31,7 +31,7 @@ instance ParseCLI EnvAddOptions where
 
 runEnvAdd :: EnvAddOptions -> ConfigT ()
 runEnvAdd EnvAddOptions {..} = do
-  exists <- existsEnviroment envName
+  exists <- existsEnvironment envName
   if exists
     then do
       printEnvironments Nothing

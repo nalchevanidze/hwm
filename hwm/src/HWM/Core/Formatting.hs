@@ -91,7 +91,7 @@ chalk c x = toColor c <> x <> toColor None
 
 type StatusM m = [(Name, m Status)]
 
-data Status = Checked | Updated | Warning | Invalid
+data Status = Checked | Ignored | Updated | Warning | Invalid
   deriving (Show, Eq, Ord)
 
 instance Semigroup Status where
@@ -128,6 +128,7 @@ padDots width s = s <> " " <> chalk Dim (T.replicate (max 0 (width - T.length s)
 
 labelColor :: Status -> Color
 labelColor Checked = Dim
+labelColor Ignored = Gray
 labelColor Updated = Dim
 labelColor Warning = Yellow
 labelColor Invalid = Red
@@ -135,6 +136,7 @@ labelColor Invalid = Red
 statusIcon :: Status -> Text
 statusIcon s = case s of
   Checked -> chalk Green "✓"
+  Ignored -> chalk Gray "⊘"
   Updated -> chalk Cyan "⟳"
   Invalid -> chalk Red "✖"
   Warning -> chalk Yellow "!"

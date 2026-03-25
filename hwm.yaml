@@ -11,8 +11,12 @@ workspace:
 environments:
   builder: stack
   default: stable
-  hie: true
-  nix: true
+  targets:
+    cabal: sync
+    stack: sync
+    nix: sync
+    hie: sync
+    packages: sync
   profiles:
     local-nix:
       ghc: 9.6.3
@@ -23,7 +27,8 @@ environments:
     ci-cabal:
       ghc: 9.6.3
       builder: cabal
-      nix: false
+      targets:
+        nix: ignore
     stable:
       ghc: 9.6.3
       stack:
@@ -31,7 +36,6 @@ environments:
           fastsum: 0.1.1.1
           list-extras: 0.4.1.6
           type-aligned: 0.9.6
-  stack: true
 registry:
   aeson: '               >=  1.5.6.0     &&  <=  2.2.3.0'
   ansi-terminal: '       >=  0.11.1      &&  <=  1.1.5'

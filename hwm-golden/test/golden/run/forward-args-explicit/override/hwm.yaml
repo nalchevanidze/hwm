@@ -1,0 +1,17 @@
+# hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+name: work
+version: 0.1.2
+workspace:
+  libs:
+    members:
+      - bar
+      - foo
+environments:
+  default: default
+  profiles:
+    default:
+      ghc: '9.10'
+registry:
+  base: '>=  4.7  &&  <  5.0'
+scripts:
+  lint: echo lint

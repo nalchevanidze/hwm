@@ -37,24 +37,18 @@ Global flags:
 - `-q, --quiet` — suppress non-essential UI output
 - `--help` — standard usage/help
 
-### 2.2 Command fallback
+### 2.2 Command resolution
 
-If the first token is not a known top-level command, HWM treats it as a script name:
+If the first token is not a known top-level command, HWM checks `scripts`:
 
-```bash
-hwm <SCRIPT> [ARGS...]
-```
+- if `<TOKEN>` exists as a script key, it behaves like `hwm run <TOKEN> [ARGS...]`
+- otherwise, it returns a command-oriented CLI error
 
-Equivalent to:
+Script execution is always available explicitly:
 
 ```bash
 hwm run <SCRIPT> [ARGS...]
 ```
-
-Transparency note:
-
-- this fallback also catches command typos
-- typoed commands may surface as script resolution errors
 
 ---
 
@@ -143,16 +137,26 @@ hwm sync [ENV]
 
 - Resolves build environment (`ENV`, or cached/default)
 - Updates cache current environment
-- Regenerates enabled config files for that environment:
-  - `cabal.project`
-  - `stack.yaml` (if environment stack feature enabled)
-  - `flake.nix` (if environment nix feature enabled)
-  - `hie.yaml` (if environment hie feature enabled)
-- Syncs package files (`syncPackages` pipeline)
+- Regenerates managed config files according to active environment builder policy:
+  - `cabal` => `cabal.project`
+  - `stack` => `stack.yaml`
+  - `nix` => `flake.nix`
+  - `nix/cabal` => `cabal.project` + `flake.nix`
+  - `hie.yaml` is included by default (sync validates first and rewrites only when invalid/missing for the active builder+components)
+- target modes can be configured in `environments.targets` (global fallback) and `environments.profiles.<env>.targets` (per-profile override)
+  - supported modes: `sync`, `check`, `ignore`
+  - there is no ownership-preserving mode; choose `sync` (rewrite), `check` (validate), or `ignore` (skip)
+  - `check` semantics:
+    - file targets (`cabal`, `stack`, `nix`): check file presence only (no rewrite)
+    - `hie`: validate file presence and cradle compatibility with the active builder/environment components (error reporting, no rewrite)
+    - `packages`: run package validation pipeline (no rewrite)
+  - smart defaults are builder-driven (`cabal` -> cabal project, `stack` -> stack yaml, `nix` -> flake, `hie` + `packages` default to sync)
+- Package sync behavior is controlled via `targets.packages`
 
 Current implementation note:
 
-- generated `hie.yaml` uses stack cradle format and is not yet fully builder/profile-specific
+- generated `hie.yaml` cradle type follows the active builder (`stack` for stack environments, `cabal` for cabal/nix environments)
+- `hie` check reports errors for invalid cradle type, component set mismatches, or component path mismatches
 
 ---
 
@@ -168,12 +172,13 @@ hwm run <SCRIPT> [ARGS...]
 
 - Looks up `<SCRIPT>` in `scripts` map in `hwm.yaml`
 - Executes script command with inherited stdio
-- Passes `[ARGS...]` to the shell invocation as positional arguments
+- Appends `[ARGS...]` directly to the resolved script command using shell-safe quoting
 - Errors if script name does not exist
 
 > Notes:
-> - script commands that need forwarded args must consume shell positional parameters explicitly
-> - execution path is shell-based (`/bin/sh -c ...`) in current implementation
+> - prefer `hwm run <SCRIPT> -- [ARGS...]` when forwarding flags
+> - forwarded args are appended to the command line and escaped for shell safety
+> - execution path is shell-based (platform shell: `$SHELL -c` on Unix-like systems, `COMSPEC /c` on Windows)
 
 ---
 
@@ -246,7 +251,7 @@ hwm workspace ls
 
 ```bash
 hwm environments add <NAME> <GHC_VERSION>
-hwm environments remove <NAME>
+hwm environments remove <NAME> [--set-default <NAME>]
 hwm environments set-default <NAME>
 hwm environments ls
 ```
@@ -258,7 +263,9 @@ Environment creation currently expects an explicit **GHC version**, not resolver
 ### Behavior summary
 
 - `add`: adds new profile if name does not exist
-- `remove`: removes profile by name
+- `remove`: removes profile by name; removing current default requires `--set-default`, removing last profile is rejected
+  - also rejects non-existent environment names
+  - rejects `--set-default` when removing a non-default environment
 - `set-default`: switches `environments.default`
 - `ls`: prints environment list and active/default context
 
@@ -331,7 +338,7 @@ hwm release publish [GROUP]
 --github
 --output-dir <DIR>
 --format <csv>
---ghc-options <csv>
+--ghc-options <opt|csv>   # repeatable
 --name-template <TEMPLATE>
 --builder <cabal|stack|nix|nix/cabal>
 ```
@@ -339,11 +346,20 @@ hwm release publish [GROUP]
 Notes:
 
 - `TARGET` selects one artifact key; omitted means all configured artifacts
-- `--format` and `--ghc-options` are comma-separated lists
+- `--format` is a comma-separated list
+- `--ghc-options` is repeatable and also accepts comma-separated values
 - command builds binaries, archives them, and emits `.sha256` files
 - with `--github`, uploads archive and checksum assets to GitHub release URL
+- output-dir preparation policy:
+  - default `.hwm/dist` is cleaned before artifact generation
+  - custom `--output-dir` is created if missing and not cleaned
+- `release.artifacts[*].environments` is an environment allowlist for artifact command execution:
+  - omitted: all environments allowed
+  - `[]`: no environments allowed
+  - non-empty list: only listed environments allowed
+- if active/default environment is not allowed for a target, command fails with an environment policy error
+- for Nix static release derivation generation, only explicitly listed environments are used (omitted does not auto-expand)
 - current limitation: `release artifacts --builder=nix` is not supported and fails with an explicit error
-- current limitation: artifact config field `environments` is not yet enforced by command dispatch (active/default env is used)
 
 ### `release publish`
 
@@ -391,14 +407,20 @@ Workspace target syntax in CLI:
 environments:
   default: stable
   builder: stack           # optional global default
-  stack: true              # optional global toggle
-  nix: false               # optional global toggle
-  hie: true                # optional global toggle
+  targets:                 # optional global target-mode defaults
+    cabal: sync
+    stack: sync
+    nix: sync
+    hie: sync
+    packages: sync
   profiles:
     stable:
       ghc: 9.6.3
       builder: cabal       # optional per-profile override
       exclude: [libs/old]  # optional
+      targets:             # optional per-profile target-mode override
+        stack: ignore
+        packages: check
       stack:               # optional; can also be true/false
         resolver: lts-22.43
         allow-newer: false
@@ -477,12 +499,13 @@ Typical behavior:
 - Use `hwm release publish ...`, not `hwm publish`.
 - Use `hwm registry audit ...`, not `hwm outdated`.
 - `environments add` currently takes `<GHC_VERSION>` directly.
-- Unknown top-level command tokens are treated as script names (`hwm run ...` fallback).
-- `hwm run` is shell-based and argument forwarding uses shell positional parameters.
+- Unknown top-level tokens run scripts only when an exact script key exists; otherwise they produce command-oriented CLI errors.
+- `hwm run` is shell-based (platform shell); argument forwarding appends escaped args directly to the script command.
+- `release.artifacts[*].environments` is an allowlist for artifact command execution (omitted=all, `[]`=none, non-empty=only listed envs); Nix static derivation generation only uses explicitly listed envs.
 - Generated files are managed artifacts and may be rewritten on `hwm sync`.
 - Install with `nix`/`nix/cabal` is currently unsupported and fails with explicit errors.
 - `release publish` is Cabal-`sdist` based by design (builder-independent, Hackage-oriented).
-- environment remove flow does not yet guard against deleting the default/last profile; this can leave config in an invalid state until fixed.
+- environment removal is guarded: last profile cannot be removed; removing current default requires `--set-default` migration.
 
 ---
 

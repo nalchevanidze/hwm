@@ -11,8 +11,11 @@
 
 module HWM.Domain.Environments
   ( Environments (..),
-    EnviromentProfile (..),
+    EnvironmentProfile (..),
     BuildEnvironment (..),
+    StackBuildConfig (..),
+    SyncMode (..),
+    TargetModes (..),
     StackEnvironment (..),
     getBuildEnvironments,
     getBuildEnvironment,
@@ -20,7 +23,7 @@ module HWM.Domain.Environments
     printEnvironments,
     getTestedRange,
     removeEnvironmentByName,
-    existsEnviroment,
+    existsEnvironment,
     environmentHash,
     NixEnvironment (..),
     Feature (..),
@@ -44,9 +47,10 @@ import HWM.Core.Common
   ( Check (..),
     Name,
   )
-import HWM.Core.Formatting (Color (..), Format (..), availableOptions, chalk)
+import HWM.Core.Formatting (Color (..), Format (..), availableOptions, chalk, formatList)
 import HWM.Core.Has (Has (..), HasAll, askEnv)
 import HWM.Core.Pkg (Pkg (..), PkgName)
+import HWM.Core.Sync (SyncMode (..))
 import HWM.Core.Result (Issue)
 import HWM.Core.Version (Era (..), Version, selectEra)
 import HWM.Domain.Bounds (TestedRange (..))
@@ -61,30 +65,27 @@ type Extras = VersionMap
 
 data Environments = Environments
   { envsDefault :: Name,
-    envsProfiles :: Map Name EnviromentProfile,
+    envsProfiles :: Map Name EnvironmentProfile,
     envsBuilder :: Maybe Builder,
-    -- generators,
-    envsNix :: Maybe Bool,
-    envsStack :: Maybe Bool,
-    envsHie :: Maybe Bool
+    envsTargets :: Maybe TargetsPolicy
   }
   deriving
     ( Generic,
       Show
     )
 
-addProfile :: Name -> EnviromentProfile -> Environments -> Environments
+addProfile :: Name -> EnvironmentProfile -> Environments -> Environments
 addProfile name profile envs = envs {envsProfiles = Map.insert name profile (envsProfiles envs)}
 
-mkEnvironment :: Version -> EnviromentProfile
+mkEnvironment :: Version -> EnvironmentProfile
 mkEnvironment ghc =
-  EnviromentProfile
+  EnvironmentProfile
     { profileGhc = ghc,
       profileExclude = Nothing,
       profileStack = Nothing,
       profileNix = Nothing,
       profileBuilder = Nothing,
-      profileHie = Nothing
+      profileTargets = Nothing
     }
 
 mkEnvironments :: Version -> Environments
@@ -93,10 +94,8 @@ mkEnvironments ghc =
    in Environments
         { envsDefault = fst defaultEnv,
           envsProfiles = Map.fromList [defaultEnv],
-          envsStack = Nothing,
-          envsNix = Nothing,
-          envsBuilder = Nothing,
-          envsHie = Nothing
+          envsTargets = Nothing,
+          envsBuilder = Nothing
         }
 
 environmentHash :: Environments -> Signature
@@ -130,7 +129,7 @@ instance
     traverse_ (checkTarget fileSig) envsProfiles
     where
       signature = environmentHash Environments {..}
-      checkTarget fileSig EnviromentProfile {..}
+      checkTarget fileSig EnvironmentProfile {..}
         | fileSig == signature = checkExclude
         -- checking all hkgRefs is expensive, so we skip it if the signature matches
         | otherwise = sequence_ [traverse_ check (maybe [] hkgRefs (extraDeps =<< unfeature =<< profileStack)), checkExclude]
@@ -142,11 +141,6 @@ data Feature a = Enabled a | Disabled deriving (Generic, Show, Ord, Eq)
 unfeature :: Feature a -> Maybe a
 unfeature (Enabled a) = Just a
 unfeature Disabled = Nothing
-
-isEnabled :: Maybe Bool -> Maybe (Feature a) -> Bool
-isEnabled _ (Just (Enabled _)) = True
-isEnabled _ (Just Disabled) = False
-isEnabled global Nothing = fromMaybe False global
 
 instance FromJSON (Feature StackEnvironment) where
   parseJSON (Bool b) = pure $ if b then Enabled (StackEnvironment Nothing Nothing Nothing) else Disabled
@@ -169,13 +163,13 @@ instance FromJSON NixEnvironment where
   parseJSON (Object _) = pure NixEnvironment
   parseJSON _ = fail "Invalid Nix environment configuration. Expected an object or a boolean."
 
-data EnviromentProfile = EnviromentProfile
+data EnvironmentProfile = EnvironmentProfile
   { profileGhc :: Version,
     profileExclude :: Maybe [WorkspaceRef],
     profileStack :: Maybe (Feature StackEnvironment),
     profileNix :: Maybe (Feature NixEnvironment),
     profileBuilder :: Maybe Builder,
-    profileHie :: Maybe Bool
+    profileTargets :: Maybe TargetsPolicy
   }
   deriving
     ( Generic,
@@ -187,10 +181,10 @@ data EnviromentProfile = EnviromentProfile
 profilePrefix :: String
 profilePrefix = "profile"
 
-instance FromJSON EnviromentProfile where
+instance FromJSON EnvironmentProfile where
   parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced profilePrefix)
 
-instance ToJSON EnviromentProfile where
+instance ToJSON EnvironmentProfile where
   toJSON = genericToJSON (aesonYAMLOptionsAdvanced profilePrefix)
 
 data StackEnvironment = StackEnvironment
@@ -206,17 +200,57 @@ instance FromJSON StackEnvironment where
 instance ToJSON StackEnvironment where
   toJSON = genericToJSON aesonYAMLOptions
 
+data TargetsPolicy = TargetsPolicy
+  { tpCabal :: Maybe SyncMode,
+    tpStack :: Maybe SyncMode,
+    tpNix :: Maybe SyncMode,
+    tpHie :: Maybe SyncMode,
+    tpPackages :: Maybe SyncMode
+  }
+  deriving (Generic, Show, Ord, Eq)
+
+targetsPrefix :: String
+targetsPrefix = "tp"
+
+instance FromJSON TargetsPolicy where
+  parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced targetsPrefix)
+
+instance ToJSON TargetsPolicy where
+  toJSON = genericToJSON (aesonYAMLOptionsAdvanced targetsPrefix)
+
+data TargetModes = TargetModes
+  { targetCabal :: SyncMode,
+    targetStack :: SyncMode,
+    targetNix :: SyncMode,
+    targetHie :: SyncMode,
+    targetPackages :: SyncMode
+  }
+  deriving
+    ( Generic,
+      Show,
+      Ord,
+      Eq
+    )
+
+data StackBuildConfig = StackBuildConfig
+  { stackResolver :: Name,
+    stackExtraDeps :: Maybe Extras,
+    stackAllowNewer :: Maybe Bool
+  }
+  deriving
+    ( Generic,
+      Show,
+      Ord,
+      Eq
+    )
+
 data BuildEnvironment = BuildEnvironment
   { buildGHC :: Version,
     buildPkgs :: [Pkg],
     buildName :: Name,
-    buildExtraDeps :: Maybe Extras,
-    buildResolver :: Name,
-    buildAllowNewer :: Maybe Bool,
+    buildStack :: StackBuildConfig,
     buildBuilder :: Builder,
-    buildNix :: Bool,
-    buildStack :: Bool,
-    buildHie :: Bool
+    buildTargets :: TargetModes
   }
   deriving
     ( Generic,
@@ -231,6 +265,59 @@ overrideBuilder builder env = env {buildBuilder = builder}
 instance Format BuildEnvironment where
   format BuildEnvironment {..} = buildName <> " (" <> format buildGHC <> ")"
 
+instance Format TargetModes where
+  format TargetModes {..} =
+    let enabled :: [Text]
+        enabled =
+          ["cabal" | active targetCabal]
+            <> ["stack" | active targetStack]
+            <> ["nix" | active targetNix]
+            <> ["hie" | active targetHie]
+     in "targets=" <> if null enabled then "-" else formatList "," enabled
+    where
+      active mode = mode /= SyncModeIgnore
+
+deriveTargetModes :: Builder -> Bool -> Bool -> TargetModes
+deriveTargetModes builder stackEnabled nixEnabled =
+  case builder of
+    CabalBuilder {inNixDevelopment = False} -> TargetModes {targetCabal = SyncModeSync, targetStack = SyncModeIgnore, targetNix = SyncModeIgnore, targetHie = SyncModeSync, targetPackages = SyncModeSync}
+    CabalBuilder {inNixDevelopment = True} ->
+      TargetModes
+        { targetCabal = SyncModeSync,
+          targetStack = SyncModeIgnore,
+          targetNix = if nixEnabled then SyncModeSync else SyncModeIgnore,
+          targetHie = SyncModeSync,
+          targetPackages = SyncModeSync
+        }
+    StackBuilder ->
+      TargetModes
+        { targetCabal = SyncModeIgnore,
+          targetStack = if stackEnabled then SyncModeSync else SyncModeIgnore,
+          targetNix = SyncModeIgnore,
+          targetHie = SyncModeSync,
+          targetPackages = SyncModeSync
+        }
+    NixBuilder ->
+      TargetModes
+        { targetCabal = SyncModeIgnore,
+          targetStack = SyncModeIgnore,
+          targetNix = if nixEnabled then SyncModeSync else SyncModeIgnore,
+          targetHie = SyncModeSync,
+          targetPackages = SyncModeSync
+        }
+
+applyTargetsPolicy :: Maybe TargetsPolicy -> Maybe TargetsPolicy -> TargetModes -> TargetModes
+applyTargetsPolicy globalPolicy profilePolicy defaults =
+  defaults
+    { targetCabal = pick tpCabal (targetCabal defaults),
+      targetStack = pick tpStack (targetStack defaults),
+      targetNix = pick tpNix (targetNix defaults),
+      targetHie = pick tpHie (targetHie defaults),
+      targetPackages = pick tpPackages (targetPackages defaults)
+    }
+  where
+    pick getter fallback = fromMaybe fallback ((getter =<< profilePolicy) <|> (getter =<< globalPolicy))
+
 getBuildEnvironments ::
   ( MonadReader env m,
     Has env Environments,
@@ -244,18 +331,27 @@ getBuildEnvironments = do
   envs <- envsProfiles <$> askEnv
   for (Map.toList envs) $ \(name, env) -> do
     pkgs <- allPackages
+    let builder = fromMaybe (CabalBuilder False) (profileBuilder env <|> envsBuilder globalEnv)
+    let stackEnabled = case profileStack env of
+          Just Disabled -> False
+          _ -> True
+    let nixEnabled = case profileNix env of
+          Just Disabled -> False
+          _ -> True
+    let targetModes = applyTargetsPolicy (envsTargets globalEnv) (profileTargets env) (deriveTargetModes builder stackEnabled nixEnabled)
     pure
       BuildEnvironment
         { buildPkgs = excludePkgs env pkgs,
           buildName = name,
-          buildExtraDeps = extraDeps =<< unfeature =<< profileStack env,
-          buildResolver = fromMaybe (eraStackageResolverName $ selectEra (profileGhc env)) (resolver =<< unfeature =<< profileStack env),
+          buildStack =
+            StackBuildConfig
+              { stackExtraDeps = extraDeps =<< unfeature =<< profileStack env,
+                stackResolver = fromMaybe (eraStackageResolverName $ selectEra (profileGhc env)) (resolver =<< unfeature =<< profileStack env),
+                stackAllowNewer = profileStack env >>= unfeature >>= allowNewer
+              },
           buildGHC = profileGhc env,
-          buildAllowNewer = profileStack env >>= unfeature >>= allowNewer,
-          buildBuilder = fromMaybe (CabalBuilder False) (profileBuilder env <|> envsBuilder globalEnv),
-          buildStack = isEnabled (envsStack globalEnv) (profileStack env),
-          buildNix = isEnabled (envsNix globalEnv) (profileNix env),
-          buildHie = fromMaybe True (profileHie env <|> envsHie globalEnv)
+          buildBuilder = builder,
+          buildTargets = targetModes
         }
   where
     excludePkgs build pkgs =
@@ -315,8 +411,8 @@ hkgRefs = map (uncurry HkgRef) . M.toList
 instance Format HkgRef where
   format HkgRef {..} = format pkgName <> "-" <> format pkgVersion
 
-existsEnviroment :: (MonadReader env m, Has env Environments) => Name -> m Bool
-existsEnviroment n = do
+existsEnvironment :: (MonadReader env m, Has env Environments) => Name -> m Bool
+existsEnvironment n = do
   envs <- envsProfiles <$> askEnv
   pure $ isJust $ Map.lookup n envs
 
@@ -329,21 +425,33 @@ printEnvironments name = do
     ( format env,
       pure
         $ if env == active
-          then chalk Cyan (buildResolver env <> " (active)")
-          else chalk Gray (buildResolver env)
+          then chalk Cyan (stackResolver (buildStack env) <> " (active)")
+          else chalk Gray (stackResolver (buildStack env))
     )
 
 getTestedRange :: (Monad m, MonadReader env m, Has env Workspace, Has env Environments, MonadIO m, MonadError Issue m) => m TestedRange
 getTestedRange = do
   env <- getBuildEnvironments
-  legacy <- getSnapshot (minimum $ map buildResolver env)
+  legacy <- getSnapshot (minimum $ map (stackResolver . buildStack) env)
   nightly <- getLatestNightlySnapshot
   pure TestedRange {legacy = legacy, nightly = nightly}
 
--- | Remove an environment from the matrix by name
-removeEnvironmentByName :: Name -> Environments -> Environments
-removeEnvironmentByName envName matrix =
-  matrix {envsProfiles = Map.delete envName (envsProfiles matrix)}
+-- | Remove an environment from the matrix by name, with optional default migration.
+removeEnvironmentByName :: (MonadError Issue m) => Name -> Maybe Name -> Environments -> m Environments
+removeEnvironmentByName envName maybeNewDefault envs@Environments {..}
+  | not (Map.member envName envsProfiles) = throwError $ fromString $ "Environment '" <> toString envName <> "' does not exist."
+  | Map.size envsProfiles <= 1 = throwError "Cannot remove the last environment. Add another environment first."
+  | envName /= envsDefault && isJust maybeNewDefault = throwError "--set-default can only be used when removing the current default environment."
+  | otherwise =
+      let nextProfiles = Map.delete envName envsProfiles
+       in if envName /= envsDefault
+            then pure envs {envsProfiles = nextProfiles}
+            else case maybeNewDefault of
+              Nothing -> throwError "Removing the current default environment requires --set-default <ENV>."
+              Just newDefault
+                | newDefault == envName -> throwError "--set-default cannot point to the environment being removed."
+                | not (Map.member newDefault nextProfiles) -> throwError $ fromString $ "Environment '" <> toString newDefault <> "' does not exist after removal."
+                | otherwise -> pure envs {envsProfiles = nextProfiles, envsDefault = newDefault}
 
 selectEnvironments :: (MonadError Issue m, MonadIO m, MonadReader env m, Has env Workspace, Has env Environments, Has env Cache) => [Name] -> m [BuildEnvironment]
 selectEnvironments ["all"] = getBuildEnvironments

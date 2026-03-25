@@ -47,6 +47,7 @@ import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
 import HWM.Core.Pkg (IsPkg (..), PackageIO, Pkg (..), PkgName)
+import HWM.Core.Sync (SyncMode (..))
 import qualified HWM.Core.Pkg as P
 import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
 import HWM.Core.Version (Version, toCabalVersion)
@@ -151,11 +152,16 @@ setupCabalMatrixEnvironment env = do
   _ <- syncFile projectPath (generateCabalProject "../../" env)
   pure [("CABAL_PROJECT_FILE", projectPath)]
 
-syncCabalProject :: ConfigT Status
-syncCabalProject = do
+syncCabalProject :: SyncMode -> ConfigT Status
+syncCabalProject SyncModeSync = do
   cabalFilePath <- asks (optionsCabal . CT.options)
   env <- getBuildEnvironment Nothing
   syncFile cabalFilePath (generateCabalProject "" env)
+syncCabalProject SyncModeCheck = do
+  cabalFilePath <- asks (optionsCabal . CT.options)
+  exists <- liftIO $ doesFileExist cabalFilePath
+  pure $ if exists then Checked else Warning
+syncCabalProject SyncModeIgnore = pure Ignored
 
 data CabalPackage = CabalPackage
   { cbDirectory :: FilePath,

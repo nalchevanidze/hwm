@@ -9,6 +9,7 @@ module HWM.CLI.Command.Release.Artifacts
   )
 where
 
+import Control.Monad.Error.Class (MonadError (throwError))
 import Data.Traversable (for)
 import HWM.Core.Common (Name)
 import HWM.Core.Formatting (Format (format), Status (..), formatList, statusIcon)
@@ -19,7 +20,7 @@ import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..), getArchiveConfigs)
 import HWM.Domain.Dispatcher (DispatcheCommand (..), dispatch)
 import HWM.Domain.Environments (BuildEnvironment (..), getBuildEnvironment, overrideBuilder)
-import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, resolveArtifactConfig, selectedArtifacts)
+import HWM.Domain.Release (ArchiveFormat, ArtifactConfig (..), ReleaseArtifactConfigs, isArtifactEnabledInEnvironment, resolveArtifactConfig, selectedArtifacts)
 import HWM.Domain.Schema (TargetScope (ScopePkgs))
 import HWM.Integrations.Toolchain.Github (ensureIsLatestTag)
 import HWM.Runtime.Archive (ArchiveInfo (..), ArchivingPlan (..), createArchive)
@@ -55,7 +56,7 @@ instance ParseCLI ReleaseArchiveOptions where
             <> showDefault
         )
       <*> optional (option (parseLS <$> str) (long "format" <> metavar "FORMAT" <> help "Override the archive format for the release target. Supported: zip, tar.gz."))
-      <*> optional (option (parseLS <$> str) (long "ghc-options" <> metavar "GHC_OPTION" <> help "Override GHC options for the release target. Can be specified multiple times."))
+      <*> (mkOptional . concat <$> many (option (parseLS <$> str) (long "ghc-options" <> metavar "GHC_OPTION" <> help "Override GHC options for the release target. Repeatable; also accepts comma-separated values.")))
       <*> optional (strOption (long "name-template" <> metavar "NAME_TEMPLATE" <> help "Override the name template for the release target. Use {name} and {version} as placeholders."))
       <*> optional (option (str >>= parse) (long "builder" <> metavar "BUILDER" <> help "Override the builder for the release target. Supported: cabal, stack, nix."))
 
@@ -73,8 +74,24 @@ prepeareDir dir = liftIO $ do
   removePathForcibly dir
   createDirectoryIfMissing True dir
 
+mkOptional :: [a] -> Maybe [a]
+mkOptional [] = Nothing
+mkOptional xs = Just xs
+
 parseFormats :: [Text] -> ConfigT [ArchiveFormat]
 parseFormats = fromEither "can't parse archive format" . traverse parse
+
+validateTargetEnvironment :: Name -> (Name, ArtifactConfig) -> ConfigT ()
+validateTargetEnvironment envName (target, cfg@ArtifactConfig {arcEnvironments = allowedEnvs}) =
+  unless (isArtifactEnabledInEnvironment envName cfg)
+    $ throwError
+    $ fromString
+    $ "Artifact '"
+    <> toString target
+    <> "' is not enabled for environment '"
+    <> toString envName
+    <> "'. Allowed environments: "
+    <> (if maybe True null allowedEnvs then "<none>" else toString (formatList ", " (fromMaybe [] allowedEnvs)))
 
 withOverrides :: ReleaseArchiveOptions -> ReleaseArtifactConfigs -> ConfigT [(Name, ArtifactConfig)]
 withOverrides ReleaseArchiveOptions {..} cfgs = do
@@ -90,14 +107,18 @@ withOverrides ReleaseArchiveOptions {..} cfgs = do
 
 runReleaseArchive :: ReleaseArchiveOptions -> ConfigT ()
 runReleaseArchive ops@ReleaseArchiveOptions {..} = do
-  prepeareDir defaultOutputDir
+  if outputDir == defaultOutputDir
+    then prepeareDir defaultOutputDir
+    else liftIO $ createDirectoryIfMissing True outputDir
   cfg <- asks config
   version <- asks (cfgVersion . config)
   cfgs <- getArchiveConfigs >>= withOverrides ops
   ghTag <- if ghPublish then Just <$> ensureIsLatestTag version else pure Nothing
   uploadUrl <- maybe (pure Nothing) (fmap Just . getGHUploadUrl cfg) ghTag
-  defaultBuilder <- buildBuilder <$> getBuildEnvironment Nothing
+  activeEnv <- getBuildEnvironment Nothing
+  let defaultBuilder = buildBuilder activeEnv
   let builder = fromMaybe defaultBuilder opsBuilder
+  traverse_ (validateTargetEnvironment (buildName activeEnv)) cfgs
   sectionTableM
     "artifacts"
     [ ("destination", pure $ maybe (format outputDir) format uploadUrl),

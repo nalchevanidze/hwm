@@ -1,0 +1,19 @@
+version: 0.1.0
+name: simple
+workspace:
+  libs:
+    members:
+      - foo
+      - bar
+environments:
+  builder: nix
+  default: foo
+  targets:
+    cabal: ignore
+    stack: ignore
+    nix: ignore
+    hie: check
+    packages: ignore
+  profiles:
+    foo:
+      ghc: 8.10.7

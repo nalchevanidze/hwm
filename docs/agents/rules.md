@@ -89,3 +89,14 @@ add changes in the file always in the same style as the existing code. and alway
 - **docs/architecture.md**: Should be updated if any core architectural changes are made (e.g., new monads, major refactors).
 - **docs/README.md**: Should be updated if there are changes to installation instructions, usage examples, or overall project description.
 - **docs/roadmap.md**: Any new features or major changes should be reflected in the project roadmap documentation to keep track of future plans and current progress. add checkmark to completed items. and shrink its insdide a collapsible section.
+
+
+## Feature Implementation
+
+1. if feature is from roadmap.md then move delete it from roadmap.md.
+2. if something is questionable ask for clarification before implementing.
+3. after feature is implemented, update spec.md arcitecture.md and readme.md if needed.
+4. Add tests to cover the new feature, and ensure all existing tests pass. 
+ 1. Prefer golden tests for flexibility
+ 2. Unit tests for core logic if it involves complex functionality (ask first)
+6. append change or create pr.md which will include a summary of the change, the motivation behind it, and any relevant details for reviewers.

@@ -1,0 +1,6 @@
+cradle:
+  cabal:
+    - path: ./foo/src
+      component: foo:lib
+    - path: ./baz/src
+      component: baz:lib
