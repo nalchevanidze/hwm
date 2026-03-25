@@ -151,7 +151,7 @@ Golden runner sets deterministic env:
 Golden checks validate:
 1. `stdout.ansi` (user-visible behavior)
 2. `expected/invocations.yaml` (dispatch contract, including matrix file contents)
-3. `delta.json` and `expected/*` (file-change behavior)
+3. `delta.yaml` and `expected/*` (file-change behavior)
 
 ---
 
