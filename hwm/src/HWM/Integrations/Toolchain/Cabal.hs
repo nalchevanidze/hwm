@@ -26,10 +26,10 @@ import qualified Data.ByteString as BS
 import Data.Foldable (Foldable (..))
 import qualified Data.List
 import qualified Data.Map as Map
-import qualified Data.Text as T
 import qualified Data.Set as Set
-import qualified Distribution.ModuleName as ModuleName
+import qualified Data.Text as T
 import Distribution.ModuleName (ModuleName)
+import qualified Distribution.ModuleName as ModuleName
 import Distribution.Package (packageVersion)
 import Distribution.PackageDescription (Benchmark (..), Executable (..), ForeignLib (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)

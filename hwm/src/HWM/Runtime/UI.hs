@@ -230,7 +230,7 @@ renderSummaryLines issues =
                in (step <> chalk (levelColor issueSeverity) issueMessage)
                     : (l2 <> chalk Dim ("component: " <> issueComponent <> " (" <> show (length issueTargets) <> ")"))
                     : map (\file -> l1 <> "        " <> subPathSign <> chalk Dim file) targets
-                    <> [l1 <> "        " <> subPathSign <> chalk Dim ("… (+" <> show rest <> " more)") | rest > 0]
+                      <> [l1 <> "        " <> subPathSign <> chalk Dim ("… (+" <> show rest <> " more)") | rest > 0]
             detailLines = concatMap renderIssue pkgIssues
          in headerText : detailLines
    in ["", headerLine, ""] <> concatMap renderGroup grouped <> [""]
