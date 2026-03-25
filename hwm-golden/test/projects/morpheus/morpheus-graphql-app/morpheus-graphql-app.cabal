@@ -20,59 +20,6 @@ build-type:     Simple
 extra-source-files:
     README.md
     changelog.md
-data-files:
-    test/api-constraints/forbidden/response.json
-    test/api-constraints/over-limit/response.json
-    test/api-constraints/success/response.json
-    test/api-constraints/under-limit/response.json
-    test/api/deity/interface/response.json
-    test/api/deity/resolvers.json
-    test/api/deity/simple/response.json
-    test/api/validation/fragment/fail-unknown-field-on-interface/response.json
-    test/api/validation/fragment/on-interface-fail-without-casting/response.json
-    test/api/validation/fragment/on-interface-inline/response.json
-    test/api/validation/fragment/on-interface-type-casting-inline/response.json
-    test/api/validation/fragment/on-interface-type-casting/response.json
-    test/api/validation/fragment/on-interface/response.json
-    test/api/validation/fragment/on-type/response.json
-    test/api/validation/fragment/on-union-type/response.json
-    test/api/validation/fragment/resolvers.json
-    test/api/validation/input-coercion/list/list-many/response.json
-    test/api/validation/input-coercion/list/list-single/response.json
-    test/api/validation/input-coercion/list/resolvers.json
-    test/api/validation/input-coercion/list/signle-value/response.json
-    test/batching/object-lists/batching.json
-    test/batching/object-lists/response.json
-    test/batching/objects-fields/batching.json
-    test/batching/objects-fields/response.json
-    test/batching/objects-lists-fields/batching.json
-    test/batching/objects-lists-fields/response.json
-    test/disable-introspection/name/response.json
-    test/disable-introspection/resolvers.json
-    test/disable-introspection/schema/response.json
-    test/disable-introspection/type/response.json
-    test/execution/many/response.json
-    test/execution/single/response.json
-    test/merge/schema/query-subscription-mutation/app-1.json
-    test/merge/schema/query-subscription-mutation/app-2.json
-    test/merge/schema/query-subscription-mutation/mutation/response.json
-    test/merge/schema/query-subscription-mutation/query/response.json
-    test/merge/schema/simple-query/app-1.json
-    test/merge/schema/simple-query/app-2.json
-    test/merge/schema/simple-query/query/response.json
-    test/named-resolvers/deities-ext/response.json
-    test/named-resolvers/deities/response.json
-    test/named-resolvers/deity-by-id/response.json
-    test/named-resolvers/deity-ext-by-id/response.json
-    test/named-resolvers/deity-simple/response.json
-    test/named-resolvers/entities/response.json
-    test/named-resolvers/entity-by-id/response.json
-    test/named-resolvers/entity-ext-by-id/response.json
-    test/named-resolvers/realm-by-id/response.json
-    test/named-resolvers/realm-ext-by-id/response.json
-    test/named-resolvers/realm-simple/response.json
-    test/named-resolvers/realms/response.json
-
 source-repository head
   type: git
   location: https://github.com/nalchevanidze/morpheus-graphql-app

@@ -20,25 +20,6 @@ build-type:     Simple
 extra-source-files:
     README.md
     changelog.md
-data-files:
-    test/Case/Enum/response.json
-    test/Case/Fragments/response.json
-    test/Case/Github/response.json
-    test/Case/Interface/response.json
-    test/Case/LocalGlobal/cities.json
-    test/Case/LocalGlobal/users1.json
-    test/Case/LocalGlobal/users2.json
-    test/Case/LowercaseTypeName/response.json
-    test/Case/ResponseTypes/errors.json
-    test/Case/ResponseTypes/errorsWithType.json
-    test/Case/ResponseTypes/mutation.json
-    test/Case/ResponseTypes/noResponseOrError.json
-    test/Case/ResponseTypes/partialResponse.json
-    test/Case/ResponseTypes/query.json
-    test/Case/ResponseTypes/schema.json
-    test/Case/ResponseTypes/subscription.json
-    test/Case/Scalar/response.json
-
 source-repository head
   type: git
   location: https://github.com/nalchevanidze/morpheus-graphql
