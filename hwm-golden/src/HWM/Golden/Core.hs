@@ -7,8 +7,9 @@
 module HWM.Golden.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, hasNoChanges, cleanupEmptyDeltaFiles, copyLocalFiles, inWorkDir, diff, runHWM, runHWMFail, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
-import Data.Aeson (ToJSON, decode)
+import Data.Aeson (ToJSON, Value, decode)
 import Data.Aeson.Types (FromJSON)
+import qualified Data.Yaml as Yaml
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.List as S
@@ -135,7 +136,7 @@ data ChangeReport = ChangeReport
   { addedFiles :: [FilePath],
     deletedFiles :: [FilePath],
     modifiedFiles :: [FilePath],
-    invocations :: Maybe Text
+    invocations :: Maybe Value
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
@@ -149,11 +150,17 @@ buildChangeReport oldState newState =
       modified = Map.keys $ Map.filter (uncurry (/=)) common
    in ChangeReport added deleted modified Nothing
 
-loadInvocations :: IO (Maybe Text)
+loadInvocations :: IO (Maybe Value)
 loadInvocations = do
   let file = "invocations.yaml"
   exists <- doesPathExist file
-  if exists then Just <$> TIO.readFile file else pure Nothing
+  if not exists
+    then pure Nothing
+    else do
+      parsed <- Yaml.decodeFileEither file
+      case parsed of
+        Right v -> pure (Just v)
+        Left _ -> pure Nothing
 
 trackChanges :: IO a -> IO (ChangeReport, a)
 trackChanges action = do
