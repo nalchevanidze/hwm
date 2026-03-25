@@ -12,3 +12,10 @@ testWorkspace = describe "workspace" $ do
           project = "simple",
           scenario = "workspace/add/simple"
         }
+  it "workspace add (stack builder syncs stack+hie)" $
+    goldenTest
+      Golden
+        { cmd = "workspace add libs/new",
+          project = "simple",
+          scenario = "workspace/add/stack"
+        }

@@ -1,7 +1,7 @@
 # HWM Roadmap
 
 **Audience:** Contributors, maintainers, planners  
-**Last Updated:** 2026-03-24
+**Last Updated:** 2026-03-25
 
 This document tracks **future work only**.
 If something is already implemented, it should not stay on this roadmap.
@@ -67,62 +67,6 @@ Reduce long-term dependency drift in large monorepos.
 
 ---
 
-## 4) UX transparency and conceptual consistency
-
-### Goal
-Remove behavior surprises that can frustrate users.
-
-### Planned outcomes
-
-- Improve unknown command handling:
-  - avoid silently treating typos as script names unless script exists
-  - provide clearer CLI typo errors and suggestions
-- Improve script runner UX:
-  - document and/or redesign arg forwarding behavior
-  - reduce shell-specific surprises
-- Improve HLS integration consistency:
-  - align generated `hie.yaml` with active builder/profile (not stack-only assumptions)
-- Improve generated-file UX:
-  - clearly communicate overwrite/ephemeral behavior for generated files
-- Protect environment integrity:
-  - prevent removing the default/last environment without an explicit migration path
-- Improve cross-platform script execution behavior (avoid hard dependency on `/bin/sh` semantics where possible)
-
-### Acceptance criteria
-
-- CLI typos produce command-oriented errors, not script-not-found confusion.
-- `hwm run` argument behavior is explicit and predictable.
-- `hie.yaml` generation is builder/profile-aware.
-- removing environments cannot leave config in an invalid default-env state.
-- docs include a single transparent “known limitations/behavior notes” section.
-
----
-
-## 5) Release behavior consistency (deep-dive findings)
-
-### Goal
-Make release/install behavior predictable and aligned with configuration intent.
-
-### Problematic behaviors observed
-
-- `release.artifacts[*].environments` is currently not honored by `hwm release artifacts` (active/default env is used instead).
-- `--output-dir` handling in artifacts flow should be audited for consistency with directory preparation behavior.
-- `--ghc-options` parser/help UX should be aligned (help suggests repeatable flags, parser currently expects a single CSV option).
-
-### Planned outcomes
-
-- Keep publish behavior explicitly documented as Cabal-`sdist`/Hackage-oriented.
-- Make artifact builds honor per-artifact environments.
-- Ensure output-dir semantics are consistent and test-covered.
-- Align CLI parser behavior with help text for release flags.
-
-### Acceptance criteria
-
-- release behavior is deterministic and matches docs/examples.
-- artifact environment targeting works as declared in `hwm.yaml`.
-- CLI help and parser behavior match exactly.
-
----
 
 ## Contributing
 

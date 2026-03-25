@@ -10,8 +10,10 @@ import HWM.Core.Formatting (Color (..), Status (Checked), chalk, displayStatusM)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Core.Pkg (PkgName (..), mkPkgDirPath, resolvePrefix)
 import HWM.Core.Result (Issue (..), MonadIssue (injectIssue), Severity (SeverityError, SeverityWarning))
+import HWM.Core.Sync (SyncMode (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (config), updateConfig, updateConfigM)
+import HWM.Domain.Environments (BuildEnvironment (..), TargetModes (..), getBuildEnvironment)
 import HWM.Domain.Workspace (WorkGroup (..), WorkspaceRef (..), addWorkgroupMember, parseWorkspaceRef)
 import HWM.Integrations.Scaffold (scaffoldPackage)
 import HWM.Integrations.Toolchain.Hie (syncHie)
@@ -62,8 +64,17 @@ runWorkspaceAdd (WorkspaceAddOptions {opsWorkspaceId = WorkspaceRef groupId (Jus
       xs <- scaffoldPackage (mkPkgDirPath (dir w) (prefix w) memberId) (PkgName $ resolvePrefix (prefix w) memberId)
       displayStatusM xs >>= uiSubPathRow minRowSize memberId
 
-  updateConfigM (\cfg -> pure $ cfg {cfgWorkspace = ws}) [("stack.yaml", syncStackYaml), ("hie.yaml", syncHie)] $ pure ()
+  BuildEnvironment {buildTargets = TargetModes {..}} <- getBuildEnvironment Nothing
+  let toolchainActions =
+        catMaybes
+          [ withMode targetStack "stack.yaml" syncStackYaml,
+            withMode targetHie "hie.yaml" syncHie
+          ]
+  updateConfigM (\cfg -> pure $ cfg {cfgWorkspace = ws}) toolchainActions $ pure ()
   where
+    withMode SyncModeIgnore _ _ = Nothing
+    withMode mode label action = Just (label, action mode)
+
     noEffect label =
       Issue
         { issueTopic = memberId,

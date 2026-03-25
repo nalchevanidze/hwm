@@ -42,7 +42,7 @@ instance Parse Builder where
   parse "nix/cabal" = pure CabalBuilder {inNixDevelopment = True}
   parse "stack" = pure StackBuilder
   parse "nix" = pure NixBuilder
-  parse _ = fail "Invalid builder. Expected 'cabal', 'stack', or 'nix'."
+  parse _ = fail "Invalid builder. Expected 'cabal', 'stack', 'nix', or 'nix/cabal'."
 
 instance ToJSON Builder where
   toJSON = String . format

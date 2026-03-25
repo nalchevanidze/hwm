@@ -9,10 +9,8 @@ workspace:
     - new
 environments:
   default: foo
-  nix: true
   profiles:
     foo:
       ghc: 8.10.7
-  stack: true
 registry:
   base: '>=  4.7  &&  <  5.0'

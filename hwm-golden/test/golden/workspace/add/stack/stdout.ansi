@@ -1,0 +1,14 @@
+
+./ [1mworkspace[0m
+
+  • [1mlibs[0m
+  [2m└── [0mnew [2m.............[0m [36m⟳[0m [2msrc[0m[2m [0m[36m⟳[0m [2mhpack[0m[2m [0m[36m⟳[0m [2mcabal[0m
+
+• [1mconfig[0m
+  hwm.yaml [2m..........[0m [36m⟳[0m
+  stack.yaml [2m........[0m [36m⟳[0m
+  hie.yaml [2m..........[0m [36m⟳[0m
+
+
+[1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
+

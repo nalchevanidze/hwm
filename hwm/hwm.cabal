@@ -59,6 +59,7 @@ library
       HWM.Core.Parsing
       HWM.Core.Pkg
       HWM.Core.Result
+      HWM.Core.Sync
       HWM.Core.Version
       HWM.Domain.Bounds
       HWM.Domain.Build

@@ -1,0 +1,12 @@
+
+• [1msync[0m
+  environment [2m.......[0m [36mfoo (8.10.7)[0m
+  resolver [2m..........[0m lts-18.28
+
+• [1mconfig[0m
+  cabal.project [2m.....[0m [36m⟳[0m
+  hie.yaml [2m..........[0m [36m⟳[0m
+
+
+[1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
+

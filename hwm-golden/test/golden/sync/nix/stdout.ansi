@@ -1,10 +1,9 @@
 
 • [1msync[0m
-  enviroment [2m........[0m [36mstable (9.6.6)[0m
+  environment [2m.......[0m [36mstable (9.6.6)[0m
   resolver [2m..........[0m lts-22.43
 
 • [1mconfig[0m
-  cabal.project [2m.....[0m [36m⟳[0m
   flake.nix [2m.........[0m [36m⟳[0m
   hie.yaml [2m..........[0m [36m⟳[0m
 

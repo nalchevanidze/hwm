@@ -8,25 +8,35 @@ module HWM.Integrations.Toolchain.Nix (syncNixFile) where
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
-import HWM.Core.Formatting (Status, format, toCamelCase)
+import HWM.Core.Formatting (Status (..), format, toCamelCase)
 import HWM.Core.Options (Options (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Version (Era (eraNixpkgs), formatNixGhc, selectEra)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..))
-import HWM.Domain.Environments (BuildEnvironment (..), Environments (envsDefault), getBuildEnvironment, getBuildEnvironments)
+import HWM.Core.Sync (SyncMode (..))
+import HWM.Domain.Environments (BuildEnvironment (..), Environments (envsDefault), TargetModes (..), getBuildEnvironment, getBuildEnvironments)
 import HWM.Domain.Release (getArtifactEnvironments)
 import HWM.Runtime.Files (syncFile)
 import Relude
+import System.Directory (doesFileExist)
 
-syncNixFile :: ConfigT Status
-syncNixFile = do
+enabled :: SyncMode -> Bool
+enabled mode = mode /= SyncModeIgnore
+
+syncNixFile :: SyncMode -> ConfigT Status
+syncNixFile SyncModeSync = do
   Config {..} <- asks config
   ops <- asks options
   benv <- getBuildEnvironment (Just $ envsDefault cfgEnvironments)
-  benvs <- filter buildNix <$> getBuildEnvironments
+  benvs <- filter (enabled . targetNix . buildTargets) <$> getBuildEnvironments
   releasePkgs <- maybe (pure []) getArtifactEnvironments cfgRelease
   syncFile (optionsNix ops) (deriveFlakeNix (Context releasePkgs cfgName (map (cfgName,) benvs)) (cfgName, benv) (map (cfgName,) benvs))
+syncNixFile SyncModeCheck = do
+  nixPath <- optionsNix <$> asks options
+  exists <- liftIO $ doesFileExist nixPath
+  pure $ if exists then Checked else Warning
+syncNixFile SyncModeIgnore = pure Ignored
 
 genName :: (Text, Text) -> Text
 genName (name, subName) = toCamelCase (name <> T.toTitle subName <> "WorkspacePackages")
@@ -51,7 +61,7 @@ type Release = [ReleasePkg]
 data Context = Context
   { release :: Release,
     projectName :: Text,
-    enviroments :: [BCOntext]
+    environments :: [BCOntext]
   }
 
 deriveFlakeNix :: Context -> BCOntext -> [BCOntext] -> Text
@@ -86,7 +96,7 @@ genOverlay :: Context -> [Text]
 genOverlay ctx@Context {..} =
   scoped
     "haskellOverlay = final: prev:"
-    (concatMap rendergOverlayItem enviroments <> concatMap (rendergOverlayStatic ctx) staticEnvs)
+    (concatMap rendergOverlayItem environments <> concatMap (rendergOverlayStatic ctx) staticEnvs)
   where
     staticEnvs = Set.toList $ Set.fromList (concatMap snd release)
 
@@ -164,7 +174,7 @@ genReleasePkgBody Context {..} pkg env = "mkReleaseArtifact \"" <> format (pkgNa
 -- DEVSHELL
 genDevShell :: Bool -> BCOntext -> [Text]
 genDevShell _ (_, BuildEnvironment {buildPkgs = []}) = [] -- Handle empty workspace
-genDevShell isDefault ctx@(_, BuildEnvironment {..}) =
+genDevShell isDefault ctx@(_, BuildEnvironment {buildTargets = TargetModes {..}, ..}) =
   [ name <> " = " <> devShellPackageName ctx <> ".shellFor {",
     "  packages = p: [ " <> renderPackageList buildPkgs <> " ];",
     "  buildInputs = with " <> devShellPackageName ctx <> "; ["
@@ -175,7 +185,7 @@ genDevShell isDefault ctx@(_, BuildEnvironment {..}) =
        ]
   where
     name = if isDefault then "default" else toCamelCase (format buildName)
-    libs = ["cabal-install", "hlint"] <> ["stack" | buildStack] <> ["haskell-language-server" | buildHie]
+    libs = ["cabal-install", "hlint"] <> ["stack" | enabled targetStack] <> ["haskell-language-server" | enabled targetHie]
     renderPackageList = T.intercalate " " . map (\pkg -> "p." <> format (pkgName pkg))
 
 devShellPackageName :: BCOntext -> Text

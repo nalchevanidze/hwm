@@ -14,6 +14,7 @@ module HWM.Domain.Release
     selectedArtifacts,
     resolveArtifactConfig,
     getArtifactEnvironments,
+    isArtifactEnabledInEnvironment,
   )
 where
 
@@ -97,7 +98,7 @@ instance FromJSON ArtifactConfig where
     pure
       $ ArtifactConfig
         { arcSource = _arcSource,
-          arcEnvironments = fromMaybe (arcEnvironments $ defaultArchiveConfig _arcSource) _arcEnvironments,
+          arcEnvironments = _arcEnvironments,
           arcFormats = fromMaybe (arcFormats $ defaultArchiveConfig _arcSource) _arcFormats,
           arcGhcOptions = fromMaybe (arcGhcOptions $ defaultArchiveConfig _arcSource) _arcGhcOptions,
           arcNameTemplate = fromMaybe (arcNameTemplate $ defaultArchiveConfig _arcSource) _arcNameTemplate
@@ -110,7 +111,7 @@ instance ToJSON ArtifactConfig where
 
 data ArtifactConfig = ArtifactConfig
   { arcSource :: Text,
-    arcEnvironments :: [Name],
+    arcEnvironments :: Maybe [Name],
     arcFormats :: [ArchiveFormat],
     arcGhcOptions :: [Text],
     arcNameTemplate :: Text
@@ -127,8 +128,14 @@ getArtifactEnvironments Release {..} = do
   let cfgs = toList (fromMaybe mempty rlsArtifacts)
   for cfgs $ \(ArtifactConfig {..}) -> do
     (_, pkg) <- resolveArtifactConfig ArtifactConfig {..}
-    envs <- for arcEnvironments (getBuildEnvironment . Just)
+    envs <- case arcEnvironments of
+      Nothing -> pure []
+      Just selected -> traverse (getBuildEnvironment . Just) selected
     pure (pkg, envs)
+
+isArtifactEnabledInEnvironment :: Name -> ArtifactConfig -> Bool
+isArtifactEnabledInEnvironment _ ArtifactConfig {arcEnvironments = Nothing} = True
+isArtifactEnabledInEnvironment envName ArtifactConfig {arcEnvironments = Just selected} = envName `elem` selected
 
 resolveArtifactConfig :: (MonadError Issue m, Has env Workspace, MonadReader env m, MonadIO m) => ArtifactConfig -> m (Text, Pkg)
 resolveArtifactConfig ArtifactConfig {..} = do
@@ -168,7 +175,7 @@ defaultArchiveConfig :: Text -> ArtifactConfig
 defaultArchiveConfig src =
   ArtifactConfig
     { arcSource = src,
-      arcEnvironments = [],
+      arcEnvironments = Nothing,
       arcFormats = [TarGz, Zip],
       arcGhcOptions =
         [ "-O2", -- High-level optimization

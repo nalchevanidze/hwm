@@ -1,0 +1,17 @@
+
+• [1msync[0m
+  environment [2m.......[0m [36mfoo (8.10.7)[0m
+  resolver [2m..........[0m lts-18.28
+
+• [1mconfig[0m
+  hie.yaml [2m..........[0m [31m✖[0m
+
+
+[1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
+
+  [2m• [0m[1mhie.yaml[0m
+  [2m└── [0m[2m• [0m[31mhie.yaml is missing components: bar:lib[0m
+      [2m└── [0m[2mfile: ./hie.yaml[0m
+  [2m└── [0m[2m• [0m[31mhie.yaml has unknown components: baz:lib[0m
+      [2m└── [0m[2mfile: ./hie.yaml[0m
+

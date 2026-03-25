@@ -30,10 +30,11 @@ import HWM.Core.Options (Options (..), askOptions)
 import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg (..), PkgName)
 import HWM.Core.Result (Issue (..), fromEither)
+import HWM.Core.Sync (SyncMode (..))
 import HWM.Core.Version (Version, latestGHCVersion, parseGHCVersion)
 import HWM.Domain.Build (Builder (StackBuilder))
 import HWM.Domain.ConfigT (ConfigT)
-import HWM.Domain.Environments (BuildEnvironment (..), EnviromentProfile (..), Environments (..), Feature (..), StackEnvironment (..), getBuildEnvironment, hkgRefs, mkEnvironment, mkEnvironments)
+import HWM.Domain.Environments (BuildEnvironment (..), EnvironmentProfile (..), Environments (..), Feature (..), StackBuildConfig (..), StackEnvironment (..), getBuildEnvironment, hkgRefs, mkEnvironment, mkEnvironments)
 import HWM.Domain.Workspace (toWorkspaceRef)
 import HWM.Runtime.Cache (getSnapshotGHC)
 import HWM.Runtime.Files (aesonYAMLOptions, readYaml, rewrite_)
@@ -81,21 +82,26 @@ parseExtraDep entry = do
   version <- fromEither ("Invalid version: " <> versionPart) (parse versionPart)
   pure (pkgName, version)
 
-syncStackYaml :: ConfigT Status
-syncStackYaml = do
+syncStackYaml :: SyncMode -> ConfigT Status
+syncStackYaml SyncModeSync = do
   stackYamlPath <- optionsStack <$> askOptions
   rewrite_ stackYamlPath $ const $ do
     BuildEnvironment {..} <- getBuildEnvironment Nothing
     pure
       Stack
         { saveHackageCreds = Just False,
-          extraDeps = map format . sort . hkgRefs <$> buildExtraDeps,
+          extraDeps = map format . sort . hkgRefs <$> stackExtraDeps buildStack,
           packages = map pkgDirPath buildPkgs,
           compiler = Nothing,
-          resolver = buildResolver,
-          allowNewer = buildAllowNewer,
+          resolver = stackResolver buildStack,
+          allowNewer = stackAllowNewer buildStack,
           ..
         }
+syncStackYaml SyncModeCheck = do
+  stackYamlPath <- optionsStack <$> askOptions
+  exists <- liftIO $ doesFileExist stackYamlPath
+  pure $ if exists then Checked else Warning
+syncStackYaml SyncModeIgnore = pure Ignored
 
 setupStackMatrixEnvironment :: BuildEnvironment -> ConfigT EnvVars
 setupStackMatrixEnvironment env = do
@@ -118,11 +124,11 @@ genStackMatrixConfig BuildEnvironment {..} = do
     pure
       Stack
         { saveHackageCreds = Just False,
-          extraDeps = map format . sort . hkgRefs <$> buildExtraDeps,
+          extraDeps = map format . sort . hkgRefs <$> stackExtraDeps buildStack,
           packages = map (("../../" <>) . pkgDirPath) buildPkgs,
           compiler = Nothing,
-          resolver = buildResolver,
-          allowNewer = buildAllowNewer,
+          resolver = stackResolver buildStack,
+          allowNewer = stackAllowNewer buildStack,
           ..
         }
   pure ()
@@ -136,19 +142,19 @@ scanStackFiles opts root = do
   where
     loadEnv path = do
       seConfig <- readYaml path
-      let stackName = fromMaybe "default" (deriveEnviromentName path)
+      let stackName = fromMaybe "default" (deriveEnvironmentName path)
       pure (stackName, seConfig)
 
-deriveEnviromentName :: FilePath -> Maybe Text
-deriveEnviromentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExtension (takeFileName path)))
+deriveEnvironmentName :: FilePath -> Maybe Text
+deriveEnvironmentName path = slugify <$> T.stripPrefix "stack-" (toText (dropExtension (takeFileName path)))
 
 buildMatrix :: (MonadIO m, MonadError Issue m) => [Pkg] -> [(Name, Stack)] -> m Environments
 buildMatrix pkgs (defaultEnv : envs) = do
   environments <- sortOn (profileGhc . snd) <$> traverse (inferBuildEnv pkgs) (defaultEnv : envs)
-  pure Environments {envsDefault = fst defaultEnv, envsProfiles = Map.fromList environments, envsStack = Just True, envsNix = Nothing, envsBuilder = Just StackBuilder, envsHie = Nothing}
+  pure Environments {envsDefault = fst defaultEnv, envsProfiles = Map.fromList environments, envsTargets = Nothing, envsBuilder = Just StackBuilder}
 buildMatrix _ [] = pure $ mkEnvironments latestGHCVersion
 
-inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m (Name, EnviromentProfile)
+inferBuildEnv :: (MonadIO m, MonadError Issue m) => [Pkg] -> (Name, Stack) -> m (Name, EnvironmentProfile)
 inferBuildEnv allPkgs (name, Stack {extraDeps = deps, ..}) = do
   ghc <- maybe (getSnapshotGHC resolver) (fromEither "GHC Parsing" . parseGHCVersion) compiler
   extraDeps <- parseExtraDeps (fromMaybe [] deps)

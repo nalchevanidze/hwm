@@ -13,6 +13,7 @@ module HWM.CLI.Command.Run
   )
 where
 
+import qualified Data.Text as T
 import HWM.Core.Common (Name)
 import HWM.Core.Parsing (ParseCLI (..), parseOptions)
 import HWM.Domain.Build (BuildFlag (..), BuilderCommand (..))
@@ -23,6 +24,7 @@ import HWM.Domain.Environments (selectEnvironments)
 import HWM.Domain.Schema (TargetScope (..))
 import HWM.Domain.Workspace (printPkgWSRef, resolveWorkspaces)
 import HWM.Runtime.Files (getLocalBinDir, warnBindDir)
+import HWM.Runtime.Platform (OS (..), detectPlatform, os)
 import HWM.Runtime.Process (Exec (..), inheritRun)
 import HWM.Runtime.UI (minRowSize, putLine, sectionWorkspace, uiRow, uiSubPath)
 import Options.Applicative
@@ -45,11 +47,22 @@ runScript :: Name -> ScriptOptions -> ConfigT ()
 runScript scriptName ScriptOptions {..} = do
   cfg <- asks config
   script <- getScript scriptName cfg
-  putLine ("❯ " <> script)
-  inheritRun Exec {execCmd = script, execArgs = scriptOptions, execEnv = [], postCommand = Nothing}
+  platform <- liftIO detectPlatform
+  let quoteArg = case os platform of
+        Windows -> cmdEscape
+        _ -> shEscape
+  let scriptCmd = if null scriptOptions then script else script <> " " <> T.unwords (map quoteArg scriptOptions)
+  putLine ("❯ " <> scriptCmd)
+  inheritRun Exec {execCmd = scriptCmd, execArgs = [], execEnv = [], postCommand = Nothing}
+  where
+    shEscape :: Text -> Text
+    shEscape arg = "'" <> T.replace "'" "'\"'\"'" arg <> "'"
+
+    cmdEscape :: Text -> Text
+    cmdEscape arg = "\"" <> T.replace "\"" "\"\"" arg <> "\""
 
 data TaskCommandOptions = TaskCommandOptions
-  { opsEnviroments :: [Name],
+  { opsEnvironments :: [Name],
     opsWorkspaces :: [Name],
     opsFast :: Bool
   }
@@ -75,13 +88,13 @@ parseTargets names = case names of
 runBuild :: TaskCommandOptions -> ConfigT ()
 runBuild TaskCommandOptions {..} = do
   scope <- parseTargets opsWorkspaces
-  envs <- selectEnvironments opsEnviroments
+  envs <- selectEnvironments opsEnvironments
   dispatchForEach (DispatcheCommand Build scope [BuildFastFlag | opsFast]) envs
 
 runInstall :: TaskCommandOptions -> ConfigT ()
 runInstall TaskCommandOptions {..} = do
   scope <- parseTargets opsWorkspaces
-  envs <- selectEnvironments opsEnviroments
+  envs <- selectEnvironments opsEnvironments
   binDir <- getLocalBinDir
   warnBindDir binDir
   dispatchForEach (DispatcheCommand (Install binDir) scope [BuildFastFlag | opsFast]) envs
@@ -89,5 +102,5 @@ runInstall TaskCommandOptions {..} = do
 runTest :: TaskCommandOptions -> ConfigT ()
 runTest TaskCommandOptions {..} = do
   scope <- parseTargets opsWorkspaces
-  envs <- selectEnvironments opsEnviroments
+  envs <- selectEnvironments opsEnvironments
   dispatchForEach (DispatcheCommand Test scope [BuildFastFlag | opsFast]) envs

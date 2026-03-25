@@ -1,0 +1,6 @@
+lint --fix
+❯ echo lint '--fix'
+
+
+[1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
+

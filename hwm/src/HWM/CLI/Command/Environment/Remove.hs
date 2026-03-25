@@ -4,28 +4,37 @@
 
 module HWM.CLI.Command.Environment.Remove (EnvRemoveOptions, runEnvRemove) where
 
-import Control.Monad.Except (MonadError (throwError))
 import HWM.Core.Common (Name)
 import HWM.Core.Parsing (ParseCLI (..))
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, updateConfig)
-import HWM.Domain.Environments (existsEnviroment, printEnvironments, removeEnvironmentByName)
-import Options.Applicative (help, metavar, strArgument)
+import HWM.Domain.Environments (printEnvironments, removeEnvironmentByName)
+import Options.Applicative (help, long, metavar, strArgument, strOption)
 import Relude
 
-newtype EnvRemoveOptions = EnvRemoveOptions
-  {envName :: Name}
+data EnvRemoveOptions = EnvRemoveOptions
+  { envName :: Name,
+    envSetDefault :: Maybe Name
+  }
   deriving (Show)
 
 instance ParseCLI EnvRemoveOptions where
   parseCLI =
     EnvRemoveOptions
       <$> strArgument (metavar "ENVIRONMENT" <> help "Name of the environment to remove")
+      <*> optional
+        ( strOption
+            ( long "set-default"
+                <> metavar "ENV"
+                <> help "Required when removing current default environment; choose the new default."
+            )
+        )
 
 runEnvRemove :: EnvRemoveOptions -> ConfigT ()
-runEnvRemove EnvRemoveOptions {..} = do
-  exists <- existsEnviroment envName
-  unless exists $ throwError $ fromString $ "Environment '" <> toString envName <> "' does not exist."
+runEnvRemove EnvRemoveOptions {..} =
   updateConfig
-    (\cfg@Config {..} -> pure cfg {cfgEnvironments = removeEnvironmentByName envName cfgEnvironments})
+    (\cfg@Config {..} -> do
+      nextEnvs <- removeEnvironmentByName envName envSetDefault cfgEnvironments
+      pure cfg {cfgEnvironments = nextEnvs}
+    )
     (printEnvironments Nothing)

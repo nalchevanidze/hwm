@@ -23,9 +23,11 @@ import HWM.Core.Formatting (Status (..))
 import HWM.Core.Result (Issue (..), IssueDetails (..), Severity (..))
 import HWM.Runtime.Files (prepareDir)
 import HWM.Runtime.Logging (genLogId, logCommandEnd, logCommandStart, logPath, logRoot)
+import HWM.Runtime.Platform (OS (..), Platform (..), detectPlatform)
 import HWM.Runtime.UI
 import Relude
 import System.Environment (getEnvironment)
+import qualified System.Environment as Env
 import qualified System.IO as TIO
 import System.Process (readProcessWithExitCode)
 import System.Process.Typed
@@ -107,10 +109,27 @@ execInBackground Exec {..} ExecOptions {..} = do
             issueDetails = Just CommandIssue {issueCommand = cmd, issueLogFile = processLogPath}
           }
 
+data ShellSpec = ShellSpec
+  { shellCmd :: FilePath,
+    shellPrefixArgs :: [String]
+  }
+
+resolveShell :: IO ShellSpec
+resolveShell = do
+  platform <- detectPlatform
+  case os platform of
+    Windows -> do
+      cmd <- fromMaybe "cmd.exe" <$> Env.lookupEnv "COMSPEC"
+      pure ShellSpec {shellCmd = cmd, shellPrefixArgs = ["/d", "/s", "/c"]}
+    _ -> do
+      sh <- fromMaybe "sh" <$> Env.lookupEnv "SHELL"
+      pure ShellSpec {shellCmd = sh, shellPrefixArgs = ["-c"]}
+
 inheritRun :: (MonadIO m, MonadUI m) => Exec m -> m ()
-inheritRun Exec {..} = do
+inheritRun Exec {execCmd = cmd, execEnv = env, postCommand = post} = do
   currentEnv <- liftIO getEnvironment
-  let targetEnv = execEnv <> currentEnv
-  let processConfig = setEnv targetEnv $ proc "/bin/sh" (["-c", toString execCmd] <> map toString execArgs)
+  let targetEnv = env <> currentEnv
+  ShellSpec {..} <- liftIO resolveShell
+  let processConfig = setEnv targetEnv $ proc shellCmd (shellPrefixArgs <> [toString cmd])
   liftIO (runProcess_ processConfig)
-  sequence_ postCommand
+  sequence_ post
