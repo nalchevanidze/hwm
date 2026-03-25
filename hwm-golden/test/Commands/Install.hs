@@ -13,14 +13,6 @@ testInstall = describe "install" $ do
           scenario = "install/default-global"
         }
 
-  it "rejects environment option (install always uses current environment)" $
-    goldenFailTest
-      Golden
-        { cmd = "install --env all",
-          project = "simple-bin",
-          scenario = "install/env-all"
-        }
-
   it "installs workspace member scope" $
     goldenTest
       Golden

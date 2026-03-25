@@ -63,7 +63,7 @@ hwm run <SCRIPT> [ARGS...]
 - `hwm registry <subcommand>`
 - `hwm version [major|minor|patch|X.Y.Z]`
 - `hwm build [--env ENV]... [WORKSPACE...] [--fast]`
-- `hwm install [--env ENV]... [WORKSPACE...] [--fast]`
+- `hwm install [WORKSPACE...] [--fast]` (always current/default environment)
 - `hwm test [--env ENV]... [WORKSPACE...] [--fast]`
 - `hwm release <subcommand>`
 
@@ -197,15 +197,19 @@ hwm run <SCRIPT> [ARGS...]
 
 ```bash
 hwm build   [--env ENV]... [WORKSPACE...] [--fast]
-hwm install [--env ENV]... [WORKSPACE...] [--fast]
+hwm install [WORKSPACE...] [--fast]
 hwm test    [--env ENV]... [WORKSPACE...] [--fast]
 ```
 
 ### Environment selection
 
-- `--env all` => all configured environments
-- repeated `--env` and comma-separated values are both supported
-- no `--env` => active/default environment only
+- `build` / `test`:
+  - `--env all` => all configured environments
+  - repeated `--env` and comma-separated values are both supported
+  - no `--env` => active/default environment only
+- `install`:
+  - does not accept `--env`
+  - always uses the active/default environment only
 
 ### Workspace/target selection
 
