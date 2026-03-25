@@ -1,0 +1,20 @@
+
+• [1mset version[0m
+  from [2m..............[0m 0.1.0
+  to [2m................[0m [36m0.0.9[0m
+
+• [1mconfig[0m
+  hwm.yaml [2m..........[0m [36m⟳[0m
+
+./ [1mworkspace[0m
+
+  • [1mlibs[0m
+  [2m└── [0mfoo [2m....[0m [36m⟳[0m [2mhpack[0m[2m [0m[36m⟳[0m [2mcabal[0m
+  [2m└── [0mbar [2m....[0m [36m⟳[0m [2mhpack[0m[2m [0m[36m⟳[0m [2mcabal[0m
+
+
+[1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
+
+  [2m• [0m[1mversion[0m
+  [2m└── [0m[2m• [0m[33mThe specified version is lower than the current version. This may cause issues with package managers and should be done with caution.[0m
+

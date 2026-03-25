@@ -1,0 +1,10 @@
+invalid version(banana): Could not parse Int: 'banana'!
+
+Usage: hwm version [BUMP]
+
+  Display the current workspace version or bump it (patch, minor, major).
+
+Available options:
+  -h,--help                Show this help text
+  BUMP                     Bump the version. Can be one of: major, minor, patch,
+                           or a specific version like 1.2.3
