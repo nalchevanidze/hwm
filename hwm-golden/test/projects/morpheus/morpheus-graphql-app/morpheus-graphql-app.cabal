@@ -135,7 +135,8 @@ source-repository head
 
 library
   exposed-modules:
-      Ghost.App.Missing
+      Nested.Stub
+      Nested.Extra.SecondStub
   other-modules:
       Paths_morpheus_graphql_app
   hs-source-dirs:
@@ -165,7 +166,8 @@ test-suite morpheus-graphql-app-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Ghost.App.Test.Missing
+      Nested.TestStub
+      Nested.Extra.SecondTestStub
       Paths_morpheus_graphql_app
   hs-source-dirs:
       test

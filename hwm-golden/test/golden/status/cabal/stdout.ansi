@@ -47,20 +47,6 @@
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
           [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
           [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
-  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
-      [2m└── [0m[2mcomponent: library (2)[0m
-          [2m└── [0m[2mNested/Extra/SecondStub.hs[0m
-          [2m└── [0m[2mNested/Stub.hs[0m
-  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
-      [2m└── [0m[2mcomponent: library (1)[0m
-          [2m└── [0m[2mGhost/App/Missing.hs[0m
-  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
-      [2m└── [0m[2mcomponent: test:morpheus-graphql-app-test (2)[0m
-          [2m└── [0m[2mNested/Extra/SecondTestStub.hs[0m
-          [2m└── [0m[2mNested/TestStub.hs[0m
-  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
-      [2m└── [0m[2mcomponent: test:morpheus-graphql-app-test (1)[0m
-          [2m└── [0m[2mGhost/App/Test/Missing.hs[0m
   [2m• [0m[1mbenchmarks[0m
   [2m└── [0m[2m• [0m[33m2 dependency issue(s)[0m
       [2m└── [0m[2mfile: helpers/benchmarks/morpheus-graphql-benchmarks.cabal[0m
@@ -133,13 +119,6 @@
       [2m└── [0m[2mfile: morpheus-graphql-server/morpheus-graphql-server.cabal[0m
       [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-server-test[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
-      [2m└── [0m[2mcomponent: library (1)[0m
-          [2m└── [0m[2mNested/Extra/SecondStub.hs[0m
-  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
-      [2m└── [0m[2mcomponent: test:morpheus-graphql-server-test (2)[0m
-          [2m└── [0m[2mNested/Extra/SecondTestStub.hs[0m
-          [2m└── [0m[2mNested/TestStub.hs[0m
   [2m• [0m[1msubscriptions[0m
   [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-subscriptions/morpheus-graphql-subscriptions.cabal[0m

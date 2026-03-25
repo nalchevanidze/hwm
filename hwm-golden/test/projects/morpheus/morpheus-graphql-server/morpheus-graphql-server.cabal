@@ -311,6 +311,7 @@ source-repository head
 library
   exposed-modules:
       Nested.Stub
+      Nested.Extra.SecondStub
   other-modules:
       Paths_morpheus_graphql_server
   hs-source-dirs:
@@ -336,6 +337,8 @@ test-suite morpheus-graphql-server-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Nested.TestStub
+      Nested.Extra.SecondTestStub
       Paths_morpheus_graphql_server
   hs-source-dirs:
       test
