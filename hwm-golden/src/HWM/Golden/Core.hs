@@ -8,15 +8,15 @@
 module HWM.Golden.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, hasNoChanges, cleanupEmptyDeltaFiles, copyLocalFiles, inWorkDir, diff, runHWM, runHWMFail, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value, (.:?), (.=), object, withObject)
+import Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObject, (.:?), (.=))
 import Data.Aeson.Types ((.!=))
-import qualified Data.Yaml as Yaml
 import qualified Data.ByteString as BS
 import qualified Data.List as S
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime)
+import qualified Data.Yaml as Yaml
 import qualified GHC.IO.Exception as System.Exit
 import Relude
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removeFile, removePathForcibly, setCurrentDirectory)
@@ -110,11 +110,12 @@ mkGoldenEnv = do
   let localBin = home </> ".local" </> "bin"
   let pathValue = S.intercalate ":" [cwd </> "bin", localBin, oldPath]
   let keep (k, _) = k /= "PATH" && k /= "HOME"
-  pure $ [ ("PATH", pathValue),
-           ("HOME", home),
-           ("HWM_LOG_ID_FIXED", "golden"),
-           ("CI", "1")
-         ]
+  pure
+    $ [ ("PATH", pathValue),
+        ("HOME", home),
+        ("HWM_LOG_ID_FIXED", "golden"),
+        ("CI", "1")
+      ]
     <> filter keep current
 
 runHWM :: String -> IO String
@@ -154,10 +155,17 @@ instance ToJSON ChangeReport where
 instance FromJSON ChangeReport where
   parseJSON = withObject "ChangeReport" $ \o ->
     ChangeReport
-      <$> o .:? "addedFiles" .!= []
-      <*> o .:? "deletedFiles" .!= []
-      <*> o .:? "modifiedFiles" .!= []
-      <*> o .:? "invocations"
+      <$> o
+      .:? "addedFiles"
+      .!= []
+      <*> o
+      .:? "deletedFiles"
+      .!= []
+      <*> o
+      .:? "modifiedFiles"
+      .!= []
+      <*> o
+      .:? "invocations"
 
 buildChangeReport :: [(FilePath, UTCTime)] -> [(FilePath, UTCTime)] -> ChangeReport
 buildChangeReport oldState newState =
