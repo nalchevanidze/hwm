@@ -12,60 +12,6 @@ synopsis:           Morpheus GraphQL Core
 description:        Build GraphQL APIs with your favorite functional language!
 category:           web, graphql
 build-type:         Simple
-data-files:
-    test/query/parsing/selection-set/empty-selection-2/response.json
-    test/query/parsing/selection-set/empty-selection/response.json
-    test/query/parsing/selection-set/non-empty-selection-2/response.json
-    test/query/parsing/selection-set/non-empty-selection/response.json
-    test/query/validation/__typename/arguments/response.json
-    test/query/validation/__typename/selection-set/response.json
-    test/query/validation/__typename/success/response.json
-    test/rendering/variable/enum/variables.json
-    test/rendering/variable/include-exclude/variables.json
-    test/rendering/variable/input/variables.json
-    test/rendering/variable/list/variables.json
-    test/rendering/variable/simple/variables.json
-    test/schema/parsing/descriptions/grave-accent/response.json
-    test/schema/parsing/descriptions/ok/response.json
-    test/schema/parsing/directive/ok/simple/response.json
-    test/schema/parsing/directive/ok/sophisticated/response.json
-    test/schema/parsing/schema-definition/fail/dupplicate-field/query-mutation-subscription/response.json
-    test/schema/parsing/schema-definition/fail/dupplicate-field/query/response.json
-    test/schema/parsing/schema-definition/fail/dupplicate-schema-definition/response.json
-    test/schema/parsing/schema-definition/fail/unknown-fields/bla/response.json
-    test/schema/parsing/schema-definition/fail/unknown-fields/uppercase/response.json
-    test/schema/parsing/schema-definition/ok/query-mutation-subscription/response.json
-    test/schema/parsing/schema-definition/ok/query-mutation/response.json
-    test/schema/parsing/schema-definition/ok/query/response.json
-    test/schema/validation/default-value/argument/compound-ok/response.json
-    test/schema/validation/default-value/argument/missing-field/response.json
-    test/schema/validation/default-value/argument/unexpected-value/response.json
-    test/schema/validation/default-value/argument/unknown-field/response.json
-    test/schema/validation/default-value/field/compound-ok/response.json
-    test/schema/validation/default-value/field/missing-field/response.json
-    test/schema/validation/default-value/field/unexpected-value/response.json
-    test/schema/validation/default-value/field/unknown-field/response.json
-    test/schema/validation/directive/fail/at-invalid-place/response.json
-    test/schema/validation/directive/fail/missing-argument/response.json
-    test/schema/validation/directive/fail/sopthisticated/response.json
-    test/schema/validation/directive/fail/unexpected-value/response.json
-    test/schema/validation/directive/fail/unknown-directive/response.json
-    test/schema/validation/directive/ok/deprecated/custom-directive/response.json
-    test/schema/validation/directive/ok/deprecated/response.json
-    test/schema/validation/interface/field-args/fail/response.json
-    test/schema/validation/interface/field-args/ok/response.json
-    test/schema/validation/interface/field-type/fail/response.json
-    test/schema/validation/interface/field-type/ok/response.json
-    test/schema/validation/performance-check/response.json
-    test/schema/validation/schema-definition/fail/non-object-kind/from-schema/response.json
-    test/schema/validation/schema-definition/fail/non-object-kind/without-schema/response.json
-    "test/schema/validation/schema-definition/fail/required query/empty/response.json"
-    "test/schema/validation/schema-definition/fail/required query/no-query/response.json"
-    "test/schema/validation/schema-definition/fail/required query/no-schema-no-query/response.json"
-    "test/schema/validation/schema-definition/fail/required query/schema-with-query/response.json"
-    test/schema/validation/schema-definition/fail/unknown-type/unknown/response.json
-    test/schema/validation/schema-definition/ok/full/response.json
-
 extra-source-files:
     README.md
     changelog.md
