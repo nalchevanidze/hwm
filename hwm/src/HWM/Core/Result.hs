@@ -42,8 +42,7 @@ data IssueDetails
       }
   | SourceInclusionIssue
       { issueComponent :: Text,
-        issueMissingInCabal :: [Text],
-        issueMissingInCodebase :: [Text]
+        issueTargets :: [Text]
       }
   deriving (Show, Eq, Ord)
 

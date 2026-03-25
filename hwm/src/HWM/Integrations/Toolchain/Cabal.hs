@@ -138,24 +138,30 @@ moduleSetBenchmark :: Benchmark -> Set.Set ModuleName
 moduleSetBenchmark Benchmark {..} = Set.fromList (otherModules benchmarkBuildInfo)
 
 mkSourceIssues :: Pkg -> Map Text (Set.Set ModuleName) -> Map Text (Set.Set ModuleName) -> [Issue]
-mkSourceIssues pkg declared target = mapMaybe toIssue' (Set.toList labels)
+mkSourceIssues pkg declared target = concatMap toIssues (Set.toList labels)
   where
     labels = Set.union (Map.keysSet declared) (Map.keysSet target)
-    toIssue' label =
+    toIssues label =
       let current = Map.findWithDefault Set.empty label declared
           expected = Map.findWithDefault Set.empty label target
           missingInCabal = map moduleToFile (Set.toList (Set.difference expected current))
           missingInCode = map moduleToFile (Set.toList (Set.difference current expected))
-       in if null missingInCabal && null missingInCode
-            then Nothing
-            else
-              Just
-                Issue
-                  { issueTopic = P.pkgMemberId pkg,
-                    issueSeverity = SeverityWarning,
-                    issueMessage = "Cabal source inclusion drift",
-                    issueDetails = Just (SourceInclusionIssue label missingInCabal missingInCode)
-                  }
+       in catMaybes
+            [ mkIssue SeverityWarning "Source files exist in codebase but are missing in .cabal" label missingInCabal,
+              mkIssue SeverityError "Modules/files declared in .cabal are missing in codebase" label missingInCode
+            ]
+
+    mkIssue severity message component targets =
+      if null targets
+        then Nothing
+        else
+          Just
+            Issue
+              { issueTopic = P.pkgMemberId pkg,
+                issueSeverity = severity,
+                issueMessage = message,
+                issueDetails = Just (SourceInclusionIssue component targets)
+              }
 
 moduleToFile :: ModuleName -> Text
 moduleToFile m = toText (ModuleName.toFilePath m <> ".hs")

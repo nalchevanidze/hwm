@@ -224,18 +224,13 @@ renderSummaryLines issues =
                in step <> chalk (levelColor issueSeverity) issueMessage
                     : l2 <> chalk Dim ("file: " <> format issueFile)
                     : depLines
-            renderIssue Issue {issueDetails = Just (SourceInclusionIssue {issueComponent, issueMissingInCabal, issueMissingInCodebase}), issueSeverity, issueMessage} =
-              let renderSection title xs =
-                    if null xs
-                      then []
-                      else
-                        (l2 <> chalk Dim "• " <> chalk Dim (title <> " (" <> show (length xs) <> ")"))
-                          : map (\file -> l1 <> "        " <> subPathSign <> chalk Dim file) (take 8 xs)
-                          <> [l1 <> "        " <> subPathSign <> chalk Dim ("… (+" <> show (length xs - 8) <> " more)") | length xs > 8]
+            renderIssue Issue {issueDetails = Just (SourceInclusionIssue {issueComponent, issueTargets}), issueSeverity, issueMessage} =
+              let targets = take 8 issueTargets
+                  rest = length issueTargets - length targets
                in (step <> chalk (levelColor issueSeverity) issueMessage)
-                    : (l2 <> chalk Dim ("component: " <> issueComponent))
-                    : renderSection "missing in .cabal" issueMissingInCabal
-                    <> renderSection "missing in codebase" issueMissingInCodebase
+                    : (l2 <> chalk Dim ("component: " <> issueComponent <> " (" <> show (length issueTargets) <> ")"))
+                    : map (\file -> l1 <> "        " <> subPathSign <> chalk Dim file) targets
+                    <> [l1 <> "        " <> subPathSign <> chalk Dim ("… (+" <> show rest <> " more)") | rest > 0]
             detailLines = concatMap renderIssue pkgIssues
          in headerText : detailLines
    in ["", headerLine, ""] <> concatMap renderGroup grouped <> [""]

@@ -28,24 +28,24 @@
   [2m└── [0m_root_ [2m............[0m [33m![0m [33mcabal[0m
 
 
-[1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
+[1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
 
   [2m• [0m[1m_root_[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: library[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
           [2m└── [0m[2mStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (5)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (5)[0m
           [2m└── [0m[2mData/Morpheus.hs[0m
           [2m└── [0m[2mData/Morpheus/Document.hs[0m
           [2m└── [0m[2mData/Morpheus/Kind.hs[0m
           [2m└── [0m[2mData/Morpheus/NamedResolvers.hs[0m
           [2m└── [0m[2mData/Morpheus/Types.hs[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: test:morpheus-graphql-test[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-test (1)[0m
           [2m└── [0m[2mTestStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (9)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-test (9)[0m
           [2m└── [0m[2mFeature/Holistic/API.hs[0m
           [2m└── [0m[2mFeature/Input/DefaultValues.hs[0m
           [2m└── [0m[2mRendering/Schema.hs[0m
@@ -56,11 +56,11 @@
           [2m└── [0m[2mSubscription/Test.hs[0m
           [2m└── [0m[2m… (+1 more)[0m
   [2m• [0m[1mapp[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: library[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
           [2m└── [0m[2mStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (19)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (19)[0m
           [2m└── [0m[2mData/Morpheus/App.hs[0m
           [2m└── [0m[2mData/Morpheus/App/Internal/Resolving.hs[0m
           [2m└── [0m[2mData/Morpheus/App/Internal/Resolving/Batching.hs[0m
@@ -70,28 +70,27 @@
           [2m└── [0m[2mData/Morpheus/App/Internal/Resolving/Refs.hs[0m
           [2m└── [0m[2mData/Morpheus/App/Internal/Resolving/ResolveValue.hs[0m
           [2m└── [0m[2m… (+11 more)[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: test:morpheus-graphql-app-test[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-app-test (1)[0m
           [2m└── [0m[2mTestStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (5)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-app-test (5)[0m
           [2m└── [0m[2mAPIConstraints.hs[0m
           [2m└── [0m[2mBatching.hs[0m
           [2m└── [0m[2mDisableIntrospection.hs[0m
           [2m└── [0m[2mExecution.hs[0m
           [2m└── [0m[2mNamedResolvers.hs[0m
   [2m• [0m[1mbenchmarks[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: bench:morpheus-graphql-bench[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (2)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: bench:morpheus-graphql-bench (2)[0m
           [2m└── [0m[2mParser/GraphQL.hs[0m
           [2m└── [0m[2mParser/Morpheus.hs[0m
   [2m• [0m[1mclient[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: library[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
           [2m└── [0m[2mStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (24)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (24)[0m
           [2m└── [0m[2mData/Morpheus/Client.hs[0m
           [2m└── [0m[2mData/Morpheus/Client/CodeGen/AST.hs[0m
           [2m└── [0m[2mData/Morpheus/Client/CodeGen/Declare.hs[0m
@@ -101,11 +100,11 @@
           [2m└── [0m[2mData/Morpheus/Client/CodeGen/Interpreting/Global.hs[0m
           [2m└── [0m[2mData/Morpheus/Client/CodeGen/Interpreting/Local.hs[0m
           [2m└── [0m[2m… (+16 more)[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: test:morpheus-graphql-client-test[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-client-test (1)[0m
           [2m└── [0m[2mTestStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (10)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-client-test (10)[0m
           [2m└── [0m[2mCase/Enum/Test.hs[0m
           [2m└── [0m[2mCase/Fragments/Test.hs[0m
           [2m└── [0m[2mCase/Github/Test.hs[0m
@@ -116,20 +115,20 @@
           [2m└── [0m[2mCase/ResponseTypes/Test.hs[0m
           [2m└── [0m[2m… (+2 more)[0m
   [2m• [0m[1mcode-gen[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: exe:morpheus[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: exe:morpheus (1)[0m
           [2m└── [0m[2mCliStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (4)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: exe:morpheus (4)[0m
           [2m└── [0m[2mCLI/Commands.hs[0m
           [2m└── [0m[2mCLI/Config.hs[0m
           [2m└── [0m[2mCLI/File.hs[0m
           [2m└── [0m[2mCLI/Generator.hs[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: library[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
           [2m└── [0m[2mStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (7)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (7)[0m
           [2m└── [0m[2mData/Morpheus/CodeGen.hs[0m
           [2m└── [0m[2mData/Morpheus/CodeGen/Server.hs[0m
           [2m└── [0m[2mData/Morpheus/CodeGen/Server/Internal/AST.hs[0m
@@ -138,11 +137,11 @@
           [2m└── [0m[2mData/Morpheus/CodeGen/Server/Interpreting/Utils.hs[0m
           [2m└── [0m[2mData/Morpheus/CodeGen/Server/Printing/TH.hs[0m
   [2m• [0m[1mcode-gen-utils[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: library[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
           [2m└── [0m[2mStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (6)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (6)[0m
           [2m└── [0m[2mData/Morpheus/CodeGen/Internal/AST.hs[0m
           [2m└── [0m[2mData/Morpheus/CodeGen/Internal/Flags.hs[0m
           [2m└── [0m[2mData/Morpheus/CodeGen/Internal/Name.hs[0m
@@ -150,11 +149,11 @@
           [2m└── [0m[2mData/Morpheus/CodeGen/TH.hs[0m
           [2m└── [0m[2mData/Morpheus/CodeGen/Utils.hs[0m
   [2m• [0m[1mcore[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: library[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
           [2m└── [0m[2mStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (74)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (74)[0m
           [2m└── [0m[2mData/Mergeable.hs[0m
           [2m└── [0m[2mData/Mergeable/Internal/Merge.hs[0m
           [2m└── [0m[2mData/Mergeable/Internal/NameCollision.hs[0m
@@ -164,16 +163,15 @@
           [2m└── [0m[2mData/Mergeable/OrdMap.hs[0m
           [2m└── [0m[2mData/Mergeable/SafeHashMap.hs[0m
           [2m└── [0m[2m… (+66 more)[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: test:morpheus-graphql-core-test[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-core-test (1)[0m
           [2m└── [0m[2mTestStub.hs[0m
   [2m• [0m[1mserver[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: library[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
           [2m└── [0m[2mStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (40)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (40)[0m
           [2m└── [0m[2mData/Morpheus/Generic.hs[0m
           [2m└── [0m[2mData/Morpheus/Generic/Cons.hs[0m
           [2m└── [0m[2mData/Morpheus/Generic/Fields.hs[0m
@@ -183,11 +181,11 @@
           [2m└── [0m[2mData/Morpheus/Generic/Proxy.hs[0m
           [2m└── [0m[2mData/Morpheus/Generic/RefType.hs[0m
           [2m└── [0m[2m… (+32 more)[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: test:morpheus-graphql-server-test[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-server-test (1)[0m
           [2m└── [0m[2mTestStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (30)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-server-test (30)[0m
           [2m└── [0m[2mFeature/Collision/CategoryCollisionFail.hs[0m
           [2m└── [0m[2mFeature/Collision/CategoryCollisionSuccess.hs[0m
           [2m└── [0m[2mFeature/Collision/NameCollision.hs[0m
@@ -198,11 +196,11 @@
           [2m└── [0m[2mFeature/Directive/TypeVisitor.hs[0m
           [2m└── [0m[2m… (+22 more)[0m
   [2m• [0m[1msubscriptions[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: library[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
           [2m└── [0m[2mStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (7)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (7)[0m
           [2m└── [0m[2mData/Morpheus/Subscriptions.hs[0m
           [2m└── [0m[2mData/Morpheus/Subscriptions/Apollo.hs[0m
           [2m└── [0m[2mData/Morpheus/Subscriptions/ClientConnectionStore.hs[0m
@@ -211,11 +209,11 @@
           [2m└── [0m[2mData/Morpheus/Subscriptions/Stream.hs[0m
           [2m└── [0m[2mData/Morpheus/Subscriptions/WebSockets.hs[0m
   [2m• [0m[1mtests[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
-      [2m└── [0m[2mcomponent: library[0m
-      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
           [2m└── [0m[2mStub.hs[0m
-      [2m└── [0m[2m• [0m[2mmissing in codebase (5)[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (5)[0m
           [2m└── [0m[2mTest/Morpheus.hs[0m
           [2m└── [0m[2mTest/Morpheus/File.hs[0m
           [2m└── [0m[2mTest/Morpheus/JSONDiff.hs[0m
