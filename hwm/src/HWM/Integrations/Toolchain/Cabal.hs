@@ -8,6 +8,7 @@
 
 module HWM.Integrations.Toolchain.Cabal
   ( validateHackage,
+    validateCabalSourceInclusion,
     syncCabalProject,
     HasSourceDirs (..),
     CabalPackage,
@@ -23,10 +24,14 @@ import Control.Exception.Base (try)
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.ByteString as BS
 import Data.Foldable (Foldable (..))
+import qualified Data.List
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Data.Text as T
+import Distribution.ModuleName (ModuleName)
+import qualified Distribution.ModuleName as ModuleName
 import Distribution.Package (packageVersion)
-import Distribution.PackageDescription (Benchmark (..), Executable (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
+import Distribution.PackageDescription (Benchmark (..), Executable (..), ForeignLib (..), GenericPackageDescription (..), PackageDescription (..), PackageIdentifier (..), TestSuite (..), UnqualComponentName, emptyBuildInfo, emptyLibrary, emptyPackageDescription, mkPackageName, packageDescription)
 import Distribution.PackageDescription.Check (PackageCheck (..), checkPackage)
 import Distribution.PackageDescription.Configuration (flattenPackageDescription)
 import Distribution.PackageDescription.Parsec
@@ -38,7 +43,7 @@ import Distribution.Simple.Setup (SDistFlags (..), defaultSDistFlags)
 import Distribution.Simple.SrcDist (sdist)
 import Distribution.Text (display)
 import Distribution.Types.BuildInfo (BuildInfo (..))
-import Distribution.Types.CondTree (CondTree (..))
+import Distribution.Types.CondTree (CondBranch (..), CondTree (..))
 import Distribution.Types.Library (Library (..))
 import Distribution.Utils.Path (getSymbolicPath, unsafeMakeSymbolicPath)
 import Distribution.Verbosity (normal)
@@ -48,7 +53,7 @@ import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
 import HWM.Core.Pkg (IsPkg (..), PackageIO, Pkg (..), PkgName)
 import qualified HWM.Core.Pkg as P
-import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
+import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Core.Sync (SyncMode (..))
 import HWM.Core.Version (Version, toCabalVersion)
 import HWM.Domain.Build (Builder (CabalBuilder, NixBuilder))
@@ -62,8 +67,8 @@ import Hpack (Force (..), Options (..), Result (..), defaultOptions, hpackResult
 import qualified Hpack as H
 import Hpack.Config (ProgramName (..))
 import Relude
-import System.Directory (createDirectoryIfMissing, doesFileExist, makeAbsolute, removePathForcibly, renameFile, withCurrentDirectory)
-import System.FilePath (takeDirectory, (</>))
+import System.Directory (createDirectoryIfMissing, doesDirectoryExist, doesFileExist, listDirectory, makeAbsolute, removePathForcibly, renameFile, withCurrentDirectory)
+import System.FilePath (dropExtension, isExtensionOf, makeRelative, normalise, splitDirectories, takeDirectory, (</>))
 
 toStatus :: PackageCheck -> Status
 toStatus p
@@ -93,38 +98,98 @@ validateHackage pkg = do
   for_ ls $ \l -> injectIssue (toIssue pkg l)
   pure (maximum (Checked : map toStatus ls))
 
+validateCabalSourceInclusion :: Pkg -> ConfigT Status
+validateCabalSourceInclusion pkg = do
+  gpd <- liftIO $ readGenericPackageDescription normal (P.cabalFile pkg)
+  issues <- liftIO $ sourceInclusionIssues pkg gpd
+  for_ issues injectIssue
+  pure $ if null issues then Checked else Warning
+
+sourceInclusionIssues :: Pkg -> GenericPackageDescription -> IO [Issue]
+sourceInclusionIssues pkg gpd = do
+  expected <- syncGenericPackageDescription (takeDirectory (P.cabalFile pkg)) gpd
+  let declared = declaredModules gpd
+  let target = declaredModules expected
+  pure (mkSourceIssues pkg declared target)
+
+declaredModules :: GenericPackageDescription -> Map Text (Set.Set ModuleName)
+declaredModules GenericPackageDescription {..} =
+  Map.fromList
+    $ maybeToList ((\tree -> ("library", moduleSetLibrary (condTreeData tree))) <$> condLibrary)
+    <> map (\(name, tree) -> ("library:" <> format name, moduleSetLibrary (condTreeData tree))) condSubLibraries
+    <> map (\(name, tree) -> ("foreign:" <> format name, moduleSetForeign (condTreeData tree))) condForeignLibs
+    <> map (\(name, tree) -> ("exe:" <> format name, moduleSetExecutable (condTreeData tree))) condExecutables
+    <> map (\(name, tree) -> ("test:" <> format name, moduleSetTest (condTreeData tree))) condTestSuites
+    <> map (\(name, tree) -> ("bench:" <> format name, moduleSetBenchmark (condTreeData tree))) condBenchmarks
+
+moduleSetLibrary :: Library -> Set.Set ModuleName
+moduleSetLibrary Library {..} = Set.fromList (exposedModules <> otherModules libBuildInfo)
+
+moduleSetForeign :: ForeignLib -> Set.Set ModuleName
+moduleSetForeign ForeignLib {..} = Set.fromList (otherModules foreignLibBuildInfo)
+
+moduleSetExecutable :: Executable -> Set.Set ModuleName
+moduleSetExecutable Executable {..} = Set.fromList (otherModules buildInfo)
+
+moduleSetTest :: TestSuite -> Set.Set ModuleName
+moduleSetTest TestSuite {..} = Set.fromList (otherModules testBuildInfo)
+
+moduleSetBenchmark :: Benchmark -> Set.Set ModuleName
+moduleSetBenchmark Benchmark {..} = Set.fromList (otherModules benchmarkBuildInfo)
+
+mkSourceIssues :: Pkg -> Map Text (Set.Set ModuleName) -> Map Text (Set.Set ModuleName) -> [Issue]
+mkSourceIssues pkg declared target = concatMap toIssues (Set.toList labels)
+  where
+    labels = Set.union (Map.keysSet declared) (Map.keysSet target)
+    toIssues label =
+      let current = Map.findWithDefault Set.empty label declared
+          expected = Map.findWithDefault Set.empty label target
+          missingInCabal = map moduleToFile (Set.toList (Set.difference expected current))
+          missingInCode = map moduleToFile (Set.toList (Set.difference current expected))
+       in catMaybes
+            [ mkIssue SeverityWarning "Source files exist in codebase but are missing in .cabal" label missingInCabal,
+              mkIssue SeverityError "Modules/files declared in .cabal are missing in codebase" label missingInCode
+            ]
+
+    mkIssue severity message component targets =
+      if null targets
+        then Nothing
+        else
+          Just
+            Issue
+              { issueTopic = P.pkgMemberId pkg,
+                issueSeverity = severity,
+                issueMessage = message,
+                issueDetails = Just (SourceInclusionIssue component targets)
+              }
+
+moduleToFile :: ModuleName -> Text
+moduleToFile m = toText (ModuleName.toFilePath m <> ".hs")
+
 instance PackageIO CabalPackage ConfigT where
   rewritePackage = rewriteCabalPackage
   readPackage = readCabalPackage
 
-getChanges :: Pkg -> (CabalPackage -> ConfigT (Maybe CabalPackage)) -> ConfigT (Maybe CabalPackage)
-getChanges pkg mapCabal = do
-  original <- readCabalPackage pkg
-  updated <- mapCabal original
-  case updated of
-    Nothing -> pure Nothing
-    Just newpackage ->
-      if cbContent newpackage == cbContent original
-        then pure Nothing
-        else pure (Just newpackage)
-
-forChanges :: (Applicative f) => Maybe t -> (t -> f a) -> f Status
-forChanges changes f = do
-  case changes of
-    Nothing -> pure Checked
-    Just newpackage -> f newpackage $> Updated
-
 rewriteCabalPackage :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> ConfigT Status
-rewriteCabalPackage mapCabal pkg@Pkg {hpackFile = Just path} = do
-  changes <- getChanges pkg mapCabal
-  update <- forChanges changes $ \_ -> hpackForceUpdate pkg path
-  validation <- validateHackage pkg
-  pure $ max validation update
 rewriteCabalPackage mapCabal pkg = do
-  changes <- getChanges pkg mapCabal
-  update <- forChanges changes $ \package -> liftIO $ writeGenericPackageDescription (P.cabalFile pkg) (cbContent package)
+  original <- readCabalPackage pkg
+  synced <- runCabalSync mapCabal pkg original
+  let changed = cbContent synced /= cbContent original
+  update <-
+    if changed
+      then case hpackFile pkg of
+        Just path -> hpackForceUpdate pkg path
+        Nothing -> liftIO (writeGenericPackageDescription (P.cabalFile pkg) (cbContent synced)) $> Updated
+      else pure Checked
   validation <- validateHackage pkg
   pure $ max validation update
+
+runCabalSync :: (CabalPackage -> ConfigT (Maybe CabalPackage)) -> Pkg -> CabalPackage -> ConfigT CabalPackage
+runCabalSync mapCabal pkg original = do
+  mapped <- fromMaybe original <$> mapCabal original
+  case hpackFile pkg of
+    Just _ -> pure mapped
+    Nothing -> liftIO (syncDiscoveredModules mapped)
 
 hpackForceUpdate :: (MonadIO m) => Pkg -> FilePath -> m Status
 hpackForceUpdate pkg path = do
@@ -186,6 +251,143 @@ readCabalPackage pkg = do
       { cbDirectory = takeDirectory (P.cabalFile pkg),
         cbContent = gpd
       }
+
+syncDiscoveredModules :: CabalPackage -> IO CabalPackage
+syncDiscoveredModules pkg@CabalPackage {..} = do
+  nextContent <- syncGenericPackageDescription cbDirectory cbContent
+  pure pkg {cbContent = nextContent}
+
+syncGenericPackageDescription :: FilePath -> GenericPackageDescription -> IO GenericPackageDescription
+syncGenericPackageDescription dir gpd@GenericPackageDescription {..} = do
+  nextLibrary <- traverse (mapCondTree syncLibraryModules dir) condLibrary
+  nextSubLibraries <- traverse (syncNamedCondTree syncLibraryModules dir) condSubLibraries
+  nextForeignLibs <- traverse (syncNamedCondTree syncForeignLibraryModules dir) condForeignLibs
+  nextExecutables <- traverse (syncNamedCondTree syncExecutableModules dir) condExecutables
+  nextTests <- traverse (syncNamedCondTree syncTestModules dir) condTestSuites
+  nextBenches <- traverse (syncNamedCondTree syncBenchmarkModules dir) condBenchmarks
+  pure
+    gpd
+      { condLibrary = nextLibrary,
+        condSubLibraries = nextSubLibraries,
+        condForeignLibs = nextForeignLibs,
+        condExecutables = nextExecutables,
+        condTestSuites = nextTests,
+        condBenchmarks = nextBenches
+      }
+
+syncNamedCondTree :: (FilePath -> a -> IO a) -> FilePath -> (k, CondTree v c a) -> IO (k, CondTree v c a)
+syncNamedCondTree syncComponent dir (name, tree) = do
+  nextTree <- mapCondTree syncComponent dir tree
+  pure (name, nextTree)
+
+mapCondTree :: (FilePath -> a -> IO a) -> FilePath -> CondTree v c a -> IO (CondTree v c a)
+mapCondTree syncComponent dir tree@CondNode {..} = do
+  nextData <- syncComponent dir condTreeData
+  nextComponents <-
+    forM condTreeComponents $ \CondBranch {..} -> do
+      nextIf <- mapCondTree syncComponent dir condBranchIfTrue
+      nextElse <- traverse (mapCondTree syncComponent dir) condBranchIfFalse
+      pure CondBranch {condBranchCondition = condBranchCondition, condBranchIfTrue = nextIf, condBranchIfFalse = nextElse}
+  pure tree {condTreeData = nextData, condTreeComponents = nextComponents}
+
+syncLibraryModules :: FilePath -> Library -> IO Library
+syncLibraryModules dir lib@Library {..} = do
+  discovered <- discoverModules dir (map getSymbolicPath (hsSourceDirs libBuildInfo))
+  let generated = filter isGeneratedModule (otherModules libBuildInfo)
+  let expected = sort (Data.List.nub (generated <> discovered))
+  let declared = sort (Data.List.nub (exposedModules <> otherModules libBuildInfo))
+  if moduleListsEqual declared expected
+    then pure lib
+    else
+      pure
+        lib
+          { exposedModules = discovered,
+            libBuildInfo = libBuildInfo {otherModules = sort (Data.List.nub generated)}
+          }
+
+syncForeignLibraryModules :: FilePath -> ForeignLib -> IO ForeignLib
+syncForeignLibraryModules dir foreignLib@ForeignLib {..} = do
+  discovered <- discoverModules dir (map getSymbolicPath (hsSourceDirs foreignLibBuildInfo))
+  let generated = filter isGeneratedModule (otherModules foreignLibBuildInfo)
+  let expected = sort (Data.List.nub (generated <> discovered))
+  let declared = sort (Data.List.nub (otherModules foreignLibBuildInfo))
+  if moduleListsEqual declared expected
+    then pure foreignLib
+    else pure foreignLib {foreignLibBuildInfo = foreignLibBuildInfo {otherModules = expected}}
+
+syncExecutableModules :: FilePath -> Executable -> IO Executable
+syncExecutableModules dir exe@Executable {..} = do
+  discovered <- discoverModules dir (map getSymbolicPath (hsSourceDirs buildInfo))
+  let mainModule = toModuleName modulePath
+  let generated = filter isGeneratedModule (otherModules buildInfo)
+  let discoveredWithoutMain = maybe discovered (`Data.List.delete` discovered) mainModule
+  let expected = sort (Data.List.nub (generated <> discoveredWithoutMain))
+  let declared = sort (Data.List.nub (otherModules buildInfo))
+  if moduleListsEqual declared expected
+    then pure exe
+    else pure exe {buildInfo = buildInfo {otherModules = expected}}
+
+syncTestModules :: FilePath -> TestSuite -> IO TestSuite
+syncTestModules dir test@TestSuite {..} = do
+  discovered <- discoverModules dir (map getSymbolicPath (hsSourceDirs testBuildInfo))
+  let generated = filter isGeneratedModule (otherModules testBuildInfo)
+  let expected = sort (Data.List.nub (generated <> discovered))
+  let declared = sort (Data.List.nub (otherModules testBuildInfo))
+  if moduleListsEqual declared expected
+    then pure test
+    else pure test {testBuildInfo = testBuildInfo {otherModules = expected}}
+
+syncBenchmarkModules :: FilePath -> Benchmark -> IO Benchmark
+syncBenchmarkModules dir bench@Benchmark {..} = do
+  discovered <- discoverModules dir (map getSymbolicPath (hsSourceDirs benchmarkBuildInfo))
+  let generated = filter isGeneratedModule (otherModules benchmarkBuildInfo)
+  let expected = sort (Data.List.nub (generated <> discovered))
+  let declared = sort (Data.List.nub (otherModules benchmarkBuildInfo))
+  if moduleListsEqual declared expected
+    then pure bench
+    else pure bench {benchmarkBuildInfo = benchmarkBuildInfo {otherModules = expected}}
+
+discoverModules :: FilePath -> [FilePath] -> IO [ModuleName]
+discoverModules dir sourceDirs = do
+  files <- concat <$> traverse (discoverModulesInDir dir) sourceDirs
+  pure (sort (Data.List.nub files))
+
+discoverModulesInDir :: FilePath -> FilePath -> IO [ModuleName]
+discoverModulesInDir base sourceDir = do
+  let root = normalise (base </> sourceDir)
+  exists <- doesDirectoryExist root
+  if not exists
+    then pure []
+    else do
+      hsFiles <- walkHsFiles root
+      pure (mapMaybe (toModuleName . makeRelative root) hsFiles)
+
+walkHsFiles :: FilePath -> IO [FilePath]
+walkHsFiles dir = do
+  children <- listDirectory dir
+  paths <-
+    forM children $ \name -> do
+      let path = dir </> name
+      isDir <- doesDirectoryExist path
+      if isDir
+        then walkHsFiles path
+        else pure [path | ".hs" `isExtensionOf` path]
+  pure (concat paths)
+
+toModuleName :: FilePath -> Maybe ModuleName
+toModuleName path =
+  if ".hs" `isExtensionOf` path
+    then
+      let parts = splitDirectories (dropExtension path)
+          cleaned = filter (not . null) parts
+       in if null cleaned then Nothing else Just (ModuleName.fromString (Data.List.intercalate "." cleaned))
+    else Nothing
+
+isGeneratedModule :: ModuleName -> Bool
+isGeneratedModule moduleName = "Paths_" `isPrefixOf` ModuleName.toFilePath moduleName
+
+moduleListsEqual :: [ModuleName] -> [ModuleName] -> Bool
+moduleListsEqual a b = Set.fromList a == Set.fromList b
 
 class HasSourceDirs a where
   getSourceDirs :: [Text] -> a -> [(Text, Name)]

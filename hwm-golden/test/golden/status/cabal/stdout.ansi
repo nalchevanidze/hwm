@@ -19,18 +19,24 @@
   [2m└── [0mtests [2m.............[0m [33m![0m [33mcabal[0m
   [2m└── [0mcore [2m..............[0m [33m![0m [33mcabal[0m
   [2m└── [0msubscriptions [2m.....[0m [33m![0m [33mcabal[0m
-  [2m└── [0mcode-gen [2m..........[0m [32m✓[0m
+  [2m└── [0mcode-gen [2m..........[0m [33m![0m [33mcabal[0m
   [2m└── [0mclient [2m............[0m [33m![0m [33mcabal[0m
   [2m└── [0m_root_ [2m............[0m [33m![0m [33mcabal[0m
 
 
-[1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
+[1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
 
   [2m• [0m[1m_root_[0m
   [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql/morpheus-graphql.cabal[0m
       [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-test[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
+          [2m└── [0m[2mGhost/Root/Library/Miss.hs[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-test (1)[0m
+          [2m└── [0m[2mGhost/Root/Test/Miss.hs[0m
   [2m• [0m[1mapp[0m
   [2m└── [0m[2m• [0m[33m5 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-app/morpheus-graphql-app.cabal[0m
@@ -55,6 +61,27 @@
       [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-client-test[0m
           [2m└── [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
+          [2m└── [0m[2mNested/Extra/SecondStub.hs[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-client-test (14)[0m
+          [2m└── [0m[2mNested/Extra/SecondTestStub.hs[0m
+          [2m└── [0m[2mNested/Mass/Stub01.hs[0m
+          [2m└── [0m[2mNested/Mass/Stub02.hs[0m
+          [2m└── [0m[2mNested/Mass/Stub03.hs[0m
+          [2m└── [0m[2mNested/Mass/Stub04.hs[0m
+          [2m└── [0m[2mNested/Mass/Stub05.hs[0m
+          [2m└── [0m[2mNested/Mass/Stub06.hs[0m
+          [2m└── [0m[2mNested/Mass/Stub07.hs[0m
+          [2m└── [0m[2m… (+6 more)[0m
+  [2m• [0m[1mcode-gen[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: exe:morpheus (1)[0m
+          [2m└── [0m[2mCLI/Deep/Missing.hs[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (1)[0m
+          [2m└── [0m[2mGhost/CodeGen/Library/Miss.hs[0m
   [2m• [0m[1mcore[0m
   [2m└── [0m[2m• [0m[33m5 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-core/morpheus-graphql-core.cabal[0m
@@ -65,6 +92,28 @@
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
           [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
           [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: library (2)[0m
+          [2m└── [0m[2mNested/Extra/SecondStub.hs[0m
+          [2m└── [0m[2mNested/Stub.hs[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: library (12)[0m
+          [2m└── [0m[2mGhost/Core/Library/Miss01.hs[0m
+          [2m└── [0m[2mGhost/Core/Library/Miss02.hs[0m
+          [2m└── [0m[2mGhost/Core/Library/Miss03.hs[0m
+          [2m└── [0m[2mGhost/Core/Library/Miss04.hs[0m
+          [2m└── [0m[2mGhost/Core/Library/Miss05.hs[0m
+          [2m└── [0m[2mGhost/Core/Library/Miss06.hs[0m
+          [2m└── [0m[2mGhost/Core/Library/Miss07.hs[0m
+          [2m└── [0m[2mGhost/Core/Library/Miss08.hs[0m
+          [2m└── [0m[2m… (+4 more)[0m
+  [2m└── [0m[2m• [0m[33mSource files exist in codebase but are missing in .cabal[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-core-test (2)[0m
+          [2m└── [0m[2mNested/Extra/SecondTestStub.hs[0m
+          [2m└── [0m[2mNested/TestStub.hs[0m
+  [2m└── [0m[2m• [0m[31mModules/files declared in .cabal are missing in codebase[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-core-test (1)[0m
+          [2m└── [0m[2mGhost/Core/Test/Miss.hs[0m
   [2m• [0m[1mserver[0m
   [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-server/morpheus-graphql-server.cabal[0m

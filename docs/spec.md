@@ -122,6 +122,9 @@ Shows:
 - project name and version
 - environments table (active/default context)
 - workspace/package validation summary
+- package source inclusion drift for cabal packages:
+  - warning: source files exist but are missing in `.cabal`
+  - error: modules/files declared in `.cabal` are missing in codebase
 
 ---
 
@@ -152,6 +155,10 @@ hwm sync [ENV]
     - `packages`: run package validation pipeline (no rewrite)
   - smart defaults are builder-driven (`cabal` -> cabal project, `stack` -> stack yaml, `nix` -> flake, `hie` + `packages` default to sync)
 - Package sync behavior is controlled via `targets.packages`
+  - dependency/version sync runs as before
+  - for cabal-only packages, source inclusion sync discovers `.hs` modules from component source dirs and updates `.cabal` module inclusion deterministically
+  - package components already in sync are not rewritten
+  - hpack (`package.yaml`) packages keep existing hpack-driven behavior
 
 Current implementation note:
 

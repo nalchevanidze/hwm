@@ -27,14 +27,10 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus.CodeGen
-      Data.Morpheus.CodeGen.Server
+      Nested.Stub
+      Nested.Extra.SecondStub
   other-modules:
-      Data.Morpheus.CodeGen.Server.Internal.AST
-      Data.Morpheus.CodeGen.Server.Interpreting.Directive
-      Data.Morpheus.CodeGen.Server.Interpreting.Transform
-      Data.Morpheus.CodeGen.Server.Interpreting.Utils
-      Data.Morpheus.CodeGen.Server.Printing.TH
+      Ghost.CodeGen.Library.Miss
       Paths_morpheus_graphql_code_gen
   hs-source-dirs:
       src
@@ -57,10 +53,9 @@ library
 executable morpheus
   main-is: Main.hs
   other-modules:
-      CLI.Commands
-      CLI.Config
-      CLI.File
-      CLI.Generator
+      CLI.Nested.CliStub
+      CLI.Nested.Extra.CliExtraStub
+      CLI.Deep.Missing
       Paths_morpheus_graphql_code_gen
   hs-source-dirs:
       app

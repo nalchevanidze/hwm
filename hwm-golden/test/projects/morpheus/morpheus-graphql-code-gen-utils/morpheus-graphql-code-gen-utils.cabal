@@ -27,13 +27,9 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus.CodeGen.Internal.AST
-      Data.Morpheus.CodeGen.Printer
-      Data.Morpheus.CodeGen.TH
-      Data.Morpheus.CodeGen.Utils
+      Nested.Stub
+      Nested.Extra.SecondStub
   other-modules:
-      Data.Morpheus.CodeGen.Internal.Flags
-      Data.Morpheus.CodeGen.Internal.Name
       Paths_morpheus_graphql_code_gen_utils
   hs-source-dirs:
       src

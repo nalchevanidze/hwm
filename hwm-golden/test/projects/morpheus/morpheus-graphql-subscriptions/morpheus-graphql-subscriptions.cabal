@@ -27,14 +27,9 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus.Subscriptions
-      Data.Morpheus.Subscriptions.Internal
+      Nested.Stub
+      Nested.Extra.SecondStub
   other-modules:
-      Data.Morpheus.Subscriptions.Apollo
-      Data.Morpheus.Subscriptions.ClientConnectionStore
-      Data.Morpheus.Subscriptions.Event
-      Data.Morpheus.Subscriptions.Stream
-      Data.Morpheus.Subscriptions.WebSockets
       Paths_morpheus_graphql_subscriptions
   hs-source-dirs:
       src

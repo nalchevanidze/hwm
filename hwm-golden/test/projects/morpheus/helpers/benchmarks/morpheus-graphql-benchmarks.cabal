@@ -19,14 +19,6 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-data-files:
-    samples/descriptions.gql
-    samples/github.gql
-    samples/huge-string.gql
-    samples/mythology.gql
-    samples/starwars.gql
-    samples/wrappers.gql
-
 source-repository head
   type: git
   location: https://github.com/nalchevanidze/morpheus-graphql
@@ -35,8 +27,8 @@ benchmark morpheus-graphql-bench
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Parser.GraphQL
-      Parser.Morpheus
+      Parser.Nested.BenchStub
+      Parser.Nested.Extra.BenchExtraStub
       Paths_morpheus_graphql_benchmarks
   hs-source-dirs:
       src
