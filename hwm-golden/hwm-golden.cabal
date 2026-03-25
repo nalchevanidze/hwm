@@ -54,12 +54,16 @@ test-suite hwm-golden-sync
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Commands.Build
       Commands.Environments
       Commands.Init
+      Commands.Install
       Commands.Release
       Commands.Run
       Commands.Status
       Commands.Sync
+      Commands.Test
+      Commands.Version
       Commands.Workspace
       Paths_hwm_golden
   hs-source-dirs:
