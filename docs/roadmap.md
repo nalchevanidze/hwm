@@ -31,31 +31,9 @@ Today, `install` for these builder modes is unsupported (explicit errors). We sh
 - `hwm install --env=<nix-env>` works end-to-end.
 - CI examples include at least one nix install path.
 
----
 
-## 2) Cabal-first source inclusion (reduce `package.yaml` dependency)
 
-### Goal
-Make `.cabal` files self-sufficient by automatically maintaining source/module inclusion patterns.
-
-### Why
-Many workspaces want to avoid `package.yaml`/hpack and rely directly on `.cabal` files.
-
-### Planned outcomes
-
-- Add automatic source inclusion support for `.cabal`-managed packages using a glob strategy (initial target: `*/*.hs`, with extension points for broader patterns).
-- Keep generated/updated `.cabal` metadata aligned with discovered source files.
-- Enable workflows where `package.yaml` is optional or unnecessary for standard package layouts.
-
-### Acceptance criteria
-
-- `hwm sync` updates `.cabal` package source/module inclusion from project files.
-- New packages can be maintained without requiring `package.yaml`.
-- Behavior is documented with migration examples from hpack to cabal-only setups.
-
----
-
-## 3) Registry maintenance ergonomics
+## 2) Registry maintenance ergonomics
 
 ### Goal
 Reduce long-term dependency drift in large monorepos.

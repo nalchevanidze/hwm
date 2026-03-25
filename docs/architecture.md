@@ -158,6 +158,8 @@ Responsibilities:
 - parse/update cabal package descriptions
 - run `sdist` for release publishing
 - optional environment matrix setup via `CABAL_PROJECT_FILE`
+- source inclusion sync for cabal-only packages (discover `.hs` modules, update component module fields, preserve generated `Paths_*`)
+- source inclusion validation (detect codebase vs `.cabal` drift)
 
 ### 5.3 Package synchronization (`Integrations.Toolchain.Package`)
 
@@ -166,6 +168,7 @@ Responsibilities:
 - validate and sync package dependency/version consistency
 - inject dependencies (`registry add` flow)
 - sync across hpack/cabal sources
+- run cabal source inclusion validation in package status/check flow
 
 ### 5.4 Hie (`Integrations.Toolchain.Hie`)
 
