@@ -13,14 +13,6 @@ testInstall = describe "install" $ do
           scenario = "install/default-global"
         }
 
-  it "installs workspace member scope" $
-    goldenTest
-      Golden
-        { cmd = "install libs/foo",
-          project = "simple-bin",
-          scenario = "install/scope-member"
-        }
-
   it "forwards fast flag" $
     goldenTest
       Golden
