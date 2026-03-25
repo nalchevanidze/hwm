@@ -1,0 +1,12 @@
+
+./ [1mworkspace[0m
+  [2m└── [0mlibs/bar
+  [2m└── [0mlibs/foo
+
+• [1menvironments[0m
+
+  • [1mdefault (9.6.6)[0m
+[2K[1G    build [2m...........[0m ►[2m logs: .hwm/logs/golden-default.log[0m[2K[1G    build [2m...........[0m [32m✓[0m[2m logs: .hwm/logs/golden-default.log[0m
+
+[1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
+
