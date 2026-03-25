@@ -40,6 +40,11 @@ data IssueDetails
       { issueDependencies :: [(Text, Text, Text, Text)],
         issueFile :: FilePath
       }
+  | SourceInclusionIssue
+      { issueComponent :: Text,
+        issueMissingInCabal :: [Text],
+        issueMissingInCodebase :: [Text]
+      }
   deriving (Show, Eq, Ord)
 
 data Issue = Issue

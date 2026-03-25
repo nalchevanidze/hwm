@@ -31,28 +31,30 @@
       [2m└── [0m[2mfile: morpheus-graphql/morpheus-graphql.cabal[0m
       [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-test[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
-  • missing in .cabal (1)
-      └── Stub.hs
-  • missing in codebase (5)
-      └── Data/Morpheus.hs
-      └── Data/Morpheus/Document.hs
-      └── Data/Morpheus/Kind.hs
-      └── Data/Morpheus/NamedResolvers.hs
-      └── Data/Morpheus/Types.hs[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-test
-  • missing in .cabal (1)
-      └── TestStub.hs
-  • missing in codebase (9)
-      └── Feature/Holistic/API.hs
-      └── Feature/Input/DefaultValues.hs
-      └── Rendering/Schema.hs
-      └── Rendering/TestSchemaRendering.hs
-      └── Subscription/API.hs
-      └── Subscription/Case/ApolloRequest.hs
-      └── Subscription/Case/Publishing.hs
-      └── Subscription/Test.hs
-      └── … (+1 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: library[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (5)[0m
+          [2m└── [0m[2mData/Morpheus.hs[0m
+          [2m└── [0m[2mData/Morpheus/Document.hs[0m
+          [2m└── [0m[2mData/Morpheus/Kind.hs[0m
+          [2m└── [0m[2mData/Morpheus/NamedResolvers.hs[0m
+          [2m└── [0m[2mData/Morpheus/Types.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-test[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mTestStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (9)[0m
+          [2m└── [0m[2mFeature/Holistic/API.hs[0m
+          [2m└── [0m[2mFeature/Input/DefaultValues.hs[0m
+          [2m└── [0m[2mRendering/Schema.hs[0m
+          [2m└── [0m[2mRendering/TestSchemaRendering.hs[0m
+          [2m└── [0m[2mSubscription/API.hs[0m
+          [2m└── [0m[2mSubscription/Case/ApolloRequest.hs[0m
+          [2m└── [0m[2mSubscription/Case/Publishing.hs[0m
+          [2m└── [0m[2mSubscription/Test.hs[0m
+          [2m└── [0m[2m… (+1 more)[0m
   [2m• [0m[1mapp[0m
   [2m└── [0m[2m• [0m[33m5 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-app/morpheus-graphql-app.cabal[0m
@@ -63,38 +65,41 @@
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
           [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
           [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
-  • missing in .cabal (1)
-      └── Stub.hs
-  • missing in codebase (19)
-      └── Data/Morpheus/App.hs
-      └── Data/Morpheus/App/Internal/Resolving.hs
-      └── Data/Morpheus/App/Internal/Resolving/Batching.hs
-      └── Data/Morpheus/App/Internal/Resolving/Cache.hs
-      └── Data/Morpheus/App/Internal/Resolving/Event.hs
-      └── Data/Morpheus/App/Internal/Resolving/MonadResolver.hs
-      └── Data/Morpheus/App/Internal/Resolving/Refs.hs
-      └── Data/Morpheus/App/Internal/Resolving/ResolveValue.hs
-      └── … (+11 more)[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-app-test
-  • missing in .cabal (1)
-      └── TestStub.hs
-  • missing in codebase (5)
-      └── APIConstraints.hs
-      └── Batching.hs
-      └── DisableIntrospection.hs
-      └── Execution.hs
-      └── NamedResolvers.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: library[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (19)[0m
+          [2m└── [0m[2mData/Morpheus/App.hs[0m
+          [2m└── [0m[2mData/Morpheus/App/Internal/Resolving.hs[0m
+          [2m└── [0m[2mData/Morpheus/App/Internal/Resolving/Batching.hs[0m
+          [2m└── [0m[2mData/Morpheus/App/Internal/Resolving/Cache.hs[0m
+          [2m└── [0m[2mData/Morpheus/App/Internal/Resolving/Event.hs[0m
+          [2m└── [0m[2mData/Morpheus/App/Internal/Resolving/MonadResolver.hs[0m
+          [2m└── [0m[2mData/Morpheus/App/Internal/Resolving/Refs.hs[0m
+          [2m└── [0m[2mData/Morpheus/App/Internal/Resolving/ResolveValue.hs[0m
+          [2m└── [0m[2m… (+11 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-app-test[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mTestStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (5)[0m
+          [2m└── [0m[2mAPIConstraints.hs[0m
+          [2m└── [0m[2mBatching.hs[0m
+          [2m└── [0m[2mDisableIntrospection.hs[0m
+          [2m└── [0m[2mExecution.hs[0m
+          [2m└── [0m[2mNamedResolvers.hs[0m
   [2m• [0m[1mbenchmarks[0m
   [2m└── [0m[2m• [0m[33m2 dependency issue(s)[0m
       [2m└── [0m[2mfile: helpers/benchmarks/morpheus-graphql-benchmarks.cabal[0m
       [2m└── [0m[2m• [0m[2mbenchmarks:morpheus-graphql-bench[0m
           [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
           [2m└── [0mgraphql: [2m>= 0.5 && <  2.0.0 → unknown[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for bench:morpheus-graphql-bench
-  • missing in codebase (2)
-      └── Parser/GraphQL.hs
-      └── Parser/Morpheus.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: bench:morpheus-graphql-bench[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (2)[0m
+          [2m└── [0m[2mParser/GraphQL.hs[0m
+          [2m└── [0m[2mParser/Morpheus.hs[0m
   [2m• [0m[1mclient[0m
   [2m└── [0m[2m• [0m[33m3 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-client/morpheus-graphql-client.cabal[0m
@@ -103,63 +108,68 @@
       [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-client-test[0m
           [2m└── [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
-  • missing in .cabal (1)
-      └── Stub.hs
-  • missing in codebase (24)
-      └── Data/Morpheus/Client.hs
-      └── Data/Morpheus/Client/CodeGen/AST.hs
-      └── Data/Morpheus/Client/CodeGen/Declare.hs
-      └── Data/Morpheus/Client/CodeGen/Internal.hs
-      └── Data/Morpheus/Client/CodeGen/Interpreting/Arguments.hs
-      └── Data/Morpheus/Client/CodeGen/Interpreting/Core.hs
-      └── Data/Morpheus/Client/CodeGen/Interpreting/Global.hs
-      └── Data/Morpheus/Client/CodeGen/Interpreting/Local.hs
-      └── … (+16 more)[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-client-test
-  • missing in .cabal (1)
-      └── TestStub.hs
-  • missing in codebase (10)
-      └── Case/Enum/Test.hs
-      └── Case/Fragments/Test.hs
-      └── Case/Github/Test.hs
-      └── Case/Interface/Test.hs
-      └── Case/LocalGlobal/Api.hs
-      └── Case/LocalGlobal/Test.hs
-      └── Case/LowercaseTypeName/Test.hs
-      └── Case/ResponseTypes/Test.hs
-      └── … (+2 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: library[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (24)[0m
+          [2m└── [0m[2mData/Morpheus/Client.hs[0m
+          [2m└── [0m[2mData/Morpheus/Client/CodeGen/AST.hs[0m
+          [2m└── [0m[2mData/Morpheus/Client/CodeGen/Declare.hs[0m
+          [2m└── [0m[2mData/Morpheus/Client/CodeGen/Internal.hs[0m
+          [2m└── [0m[2mData/Morpheus/Client/CodeGen/Interpreting/Arguments.hs[0m
+          [2m└── [0m[2mData/Morpheus/Client/CodeGen/Interpreting/Core.hs[0m
+          [2m└── [0m[2mData/Morpheus/Client/CodeGen/Interpreting/Global.hs[0m
+          [2m└── [0m[2mData/Morpheus/Client/CodeGen/Interpreting/Local.hs[0m
+          [2m└── [0m[2m… (+16 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-client-test[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mTestStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (10)[0m
+          [2m└── [0m[2mCase/Enum/Test.hs[0m
+          [2m└── [0m[2mCase/Fragments/Test.hs[0m
+          [2m└── [0m[2mCase/Github/Test.hs[0m
+          [2m└── [0m[2mCase/Interface/Test.hs[0m
+          [2m└── [0m[2mCase/LocalGlobal/Api.hs[0m
+          [2m└── [0m[2mCase/LocalGlobal/Test.hs[0m
+          [2m└── [0m[2mCase/LowercaseTypeName/Test.hs[0m
+          [2m└── [0m[2mCase/ResponseTypes/Test.hs[0m
+          [2m└── [0m[2m… (+2 more)[0m
   [2m• [0m[1mcode-gen[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for exe:morpheus
-  • missing in .cabal (1)
-      └── CliStub.hs
-  • missing in codebase (4)
-      └── CLI/Commands.hs
-      └── CLI/Config.hs
-      └── CLI/File.hs
-      └── CLI/Generator.hs[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
-  • missing in .cabal (1)
-      └── Stub.hs
-  • missing in codebase (7)
-      └── Data/Morpheus/CodeGen.hs
-      └── Data/Morpheus/CodeGen/Server.hs
-      └── Data/Morpheus/CodeGen/Server/Internal/AST.hs
-      └── Data/Morpheus/CodeGen/Server/Interpreting/Directive.hs
-      └── Data/Morpheus/CodeGen/Server/Interpreting/Transform.hs
-      └── Data/Morpheus/CodeGen/Server/Interpreting/Utils.hs
-      └── Data/Morpheus/CodeGen/Server/Printing/TH.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: exe:morpheus[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mCliStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (4)[0m
+          [2m└── [0m[2mCLI/Commands.hs[0m
+          [2m└── [0m[2mCLI/Config.hs[0m
+          [2m└── [0m[2mCLI/File.hs[0m
+          [2m└── [0m[2mCLI/Generator.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: library[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (7)[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Server.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Server/Internal/AST.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Server/Interpreting/Directive.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Server/Interpreting/Transform.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Server/Interpreting/Utils.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Server/Printing/TH.hs[0m
   [2m• [0m[1mcode-gen-utils[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
-  • missing in .cabal (1)
-      └── Stub.hs
-  • missing in codebase (6)
-      └── Data/Morpheus/CodeGen/Internal/AST.hs
-      └── Data/Morpheus/CodeGen/Internal/Flags.hs
-      └── Data/Morpheus/CodeGen/Internal/Name.hs
-      └── Data/Morpheus/CodeGen/Printer.hs
-      └── Data/Morpheus/CodeGen/TH.hs
-      └── Data/Morpheus/CodeGen/Utils.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: library[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (6)[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Internal/AST.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Internal/Flags.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Internal/Name.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Printer.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/TH.hs[0m
+          [2m└── [0m[2mData/Morpheus/CodeGen/Utils.hs[0m
   [2m• [0m[1mcore[0m
   [2m└── [0m[2m• [0m[33m5 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-core/morpheus-graphql-core.cabal[0m
@@ -170,81 +180,87 @@
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
           [2m└── [0mmegaparsec: [2m>= 7.0.0 && <  10.0.0 → unknown[0m
           [2m└── [0mhashable: [2m>= 1.0.0 && <  2.0.0 → unknown[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
-  • missing in .cabal (1)
-      └── Stub.hs
-  • missing in codebase (74)
-      └── Data/Mergeable.hs
-      └── Data/Mergeable/Internal/Merge.hs
-      └── Data/Mergeable/Internal/NameCollision.hs
-      └── Data/Mergeable/Internal/Resolution.hs
-      └── Data/Mergeable/IsMap.hs
-      └── Data/Mergeable/MergeMap.hs
-      └── Data/Mergeable/OrdMap.hs
-      └── Data/Mergeable/SafeHashMap.hs
-      └── … (+66 more)[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-core-test
-  • missing in .cabal (1)
-      └── TestStub.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: library[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (74)[0m
+          [2m└── [0m[2mData/Mergeable.hs[0m
+          [2m└── [0m[2mData/Mergeable/Internal/Merge.hs[0m
+          [2m└── [0m[2mData/Mergeable/Internal/NameCollision.hs[0m
+          [2m└── [0m[2mData/Mergeable/Internal/Resolution.hs[0m
+          [2m└── [0m[2mData/Mergeable/IsMap.hs[0m
+          [2m└── [0m[2mData/Mergeable/MergeMap.hs[0m
+          [2m└── [0m[2mData/Mergeable/OrdMap.hs[0m
+          [2m└── [0m[2mData/Mergeable/SafeHashMap.hs[0m
+          [2m└── [0m[2m… (+66 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-core-test[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mTestStub.hs[0m
   [2m• [0m[1mserver[0m
   [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-server/morpheus-graphql-server.cabal[0m
       [2m└── [0m[2m• [0m[2mtests:morpheus-graphql-server-test[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
-  • missing in .cabal (1)
-      └── Stub.hs
-  • missing in codebase (40)
-      └── Data/Morpheus/Generic.hs
-      └── Data/Morpheus/Generic/Cons.hs
-      └── Data/Morpheus/Generic/Fields.hs
-      └── Data/Morpheus/Generic/GRep.hs
-      └── Data/Morpheus/Generic/GScan.hs
-      └── Data/Morpheus/Generic/Gmap.hs
-      └── Data/Morpheus/Generic/Proxy.hs
-      └── Data/Morpheus/Generic/RefType.hs
-      └── … (+32 more)[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for test:morpheus-graphql-server-test
-  • missing in .cabal (1)
-      └── TestStub.hs
-  • missing in codebase (30)
-      └── Feature/Collision/CategoryCollisionFail.hs
-      └── Feature/Collision/CategoryCollisionSuccess.hs
-      └── Feature/Collision/NameCollision.hs
-      └── Feature/Collision/NameCollisionHelper.hs
-      └── Feature/Directive/Definition.hs
-      └── Feature/Directive/EnumVisitor.hs
-      └── Feature/Directive/FieldVisitor.hs
-      └── Feature/Directive/TypeVisitor.hs
-      └── … (+22 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: library[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (40)[0m
+          [2m└── [0m[2mData/Morpheus/Generic.hs[0m
+          [2m└── [0m[2mData/Morpheus/Generic/Cons.hs[0m
+          [2m└── [0m[2mData/Morpheus/Generic/Fields.hs[0m
+          [2m└── [0m[2mData/Morpheus/Generic/GRep.hs[0m
+          [2m└── [0m[2mData/Morpheus/Generic/GScan.hs[0m
+          [2m└── [0m[2mData/Morpheus/Generic/Gmap.hs[0m
+          [2m└── [0m[2mData/Morpheus/Generic/Proxy.hs[0m
+          [2m└── [0m[2mData/Morpheus/Generic/RefType.hs[0m
+          [2m└── [0m[2m… (+32 more)[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: test:morpheus-graphql-server-test[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mTestStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (30)[0m
+          [2m└── [0m[2mFeature/Collision/CategoryCollisionFail.hs[0m
+          [2m└── [0m[2mFeature/Collision/CategoryCollisionSuccess.hs[0m
+          [2m└── [0m[2mFeature/Collision/NameCollision.hs[0m
+          [2m└── [0m[2mFeature/Collision/NameCollisionHelper.hs[0m
+          [2m└── [0m[2mFeature/Directive/Definition.hs[0m
+          [2m└── [0m[2mFeature/Directive/EnumVisitor.hs[0m
+          [2m└── [0m[2mFeature/Directive/FieldVisitor.hs[0m
+          [2m└── [0m[2mFeature/Directive/TypeVisitor.hs[0m
+          [2m└── [0m[2m… (+22 more)[0m
   [2m• [0m[1msubscriptions[0m
   [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-subscriptions/morpheus-graphql-subscriptions.cabal[0m
       [2m└── [0m[2m• [0m[2mlibrary[0m
           [2m└── [0munliftio-core: [2m>= 0.0.1 && <  1.0.0 → >= 0.0.1 && <  2.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
-  • missing in .cabal (1)
-      └── Stub.hs
-  • missing in codebase (7)
-      └── Data/Morpheus/Subscriptions.hs
-      └── Data/Morpheus/Subscriptions/Apollo.hs
-      └── Data/Morpheus/Subscriptions/ClientConnectionStore.hs
-      └── Data/Morpheus/Subscriptions/Event.hs
-      └── Data/Morpheus/Subscriptions/Internal.hs
-      └── Data/Morpheus/Subscriptions/Stream.hs
-      └── Data/Morpheus/Subscriptions/WebSockets.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: library[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (7)[0m
+          [2m└── [0m[2mData/Morpheus/Subscriptions.hs[0m
+          [2m└── [0m[2mData/Morpheus/Subscriptions/Apollo.hs[0m
+          [2m└── [0m[2mData/Morpheus/Subscriptions/ClientConnectionStore.hs[0m
+          [2m└── [0m[2mData/Morpheus/Subscriptions/Event.hs[0m
+          [2m└── [0m[2mData/Morpheus/Subscriptions/Internal.hs[0m
+          [2m└── [0m[2mData/Morpheus/Subscriptions/Stream.hs[0m
+          [2m└── [0m[2mData/Morpheus/Subscriptions/WebSockets.hs[0m
   [2m• [0m[1mtests[0m
   [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
       [2m└── [0m[2mfile: morpheus-graphql-tests/morpheus-graphql-tests.cabal[0m
       [2m└── [0m[2m• [0m[2mlibrary[0m
           [2m└── [0mtasty: [2m>= 0.1.0 && <  2.0.0 → >= 0.1.0 && <  4.0.0[0m
-  [2m└── [0m[2m• [0m[33mCabal source inclusion drift for library
-  • missing in .cabal (1)
-      └── Stub.hs
-  • missing in codebase (5)
-      └── Test/Morpheus.hs
-      └── Test/Morpheus/File.hs
-      └── Test/Morpheus/JSONDiff.hs
-      └── Test/Morpheus/Response.hs
-      └── Test/Morpheus/Utils.hs[0m
+  [2m└── [0m[2m• [0m[33mCabal source inclusion drift[0m
+      [2m└── [0m[2mcomponent: library[0m
+      [2m└── [0m[2m• [0m[2mmissing in .cabal (1)[0m
+          [2m└── [0m[2mStub.hs[0m
+      [2m└── [0m[2m• [0m[2mmissing in codebase (5)[0m
+          [2m└── [0m[2mTest/Morpheus.hs[0m
+          [2m└── [0m[2mTest/Morpheus/File.hs[0m
+          [2m└── [0m[2mTest/Morpheus/JSONDiff.hs[0m
+          [2m└── [0m[2mTest/Morpheus/Response.hs[0m
+          [2m└── [0m[2mTest/Morpheus/Utils.hs[0m
 

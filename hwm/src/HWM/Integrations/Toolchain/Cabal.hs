@@ -53,7 +53,7 @@ import HWM.Core.Formatting (Format (..), Status (..))
 import HWM.Core.Options (Options (..))
 import HWM.Core.Pkg (IsPkg (..), PackageIO, Pkg (..), PkgName)
 import qualified HWM.Core.Pkg as P
-import HWM.Core.Result (Issue (..), MonadIssue (..), Severity (..))
+import HWM.Core.Result (Issue (..), IssueDetails (..), MonadIssue (..), Severity (..))
 import HWM.Core.Sync (SyncMode (..))
 import HWM.Core.Version (Version, toCabalVersion)
 import HWM.Domain.Build (Builder (CabalBuilder, NixBuilder))
@@ -138,38 +138,24 @@ moduleSetBenchmark :: Benchmark -> Set.Set ModuleName
 moduleSetBenchmark Benchmark {..} = Set.fromList (otherModules benchmarkBuildInfo)
 
 mkSourceIssues :: Pkg -> Map Text (Set.Set ModuleName) -> Map Text (Set.Set ModuleName) -> [Issue]
-mkSourceIssues pkg declared target = concatMap toIssues (Set.toList labels)
+mkSourceIssues pkg declared target = mapMaybe toIssue' (Set.toList labels)
   where
     labels = Set.union (Map.keysSet declared) (Map.keysSet target)
-    toIssues label =
+    toIssue' label =
       let current = Map.findWithDefault Set.empty label declared
           expected = Map.findWithDefault Set.empty label target
-          missingInCabal = Set.toList (Set.difference expected current)
-          missingInCode = Set.toList (Set.difference current expected)
-       in catMaybes
-            [ mkIssue label "missing in .cabal" missingInCabal,
-              mkIssue label "missing in codebase" missingInCode
-            ]
-
-    mkIssue label title xs =
-      if null xs
-        then Nothing
-        else
-          Just
-            Issue
-              { issueTopic = P.pkgMemberId pkg,
-                issueSeverity = SeverityWarning,
-                issueMessage = "Cabal source inclusion drift for " <> label <> ": " <> title <> " (" <> show (length xs) <> ")" <> renderModules xs,
-                issueDetails = Nothing
-              }
-
-    renderModules xs =
-      let limit = 8
-          shown = take limit (map moduleToFile xs)
-          extra = length xs - length shown
-          leaves = map ("\n  └── " <>) shown
-          tailLine = ["\n  └── … (+" <> show extra <> " more)" | extra > 0]
-       in mconcat (leaves <> tailLine)
+          missingInCabal = map moduleToFile (Set.toList (Set.difference expected current))
+          missingInCode = map moduleToFile (Set.toList (Set.difference current expected))
+       in if null missingInCabal && null missingInCode
+            then Nothing
+            else
+              Just
+                Issue
+                  { issueTopic = P.pkgMemberId pkg,
+                    issueSeverity = SeverityWarning,
+                    issueMessage = "Cabal source inclusion drift",
+                    issueDetails = Just (SourceInclusionIssue label missingInCabal missingInCode)
+                  }
 
 moduleToFile :: ModuleName -> Text
 moduleToFile m = toText (ModuleName.toFilePath m <> ".hs")
