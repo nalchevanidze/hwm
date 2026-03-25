@@ -138,44 +138,37 @@ moduleSetBenchmark :: Benchmark -> Set.Set ModuleName
 moduleSetBenchmark Benchmark {..} = Set.fromList (otherModules benchmarkBuildInfo)
 
 mkSourceIssues :: Pkg -> Map Text (Set.Set ModuleName) -> Map Text (Set.Set ModuleName) -> [Issue]
-mkSourceIssues pkg declared target = mapMaybe toIssue' (Set.toList labels)
+mkSourceIssues pkg declared target = concatMap toIssues (Set.toList labels)
   where
     labels = Set.union (Map.keysSet declared) (Map.keysSet target)
-    toIssue' label =
+    toIssues label =
       let current = Map.findWithDefault Set.empty label declared
           expected = Map.findWithDefault Set.empty label target
           missingInCabal = Set.toList (Set.difference expected current)
           missingInCode = Set.toList (Set.difference current expected)
-          details = catMaybes [renderLine "missing in .cabal" missingInCabal, renderLine "missing in codebase" missingInCode]
-       in if null details
-            then Nothing
-            else
-              Just
-                Issue
-                  { issueTopic = P.pkgMemberId pkg,
-                    issueSeverity = SeverityWarning,
-                    issueMessage = "Cabal source inclusion drift for " <> label <> "\n" <> T.intercalate "\n" details,
-                    issueDetails = Nothing
-                  }
+       in catMaybes
+            [ mkIssue label "missing in .cabal" missingInCabal,
+              mkIssue label "missing in codebase" missingInCode
+            ]
 
-    renderLine title xs =
+    mkIssue label title xs =
       if null xs
         then Nothing
         else
           Just
-            $ "  • "
-            <> title
-            <> " ("
-            <> show (length xs)
-            <> ")"
-            <> renderModules xs
+            Issue
+              { issueTopic = P.pkgMemberId pkg,
+                issueSeverity = SeverityWarning,
+                issueMessage = "Cabal source inclusion drift for " <> label <> ": " <> title <> " (" <> show (length xs) <> ")" <> renderModules xs,
+                issueDetails = Nothing
+              }
 
     renderModules xs =
       let limit = 8
           shown = take limit (map moduleToFile xs)
           extra = length xs - length shown
-          leaves = map ("\n      └── " <>) shown
-          tailLine = ["\n      └── … (+" <> show extra <> " more)" | extra > 0]
+          leaves = map ("\n  └── " <>) shown
+          tailLine = ["\n  └── … (+" <> show extra <> " more)" | extra > 0]
        in mconcat (leaves <> tailLine)
 
 moduleToFile :: ModuleName -> Text
