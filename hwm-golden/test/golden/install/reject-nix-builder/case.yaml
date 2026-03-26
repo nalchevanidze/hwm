@@ -1,0 +1,7 @@
+command: install
+expect:
+  failure: true
+name: install reject-nix-builder
+notes: |
+  Scenario for install/reject-nix-builder (command: install)
+project: simple-bin

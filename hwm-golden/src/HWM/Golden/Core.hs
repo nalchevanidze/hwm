@@ -1,13 +1,16 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Golden.Core (assertNotModified, sanitizeAllCabals, diffChanges, trackChanges, hasNoChanges, cleanupEmptyDeltaFiles, copyLocalFiles, inWorkDir, diff, runHWM, runHWMFail, saveSnapshot) where
+module HWM.Golden.Core (ExpectedFiles (..), ChangeReport (..), sanitizeAllCabals, diffChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
 
 import Control.Concurrent (threadDelay)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObject, (.:?), (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.:?), (.=))
+import qualified Data.Aeson.Key as K
+import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types ((.!=))
 import qualified Data.ByteString as BS
 import qualified Data.List as S
@@ -18,22 +21,15 @@ import Data.Time.Clock (UTCTime)
 import qualified Data.Yaml as Yaml
 import qualified GHC.IO.Exception as System.Exit
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removeFile, removePathForcibly, setCurrentDirectory)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
 import System.Environment (getEnvironment)
 import System.FilePath (takeDirectory, takeExtension, takeFileName, (</>))
 import System.FilePath.Glob (glob)
 import System.IO.Temp (withSystemTempDirectory)
 import System.Process (CreateProcess (env), callCommand, readCreateProcessWithExitCode, shell)
-import Test.Hspec (Expectation, expectationFailure, shouldBe)
+import Test.Hspec (expectationFailure)
 
-assertNotModified :: FilePath -> IO () -> Expectation
-assertNotModified path action = do
-  oldTime <- getModificationTime path
-  threadDelay 1100000
-  action
-  newTime <- getModificationTime path
-  newTime `shouldBe` oldTime
 
 ignored :: [String]
 ignored = [".hwm", ".stack-work", "dist-newstyle", "*.log"]
@@ -108,73 +104,88 @@ mkGoldenEnv = do
   let home = ".home"
   let localBin = home </> ".local" </> "bin"
   let pathValue = S.intercalate ":" [cwd </> "bin", localBin, oldPath]
-  let keep (k, _) = k /= "PATH" && k /= "HOME"
+  let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE"]
+  let keep (k, _) = k `notElem` blocked
   pure
     $ [ ("PATH", pathValue),
         ("HOME", home),
         ("HWM_LOG_ID_FIXED", "golden"),
+        ("HACKAGE_AUTH_TOKEN", "golden-token"),
         ("CI", "1")
       ]
     <> filter keep current
 
-runHWM :: String -> IO String
-runHWM cmd = do
+runHWM :: String -> IO (ChangeReport, (Bool, String))
+runHWM cmd = trackChanges $ do
   envVars <- mkGoldenEnv
   (exitCode, out, err) <- readCreateProcessWithExitCode ((shell $ "hwm -- " <> cmd) {env = Just envVars}) ""
-  unless (exitCode == System.Exit.ExitSuccess)
-    $ expectationFailure ("Command failed with stdout: " <> out <> "stderr: " <> err)
-  return out
+  let failure = exitCode /= System.Exit.ExitSuccess
+  return (failure, if failure then out <> err else out)
 
-runHWMFail :: String -> IO String
-runHWMFail cmd = do
-  envVars <- mkGoldenEnv
-  (exitCode, out, err) <- readCreateProcessWithExitCode ((shell $ "hwm -- " <> cmd) {env = Just envVars}) ""
-  when (exitCode == System.Exit.ExitSuccess)
-    $ expectationFailure ("Command unexpectedly succeeded with stdout: " <> out)
-  return (out <> err)
+data ExpectedFiles = ExpectedFiles
+  { added :: [FilePath],
+    deleted :: [FilePath],
+    modified :: [FilePath]
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON ExpectedFiles where
+  toJSON ExpectedFiles {..} =
+    object
+      $ catMaybes
+        [ if null added then Nothing else Just ("added" .= added),
+          if null deleted then Nothing else Just ("deleted" .= deleted),
+          if null modified then Nothing else Just ("modified" .= modified)
+        ]
+
+instance FromJSON ExpectedFiles where
+  parseJSON = withObject "ExpectedFiles" $ \o ->
+    ExpectedFiles
+      <$> o
+      .:? "added"
+      .!= []
+      <*> o
+      .:? "deleted"
+      .!= []
+      <*> o
+      .:? "modified"
+      .!= []
 
 data ChangeReport = ChangeReport
-  { addedFiles :: [FilePath],
-    deletedFiles :: [FilePath],
-    modifiedFiles :: [FilePath],
-    invocations :: Maybe Value
+  { files :: ExpectedFiles,
+    calls :: Maybe Value
   }
   deriving (Show, Eq, Generic)
 
 instance ToJSON ChangeReport where
-  toJSON ChangeReport {..} =
+  toJSON ChangeReport {files = ExpectedFiles {..}, calls} =
     object
       $ catMaybes
-        [ if null addedFiles then Nothing else Just ("addedFiles" .= addedFiles),
-          if null deletedFiles then Nothing else Just ("deletedFiles" .= deletedFiles),
-          if null modifiedFiles then Nothing else Just ("modifiedFiles" .= modifiedFiles),
-          ("invocations" .=) <$> invocations
+        [ if null added then Nothing else Just ("added" .= added),
+          if null deleted then Nothing else Just ("deleted" .= deleted),
+          if null modified then Nothing else Just ("modified" .= modified),
+          ("calls" .=) <$> calls
         ]
 
 instance FromJSON ChangeReport where
   parseJSON = withObject "ChangeReport" $ \o ->
     ChangeReport
-      <$> o
-      .:? "addedFiles"
-      .!= []
+      <$> (ExpectedFiles <$> o .:? "added" .!= [] <*> o .:? "deleted" .!= [] <*> o .:? "modified" .!= [])
       <*> o
-      .:? "deletedFiles"
-      .!= []
-      <*> o
-      .:? "modifiedFiles"
-      .!= []
-      <*> o
-      .:? "invocations"
+      .:? "calls"
+
+canonicalPath :: FilePath -> FilePath
+canonicalPath p = toString (fromMaybe (toText p) (T.stripPrefix "./" (toText p)))
 
 buildChangeReport :: [(FilePath, UTCTime)] -> [(FilePath, UTCTime)] -> ChangeReport
 buildChangeReport oldState newState =
   let oldMap = Map.fromList oldState
       newMap = Map.fromList newState
-      added = Map.keys $ Map.difference newMap oldMap
-      deleted = Map.keys $ Map.difference oldMap newMap
+      added = sort (map canonicalPath (Map.keys (Map.difference newMap oldMap)))
+      deleted = sort (map canonicalPath (Map.keys (Map.difference oldMap newMap)))
       common = Map.intersectionWith (,) oldMap newMap
-      modified = Map.keys $ Map.filter (uncurry (/=)) common
-   in ChangeReport added deleted modified Nothing
+      modified = sort (map canonicalPath (Map.keys (Map.filter (uncurry (/=)) common)))
+   in ChangeReport (ExpectedFiles added deleted modified) Nothing
 
 loadInvocations :: IO (Maybe Value)
 loadInvocations = do
@@ -185,6 +196,7 @@ loadInvocations = do
     else do
       parsed <- Yaml.decodeFileEither file
       case parsed of
+        Right (Object obj) -> pure (KM.lookup (K.fromText "calls") obj)
         Right v -> pure (Just v)
         Left _ -> pure Nothing
 
@@ -198,33 +210,22 @@ trackChanges action = do
   afterFiles <- findManagedFiles "."
   newTimes <- mapM (\p -> (p,) <$> getModificationTime p) afterFiles
   inv <- loadInvocations
-  pure ((buildChangeReport oldTimes newTimes) {invocations = inv}, a)
-
-hasNoChanges :: ChangeReport -> Bool
-hasNoChanges (ChangeReport added deleted modified inv) = null added && null deleted && null modified && isNothing inv
-
-cleanupEmptyDeltaFiles :: FilePath -> IO ()
-cleanupEmptyDeltaFiles root = do
-  deltaFiles <- glob (root </> "**/delta.yaml")
-  forM_ deltaFiles $ \deltaFile -> do
-    report <- Yaml.decodeFileEither deltaFile
-    case report of
-      Right changes | hasNoChanges changes -> removeFile deltaFile
-      _ -> pure ()
+  pure ((buildChangeReport oldTimes newTimes) {calls = inv}, a)
 
 saveSnapshot :: ChangeReport -> FilePath -> IO ()
-saveSnapshot (ChangeReport added _ modified _) dst = do
-  removePathForcibly dst
-  createDirectoryIfMissing True dst
+saveSnapshot (ChangeReport (ExpectedFiles {added, modified}) _) dst = do
+  whenM (doesDirectoryExist dst) $ removePathForcibly dst
   let filesToUpdate = added ++ modified
-  forM_ filesToUpdate $ \f -> do
-    let srcPath = f
-    let dstPath = dst </> f
-    createDirectoryIfMissing True (takeDirectory dstPath)
-    copyFile srcPath dstPath
+  unless (null filesToUpdate) $ do
+    createDirectoryIfMissing True dst
+    forM_ filesToUpdate $ \f -> do
+      let srcPath = f
+      let dstPath = dst </> f
+      createDirectoryIfMissing True (takeDirectory dstPath)
+      copyFile srcPath dstPath
 
 diffChanges :: FilePath -> ChangeReport -> IO ()
-diffChanges expectedDir (ChangeReport added deleted modified _) = do
+diffChanges expectedDir (ChangeReport (ExpectedFiles {added, deleted, modified}) _) = do
   let filesToCompare = added ++ modified
   forM_ filesToCompare $ \f -> do
     let expectedFile = expectedDir </> f

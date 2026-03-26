@@ -20,5 +20,5 @@ showStatus = do
     [ ("name", pure $ chalk Magenta (cfgName cfg)),
       ("version", pure $ chalk Green (format $ cfgVersion cfg))
     ]
-  printEnvironments Nothing
+  printEnvironments
   validatePackages

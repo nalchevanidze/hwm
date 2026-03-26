@@ -1,0 +1,7 @@
+command: test ghosts
+expect:
+  failure: true
+name: test reject-unknown-workspace
+notes: |
+  Scenario for test/reject-unknown-workspace (command: test ghosts)
+project: simple-bin

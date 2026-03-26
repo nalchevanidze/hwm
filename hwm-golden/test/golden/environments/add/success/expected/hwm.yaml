@@ -1,0 +1,17 @@
+# hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+name: simple
+version: 0.1.0
+workspace:
+  libs:
+    members:
+    - foo
+    - bar
+environments:
+  default: default
+  profiles:
+    ci:
+      ghc: 9.6.3
+    default:
+      ghc: '9.1'
+registry:
+  base: '>=  4.7  &&  <  5.0'

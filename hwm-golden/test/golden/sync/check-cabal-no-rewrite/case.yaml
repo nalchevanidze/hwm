@@ -1,0 +1,5 @@
+command: sync
+name: sync check-cabal-no-rewrite
+notes: |
+  Scenario for sync/check-cabal-no-rewrite (command: sync)
+project: simple

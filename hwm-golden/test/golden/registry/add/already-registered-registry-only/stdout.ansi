@@ -1,0 +1,11 @@
+
+• [1madd dependency[0m
+  package [2m...........[0m [95maeson[0m
+  target [2m............[0m [36mnone (registry only)[0m
+
+• [1mdiscovery[0m
+  registry [2m........[0m >= 1.5.6.0 && <= 2.2.3.0 (already registered)
+
+
+[1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
+

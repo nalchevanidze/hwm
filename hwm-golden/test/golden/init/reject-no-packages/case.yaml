@@ -1,0 +1,7 @@
+command: init
+expect:
+  failure: true
+name: init reject-no-packages
+notes: |
+  Scenario for init/reject-no-packages (command: init)
+project: empty

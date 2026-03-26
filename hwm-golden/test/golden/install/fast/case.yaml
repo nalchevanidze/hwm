@@ -1,0 +1,22 @@
+command: install --fast
+expect:
+  calls:
+  - args:
+    - install
+    - all:exes
+    - --install-method=copy
+    - --installdir
+    - .home/.local/bin
+    - --overwrite-policy=always
+    - --disable-optimization
+    cabal_project_content: |
+      with-compiler: ghc-9.6.6
+      packages:
+        ../../foo
+        ../../bar
+    cabal_project_file: cabal-default.project
+    tool: cabal
+name: install fast
+notes: |
+  Scenario for install/fast (command: install --fast)
+project: simple-bin

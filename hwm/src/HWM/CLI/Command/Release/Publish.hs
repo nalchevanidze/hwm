@@ -33,7 +33,8 @@ import HWM.Integrations.Toolchain.Cabal (nativeSdist)
 import HWM.Integrations.Toolchain.Package (deriveDependencyGraph)
 import HWM.Runtime.Network (getHackageToken, uploadToHackage)
 import HWM.Runtime.UI (printSummary, sectionTableM, section_, uiSubPathRow)
-import Options.Applicative (argument, help, metavar, str)
+import Options.Applicative (argument, help, long, metavar, str)
+import Options.Applicative.Builder (switch)
 import Relude hiding (intercalate)
 import System.Directory (getCurrentDirectory)
 import System.FilePath (makeRelative)
@@ -50,8 +51,9 @@ unpackPath :: (Pkg, Maybe FilePath) -> ConfigT (Pkg, FilePath)
 unpackPath (pkg, Just path) = pure (pkg, path)
 unpackPath (pkg, Nothing) = throwError $ fromString $ "No file path found for package " <> toString (printPkgWSRef pkg)
 
-newtype PublishOptions = PublishOptions
-  { publishGroup :: Maybe Name
+data PublishOptions = PublishOptions
+  { publishGroup :: Maybe Name,
+    publishDryRun :: Bool
   }
   deriving (Show)
 
@@ -59,6 +61,7 @@ instance ParseCLI PublishOptions where
   parseCLI =
     PublishOptions
       <$> optional (argument str (metavar "GROUP" <> help "Name of the release group to publish (default: all)"))
+      <*> switch (long "dry-run" <> help "Validate publish prerequisites and show the plan without uploading to Hackage")
 
 arrangePackageRelease :: [Pkg] -> ConfigT [Pkg]
 arrangePackageRelease pkgs = do
@@ -84,7 +87,8 @@ runPublish PublishOptions {..} = do
     "publish"
     [ ("version", pure $ chalk Magenta (format version)),
       ("target", pure $ chalk Cyan (fromMaybe "all" publishGroup)),
-      ("registry", pure "hackage")
+      ("registry", pure "hackage"),
+      ("mode", pure $ if publishDryRun then chalk Yellow "dry-run" else chalk Cyan "publish")
     ]
 
   pkgs <- arrangePackageRelease (concatMap snd wgs)
@@ -103,8 +107,14 @@ runPublish PublishOptions {..} = do
       uiSubPathRow size (show idx <> ". " <> printPkgWSRef pkg) (format $ makeRelative cwd filePath)
 
   token <- getHackageToken
-  section_ "publishing" $ do
-    for_ releasePkgs $ \(pkg, filePath) -> do
+  if publishDryRun
+    then section_ "publishing (dry-run)" $ do
+      let _tokenUsed = token
+      for_ releasePkgs $ \(pkg, _) -> uiSubPathRow size (printPkgWSRef pkg) (statusIcon Checked)
+    else section_ "publishing" $ do
+      for_ releasePkgs $ \pkg -> publishPackage size token pkg
+  where
+    publishPackage size token (pkg, filePath) = do
       issues <- uploadToHackage token pkg filePath
       let status = if null issues then Checked else Invalid
       uiSubPathRow size (printPkgWSRef pkg) (statusIcon status)

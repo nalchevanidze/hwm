@@ -1,0 +1,12 @@
+command: build
+expect:
+  calls:
+  - args:
+    - build
+    - --no-link
+    - .#env-default-all
+    tool: nix
+name: build nix-dispatch-shape
+notes: |
+  Scenario for build/nix-dispatch-shape (command: build)
+project: simple-bin

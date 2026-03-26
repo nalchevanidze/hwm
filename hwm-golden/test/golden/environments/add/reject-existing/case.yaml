@@ -1,0 +1,7 @@
+command: environments add default 9.6.3
+expect:
+  failure: true
+name: environments add reject-existing
+notes: |
+  Scenario for environments/add/reject-existing (command: environments add default 9.6.3)
+project: simple

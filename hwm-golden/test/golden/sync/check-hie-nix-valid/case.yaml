@@ -1,0 +1,5 @@
+command: sync
+name: sync check-hie-nix-valid
+notes: |
+  Scenario for sync/check-hie-nix-valid (command: sync)
+project: simple

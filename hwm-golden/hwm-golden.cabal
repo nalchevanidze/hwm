@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.36.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -48,24 +48,13 @@ library
     , relude >=0.7.0.0 && <=1.2.2.2
     , temporary >=1.3 && <=1.3
     , time >=1.9.2 && <2.0.0
-    , yaml >=0.11.11.2 && <0.12.0.0
+    , yaml >=0.11.8.0 && <=0.11.11.2
   default-language: Haskell2010
 
 test-suite hwm-golden-sync
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Commands.Build
-      Commands.Environments
-      Commands.Init
-      Commands.Install
-      Commands.Release
-      Commands.Run
-      Commands.Status
-      Commands.Sync
-      Commands.Test
-      Commands.Version
-      Commands.Workspace
       Paths_hwm_golden
   hs-source-dirs:
       test
@@ -85,5 +74,5 @@ test-suite hwm-golden-sync
     , relude >=0.7.0.0 && <=1.2.2.2
     , temporary >=1.3 && <=1.3
     , time >=1.9.2 && <2.0.0
-    , yaml >=0.11.11.2 && <0.12.0.0
+    , yaml >=0.11.8.0 && <=0.11.11.2
   default-language: Haskell2010

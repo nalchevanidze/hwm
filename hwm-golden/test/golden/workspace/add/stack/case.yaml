@@ -1,0 +1,14 @@
+command: workspace add libs/new
+expect:
+  files:
+    added:
+    - hie.yaml
+    - new/new.cabal
+    - new/package.yaml
+    - stack.yaml
+    modified:
+    - hwm.yaml
+name: workspace add stack
+notes: |
+  Scenario for workspace/add/stack (command: workspace add libs/new)
+project: simple

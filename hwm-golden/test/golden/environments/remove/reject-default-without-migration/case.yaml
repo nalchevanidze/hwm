@@ -1,0 +1,7 @@
+command: environments remove default
+expect:
+  failure: true
+name: environments remove reject-default-without-migration
+notes: |
+  Scenario for environments/remove/reject-default-without-migration (command: environments remove default)
+project: simple

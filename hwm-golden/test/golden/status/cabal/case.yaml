@@ -1,0 +1,5 @@
+command: status
+name: status cabal
+notes: |
+  Scenario for status/cabal (command: status)
+project: morpheus

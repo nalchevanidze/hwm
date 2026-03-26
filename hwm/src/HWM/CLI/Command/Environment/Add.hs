@@ -34,13 +34,12 @@ runEnvAdd EnvAddOptions {..} = do
   exists <- existsEnvironment envName
   if exists
     then do
-      printEnvironments Nothing
+      printEnvironments
       throwError $ fromString $ "Environment '" <> toString envName <> "' already exists."
-    else section "new environment" $ do
-      uiRow minRowSize "name" envName
+    else do
+      section "new environment" $ do
+        uiRow minRowSize "name" envName
+        uiRow minRowSize "ghc" (format envGHC)
       updateConfig
-        ( \cfg@Config {..} -> do
-            uiRow minRowSize "ghc" (format envGHC)
-            pure cfg {cfgEnvironments = addProfile envName (mkEnvironment envGHC) cfgEnvironments}
-        )
+        (\cfg@Config {..} -> pure cfg {cfgEnvironments = addProfile envName (mkEnvironment envGHC) cfgEnvironments})
         (pure ())

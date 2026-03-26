@@ -1,0 +1,19 @@
+command: install
+expect:
+  calls:
+  - args:
+    - install
+    - --local-bin-path
+    - .home/.local/bin
+    stack_yaml: stack-default.yaml
+    stack_yaml_content: |
+      resolver: lts-22.43
+      packages:
+      - ../../foo
+      - ../../bar
+      save-hackage-creds: false
+    tool: stack
+name: install stack-local-bin-path
+notes: |
+  Scenario for install/stack-local-bin-path (command: install)
+project: simple-bin

@@ -1,0 +1,5 @@
+command: run argc -- 'a b' c
+name: run forward-quoted-args
+notes: |
+  Scenario for run/forward-quoted-args (command: run argc -- 'a b' c)
+project: simple

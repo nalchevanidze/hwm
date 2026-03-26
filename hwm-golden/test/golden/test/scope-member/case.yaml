@@ -1,0 +1,17 @@
+command: test libs/foo
+expect:
+  calls:
+  - args:
+    - test
+    - foo
+    cabal_project_content: |
+      with-compiler: ghc-9.6.6
+      packages:
+        ../../foo
+        ../../bar
+    cabal_project_file: cabal-default.project
+    tool: cabal
+name: test scope-member
+notes: |
+  Scenario for test/scope-member (command: test libs/foo)
+project: simple-bin

@@ -1,0 +1,7 @@
+command: release artifacts sample --builder=nix
+expect:
+  failure: true
+name: release artifacts omitted environments allowed but builder fails later
+notes: |
+  Omitting environments is allowed; command then fails on unsupported nix binaries path.
+project: simple

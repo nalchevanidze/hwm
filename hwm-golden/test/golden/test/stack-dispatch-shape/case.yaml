@@ -1,0 +1,17 @@
+command: test
+expect:
+  calls:
+  - args:
+    - test
+    stack_yaml: stack-default.yaml
+    stack_yaml_content: |
+      resolver: lts-22.43
+      packages:
+      - ../../foo
+      - ../../bar
+      save-hackage-creds: false
+    tool: stack
+name: test stack-dispatch-shape
+notes: |
+  Scenario for test/stack-dispatch-shape (command: test)
+project: simple-bin

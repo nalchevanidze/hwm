@@ -200,12 +200,17 @@ renderSummaryLines issues =
             step = l1 <> subPathSign <> chalk Dim "• "
             l2 = l1 <> "    " <> subPathSign
             headerText = l1 <> chalk Dim "• " <> chalk Bold header
+            renderMultilineIssue prefix continuation severity message =
+              case T.lines message of
+                [] -> [prefix]
+                (line1 : restLines) ->
+                  (prefix <> chalk (levelColor severity) line1)
+                    : map (\line -> continuation <> chalk (levelColor severity) line) restLines
             renderIssue Issue {issueDetails = Nothing, issueSeverity, issueMessage} =
-              [step <> chalk (levelColor issueSeverity) issueMessage]
+              renderMultilineIssue step (l1 <> "    ") issueSeverity issueMessage
             renderIssue Issue {issueDetails = Just (GenericIssue {issueFile}), issueSeverity, issueMessage} =
-              [ step <> chalk (levelColor issueSeverity) issueMessage,
-                l2 <> chalk Dim ("file: " <> format issueFile)
-              ]
+              renderMultilineIssue step (l1 <> "    ") issueSeverity issueMessage
+                <> [l2 <> chalk Dim ("file: " <> format issueFile)]
             renderIssue Issue {issueDetails = Just (CommandIssue {issueCommand, issueLogFile}), issueSeverity, issueMessage} =
               let cmd =
                     if T.length issueCommand > 60

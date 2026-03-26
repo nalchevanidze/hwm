@@ -1,0 +1,7 @@
+command: version banana
+expect:
+  failure: true
+name: version reject-invalid-bump
+notes: |
+  Scenario for version/reject-invalid-bump (command: version banana)
+project: version-clean

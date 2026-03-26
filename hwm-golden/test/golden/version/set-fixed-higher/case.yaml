@@ -1,0 +1,13 @@
+command: version 0.2.0
+expect:
+  files:
+    modified:
+    - bar/bar.cabal
+    - bar/package.yaml
+    - foo/foo.cabal
+    - foo/package.yaml
+    - hwm.yaml
+name: version set-fixed-higher
+notes: |
+  Scenario for version/set-fixed-higher (command: version 0.2.0)
+project: version-clean

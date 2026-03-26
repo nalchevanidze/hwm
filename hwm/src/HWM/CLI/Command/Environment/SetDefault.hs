@@ -21,4 +21,4 @@ runEnvSetDefault :: EnvSetDefaultOptions -> ConfigT ()
 runEnvSetDefault EnvSetDefaultOptions {..} = do
   _ <- getBuildEnvironment (Just envName)
   let setDefaultEnv cfg = cfg {cfgEnvironments = (cfgEnvironments cfg) {envsDefault = envName}}
-  updateConfig (pure . setDefaultEnv) $ printEnvironments Nothing
+  updateConfig (pure . setDefaultEnv) printEnvironments

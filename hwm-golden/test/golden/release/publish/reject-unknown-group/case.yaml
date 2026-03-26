@@ -1,0 +1,7 @@
+command: release publish ghost
+expect:
+  failure: true
+name: release publish rejects unknown group
+notes: |
+  Verifies publish fails when requested group is missing in release config.
+project: simple

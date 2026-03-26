@@ -1,0 +1,9 @@
+command: environments remove default --set-default ci
+expect:
+  files:
+    modified:
+    - hwm.yaml
+name: environments remove default-migrate
+notes: |
+  Scenario for environments/remove/default-migrate (command: environments remove default --set-default ci)
+project: simple

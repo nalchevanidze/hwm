@@ -1,0 +1,20 @@
+cabal-version:      1.12
+name:               api
+version:            0.1.0
+license:            MIT
+license-file:       LICENSE
+author:             HWM
+maintainer:         hwm@example.com
+synopsis:           API library
+category:           Development
+description:        API library for publish dry-run tests.
+build-type:         Simple
+
+library
+  exposed-modules:    Api
+  hs-source-dirs:     src
+  default-language:   Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , core >=0.1 && <0.2
+    , util >=0.1 && <0.2

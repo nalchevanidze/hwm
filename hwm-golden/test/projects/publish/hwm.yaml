@@ -1,0 +1,21 @@
+version: 0.1.0
+name: publish
+workspace:
+  libs:
+    members:
+      - core
+      - util
+      - domain
+      - api
+      - app
+environments:
+  default: default
+  profiles:
+    default:
+      ghc: 9.6.6
+registry:
+  base: '>=  4.7  &&  <  5.0'
+release:
+  publish:
+    main:
+      - libs

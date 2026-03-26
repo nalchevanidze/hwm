@@ -91,7 +91,6 @@ execInBackground Exec {..} ExecOptions {..} = do
   currentEnv <- liftIO getEnvironment
   let targetEnv = execEnv <> currentEnv
   status <- liftIO $ TIO.withFile processLogPath TIO.WriteMode $ \logHandle -> do
-    unless fxEnabled (uiIndicator fx fxEnabled Nothing)
     logCommandStart logHandle cmd
     let config = setEnv targetEnv $ setStdout (useHandleOpen logHandle) $ setStderr (useHandleOpen logHandle) $ shell (toString cmd)
     withProcessWait config $ processHandle (uiIndicator fx fxEnabled Nothing) fxEnabled logHandle

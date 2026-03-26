@@ -1,0 +1,18 @@
+command: test --fast
+expect:
+  calls:
+  - args:
+    - test
+    - all
+    - --disable-optimization
+    cabal_project_content: |
+      with-compiler: ghc-9.6.6
+      packages:
+        ../../foo
+        ../../bar
+    cabal_project_file: cabal-default.project
+    tool: cabal
+name: test fast
+notes: |
+  Scenario for test/fast (command: test --fast)
+project: simple-bin

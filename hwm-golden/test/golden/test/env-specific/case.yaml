@@ -1,0 +1,17 @@
+command: test --env default
+expect:
+  calls:
+  - args:
+    - test
+    - all
+    cabal_project_content: |
+      with-compiler: ghc-9.6.6
+      packages:
+        ../../foo
+        ../../bar
+    cabal_project_file: cabal-default.project
+    tool: cabal
+name: test env-specific
+notes: |
+  Scenario for test/env-specific (command: test --env default)
+project: simple-bin

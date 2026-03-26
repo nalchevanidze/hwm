@@ -1,0 +1,21 @@
+command: install
+expect:
+  calls:
+  - args:
+    - install
+    - all:exes
+    - --install-method=copy
+    - --installdir
+    - .home/.local/bin
+    - --overwrite-policy=always
+    cabal_project_content: |
+      with-compiler: ghc-9.6.6
+      packages:
+        ../../foo
+        ../../bar
+    cabal_project_file: cabal-default.project
+    tool: cabal
+name: install default-global
+notes: |
+  Scenario for install/default-global (command: install)
+project: simple-bin

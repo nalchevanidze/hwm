@@ -1,0 +1,4 @@
+with-compiler: ghc-9.6.3
+packages:
+  bar
+  foo

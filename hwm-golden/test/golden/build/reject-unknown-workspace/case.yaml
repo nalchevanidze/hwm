@@ -1,0 +1,7 @@
+command: build ghosts
+expect:
+  failure: true
+name: build reject-unknown-workspace
+notes: |
+  Scenario for build/reject-unknown-workspace (command: build ghosts)
+project: simple-bin

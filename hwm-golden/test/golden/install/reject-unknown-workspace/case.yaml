@@ -1,0 +1,7 @@
+command: install ghosts
+expect:
+  failure: true
+name: install reject-unknown-workspace
+notes: |
+  Scenario for install/reject-unknown-workspace (command: install ghosts)
+project: simple-bin

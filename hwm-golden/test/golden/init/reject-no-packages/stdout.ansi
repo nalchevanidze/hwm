@@ -1,0 +1,11 @@
+
+• [1minit[0m
+  scan (stack.yaml) [2m.......[0m 0 found
+  scan (packages) [2m.........[0m 0 found
+
+
+[1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
+
+  [2m• [0m[1mgeneral[0m
+  [2m└── [0m[2m• [0m[31mNo Haskell packages detected in the current directory. Run 'hwm init' from your project root containing package sources.[0m
+

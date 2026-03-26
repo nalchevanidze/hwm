@@ -1,0 +1,7 @@
+command: release artifacts sample --builder=nix
+expect:
+  failure: true
+name: release artifacts rejects non-listed active environment
+notes: |
+  Active environment is not included in artifact target environments policy.
+project: simple

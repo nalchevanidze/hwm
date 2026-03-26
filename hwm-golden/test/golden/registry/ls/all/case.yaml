@@ -1,0 +1,5 @@
+command: registry ls
+name: registry ls all
+notes: |
+  Scenario for registry/ls/all (command: registry ls)
+project: version-clean

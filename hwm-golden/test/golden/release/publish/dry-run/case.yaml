@@ -1,0 +1,6 @@
+command: release publish --dry-run
+name: release publish dry-run
+notes: |
+  Validates token presence, sdist generation, and topological publish plan
+  without uploading to Hackage.
+project: publish

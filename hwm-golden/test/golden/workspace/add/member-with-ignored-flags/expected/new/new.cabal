@@ -1,0 +1,7 @@
+name:    new
+version: 0.1.0
+license: UnspecifiedLicense
+
+library
+    hs-source-dirs: src
+    build-depends:  base >=4.7 && <5.0

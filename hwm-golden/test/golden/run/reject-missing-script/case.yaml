@@ -1,0 +1,7 @@
+command: run ghost
+expect:
+  failure: true
+name: run reject-missing-script
+notes: |
+  Scenario for run/reject-missing-script (command: run ghost)
+project: simple

@@ -1,0 +1,25 @@
+command: release artifacts sample --format tar.gz
+expect:
+  calls:
+  - args:
+    - install
+    - foo
+    - --install-method=copy
+    - --installdir
+    - .hwm/release/binaries/sample
+    - --overwrite-policy=always
+    - --ghc-options=-O2
+    - --ghc-options=-split-sections
+    - --ghc-options=-optl-s
+    - --ghc-options=-threaded
+    cabal_project_content: |
+      with-compiler: ghc-9.6.6
+      packages:
+        ../../foo
+        ../../bar
+    cabal_project_file: cabal-default.project
+    tool: cabal
+name: release artifacts tar.gz format override
+notes: |
+  Forces tar.gz output format via CLI override.
+project: simple-bin

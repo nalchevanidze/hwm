@@ -1,0 +1,27 @@
+command: build --env all
+expect:
+  calls:
+  - args:
+    - build
+    - all
+    cabal_project_content: |
+      with-compiler: ghc-9.4.8
+      packages:
+        ../../foo
+        ../../bar
+    cabal_project_file: cabal-ci.project
+    tool: cabal
+  - args:
+    - build
+    - all
+    cabal_project_content: |
+      with-compiler: ghc-9.6.6
+      packages:
+        ../../foo
+        ../../bar
+    cabal_project_file: cabal-default.project
+    tool: cabal
+name: build env-all
+notes: |
+  Scenario for build/env-all (command: build --env all)
+project: simple-bin

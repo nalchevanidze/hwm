@@ -1,0 +1,5 @@
+command: version 0.1.0
+name: version set-fixed-same
+notes: |
+  Scenario for version/set-fixed-same (command: version 0.1.0)
+project: version-clean

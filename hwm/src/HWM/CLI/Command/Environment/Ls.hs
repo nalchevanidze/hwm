@@ -14,4 +14,4 @@ instance ParseCLI EnvLsOptions where
   parseCLI = pure EnvLsOptions
 
 runEnvLs :: EnvLsOptions -> ConfigT ()
-runEnvLs _ = printEnvironments Nothing
+runEnvLs _ = printEnvironments
