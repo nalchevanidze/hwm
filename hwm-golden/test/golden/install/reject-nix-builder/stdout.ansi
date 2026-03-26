@@ -1,0 +1,14 @@
+
+./ [1mworkspace[0m
+  scope [2m...........[0m Global
+
+• [1menvironments[0m
+
+  • [1mdefault (9.6.6)[0m
+
+
+[1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
+
+  [2m• [0m[1mgeneral[0m
+  [2m└── [0m[2m• [0m[31mInstall command with Nix builder is not supported[0m
+

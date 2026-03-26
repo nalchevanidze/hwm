@@ -1,0 +1,18 @@
+cabal-version:      1.12
+name:               bar
+version:            0.1.0
+license:            MIT
+license-file:       LICENSE
+author:             HWM
+maintainer:         hwm@example.com
+synopsis:           Bar library
+category:           Development
+description:        Bar library for golden version tests.
+build-type:         Simple
+
+library
+  exposed-modules:    Bar
+  hs-source-dirs:     src
+  default-language:   Haskell2010
+  build-depends:
+      base >=4.7 && <5

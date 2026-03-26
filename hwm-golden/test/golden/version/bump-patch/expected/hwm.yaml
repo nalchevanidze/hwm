@@ -1,0 +1,15 @@
+# hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+name: version-clean
+version: 0.1.1
+workspace:
+  libs:
+    members:
+    - foo
+    - bar
+environments:
+  default: default
+  profiles:
+    default:
+      ghc: 9.6.6
+registry:
+  base: '>=  4.7  &&  <  5.0'

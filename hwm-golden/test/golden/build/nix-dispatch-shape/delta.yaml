@@ -1,0 +1,7 @@
+invocations:
+  calls:
+  - args:
+    - build
+    - --no-link
+    - .#env-default-all
+    tool: nix

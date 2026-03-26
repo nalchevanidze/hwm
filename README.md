@@ -292,6 +292,7 @@ HWM introduces **Release Trains**, a high-integrity system for decoupling worksp
 Transform raw binaries into hashed, compressed distribution units using your preferred engine. HWM ensures every artifact is strictly validated before the publication phase begins.
 
 NOTE:
+- `hwm install` always uses the current/default environment (no `--env` option).
 - `hwm install` with `nix`/`nix/cabal` is currently unsupported and fails with an explicit error.
 - `hwm release publish` is intentionally Cabal `sdist` based for Hackage publishing (builder-independent).
 - `hwm release artifacts --builder=nix` is currently unsupported.

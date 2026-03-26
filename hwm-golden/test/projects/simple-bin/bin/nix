@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+log="invocations.yaml"
+if [ ! -f "$log" ]; then
+  echo "calls:" > "$log"
+fi
+
+tool=$(basename "$0")
+printf "  - tool: %s\n" "$tool" >> "$log"
+printf "    args:\n" >> "$log"
+for a in "$@"; do
+  printf "      - %s\n" "$a" >> "$log"
+done
+
+if [ -n "${CABAL_PROJECT_FILE:-}" ]; then
+  printf "    cabal_project_file: %s\n" "$(basename "$CABAL_PROJECT_FILE")" >> "$log"
+  if [ -f "$CABAL_PROJECT_FILE" ]; then
+    printf "    cabal_project_content: |\n" >> "$log"
+    cat "$CABAL_PROJECT_FILE" | sed 's/^/      /' >> "$log"
+  fi
+fi
+if [ -n "${STACK_YAML:-}" ]; then
+  printf "    stack_yaml: %s\n" "$(basename "$STACK_YAML")" >> "$log"
+  if [ -f "$STACK_YAML" ]; then
+    printf "    stack_yaml_content: |\n" >> "$log"
+    cat "$STACK_YAML" | sed 's/^/      /' >> "$log"
+  fi
+fi

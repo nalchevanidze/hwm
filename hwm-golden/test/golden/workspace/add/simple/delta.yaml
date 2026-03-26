@@ -1,0 +1,6 @@
+addedFiles:
+- ./hie.yaml
+- ./new/new.cabal
+- ./new/package.yaml
+modifiedFiles:
+- ./hwm.yaml

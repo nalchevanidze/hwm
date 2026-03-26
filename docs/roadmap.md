@@ -28,7 +28,7 @@ Today, `install` for these builder modes is unsupported (explicit errors). We sh
 
 ### Acceptance criteria
 
-- `hwm install --env=<nix-env>` works end-to-end.
+- `hwm install` works end-to-end for `nix` and `nix/cabal` using the current/default environment.
 - CI examples include at least one nix install path.
 
 

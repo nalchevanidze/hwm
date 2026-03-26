@@ -1,0 +1,15 @@
+name: bar
+version: 0.1.0
+license: MIT
+author: HWM
+category: Development
+synopsis: Bar library
+maintainer: hwm@example.com
+license-file: LICENSE
+description: Bar library for golden version tests.
+dependencies:
+  base: '>=  4.7  &&  <  5.0'
+library:
+  source-dirs: src
+  exposed-modules:
+  - Bar
