@@ -417,7 +417,7 @@ existsEnvironment n = do
   pure $ isJust $ Map.lookup n envs
 
 printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env Workspace, Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => m ()
-printEnvironments  = do
+printEnvironments = do
   active <- getBuildEnvironment Nothing
   def <- envsDefault <$> askEnv
   environments <- getBuildEnvironments

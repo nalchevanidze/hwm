@@ -30,7 +30,6 @@ import System.IO.Temp (withSystemTempDirectory)
 import System.Process (CreateProcess (env), callCommand, readCreateProcessWithExitCode, shell)
 import Test.Hspec (expectationFailure)
 
-
 ignored :: [String]
 ignored = [".hwm", ".stack-work", "dist-newstyle", "*.log"]
 
