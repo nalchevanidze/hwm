@@ -7,7 +7,8 @@ module HWM.Golden.Exec
   )
 where
 
-import HWM.Golden.Changes (ChangeReport, trackChanges)
+import HWM.Golden.Changes (trackChanges)
+import HWM.Golden.Types (ChangeReport)
 import qualified Data.List as S
 import qualified Data.Map.Strict as Map
 import Relude

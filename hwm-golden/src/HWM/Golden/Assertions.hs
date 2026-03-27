@@ -10,13 +10,12 @@ module HWM.Golden.Assertions
 where
 
 import qualified Data.ByteString as BS
-import qualified Data.List as S
-import HWM.Golden.Changes (ChangeReport (..), ExpectedFiles (..))
+import HWM.Golden.Types (ChangeReport (..), ExpectedFiles (..))
 import Relude
 import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, removePathForcibly)
 import System.FilePath (takeDirectory, (</>))
 import qualified GHC.IO.Exception as System.Exit
-import System.Process (readCreateProcessWithExitCode, shell)
+import System.Process (proc, readCreateProcessWithExitCode)
 import Test.Hspec (expectationFailure)
 
 ignored :: [String]
@@ -24,11 +23,8 @@ ignored = [".hwm", ".stack-work", "dist-newstyle", "*.log"]
 
 diff :: FilePath -> IO ()
 diff expectedDir = do
-  let ignoreFlags = S.unwords ["-x " ++ p | p <- ignored]
-  (diffCode, diffOut, _) <-
-    readCreateProcessWithExitCode
-      (shell $ "diff -ruN " ++ ignoreFlags ++ " " ++ expectedDir ++ " .")
-      ""
+  let args = ["-ruN"] <> concatMap (\p -> ["-x", p]) ignored <> [expectedDir, "."]
+  (diffCode, diffOut, _) <- readCreateProcessWithExitCode (proc "diff" args) ""
   unless (diffCode == System.Exit.ExitSuccess)
     $ expectationFailure
     $ "File diff failed:\n"
@@ -55,10 +51,7 @@ diffChanges expectedDir (ChangeReport (ExpectedFiles {added, deleted, modified})
     expectedContent <- BS.readFile expectedFile
     actualContent <- BS.readFile actualFile
     when (expectedContent /= actualContent) $ do
-      (_, diffOut, _) <-
-        readCreateProcessWithExitCode
-          (shell $ "diff -u " ++ expectedFile ++ " " ++ actualFile)
-          ""
+      (_, diffOut, _) <- readCreateProcessWithExitCode (proc "diff" ["-u", expectedFile, actualFile]) ""
       expectationFailure $ "Content mismatch in " ++ f ++ ":\n" ++ diffOut
   forM_ deleted $ \f -> do
     exists <- doesPathExist f

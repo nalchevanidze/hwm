@@ -11,12 +11,11 @@ where
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Relude
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
 import System.FilePath ((</>))
 import System.FilePath.Glob (glob)
 import System.IO.Temp (withSystemTempDirectory)
-import System.Process (callCommand)
 
 copyLocalFiles :: FilePath -> IO ()
 copyLocalFiles = copyDir "."
@@ -24,13 +23,28 @@ copyLocalFiles = copyDir "."
 copyDir :: FilePath -> FilePath -> IO ()
 copyDir src dst = do
   createDirectoryIfMissing True dst
-  callCommand $ "cp -r " <> src <> " " <> dst
+  entries <- listDirectory src
+  forM_ entries $ \entry -> do
+    let from = src </> entry
+    let to = dst </> entry
+    isDir <- doesDirectoryExist from
+    if isDir
+      then copyDir from to
+      else copyFile from to
 
 copyFrom :: FilePath -> FilePath -> IO ()
 copyFrom src dst = do
-  copyDir (src <> "/.") dst
+  createDirectoryIfMissing True dst
+  entries <- listDirectory src
+  forM_ entries $ \entry -> copyDirOrFile (src </> entry) (dst </> entry)
   let hwmDir = dst </> ".hwm"
   whenM (doesDirectoryExist hwmDir) $ removePathForcibly hwmDir
+  where
+    copyDirOrFile from to = do
+      isDir <- doesDirectoryExist from
+      if isDir
+        then copyDir from to
+        else copyFile from to
 
 inWorkDir :: FilePath -> FilePath -> IO a -> IO ()
 inWorkDir project scenario m = do

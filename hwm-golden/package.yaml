@@ -37,7 +37,9 @@ library:
     - HWM.Golden.Changes
     - HWM.Golden.Exec
     - HWM.Golden.Filesystem
+    - HWM.Golden.Json
     - HWM.Golden.Scanning
+    - HWM.Golden.Types
 tests:
   hwm-golden-sync:
     main: Main.hs

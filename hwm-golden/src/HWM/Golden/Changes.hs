@@ -1,26 +1,18 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Golden.Changes
-  ( ExpectedFiles (..),
-    ChangeReport (..),
-    trackChanges,
-    dropEmpty,
-  )
-where
+module HWM.Golden.Changes (trackChanges) where
 
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.:?), (.=))
+import Data.Aeson (Value (..))
 import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
-import qualified Data.Aeson.KeyMap as M
-import Data.Aeson.Types ((.!=))
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (POSIXTime)
+import HWM.Golden.Types (ChangeReport (..), ExpectedFiles (..))
 import qualified Data.Yaml as Yaml
 import Relude
 import System.Directory (doesDirectoryExist, doesPathExist, listDirectory)
@@ -56,55 +48,6 @@ findManagedFiles dir = do
       | not isDir = pure []
       | takeFileName p `elem` ignoredDirs = pure []
       | otherwise = findManagedFiles p
-
-data ExpectedFiles = ExpectedFiles
-  { added :: [FilePath],
-    deleted :: [FilePath],
-    modified :: [FilePath],
-    touched :: [FilePath]
-  }
-  deriving (Show, Eq, Generic)
-
-instance ToJSON ExpectedFiles where
-  toJSON ExpectedFiles {..} =
-    dropEmpty
-      $ object
-        [ "added" .= added,
-          "deleted" .= deleted,
-          "modified" .= modified,
-          "touched" .= touched
-        ]
-
-instance FromJSON ExpectedFiles where
-  parseJSON = withObject "ExpectedFiles" $ \o ->
-    ExpectedFiles
-      <$> o .:? "added" .!= []
-      <*> o .:? "deleted" .!= []
-      <*> o .:? "modified" .!= []
-      <*> o .:? "touched" .!= []
-
-data ChangeReport = ChangeReport
-  { files :: ExpectedFiles,
-    calls :: Maybe Value
-  }
-  deriving (Show, Eq, Generic)
-
-instance ToJSON ChangeReport where
-  toJSON ChangeReport {files = ExpectedFiles {..}, calls} =
-    dropEmpty
-      $ object
-        [ "added" .= added,
-          "deleted" .= deleted,
-          "modified" .= modified,
-          "touched" .= touched,
-          "calls" .= calls
-        ]
-
-instance FromJSON ChangeReport where
-  parseJSON = withObject "ChangeReport" $ \o ->
-    ChangeReport
-      <$> (ExpectedFiles <$> o .:? "added" .!= [] <*> o .:? "deleted" .!= [] <*> o .:? "modified" .!= [] <*> o .:? "touched" .!= [])
-      <*> o .:? "calls"
 
 canonicalPath :: FilePath -> FilePath
 canonicalPath p = toString (fromMaybe (toText p) (T.stripPrefix "./" (toText p)))
@@ -181,13 +124,3 @@ trackChanges action = do
   newState <- snapshotManagedFiles
   inv <- loadInvocations
   pure ((buildChangeReport oldState newState) {calls = inv}, a)
-
-dropEmpty :: Value -> Value
-dropEmpty (Object o) = Object $ M.filter (not . isEmptyValue) o
-dropEmpty v = v
-
-isEmptyValue :: Value -> Bool
-isEmptyValue Null = True
-isEmptyValue (Object o) = M.null o
-isEmptyValue (Array a) = null a || all isEmptyValue a
-isEmptyValue _ = False
