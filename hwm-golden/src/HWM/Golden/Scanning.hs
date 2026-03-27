@@ -7,15 +7,14 @@ module HWM.Golden.Scanning
   ( CaseExpect (..),
     CaseFile (..),
     Scenario (..),
-    CaseTree (..),
-    buildCaseTree,
+    ScenarioTree (..),
     discoverGolden,
   )
 where
 
 import Data.Aeson (Value (..), object, withObject, (.:), (.:?), (.=))
 import Data.Aeson.Types (parseEither)
-import qualified Data.Map.Strict as M
+import qualified Data.Map.Strict as Map
 import qualified Data.Yaml as Yaml
 import HWM.Golden.Core (ExpectedFiles (..), dropEmpty)
 import Relude
@@ -38,8 +37,8 @@ instance Yaml.FromJSON CaseExpect where
 
 instance Yaml.ToJSON CaseExpect where
   toJSON CaseExpect {..} =
-    dropEmpty $
-      object
+    dropEmpty
+      $ object
         [ "failure" .= (if caseFailure then Just True else Nothing :: Maybe Bool),
           "files" .= caseFiles,
           "calls" .= caseCalls
@@ -48,7 +47,7 @@ instance Yaml.ToJSON CaseExpect where
 data CaseFile = CaseFile
   { caseProject :: FilePath,
     caseCommand :: String,
-    caseEnv :: Maybe (M.Map String String),
+    caseEnv :: Maybe (Map.Map String String),
     caseExpect :: Maybe CaseExpect,
     caseName :: Maybe Text,
     caseNotes :: Maybe Text
@@ -72,8 +71,8 @@ instance Yaml.FromJSON CaseFile where
 
 instance Yaml.ToJSON CaseFile where
   toJSON CaseFile {..} =
-    dropEmpty $
-      object
+    dropEmpty
+      $ object
         [ "project" .= caseProject,
           "command" .= caseCommand,
           "env" .= caseEnv,
@@ -89,33 +88,47 @@ data Scenario = Scenario
     scenarioCase :: CaseFile
   }
 
-data CaseTree = CaseTree
+data ScenarioTree = ScenarioTree
   { treeCases :: [(String, Scenario)],
-    treeChildren :: M.Map String CaseTree
+    treeChildren :: [(String, ScenarioTree)]
   }
 
-emptyCaseTree :: CaseTree
-emptyCaseTree = CaseTree {treeCases = [], treeChildren = M.empty}
+data WorkingTree = WorkingTree
+  { workCases :: [(String, Scenario)],
+    workChildren :: Map.Map String WorkingTree
+  }
 
-insertCaseTree :: [String] -> (String, Scenario) -> CaseTree -> CaseTree
-insertCaseTree [] scenario tree = tree {treeCases = scenario : treeCases tree}
-insertCaseTree (seg : rest) scenario tree =
-  let child = fromMaybe emptyCaseTree (M.lookup seg (treeChildren tree))
-      child' = insertCaseTree rest scenario child
-   in tree {treeChildren = M.insert seg child' (treeChildren tree)}
+emptyWorkingTree :: WorkingTree
+emptyWorkingTree = WorkingTree {workCases = [], workChildren = Map.empty}
 
-buildCaseTree :: FilePath -> [Scenario] -> CaseTree
-buildCaseTree prefix =
-  foldl'
-    ( \acc meta@Scenario {scenarioPath} ->
-        let rel = makeRelative prefix scenarioPath
-            segments = filter (/= ".") (splitDirectories rel)
-            (dirs, label) = case reverse segments of
-              [] -> ([], prefix)
-              l : revDirs -> (reverse revDirs, l)
-         in insertCaseTree dirs (label, meta) acc
-    )
-    emptyCaseTree
+insertWorkingTree :: [String] -> (String, Scenario) -> WorkingTree -> WorkingTree
+insertWorkingTree [] scenario tree = tree {workCases = scenario : workCases tree}
+insertWorkingTree (seg : rest) scenario tree =
+  let child = fromMaybe emptyWorkingTree (Map.lookup seg (workChildren tree))
+      child' = insertWorkingTree rest scenario child
+   in tree {workChildren = Map.insert seg child' (workChildren tree)}
+
+toScenarioTree :: WorkingTree -> ScenarioTree
+toScenarioTree WorkingTree {workCases, workChildren} =
+  ScenarioTree
+    { treeCases = sortOn fst workCases,
+      treeChildren = map (second toScenarioTree) (Map.toAscList workChildren)
+    }
+
+buildScenarioTree :: FilePath -> [Scenario] -> ScenarioTree
+buildScenarioTree prefix scenarios =
+  toScenarioTree
+    $ foldl'
+      ( \acc meta@Scenario {scenarioPath} ->
+          let rel = makeRelative prefix scenarioPath
+              segments = filter (/= ".") (splitDirectories rel)
+              (dirs, label) = case reverse segments of
+                [] -> ([], prefix)
+                l : revDirs -> (reverse revDirs, l)
+           in insertWorkingTree dirs (label, meta) acc
+      )
+      emptyWorkingTree
+      scenarios
 
 goldenRoot :: FilePath
 goldenRoot = "test/golden"
@@ -161,17 +174,17 @@ loadScenario relScenarioPath = do
                 )
     Right _ -> pure (Left ["case.yaml root must be an object: " <> toText casePath])
 
-discoverScenarioGroups :: IO ([(FilePath, [Scenario])], [Text])
-discoverScenarioGroups = do
+discoverScenarioTrees :: IO ([(FilePath, ScenarioTree)], [Text])
+discoverScenarioTrees = do
   entries <- listDirectory goldenRoot
   commands <- sort <$> filterM (doesDirectoryExist . (goldenRoot </>)) entries
   triples <- forM commands $ \command -> do
     paths <- discoverGoldenCases command
     loaded <- mapM loadScenario paths
     let errors = concatMap (fromLeft []) loaded
-    let metas = rights loaded
-    pure (command, metas, errors)
-  let scenarioGroups = [(cmd, metas) | (cmd, metas, _) <- triples, not (null metas)]
+    let scenarios = rights loaded
+    pure (command, scenarios, errors)
+  let scenarioGroups = [(cmd, buildScenarioTree cmd scenarios) | (cmd, scenarios, _) <- triples, not (null scenarios)]
   let allErrors = concatMap (\(_, _, errs) -> errs) triples
   pure (scenarioGroups, allErrors)
 
@@ -190,13 +203,11 @@ findInvalidLeafDirectories = walk goldenRoot False
       let isInvalid = isLeaf && not supportHere && not hasCase
       pure (([dir | isInvalid]) <> nested)
 
-discoverGolden :: IO (Either [Text] [(FilePath, [Scenario])])
+discoverGolden :: IO (Either [Text] [(FilePath, ScenarioTree)])
 discoverGolden = do
-  (scenarioGroups, loadErrors) <- discoverScenarioGroups
+  (scenarioTrees, loadErrors) <- discoverScenarioTrees
   invalidLeafDirs <- findInvalidLeafDirectories
   let invalidLeafErrors =
-        if null invalidLeafDirs
-          then []
-          else ["Invalid leaf directories without case.yaml: " <> toText (show invalidLeafDirs :: String)]
+        (["Invalid leaf directories without case.yaml: " <> toText (show invalidLeafDirs :: String) | not (null invalidLeafDirs)])
   let errors = loadErrors <> invalidLeafErrors
-  pure $ if null errors then Right scenarioGroups else Left errors
+  pure $ if null errors then Right scenarioTrees else Left errors

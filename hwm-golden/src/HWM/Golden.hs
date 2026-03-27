@@ -9,13 +9,11 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Yaml as Yaml
 import HWM.Golden.Core (ChangeReport (..), diffChanges, inWorkDir, runHWM, sanitizeAllCabals, saveSnapshot)
-import HWM.Golden.Scanning (CaseExpect (..), CaseFile (..), CaseTree (..), Scenario (..), buildCaseTree, discoverGolden)
+import HWM.Golden.Scanning (CaseExpect (..), CaseFile (..), Scenario (..), ScenarioTree (..), discoverGolden)
 import Relude
 import System.FilePath ((</>))
 import qualified System.IO as IO
 import Test.Hspec (Expectation, Spec, describe, expectationFailure, it, parallel, runIO, shouldBe)
-
-type ScenarioGroups = [(FilePath, [Scenario])]
 
 goldenSpec :: Spec
 goldenSpec = do
@@ -23,22 +21,19 @@ goldenSpec = do
   discovered <- runIO discoverGolden
   case discovered of
     Left errs -> runIO (expectationFailure (toString (T.intercalate "\n" errs)))
-    Right scenarios -> runDiscoveredScenarios updateMode scenarios
+    Right scenarioGroups ->
+      parallel $ forM_ scenarioGroups $ \(command, scenarioTree) ->
+        describe (toString command) (runScenarioTree updateMode scenarioTree)
 
 isUpdateMode :: IO Bool
 isUpdateMode = (== Just "1") <$> lookupEnv "GOLDEN_UPDATE"
 
-runDiscoveredScenarios :: Bool -> ScenarioGroups -> Spec
-runDiscoveredScenarios updateMode scenarioGroups =
-  parallel $ forM_ scenarioGroups $ \(command, scenarios) ->
-    describe (toString command) (runScenarioTree (buildCaseTree command scenarios))
-  where
-    runScenarioTree :: CaseTree -> Spec
-    runScenarioTree CaseTree {treeCases, treeChildren} = do
-      forM_ (sortOn fst treeCases) $ \(label, scenario) ->
-        it label (runScenario updateMode scenario)
-      forM_ (Map.toAscList treeChildren) $ \(name, child) ->
-        describe name (runScenarioTree child)
+runScenarioTree :: Bool -> ScenarioTree -> Spec
+runScenarioTree updateMode ScenarioTree {treeCases, treeChildren} = do
+  forM_ treeCases $ \(label, scenario) ->
+    it label (runScenario updateMode scenario)
+  forM_ treeChildren $ \(name, child) ->
+    describe name (runScenarioTree updateMode child)
 
 runScenario :: Bool -> Scenario -> Expectation
 runScenario updateMode Scenario {scenarioDir, scenarioCasePath, scenarioCase = CaseFile {..}} = do
