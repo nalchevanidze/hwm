@@ -1,6 +1,5 @@
-
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Golden.Exec
   ( runHWM,
@@ -8,15 +7,15 @@ module HWM.Golden.Exec
   )
 where
 
-import HWM.Golden.Changes (trackChanges)
-import HWM.Golden.Types (ChangeReport)
 import qualified Data.List as S
 import qualified Data.Map.Strict as Map
+import qualified GHC.IO.Exception as System.Exit
+import HWM.Golden.Changes (trackChanges)
+import HWM.Golden.Types (ChangeReport)
 import Relude
 import System.Directory (getCurrentDirectory)
 import System.Environment (getEnvironment)
 import System.FilePath ((</>))
-import qualified GHC.IO.Exception as System.Exit
 import System.Process (CreateProcess (env), readCreateProcessWithExitCode, shell)
 
 mkGoldenEnv :: Map.Map String String -> IO [(String, String)]
@@ -27,11 +26,11 @@ mkGoldenEnv overrides = do
   let home = ".home"
   let localBin = home </> ".local" </> "bin"
   let pathValue = S.intercalate ":" [cwd </> "bin", localBin, oldPath]
-  let goldenRunnerOS = Map.lookup "RUNNER_OS" overrides <|> S.lookup "GOLDEN_RUNNER_OS" current
-  let goldenRunnerArch = Map.lookup "RUNNER_ARCH" overrides <|> S.lookup "GOLDEN_RUNNER_ARCH" current
+  let goldenRunnerOS = Map.lookup "RUNNER_OS" overrides
+  let goldenRunnerArch = Map.lookup "RUNNER_ARCH" overrides
   let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "RUNNER_OS", "RUNNER_ARCH"]
   let keep (k, _) = k `notElem` blocked
-  let runnerVars = catMaybes [ fmap ("RUNNER_OS", ) goldenRunnerOS, fmap ("RUNNER_ARCH", ) goldenRunnerArch ]
+  let runnerVars = catMaybes [fmap ("RUNNER_OS",) goldenRunnerOS, fmap ("RUNNER_ARCH",) goldenRunnerArch]
   let base =
         Map.fromList
           $ [ ("PATH", pathValue),
