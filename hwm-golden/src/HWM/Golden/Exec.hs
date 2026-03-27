@@ -20,30 +20,23 @@ import System.Environment (getEnvironment)
 import System.FilePath ((</>))
 import System.Process (CreateProcess (env), readCreateProcessWithExitCode, shell)
 
-blockedEnvKeys :: [String]
-blockedEnvKeys = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE"]
-
 mkGoldenEnv :: Maybe CaseRunner -> IO [(String, String)]
 mkGoldenEnv mRunner = do
   current <- getEnvironment
   cwd <- getCurrentDirectory
-  let runnerEnvOverrides = fromMaybe Map.empty (mRunner >>= runnerEnv)
-      configuredPathTemplates = fromMaybe [] (mRunner >>= runnerPath)
-      shouldPrependWorkBin = maybe False (not . Map.null) (mRunner >>= runnerBin)
-      inherited = Map.fromList (filter (not . (`elem` blockedEnvKeys) . fst) current)
-      templateVars = Map.union runnerEnvOverrides inherited
+
+  let baseEnv = Map.union (fromMaybe Map.empty (mRunner >>= runnerEnv)) (Map.fromList current)
+      pathTemplates = fromMaybe [] (mRunner >>= runnerPath)
+      hasRunnerBins = maybe False (not . Map.null) (mRunner >>= runnerBin)
       prependPathEntries =
         ordNub
-          ( [cwd </> "bin" | shouldPrependWorkBin]
-              <> map (`expandTemplate` templateVars) configuredPathTemplates
+          ( [cwd </> "bin" | hasRunnerBins]
+              <> map (`expandTemplate` baseEnv) pathTemplates
           )
-      pathValue = buildPath prependPathEntries (S.lookup "PATH" current)
+      inheritedPath = S.lookup "PATH" current >>= nonEmptyString
+      pathValue = S.intercalate ":" (prependPathEntries <> maybeToList inheritedPath)
 
-  pure . Map.toList $ Map.insert "PATH" pathValue (Map.union runnerEnvOverrides inherited)
-
-buildPath :: [FilePath] -> Maybe String -> String
-buildPath prepend inheritedPath =
-  S.intercalate ":" (prepend <> maybeToList (inheritedPath >>= nonEmptyString))
+  pure . Map.toList $ Map.insert "PATH" pathValue baseEnv
   where
     nonEmptyString s = if null s then Nothing else Just s
 
