@@ -13,7 +13,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Yaml as Yaml
 import HWM.Golden.Json (dropEmpty)
-import HWM.Golden.Types (CaseExpect (..), CaseFile (..), CaseRunner (..), ExpectedFiles (..))
+import HWM.Golden.Types (CaseExpect (..), CaseFile (..), CaseRunner (..), ExpectedFiles (..), RunnerBin (..), RunnerBinTrace (..))
 import Relude
 
 writeCaseFileOrdered :: FilePath -> CaseFile -> IO ()
@@ -35,11 +35,34 @@ renderRunner :: CaseRunner -> [Text]
 renderRunner CaseRunner {..} =
   let sections =
         concat
-          [ maybe [] (renderMap "bin") runnerBin,
+          [ maybe [] renderRunnerBins runnerBin,
             maybe [] (renderMap "env") runnerEnv,
             maybe [] (renderList "path") runnerPath
           ]
    in if null sections then [] else "runner:" : sections
+
+renderRunnerBins :: Map.Map String RunnerBin -> [Text]
+renderRunnerBins bins
+  | Map.null bins = []
+  | otherwise = "  bin:" : concatMap renderEntry (Map.toAscList bins)
+  where
+    renderEntry (name, RunnerBin {runnerBinSrc, runnerBinTrace}) =
+      case runnerBinTrace of
+        Nothing -> ["    " <> toText name <> ": " <> renderYamlScalar runnerBinSrc]
+        Just traceCfg@(RunnerBinTrace {runnerBinTraceEnv, runnerBinTraceFiles})
+          | null runnerBinTraceEnv && null runnerBinTraceFiles -> ["    " <> toText name <> ": " <> renderYamlScalar runnerBinSrc]
+          | otherwise ->
+              [ "    " <> toText name <> ":",
+                "      src: " <> renderYamlScalar runnerBinSrc,
+                "      trace:"
+              ]
+                <> renderTrace traceCfg
+
+    renderTrace RunnerBinTrace {runnerBinTraceEnv, runnerBinTraceFiles} =
+      concat
+        [ if null runnerBinTraceEnv then [] else ["        env:"] <> ["          - " <> toText v | v <- runnerBinTraceEnv],
+          if null runnerBinTraceFiles then [] else ["        files:"] <> ["          - " <> toText v | v <- runnerBinTraceFiles]
+        ]
 
 renderExpect :: CaseExpect -> [Text]
 renderExpect CaseExpect {..} =

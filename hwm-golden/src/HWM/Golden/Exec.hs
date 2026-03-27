@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,7 +13,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified GHC.IO.Exception as System.Exit
 import HWM.Golden.Changes (trackChanges)
-import HWM.Golden.Types (CaseRunner (..))
+import HWM.Golden.Types (CaseRunner (..), RunnerBin (..))
 import HWM.Golden.Types (ChangeReport)
 import Relude
 import System.Directory (Permissions (..), doesFileExist, findExecutable, getCurrentDirectory, getPermissions)
@@ -53,7 +54,7 @@ expandTemplate raw vars =
 resolveHwmExecutable :: Maybe CaseRunner -> IO FilePath
 resolveHwmExecutable caseRunner =
   case caseRunner >>= runnerBin >>= Map.lookup "hwm" of
-    Just path -> validateExecutable path $> path
+    Just RunnerBin {runnerBinSrc} -> validateExecutable runnerBinSrc $> runnerBinSrc
     Nothing -> fromMaybe "hwm" <$> findExecutable "hwm"
 
 validateExecutable :: FilePath -> IO ()

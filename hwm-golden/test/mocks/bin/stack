@@ -1,5 +1,38 @@
 #!/bin/sh
 set -eu
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-"$script_dir/hwm-mock-utils" log-call "$(basename "$0")" "$@"
-"$script_dir/hwm-mock-utils" maybe-install "$@"
+
+cmd="${1:-}"
+out_dir=""
+targets=""
+if [ "$#" -gt 0 ]; then
+  shift
+fi
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --installdir|--local-bin-path)
+      out_dir="${2:-}"
+      shift 2
+      ;;
+    --*)
+      shift
+      ;;
+    *)
+      targets="$targets $1"
+      shift
+      ;;
+  esac
+done
+
+if [ "$cmd" = "install" ] && [ -n "$out_dir" ]; then
+  mkdir -p "$out_dir"
+  for t in $targets; do
+    case "$t" in
+      all|all:exes)
+        continue
+        ;;
+    esac
+    bin_name=$(basename "$t")
+    printf '#!/bin/sh\necho fake-binary-%s\n' "$bin_name" > "$out_dir/$bin_name"
+    chmod +x "$out_dir/$bin_name"
+  done
+fi

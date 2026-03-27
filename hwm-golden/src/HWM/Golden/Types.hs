@@ -8,12 +8,14 @@ module HWM.Golden.Types
   ( ExpectedFiles (..),
     ChangeReport (..),
     CaseExpect (..),
+    RunnerBinTrace (..),
+    RunnerBin (..),
     CaseRunner (..),
     CaseFile (..),
   )
 where
 
-import Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObject, (.:), (.:?), (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (String), object, withObject, (.:), (.:?), (.=))
 import Data.Aeson.Types ((.!=))
 import qualified Data.Map.Strict as Map
 import HWM.Golden.Json (dropEmpty)
@@ -90,10 +92,62 @@ instance ToJSON CaseExpect where
           "calls" .= caseCalls
         ]
 
+data RunnerBinTrace = RunnerBinTrace
+  { runnerBinTraceEnv :: [String],
+    runnerBinTraceFiles :: [FilePath]
+  }
+  deriving (Show, Eq, Generic)
+
+instance FromJSON RunnerBinTrace where
+  parseJSON = withObject "RunnerBinTrace" $ \o ->
+    RunnerBinTrace
+      <$> o .:? "env" .!= []
+      <*> o .:? "files" .!= []
+
+instance ToJSON RunnerBinTrace where
+  toJSON RunnerBinTrace {..} =
+    dropEmpty
+      $ object
+        [ "env" .= runnerBinTraceEnv,
+          "files" .= runnerBinTraceFiles
+        ]
+
+data RunnerBin = RunnerBin
+  { runnerBinSrc :: FilePath,
+    runnerBinTrace :: Maybe RunnerBinTrace
+  }
+  deriving (Show, Eq, Generic)
+
+instance FromJSON RunnerBin where
+  parseJSON v =
+    case v of
+      String _ -> RunnerBin <$> parseJSON v <*> pure Nothing
+      _ ->
+        withObject "RunnerBin"
+          (\o ->
+              RunnerBin
+                <$> o .: "src"
+                <*> o .:? "trace"
+          )
+          v
+
+instance ToJSON RunnerBin where
+  toJSON RunnerBin {runnerBinSrc, runnerBinTrace} =
+    case runnerBinTrace of
+      Nothing -> toJSON runnerBinSrc
+      Just RunnerBinTrace {runnerBinTraceEnv, runnerBinTraceFiles}
+        | null runnerBinTraceEnv && null runnerBinTraceFiles -> toJSON runnerBinSrc
+      _ ->
+        dropEmpty
+          $ object
+            [ "src" .= runnerBinSrc,
+              "trace" .= runnerBinTrace
+            ]
+
 data CaseRunner = CaseRunner
   { runnerEnv :: Maybe (Map.Map String String),
     runnerPath :: Maybe [FilePath],
-    runnerBin :: Maybe (Map.Map String FilePath)
+    runnerBin :: Maybe (Map.Map String RunnerBin)
   }
 
 instance FromJSON CaseRunner where
