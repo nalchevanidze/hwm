@@ -1,7 +1,7 @@
 command: release artifacts sample --format tar.gz
 env:
-  RUNNER_OS: macos
   RUNNER_ARCH: arm64
+  RUNNER_OS: macos
 expect:
   calls:
   - args:
