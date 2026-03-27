@@ -3,5 +3,3 @@ notes: |
   Scenario for run/forward-args (command: lint -- --fix)
 project: simple
 command: lint -- --fix
-expect:
-  files:

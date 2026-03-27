@@ -3,5 +3,3 @@ notes: |
   Scenario for status/cabal (command: status)
 project: morpheus
 command: status
-expect:
-  files:

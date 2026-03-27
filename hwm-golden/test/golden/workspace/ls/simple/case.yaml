@@ -3,5 +3,3 @@ notes: |
   Scenario for workspace/ls/simple (command: workspace ls)
 project: simple
 command: workspace ls
-expect:
-  files:

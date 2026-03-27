@@ -5,4 +5,3 @@ project: version-clean
 command: version banana
 expect:
   failure: true
-  files:

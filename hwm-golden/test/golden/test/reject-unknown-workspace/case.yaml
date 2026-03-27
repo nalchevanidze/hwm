@@ -10,4 +10,3 @@ runner:
     stack: test/mocks/bin/stack
 expect:
   failure: true
-  files:

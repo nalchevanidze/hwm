@@ -5,4 +5,3 @@ project: version-clean
 command: registry add aeson --workspace ghosts
 expect:
   failure: true
-  files:

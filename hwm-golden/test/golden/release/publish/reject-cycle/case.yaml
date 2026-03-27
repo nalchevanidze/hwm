@@ -5,4 +5,3 @@ project: publish
 command: release publish --dry-run
 expect:
   failure: true
-  files:

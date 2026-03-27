@@ -3,5 +3,3 @@ notes: |
   Scenario for version/show-current (command: version)
 project: version-clean
 command: version
-expect:
-  files:

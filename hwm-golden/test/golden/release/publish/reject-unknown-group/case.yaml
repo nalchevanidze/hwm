@@ -5,4 +5,3 @@ project: simple
 command: release publish ghost
 expect:
   failure: true
-  files:

@@ -14,4 +14,3 @@ runner:
     - ${HOME}/.local/bin
 expect:
   failure: true
-  files:

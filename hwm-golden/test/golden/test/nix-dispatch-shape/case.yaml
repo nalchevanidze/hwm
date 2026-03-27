@@ -12,7 +12,6 @@ runner:
     CI: "1"
     HWM_LOG_ID_FIXED: golden
 expect:
-  files:
   calls:
     - args:
       - build

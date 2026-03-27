@@ -3,5 +3,3 @@ notes: |
   Scenario for version/set-fixed-same (command: version 0.1.0)
 project: version-clean
 command: version 0.1.0
-expect:
-  files:

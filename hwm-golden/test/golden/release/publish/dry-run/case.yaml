@@ -9,5 +9,3 @@ runner:
     CI: "1"
     HACKAGE_AUTH_TOKEN: golden-token
     HWM_LOG_ID_FIXED: golden
-expect:
-  files:

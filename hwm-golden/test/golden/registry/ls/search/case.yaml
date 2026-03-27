@@ -3,5 +3,3 @@ notes: |
   Scenario for registry/ls/search (command: registry ls --search aes)
 project: version-clean
 command: registry ls --search aes
-expect:
-  files:

@@ -5,4 +5,3 @@ project: simple
 command: environments remove default
 expect:
   failure: true
-  files:

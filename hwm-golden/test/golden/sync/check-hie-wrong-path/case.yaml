@@ -3,5 +3,3 @@ notes: |
   Scenario for sync/check-hie-wrong-path (command: sync)
 project: simple
 command: sync
-expect:
-  files:

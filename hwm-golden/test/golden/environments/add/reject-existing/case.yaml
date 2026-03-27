@@ -5,4 +5,3 @@ project: simple
 command: environments add default 9.6.3
 expect:
   failure: true
-  files:

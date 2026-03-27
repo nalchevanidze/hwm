@@ -17,7 +17,6 @@ runner:
   path:
     - ${HOME}/.local/bin
 expect:
-  files:
   calls:
     - args:
       - install

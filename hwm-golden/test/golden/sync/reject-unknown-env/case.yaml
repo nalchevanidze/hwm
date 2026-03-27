@@ -5,4 +5,3 @@ project: simple
 command: sync ghost
 expect:
   failure: true
-  files:
