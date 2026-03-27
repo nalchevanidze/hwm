@@ -95,28 +95,39 @@ diff expectedDir = do
     $ "File diff failed:\n"
     <> diffOut
 
-mkGoldenEnv :: IO [(String, String)]
-mkGoldenEnv = do
+mkGoldenEnv :: Map.Map String String -> IO [(String, String)]
+mkGoldenEnv overrides = do
   cwd <- getCurrentDirectory
   current <- getEnvironment
   let oldPath = fromMaybe "" (S.lookup "PATH" current)
   let home = ".home"
   let localBin = home </> ".local" </> "bin"
   let pathValue = S.intercalate ":" [cwd </> "bin", localBin, oldPath]
-  let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE"]
+  let goldenRunnerOS = Map.lookup "RUNNER_OS" overrides <|> S.lookup "GOLDEN_RUNNER_OS" current
+  let goldenRunnerArch = Map.lookup "RUNNER_ARCH" overrides <|> S.lookup "GOLDEN_RUNNER_ARCH" current
+  let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "RUNNER_OS", "RUNNER_ARCH"]
   let keep (k, _) = k `notElem` blocked
+  let runnerVars = catMaybes [("RUNNER_OS",) <$> goldenRunnerOS, ("RUNNER_ARCH",) <$> goldenRunnerArch]
+  let base =
+        Map.fromList
+          $ [ ("PATH", pathValue),
+              ("HOME", home),
+              ("HWM_LOG_ID_FIXED", "golden"),
+              ("HACKAGE_AUTH_TOKEN", "golden-token"),
+              ("CI", "1")
+            ]
+          <> runnerVars
   pure
-    $ [ ("PATH", pathValue),
-        ("HOME", home),
-        ("HWM_LOG_ID_FIXED", "golden"),
-        ("HACKAGE_AUTH_TOKEN", "golden-token"),
-        ("CI", "1")
+    $ Map.toList
+    $ Map.unions
+      [ overrides,
+        base,
+        Map.fromList (filter keep current)
       ]
-    <> filter keep current
 
-runHWM :: String -> IO (ChangeReport, (Bool, String))
-runHWM cmd = trackChanges $ do
-  envVars <- mkGoldenEnv
+runHWM :: Map.Map String String -> String -> IO (ChangeReport, (Bool, String))
+runHWM caseEnv cmd = trackChanges $ do
+  envVars <- mkGoldenEnv caseEnv
   (exitCode, out, err) <- readCreateProcessWithExitCode ((shell $ "hwm -- " <> cmd) {env = Just envVars}) ""
   let failure = exitCode /= System.Exit.ExitSuccess
   return (failure, if failure then out <> err else out)

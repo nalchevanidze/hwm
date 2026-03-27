@@ -1,4 +1,7 @@
 command: release artifacts sample
+env:
+  RUNNER_OS: macos
+  RUNNER_ARCH: arm64
 expect:
   calls:
   - args:

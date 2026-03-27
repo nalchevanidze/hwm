@@ -1,7 +1,7 @@
-command: release artifacts sample --output-dir .hwm/custom-dist
+command: release artifacts sample
 env:
-  RUNNER_OS: macos
-  RUNNER_ARCH: arm64
+  RUNNER_ARCH: aarch64
+  RUNNER_OS: Darwin
 expect:
   calls:
   - args:
@@ -22,7 +22,7 @@ expect:
         ../../bar
     cabal_project_file: cabal-default.project
     tool: cabal
-name: release artifacts custom output dir
+name: release artifacts default output darwin aarch64 aliases
 notes: |
-  Builds local archive artifacts into a custom output directory.
+  Builds local archive artifacts with System.Info-style aliases to verify normalization.
 project: simple-bin

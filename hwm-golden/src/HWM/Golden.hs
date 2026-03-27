@@ -47,6 +47,7 @@ instance Yaml.ToJSON CaseExpect where
 data CaseFile = CaseFile
   { caseProject :: FilePath,
     caseCommand :: String,
+    caseEnv :: Maybe (M.Map String String),
     caseExpect :: Maybe CaseExpect,
     caseName :: Maybe Text,
     caseNotes :: Maybe Text
@@ -60,6 +61,8 @@ instance Yaml.FromJSON CaseFile where
       <*> o
       .: "command"
       <*> o
+      .:? "env"
+      <*> o
       .:? "expect"
       <*> o
       .:? "name"
@@ -72,6 +75,7 @@ instance Yaml.ToJSON CaseFile where
       $ [ "name" .= caseName,
           "project" .= caseProject,
           "command" .= caseCommand,
+          "env" .= caseEnv,
           "notes" .= caseNotes
         ]
       <> case caseExpect of
@@ -207,7 +211,7 @@ goldenRun updateMode Scenario {scenarioDir, scenarioCase = CaseFile {..}, ..} = 
   let stdoutFile = scenarioDir </> "stdout.ansi"
   let expectedDir = scenarioDir </> "expected"
   inWorkDir caseProject scenarioDir $ do
-    (changes, (isFailure, out)) <- runHWM caseCommand
+    (changes, (isFailure, out)) <- runHWM (fromMaybe M.empty caseEnv) caseCommand
     let actualFiles = files changes
     let actualCalls = calls changes
     sanitizeAllCabals
@@ -216,7 +220,7 @@ goldenRun updateMode Scenario {scenarioDir, scenarioCase = CaseFile {..}, ..} = 
         saveSnapshot changes expectedDir
         IO.writeFile stdoutFile out
         let expect = CaseExpect {caseFailure = isFailure, caseFiles = Just actualFiles, caseCalls = actualCalls}
-        let caseFile = CaseFile caseProject caseCommand (Just expect) caseName caseNotes
+        let caseFile = CaseFile caseProject caseCommand caseEnv (Just expect) caseName caseNotes
         Yaml.encodeFile scenarioCasePath caseFile
       else do
         maybe False caseFailure caseExpect `shouldBe` isFailure
