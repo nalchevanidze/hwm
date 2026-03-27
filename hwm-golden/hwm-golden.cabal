@@ -30,14 +30,14 @@ source-repository head
 library
   exposed-modules:
       HWM.Golden
-  other-modules:
       HWM.Golden.Assertions
-      HWM.Golden.Changes
       HWM.Golden.Exec
       HWM.Golden.Filesystem
-      HWM.Golden.Json
       HWM.Golden.Scanning
       HWM.Golden.Types
+  other-modules:
+      HWM.Golden.Changes
+      HWM.Golden.Json
   hs-source-dirs:
       src
   ghc-options: -Wall

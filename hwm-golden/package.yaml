@@ -33,14 +33,16 @@ dependencies:
 library:
   source-dirs: src
   ghc-options: -Wall
-  other-modules:
+  exposed-modules:
+    - HWM.Golden
     - HWM.Golden.Assertions
-    - HWM.Golden.Changes
     - HWM.Golden.Exec
     - HWM.Golden.Filesystem
-    - HWM.Golden.Json
     - HWM.Golden.Scanning
     - HWM.Golden.Types
+  other-modules:
+    - HWM.Golden.Changes
+    - HWM.Golden.Json
 tests:
   hwm-golden-sync:
     main: Main.hs
