@@ -23,12 +23,12 @@ mkGoldenEnv overrides = do
   current <- getEnvironment
   let home = ".home"
   let localBin = home </> ".local" </> "bin"
-  let pathValue = S.intercalate ":" [cwd </> "bin", localBin, fromMaybe "" (S.lookup "PATH" current)]
+  let pathValue = [cwd </> "bin", localBin]
   let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE"]
   let keep (k, _) = k `notElem` blocked
   let base =
         Map.fromList
-          [ ("PATH", pathValue),
+          [ ("PATH", S.intercalate ":" (pathValue <> maybeToList (S.lookup "PATH" current))),
             ("HOME", home),
             ("CI", "1")
           ]
