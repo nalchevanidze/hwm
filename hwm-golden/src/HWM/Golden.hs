@@ -10,7 +10,7 @@ import Data.Aeson.Types (parseEither)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Yaml as Yaml
-import HWM.Golden.Core (ChangeReport (..), ExpectedFiles (..), diffChanges, inWorkDir, runHWM, sanitizeAllCabals, saveSnapshot)
+import HWM.Golden.Core (ChangeReport (..), ExpectedFiles (..), diffChanges, dropEmpty, inWorkDir, runHWM, sanitizeAllCabals, saveSnapshot)
 import Relude
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory, makeAbsolute)
 import System.FilePath (makeRelative, splitDirectories, takeFileName, (</>))
@@ -30,18 +30,13 @@ instance Yaml.FromJSON CaseExpect where
     calls <- o .:? "calls"
     pure CaseExpect {caseFailure = fromMaybe False failure, caseFiles = files, caseCalls = calls}
 
-isEmptyExpectedFiles :: ExpectedFiles -> Bool
-isEmptyExpectedFiles ExpectedFiles {added, deleted, modified} = null added && null deleted && null modified
-
 instance Yaml.ToJSON CaseExpect where
   toJSON CaseExpect {..} =
-    object
-      $ catMaybes
-        [ if caseFailure then Just ("failure" .= caseFailure) else Nothing,
-          case caseFiles of
-            Just fs | not (isEmptyExpectedFiles fs) -> Just ("files" .= fs)
-            _ -> Nothing,
-          ("calls" .=) <$> caseCalls
+    dropEmpty $
+      object
+        [ "failure" .= (if caseFailure then Just True else Nothing :: Maybe Bool),
+          "files" .= caseFiles,
+          "calls" .= caseCalls
         ]
 
 data CaseFile = CaseFile
@@ -71,16 +66,15 @@ instance Yaml.FromJSON CaseFile where
 
 instance Yaml.ToJSON CaseFile where
   toJSON CaseFile {..} =
-    object
-      $ [ "name" .= caseName,
-          "project" .= caseProject,
+    dropEmpty $
+      object
+        [ "project" .= caseProject,
           "command" .= caseCommand,
           "env" .= caseEnv,
-          "notes" .= caseNotes
+          "name" .= caseName,
+          "notes" .= caseNotes,
+          "expect" .= caseExpect
         ]
-      <> case caseExpect of
-        Just e | not (isEmptyCaseExpect e) -> ["expect" .= e]
-        _ -> []
 
 data Scenario = Scenario
   { scenarioPath :: FilePath,
@@ -199,12 +193,6 @@ goldenCaseDirectoryTests updateMode prefix scenarios = renderTree (buildCaseTree
         it label (goldenRun updateMode meta)
       forM_ (M.toAscList treeChildren) $ \(name, child) ->
         describe name (renderTree child)
-
-isEmptyCaseExpect :: CaseExpect -> Bool
-isEmptyCaseExpect CaseExpect {caseFailure, caseFiles, caseCalls} =
-  not caseFailure
-    && maybe True isEmptyExpectedFiles caseFiles
-    && isNothing caseCalls
 
 goldenRun :: Bool -> Scenario -> Expectation
 goldenRun updateMode Scenario {scenarioDir, scenarioCase = CaseFile {..}, ..} = do

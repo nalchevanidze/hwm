@@ -5,12 +5,13 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Golden.Core (ExpectedFiles (..), ChangeReport (..), sanitizeAllCabals, diffChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot) where
+module HWM.Golden.Core (ExpectedFiles (..), ChangeReport (..), sanitizeAllCabals, diffChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot, dropEmpty) where
 
 import Control.Concurrent (threadDelay)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.:?), (.=))
 import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Aeson.KeyMap as M
 import Data.Aeson.Types ((.!=))
 import qualified Data.ByteString as BS
 import qualified Data.List as S
@@ -141,11 +142,11 @@ data ExpectedFiles = ExpectedFiles
 
 instance ToJSON ExpectedFiles where
   toJSON ExpectedFiles {..} =
-    object
-      $ catMaybes
-        [ if null added then Nothing else Just ("added" .= added),
-          if null deleted then Nothing else Just ("deleted" .= deleted),
-          if null modified then Nothing else Just ("modified" .= modified)
+    dropEmpty $
+      object
+        [ "added" .= added,
+          "deleted" .= deleted,
+          "modified" .= modified
         ]
 
 instance FromJSON ExpectedFiles where
@@ -169,12 +170,12 @@ data ChangeReport = ChangeReport
 
 instance ToJSON ChangeReport where
   toJSON ChangeReport {files = ExpectedFiles {..}, calls} =
-    object
-      $ catMaybes
-        [ if null added then Nothing else Just ("added" .= added),
-          if null deleted then Nothing else Just ("deleted" .= deleted),
-          if null modified then Nothing else Just ("modified" .= modified),
-          ("calls" .=) <$> calls
+    dropEmpty $
+      object
+        [ "added" .= added,
+          "deleted" .= deleted,
+          "modified" .= modified,
+          "calls" .= calls
         ]
 
 instance FromJSON ChangeReport where
@@ -268,3 +269,13 @@ sanitizeAllCabals = do
     content <- TIO.readFile path
     let sanitized = sanitizeCabal content
     when (content /= sanitized) $ TIO.writeFile path sanitized
+
+dropEmpty :: Value -> Value
+dropEmpty (Object o) = Object $ M.filter (not . isEmptyValue)  o
+dropEmpty v = v
+
+isEmptyValue :: Value -> Bool
+isEmptyValue Null = True
+isEmptyValue (Object o) = M.null o
+isEmptyValue (Array a) = null a || all isEmptyValue a
+isEmptyValue _ = False
