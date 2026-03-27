@@ -203,11 +203,12 @@ findInvalidLeafDirectories = walk goldenRoot False
       let isInvalid = isLeaf && not supportHere && not hasCase
       pure (([dir | isInvalid]) <> nested)
 
-discoverGolden :: IO (Either [Text] [(FilePath, ScenarioTree)])
+discoverGolden :: IO (Either [Text] ScenarioTree)
 discoverGolden = do
   (scenarioTrees, loadErrors) <- discoverScenarioTrees
   invalidLeafDirs <- findInvalidLeafDirectories
   let invalidLeafErrors =
-        (["Invalid leaf directories without case.yaml: " <> toText (show invalidLeafDirs :: String) | not (null invalidLeafDirs)])
+        ["Invalid leaf directories without case.yaml: " <> toText (show invalidLeafDirs :: String) | not (null invalidLeafDirs)]
   let errors = loadErrors <> invalidLeafErrors
-  pure $ if null errors then Right scenarioTrees else Left errors
+  let rootTree = ScenarioTree {treeCases = [], treeChildren = scenarioTrees}
+  pure $ if null errors then Right rootTree else Left errors

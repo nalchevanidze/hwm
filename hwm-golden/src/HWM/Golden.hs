@@ -21,9 +21,7 @@ goldenSpec = do
   discovered <- runIO discoverGolden
   case discovered of
     Left errs -> runIO (expectationFailure (toString (T.intercalate "\n" errs)))
-    Right scenarioGroups ->
-      parallel $ forM_ scenarioGroups $ \(command, scenarioTree) ->
-        describe (toString command) (runScenarioTree updateMode scenarioTree)
+    Right scenarioTree -> parallel (runScenarioTree updateMode scenarioTree)
 
 isUpdateMode :: IO Bool
 isUpdateMode = (== Just "1") <$> lookupEnv "GOLDEN_UPDATE"
