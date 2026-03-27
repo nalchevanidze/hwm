@@ -6,10 +6,11 @@
 module HWM.Golden (goldenSpec) where
 
 import HWM.Golden.Assertions (diffChanges, saveSnapshot)
-import HWM.Golden.Types (ChangeReport (..))
+import HWM.Golden.CaseYaml (writeCaseFileOrdered)
 import HWM.Golden.Exec (isUpdateMode, runHWM)
 import HWM.Golden.Filesystem (inWorkDir, sanitizeAllCabals)
-import HWM.Golden.Scanning (CaseExpect (..), CaseFile (..), Scenario (..), ScenarioTree (..), discoverGolden, writeCaseFileOrdered)
+import HWM.Golden.Scanning (Scenario (..), ScenarioTree (..), discoverGolden)
+import HWM.Golden.Types (CaseExpect (..), CaseFile (..), ChangeReport (..))
 import Relude
 import System.FilePath ((</>))
 import qualified System.IO as IO

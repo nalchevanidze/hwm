@@ -1,0 +1,103 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+
+module HWM.Golden.CaseYaml (writeCaseFileOrdered) where
+
+import Data.Aeson (Value (..))
+import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import qualified Data.Yaml as Yaml
+import HWM.Golden.Json (dropEmpty)
+import HWM.Golden.Types (CaseExpect (..), CaseFile (..), CaseRunner (..), ExpectedFiles (..))
+import Relude
+
+writeCaseFileOrdered :: FilePath -> CaseFile -> IO ()
+writeCaseFileOrdered path caseFile = writeFileText path (renderCaseFile caseFile)
+
+renderCaseFile :: CaseFile -> Text
+renderCaseFile CaseFile {..} =
+  T.unlines
+    $ concat
+      [ fieldText "name" caseName,
+        fieldBlock "notes" caseNotes,
+        ["project: " <> toText caseProject],
+        ["command: " <> toText caseCommand],
+        maybe [] renderRunner caseRunner,
+        maybe [] renderExpect caseExpect
+      ]
+
+renderRunner :: CaseRunner -> [Text]
+renderRunner CaseRunner {..} =
+  let sections =
+        concat
+          [ maybe [] (renderMap "bin") runnerBin,
+            maybe [] (renderMap "env") runnerEnv,
+            maybe [] (renderList "path") runnerPath
+          ]
+   in if null sections then [] else "runner:" : sections
+
+renderExpect :: CaseExpect -> [Text]
+renderExpect CaseExpect {..} =
+  let sections =
+        concat
+          [ ["  failure: true" | caseFailure],
+            maybe [] renderExpectedFiles caseFiles,
+            maybe [] renderCalls caseCalls
+          ]
+   in if null sections then [] else "expect:" : sections
+
+renderExpectedFiles :: ExpectedFiles -> [Text]
+renderExpectedFiles ExpectedFiles {added, deleted, modified, touched} =
+  let sections =
+        concat
+          [ renderNestedList "added" added,
+            renderNestedList "deleted" deleted,
+            renderNestedList "modified" modified,
+            renderNestedList "touched" touched
+          ]
+   in if null sections then [] else "  files:" : sections
+
+renderCalls :: Value -> [Text]
+renderCalls v =
+  let normalized = dropEmpty v
+   in case normalized of
+        Object o | KM.null o -> []
+        _ ->
+          let encoded = T.lines (TE.decodeUtf8 (Yaml.encode normalized))
+           in "  calls:" : map ("    " <>) encoded
+
+renderMap :: Text -> Map.Map String String -> [Text]
+renderMap _ m | Map.null m = []
+renderMap label m =
+  ["  " <> label <> ":"]
+    <> ["    " <> toText k <> ": " <> quoteYaml v | (k, v) <- Map.toAscList m]
+
+quoteYaml :: String -> Text
+quoteYaml s =
+  let t = toText s
+      escaped = T.replace "\"" "\\\"" (T.replace "\\" "\\\\" t)
+   in "\"" <> escaped <> "\""
+
+renderList :: Text -> [FilePath] -> [Text]
+renderList _ [] = []
+renderList label items =
+  ["  " <> label <> ":"] <> ["    - " <> toText x | x <- items]
+
+renderNestedList :: Text -> [FilePath] -> [Text]
+renderNestedList _ [] = []
+renderNestedList label items =
+  ["    " <> label <> ":"] <> ["      - " <> toText x | x <- items]
+
+fieldText :: Text -> Maybe Text -> [Text]
+fieldText _ Nothing = []
+fieldText label (Just v) = [label <> ": " <> v]
+
+fieldBlock :: Text -> Maybe Text -> [Text]
+fieldBlock _ Nothing = []
+fieldBlock label (Just v) =
+  let ls = T.lines v
+   in (label <> ": |") : map ("  " <>) ls

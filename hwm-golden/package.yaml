@@ -41,6 +41,7 @@ library:
     - HWM.Golden.Scanning
     - HWM.Golden.Types
   other-modules:
+    - HWM.Golden.CaseYaml
     - HWM.Golden.Changes
     - HWM.Golden.Json
 tests:

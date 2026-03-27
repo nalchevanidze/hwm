@@ -1,116 +1,25 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Golden.Scanning
-  ( CaseExpect (..),
-    CaseRunner (..),
-    CaseFile (..),
-    Scenario (..),
+  ( Scenario (..),
     ScenarioTree (..),
     discoverGolden,
-    writeCaseFileOrdered,
   )
 where
 
-import Data.Aeson (Value (..), object, withObject, (.:), (.:?), (.=))
-import qualified Data.Aeson.KeyMap as KM
+import Data.Aeson (Value (..))
 import Data.Aeson.Types (parseEither)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
 import qualified Data.Yaml as Yaml
-import HWM.Golden.Json (dropEmpty)
-import HWM.Golden.Types (ExpectedFiles (..))
+import HWM.Golden.Types (CaseFile (..))
 import Relude
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory, makeAbsolute)
 import System.FilePath (makeRelative, splitDirectories, takeFileName, (</>))
 import Test.Hspec (expectationFailure)
-
-data CaseExpect = CaseExpect
-  { caseFailure :: Bool,
-    caseFiles :: Maybe ExpectedFiles,
-    caseCalls :: Maybe Value
-  }
-
-instance Yaml.FromJSON CaseExpect where
-  parseJSON = withObject "CaseExpect" $ \o -> do
-    failure <- o .:? "failure"
-    files <- o .:? "files"
-    calls <- o .:? "calls"
-    pure CaseExpect {caseFailure = fromMaybe False failure, caseFiles = files, caseCalls = calls}
-
-instance Yaml.ToJSON CaseExpect where
-  toJSON CaseExpect {..} =
-    dropEmpty
-      $ object
-        [ "failure" .= (if caseFailure then Just True else Nothing :: Maybe Bool),
-          "files" .= caseFiles,
-          "calls" .= caseCalls
-        ]
-
-data CaseRunner = CaseRunner
-  { runnerEnv :: Maybe (Map.Map String String),
-    runnerPath :: Maybe [FilePath],
-    runnerBin :: Maybe (Map.Map String FilePath)
-  }
-
-instance Yaml.FromJSON CaseRunner where
-  parseJSON = withObject "CaseRunner" $ \o ->
-    CaseRunner
-      <$> o
-      .:? "env"
-      <*> o
-      .:? "path"
-      <*> o
-      .:? "bin"
-
-instance Yaml.ToJSON CaseRunner where
-  toJSON CaseRunner {..} =
-    dropEmpty
-      $ object
-        [ "env" .= runnerEnv,
-          "path" .= runnerPath,
-          "bin" .= runnerBin
-        ]
-
-data CaseFile = CaseFile
-  { caseProject :: FilePath,
-    caseCommand :: String,
-    caseRunner :: Maybe CaseRunner,
-    caseExpect :: Maybe CaseExpect,
-    caseName :: Maybe Text,
-    caseNotes :: Maybe Text
-  }
-
-instance Yaml.FromJSON CaseFile where
-  parseJSON = withObject "CaseFile" $ \o ->
-    CaseFile
-      <$> o
-      .: "project"
-      <*> o
-      .: "command"
-      <*> o
-      .:? "runner"
-      <*> o
-      .:? "expect"
-      <*> o
-      .:? "name"
-      <*> o
-      .:? "notes"
-
-instance Yaml.ToJSON CaseFile where
-  toJSON CaseFile {..} =
-    dropEmpty
-      $ object
-        [ "project" .= caseProject,
-          "command" .= caseCommand,
-          "runner" .= caseRunner,
-          "name" .= caseName,
-          "notes" .= caseNotes,
-          "expect" .= caseExpect
-        ]
 
 data Scenario = Scenario
   { scenarioPath :: FilePath,
@@ -236,92 +145,6 @@ findInvalidLeafDirectories = walk goldenRoot False
       let isInvalid = isLeaf && not isEmptyLeaf && not supportHere && not hasCase
       pure (([dir | isInvalid]) <> nested)
 
-writeCaseFileOrdered :: FilePath -> CaseFile -> IO ()
-writeCaseFileOrdered path caseFile = writeFileText path (renderCaseFile caseFile)
-
-renderCaseFile :: CaseFile -> Text
-renderCaseFile CaseFile {..} =
-  T.unlines
-    $ concat
-      [ fieldText "name" caseName,
-        fieldBlock "notes" caseNotes,
-        ["project: " <> toText caseProject],
-        ["command: " <> toText caseCommand],
-        maybe [] renderRunner caseRunner,
-        maybe [] renderExpect caseExpect
-      ]
-
-renderRunner :: CaseRunner -> [Text]
-renderRunner CaseRunner {..} =
-  let sections =
-        concat
-          [ maybe [] (renderMap "bin") runnerBin,
-            maybe [] (renderMap "env") runnerEnv,
-            maybe [] (renderList "path") runnerPath
-          ]
-   in if null sections then [] else "runner:" : sections
-
-renderExpect :: CaseExpect -> [Text]
-renderExpect CaseExpect {..} =
-  let sections =
-        concat
-          [ ["  failure: true" | caseFailure],
-            maybe [] renderExpectedFiles caseFiles,
-            maybe [] renderCalls caseCalls
-          ]
-   in if null sections then [] else "expect:" : sections
-
-renderExpectedFiles :: ExpectedFiles -> [Text]
-renderExpectedFiles ExpectedFiles {added, deleted, modified, touched} =
-  let sections =
-        concat
-          [ renderNestedList "added" added,
-            renderNestedList "deleted" deleted,
-            renderNestedList "modified" modified,
-            renderNestedList "touched" touched
-          ]
-   in if null sections then [] else "  files:" : sections
-
-renderCalls :: Value -> [Text]
-renderCalls v =
-  let normalized = dropEmpty v
-   in case normalized of
-        Object o | KM.null o -> []
-        _ ->
-          let encoded = T.lines (TE.decodeUtf8 (Yaml.encode normalized))
-           in "  calls:" : map ("    " <>) encoded
-
-renderMap :: Text -> Map.Map String String -> [Text]
-renderMap _ m | Map.null m = []
-renderMap label m =
-  ["  " <> label <> ":"]
-    <> ["    " <> toText k <> ": " <> quoteYaml v | (k, v) <- Map.toAscList m]
-
-quoteYaml :: String -> Text
-quoteYaml s =
-  let t = toText s
-      escaped = T.replace "\"" "\\\"" (T.replace "\\" "\\\\" t)
-   in "\"" <> escaped <> "\""
-
-renderList :: Text -> [FilePath] -> [Text]
-renderList _ [] = []
-renderList label items =
-  ["  " <> label <> ":"] <> ["    - " <> toText x | x <- items]
-
-renderNestedList :: Text -> [FilePath] -> [Text]
-renderNestedList _ [] = []
-renderNestedList label items =
-  ["    " <> label <> ":"] <> ["      - " <> toText x | x <- items]
-
-fieldText :: Text -> Maybe Text -> [Text]
-fieldText _ Nothing = []
-fieldText label (Just v) = [label <> ": " <> v]
-
-fieldBlock :: Text -> Maybe Text -> [Text]
-fieldBlock _ Nothing = []
-fieldBlock label (Just v) =
-  let ls = T.lines v
-   in (label <> ": |") : map ("  " <>) ls
 
 discoverGolden :: IO ScenarioTree
 discoverGolden = do

@@ -11,7 +11,7 @@ where
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import HWM.Golden.Scanning (CaseRunner (..))
+import HWM.Golden.Types (CaseRunner (..))
 import Relude
 import System.Directory (Permissions (..), copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getPermissions, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory, setPermissions)
 import System.Directory.Internal.Prelude (bracket)
