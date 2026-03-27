@@ -2,6 +2,7 @@ command: release artifacts sample
 env:
   RUNNER_ARCH: aarch64
   RUNNER_OS: Darwin
+  HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:

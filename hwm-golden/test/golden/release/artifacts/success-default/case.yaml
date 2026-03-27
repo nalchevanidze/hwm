@@ -2,6 +2,7 @@ command: release artifacts sample
 env:
   RUNNER_ARCH: arm64
   RUNNER_OS: macos
+  HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:

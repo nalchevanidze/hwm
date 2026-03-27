@@ -1,4 +1,6 @@
 command: test --env default
+env:
+  HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:
