@@ -1,5 +1,7 @@
 command: install ghosts
 runner:
+  path:
+    - ${HOME}/.local/bin
   bin:
     cabal: test/mocks/bin/cabal
     stack: test/mocks/bin/stack
