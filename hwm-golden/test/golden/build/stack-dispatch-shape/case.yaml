@@ -1,12 +1,4 @@
 command: build
-runner:
-  bin:
-    cabal: test/mocks/bin/cabal
-    stack: test/mocks/bin/stack
-    nix: test/mocks/bin/nix
-  env:
-    CI: "1"
-    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:
@@ -23,3 +15,11 @@ name: build stack-dispatch-shape
 notes: |
   Scenario for build/stack-dispatch-shape (command: build)
 project: simple-bin
+runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    nix: test/mocks/bin/nix
+    stack: test/mocks/bin/stack
+  env:
+    CI: '1'
+    HWM_LOG_ID_FIXED: golden

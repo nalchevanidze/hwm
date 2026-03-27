@@ -1,12 +1,12 @@
 command: test ghosts
-runner:
-  bin:
-    cabal: test/mocks/bin/cabal
-    stack: test/mocks/bin/stack
-    nix: test/mocks/bin/nix
 expect:
   failure: true
 name: test reject-unknown-workspace
 notes: |
   Scenario for test/reject-unknown-workspace (command: test ghosts)
 project: simple-bin
+runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    nix: test/mocks/bin/nix
+    stack: test/mocks/bin/stack

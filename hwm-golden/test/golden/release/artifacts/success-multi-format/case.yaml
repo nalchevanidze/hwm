@@ -1,17 +1,4 @@
 command: release artifacts sample
-runner:
-  path:
-    - ${HOME}/.local/bin
-  bin:
-    cabal: test/mocks/bin/cabal
-    stack: test/mocks/bin/stack
-    nix: test/mocks/bin/nix
-  env:
-    CI: "1"
-    HOME: .home
-    RUNNER_ARCH: arm64
-    RUNNER_OS: macos
-    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:
@@ -36,3 +23,16 @@ name: release artifacts multi-format from config
 notes: |
   Uses config-defined formats (zip and tar.gz) for artifact generation.
 project: simple-bin
+runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    nix: test/mocks/bin/nix
+    stack: test/mocks/bin/stack
+  env:
+    CI: '1'
+    HOME: .home
+    HWM_LOG_ID_FIXED: golden
+    RUNNER_ARCH: arm64
+    RUNNER_OS: macos
+  path:
+  - ${HOME}/.local/bin

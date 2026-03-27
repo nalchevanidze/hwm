@@ -1,15 +1,4 @@
 command: install --fast
-runner:
-  path:
-    - ${HOME}/.local/bin
-  bin:
-    cabal: test/mocks/bin/cabal
-    stack: test/mocks/bin/stack
-    nix: test/mocks/bin/nix
-  env:
-    CI: "1"
-    HOME: .home
-    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:
@@ -31,3 +20,14 @@ name: install fast
 notes: |
   Scenario for install/fast (command: install --fast)
 project: simple-bin
+runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    nix: test/mocks/bin/nix
+    stack: test/mocks/bin/stack
+  env:
+    CI: '1'
+    HOME: .home
+    HWM_LOG_ID_FIXED: golden
+  path:
+  - ${HOME}/.local/bin

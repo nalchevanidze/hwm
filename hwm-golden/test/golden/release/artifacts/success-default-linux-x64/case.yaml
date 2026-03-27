@@ -1,17 +1,4 @@
 command: release artifacts sample
-runner:
-  path:
-    - ${HOME}/.local/bin
-  bin:
-    cabal: test/mocks/bin/cabal
-    stack: test/mocks/bin/stack
-    nix: test/mocks/bin/nix
-  env:
-    CI: "1"
-    HOME: .home
-    RUNNER_ARCH: X64
-    RUNNER_OS: Linux
-    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:
@@ -36,3 +23,16 @@ name: release artifacts default output linux x64
 notes: |
   Builds local archive artifacts with RUNNER_OS/RUNNER_ARCH override using GitHub-style names.
 project: simple-bin
+runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    nix: test/mocks/bin/nix
+    stack: test/mocks/bin/stack
+  env:
+    CI: '1'
+    HOME: .home
+    HWM_LOG_ID_FIXED: golden
+    RUNNER_ARCH: X64
+    RUNNER_OS: Linux
+  path:
+  - ${HOME}/.local/bin

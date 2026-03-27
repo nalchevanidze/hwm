@@ -1,11 +1,11 @@
 command: release publish --dry-run
-runner:
-  env:
-    CI: "1"
-    HWM_LOG_ID_FIXED: golden
-    HACKAGE_AUTH_TOKEN: golden-token
 name: release publish dry-run
 notes: |
   Validates token presence, sdist generation, and topological publish plan
   without uploading to Hackage.
 project: publish
+runner:
+  env:
+    CI: '1'
+    HACKAGE_AUTH_TOKEN: golden-token
+    HWM_LOG_ID_FIXED: golden

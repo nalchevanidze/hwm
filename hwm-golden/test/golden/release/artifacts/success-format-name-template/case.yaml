@@ -1,15 +1,4 @@
 command: release artifacts sample --format zip --name-template '{{binary}}-{{version}}'
-runner:
-  path:
-    - ${HOME}/.local/bin
-  bin:
-    cabal: test/mocks/bin/cabal
-    stack: test/mocks/bin/stack
-    nix: test/mocks/bin/nix
-  env:
-    CI: "1"
-    HOME: .home
-    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:
@@ -34,3 +23,14 @@ name: release artifacts format and name template override
 notes: |
   Overrides output archive format and naming template.
 project: simple-bin
+runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    nix: test/mocks/bin/nix
+    stack: test/mocks/bin/stack
+  env:
+    CI: '1'
+    HOME: .home
+    HWM_LOG_ID_FIXED: golden
+  path:
+  - ${HOME}/.local/bin

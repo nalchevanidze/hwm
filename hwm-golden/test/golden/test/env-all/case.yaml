@@ -1,12 +1,4 @@
 command: test --env all
-runner:
-  bin:
-    cabal: test/mocks/bin/cabal
-    stack: test/mocks/bin/stack
-    nix: test/mocks/bin/nix
-  env:
-    CI: "1"
-    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:
@@ -33,3 +25,11 @@ name: test env-all
 notes: |
   Scenario for test/env-all (command: test --env all)
 project: simple-bin
+runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    nix: test/mocks/bin/nix
+    stack: test/mocks/bin/stack
+  env:
+    CI: '1'
+    HWM_LOG_ID_FIXED: golden
