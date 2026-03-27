@@ -15,6 +15,7 @@ where
 import Data.Aeson (Value (..), object, withObject, (.:), (.:?), (.=))
 import Data.Aeson.Types (parseEither)
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import qualified Data.Yaml as Yaml
 import HWM.Golden.Core (ExpectedFiles (..), dropEmpty)
 import Relude
@@ -203,12 +204,12 @@ findInvalidLeafDirectories = walk goldenRoot False
       let isInvalid = isLeaf && not supportHere && not hasCase
       pure (([dir | isInvalid]) <> nested)
 
-discoverGolden :: IO (Either [Text] ScenarioTree)
+discoverGolden :: IO ScenarioTree
 discoverGolden = do
   (scenarioTrees, loadErrors) <- discoverScenarioTrees
   invalidLeafDirs <- findInvalidLeafDirectories
   let invalidLeafErrors =
         ["Invalid leaf directories without case.yaml: " <> toText (show invalidLeafDirs :: String) | not (null invalidLeafDirs)]
   let errors = loadErrors <> invalidLeafErrors
-  let rootTree = ScenarioTree {treeCases = [], treeChildren = scenarioTrees}
-  pure $ if null errors then Right rootTree else Left errors
+  unless (null errors) $ expectationFailure (toString (T.intercalate "\n" errors))
+  pure ScenarioTree {treeCases = [], treeChildren = scenarioTrees}

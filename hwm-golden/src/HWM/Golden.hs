@@ -6,22 +6,19 @@
 module HWM.Golden (goldenSpec) where
 
 import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
 import qualified Data.Yaml as Yaml
 import HWM.Golden.Core (ChangeReport (..), diffChanges, inWorkDir, runHWM, sanitizeAllCabals, saveSnapshot)
 import HWM.Golden.Scanning (CaseExpect (..), CaseFile (..), Scenario (..), ScenarioTree (..), discoverGolden)
 import Relude
 import System.FilePath ((</>))
 import qualified System.IO as IO
-import Test.Hspec (Expectation, Spec, describe, expectationFailure, it, parallel, runIO, shouldBe)
+import Test.Hspec (Expectation, Spec, describe, it, parallel, runIO, shouldBe)
 
 goldenSpec :: Spec
 goldenSpec = do
   updateMode <- runIO isUpdateMode
-  discovered <- runIO discoverGolden
-  case discovered of
-    Left errs -> runIO (expectationFailure (toString (T.intercalate "\n" errs)))
-    Right scenarioTree -> parallel (runScenarioTree updateMode scenarioTree)
+  scenarioTree <- runIO discoverGolden
+  parallel (runScenarioTree updateMode scenarioTree)
 
 isUpdateMode :: IO Bool
 isUpdateMode = (== Just "1") <$> lookupEnv "GOLDEN_UPDATE"
