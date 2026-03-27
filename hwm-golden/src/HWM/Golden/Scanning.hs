@@ -5,6 +5,7 @@
 
 module HWM.Golden.Scanning
   ( CaseExpect (..),
+    CaseRunner (..),
     CaseFile (..),
     Scenario (..),
     ScenarioTree (..),
@@ -46,10 +47,32 @@ instance Yaml.ToJSON CaseExpect where
           "calls" .= caseCalls
         ]
 
+data CaseRunner = CaseRunner
+  { runnerEnv :: Maybe (Map.Map String String),
+    runnerPath :: Maybe [FilePath]
+  }
+
+instance Yaml.FromJSON CaseRunner where
+  parseJSON = withObject "CaseRunner" $ \o ->
+    CaseRunner
+      <$> o
+      .:? "env"
+      <*> o
+      .:? "path"
+
+instance Yaml.ToJSON CaseRunner where
+  toJSON CaseRunner {..} =
+    dropEmpty
+      $ object
+        [ "env" .= runnerEnv,
+          "path" .= runnerPath
+        ]
+
 data CaseFile = CaseFile
   { caseProject :: FilePath,
     caseCommand :: String,
     caseEnv :: Maybe (Map.Map String String),
+    caseRunner :: Maybe CaseRunner,
     caseExpect :: Maybe CaseExpect,
     caseName :: Maybe Text,
     caseNotes :: Maybe Text
@@ -65,6 +88,8 @@ instance Yaml.FromJSON CaseFile where
       <*> o
       .:? "env"
       <*> o
+      .:? "runner"
+      <*> o
       .:? "expect"
       <*> o
       .:? "name"
@@ -78,6 +103,7 @@ instance Yaml.ToJSON CaseFile where
         [ "project" .= caseProject,
           "command" .= caseCommand,
           "env" .= caseEnv,
+          "runner" .= caseRunner,
           "name" .= caseName,
           "notes" .= caseNotes,
           "expect" .= caseExpect

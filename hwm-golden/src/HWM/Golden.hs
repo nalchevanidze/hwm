@@ -34,7 +34,7 @@ runScenario updateMode Scenario {scenarioDir, scenarioCasePath, scenarioCase = C
   let expectedDir = scenarioDir </> "expected"
 
   inWorkDir caseProject scenarioDir $ do
-    (changes, (isFailure, out)) <- runHWM (fromMaybe Map.empty caseEnv) caseCommand
+    (changes, (isFailure, out)) <- runHWM caseRunner (fromMaybe Map.empty caseEnv) caseCommand
     sanitizeAllCabals
 
     if updateMode
@@ -42,7 +42,16 @@ runScenario updateMode Scenario {scenarioDir, scenarioCasePath, scenarioCase = C
         saveSnapshot changes expectedDir
         IO.writeFile stdoutFile out
         let expect = CaseExpect {caseFailure = isFailure, caseFiles = Just (files changes), caseCalls = calls changes}
-        let nextCase = CaseFile caseProject caseCommand caseEnv (Just expect) caseName caseNotes
+        let nextCase =
+              CaseFile
+                { caseProject = caseProject,
+                  caseCommand = caseCommand,
+                  caseEnv = caseEnv,
+                  caseRunner = caseRunner,
+                  caseExpect = Just expect,
+                  caseName = caseName,
+                  caseNotes = caseNotes
+                }
         Yaml.encodeFile scenarioCasePath nextCase
       else do
         maybe False caseFailure caseExpect `shouldBe` isFailure
