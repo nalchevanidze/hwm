@@ -20,7 +20,6 @@ module HWM.Golden.Core
   )
 where
 
-import Control.Concurrent (threadDelay)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.:?), (.=))
 import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
@@ -31,16 +30,18 @@ import qualified Data.List as S
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock.POSIX (POSIXTime)
 import qualified Data.Yaml as Yaml
 import qualified GHC.IO.Exception as System.Exit
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, getCurrentDirectory, getModificationTime, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
+import System.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, doesPathExist, getCurrentDirectory, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory)
 import System.Directory.Internal.Prelude (bracket)
 import System.Environment (getEnvironment)
 import System.FilePath (takeDirectory, takeExtension, takeFileName, (</>))
 import System.FilePath.Glob (glob)
 import System.IO.Temp (withSystemTempDirectory)
+import qualified System.Posix.Files as Posix
+import System.Posix.Types (FileOffset)
 import System.Process (CreateProcess (env), callCommand, readCreateProcessWithExitCode, shell)
 import Test.Hspec (expectationFailure)
 
@@ -149,7 +150,8 @@ runHWM caseEnv cmd = trackChanges $ do
 data ExpectedFiles = ExpectedFiles
   { added :: [FilePath],
     deleted :: [FilePath],
-    modified :: [FilePath]
+    modified :: [FilePath],
+    touched :: [FilePath]
   }
   deriving (Show, Eq, Generic)
 
@@ -159,7 +161,8 @@ instance ToJSON ExpectedFiles where
       $ object
         [ "added" .= added,
           "deleted" .= deleted,
-          "modified" .= modified
+          "modified" .= modified,
+          "touched" .= touched
         ]
 
 instance FromJSON ExpectedFiles where
@@ -173,6 +176,9 @@ instance FromJSON ExpectedFiles where
       .!= []
       <*> o
       .:? "modified"
+      .!= []
+      <*> o
+      .:? "touched"
       .!= []
 
 data ChangeReport = ChangeReport
@@ -188,28 +194,71 @@ instance ToJSON ChangeReport where
         [ "added" .= added,
           "deleted" .= deleted,
           "modified" .= modified,
+          "touched" .= touched,
           "calls" .= calls
         ]
 
 instance FromJSON ChangeReport where
   parseJSON = withObject "ChangeReport" $ \o ->
     ChangeReport
-      <$> (ExpectedFiles <$> o .:? "added" .!= [] <*> o .:? "deleted" .!= [] <*> o .:? "modified" .!= [])
+      <$> (ExpectedFiles <$> o .:? "added" .!= [] <*> o .:? "deleted" .!= [] <*> o .:? "modified" .!= [] <*> o .:? "touched" .!= [])
       <*> o
       .:? "calls"
 
 canonicalPath :: FilePath -> FilePath
 canonicalPath p = toString (fromMaybe (toText p) (T.stripPrefix "./" (toText p)))
 
-buildChangeReport :: [(FilePath, UTCTime)] -> [(FilePath, UTCTime)] -> ChangeReport
-buildChangeReport oldState newState =
-  let oldMap = Map.fromList oldState
-      newMap = Map.fromList newState
-      added = sort (map canonicalPath (Map.keys (Map.difference newMap oldMap)))
+hashBytes :: BS.ByteString -> Word64
+hashBytes = BS.foldl' fnvStep fnvOffset
+  where
+    fnvOffset = 14695981039346656037
+    fnvPrime = 1099511628211
+    fnvStep h b = (h `xor` fromIntegral b) * fnvPrime
+
+data FileFingerprint = FileFingerprint
+  { fpMTime :: POSIXTime,
+    fpCTime :: POSIXTime,
+    fpSize :: FileOffset,
+    fpHash :: Word64
+  }
+
+snapshotManagedFiles :: IO (Map.Map FilePath FileFingerprint)
+snapshotManagedFiles = do
+  files <- findManagedFiles "."
+  fmap Map.fromList $ forM files $ \path -> do
+    st <- Posix.getFileStatus path
+    content <- BS.readFile path
+    pure
+      ( path,
+        FileFingerprint
+          { fpMTime = Posix.modificationTimeHiRes st,
+            fpCTime = Posix.statusChangeTimeHiRes st,
+            fpSize = Posix.fileSize st,
+            fpHash = hashBytes content
+          }
+      )
+
+buildChangeReport :: Map.Map FilePath FileFingerprint -> Map.Map FilePath FileFingerprint -> ChangeReport
+buildChangeReport oldMap newMap =
+  let added = sort (map canonicalPath (Map.keys (Map.difference newMap oldMap)))
       deleted = sort (map canonicalPath (Map.keys (Map.difference oldMap newMap)))
       common = Map.intersectionWith (,) oldMap newMap
-      modified = sort (map canonicalPath (Map.keys (Map.filter (uncurry (/=)) common)))
-   in ChangeReport (ExpectedFiles added deleted modified) Nothing
+      wasTouched FileFingerprint {fpMTime = oldM, fpCTime = oldC, fpSize = oldS} FileFingerprint {fpMTime = newM, fpCTime = newC, fpSize = newS} =
+        oldM /= newM || oldC /= newC || oldS /= newS
+      modified =
+        sort
+          [ canonicalPath path
+            | (path, (oldFp, newFp)) <- Map.toList common,
+              fpHash oldFp /= fpHash newFp
+          ]
+      touched =
+        sort
+          [ canonicalPath path
+            | (path, (oldFp, newFp)) <- Map.toList common,
+              fpHash oldFp == fpHash newFp,
+              wasTouched oldFp newFp
+          ]
+   in ChangeReport (ExpectedFiles added deleted modified touched) Nothing
 
 loadInvocations :: IO (Maybe Value)
 loadInvocations = do
@@ -226,15 +275,11 @@ loadInvocations = do
 
 trackChanges :: IO a -> IO (ChangeReport, a)
 trackChanges action = do
-  beforeFiles <- findManagedFiles "."
-  oldTimes <- mapM (\p -> (p,) <$> getModificationTime p) beforeFiles
-  threadDelay 1100000
-
+  oldState <- snapshotManagedFiles
   a <- action
-  afterFiles <- findManagedFiles "."
-  newTimes <- mapM (\p -> (p,) <$> getModificationTime p) afterFiles
+  newState <- snapshotManagedFiles
   inv <- loadInvocations
-  pure ((buildChangeReport oldTimes newTimes) {calls = inv}, a)
+  pure ((buildChangeReport oldState newState) {calls = inv}, a)
 
 saveSnapshot :: ChangeReport -> FilePath -> IO ()
 saveSnapshot (ChangeReport (ExpectedFiles {added, modified}) _) dst = do
