@@ -29,8 +29,10 @@ mkGoldenEnv overrides = do
   let goldenRunnerArch = Map.lookup "RUNNER_ARCH" overrides
   let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "RUNNER_OS", "RUNNER_ARCH"]
   let keep (k, _) = k `notElem` blocked
-  let runnerVars = catMaybes [fmap ("RUNNER_OS",) goldenRunnerOS, fmap ("RUNNER_ARCH",) goldenRunnerArch]
-  let base =
+  pure
+    $ Map.toList
+    $ Map.unions
+      [ overrides,
         Map.fromList
           $ [ ("PATH", pathValue),
               ("HOME", home),
@@ -38,12 +40,7 @@ mkGoldenEnv overrides = do
               ("HACKAGE_AUTH_TOKEN", "golden-token"),
               ("CI", "1")
             ]
-          <> runnerVars
-  pure
-    $ Map.toList
-    $ Map.unions
-      [ overrides,
-        base,
+          <> catMaybes [fmap ("RUNNER_OS",) goldenRunnerOS, fmap ("RUNNER_ARCH",) goldenRunnerArch],
         Map.fromList (filter keep current)
       ]
 
