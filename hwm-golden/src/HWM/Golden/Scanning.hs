@@ -202,7 +202,8 @@ findInvalidLeafDirectories = walk goldenRoot False
       nested <- fmap concat (mapM (`walk` supportHere) dirs)
       let hasCase = "case.yaml" `elem` entries
       let isLeaf = null dirs
-      let isInvalid = isLeaf && not supportHere && not hasCase
+      let isEmptyLeaf = isLeaf && null entries
+      let isInvalid = isLeaf && not isEmptyLeaf && not supportHere && not hasCase
       pure (([dir | isInvalid]) <> nested)
 
 discoverGolden :: IO ScenarioTree
