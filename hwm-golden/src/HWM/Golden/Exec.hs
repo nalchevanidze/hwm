@@ -1,5 +1,6 @@
-{-# LANGUAGE RecordWildCards #-}
+
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TupleSections #-}
 
 module HWM.Golden.Exec
   ( runHWM,
@@ -30,7 +31,7 @@ mkGoldenEnv overrides = do
   let goldenRunnerArch = Map.lookup "RUNNER_ARCH" overrides <|> S.lookup "GOLDEN_RUNNER_ARCH" current
   let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "RUNNER_OS", "RUNNER_ARCH"]
   let keep (k, _) = k `notElem` blocked
-  let runnerVars = catMaybes [ fmap (\v -> ("RUNNER_OS", v)) goldenRunnerOS, fmap (\v -> ("RUNNER_ARCH", v)) goldenRunnerArch ]
+  let runnerVars = catMaybes [ fmap ("RUNNER_OS", ) goldenRunnerOS, fmap ("RUNNER_ARCH", ) goldenRunnerArch ]
   let base =
         Map.fromList
           $ [ ("PATH", pathValue),
