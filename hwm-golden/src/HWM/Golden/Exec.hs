@@ -17,6 +17,7 @@ import HWM.Golden.Types (ChangeReport)
 import Relude
 import System.Directory (findExecutable, getCurrentDirectory)
 import System.Environment (getEnvironment)
+import System.FilePath ((</>))
 import System.Process (CreateProcess (env), readCreateProcessWithExitCode, shell)
 
 mkGoldenEnv :: Maybe CaseRunner -> IO [(String, String)]
@@ -24,9 +25,9 @@ mkGoldenEnv mRunner = do
   cwd <- getCurrentDirectory
   current <- getEnvironment
   let runnerEnvOverrides = fromMaybe Map.empty (mRunner >>= runnerEnv)
-  let runnerPathEntries = mRunner >>= runnerPath
-  let hasRunnerBins = maybe False (maybe False (not . Map.null) . runnerBin) mRunner
-  let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "WORKING_DIR"]
+  let configuredPathTemplates = fromMaybe [] (mRunner >>= runnerPath)
+  let hasRunnerBins = maybe False (not . Map.null) (mRunner >>= runnerBin)
+  let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE"]
   let keep (k, _) = k `notElem` blocked
   let inherited = Map.fromList (filter keep current)
   let inheritedPath = fromMaybe "" (S.lookup "PATH" current)
@@ -34,17 +35,16 @@ mkGoldenEnv mRunner = do
   let defaults =
         Map.fromList
           [ ("HOME", ".home"),
-            ("CI", "1"),
-            ("WORKING_DIR", cwd)
+            ("CI", "1")
           ]
 
   let mergedForTemplate = Map.unions [runnerEnvOverrides, defaults, inherited]
   let templateVars = Map.insert "cwd" cwd mergedForTemplate
 
-  configuredPathEntries <- resolvePathEntries templateVars runnerPathEntries
-  let autoPathEntries = [expandTemplate "${WORKING_DIR}/bin" templateVars | hasRunnerBins]
-  let prependPathEntries = ordNub (autoPathEntries <> configuredPathEntries)
-  let pathValue = S.intercalate ":" (prependPathEntries <> [inheritedPath])
+  let configuredPathEntries = map (`expandTemplate` templateVars) configuredPathTemplates
+  let prependPathEntries = ordNub ([cwd </> "bin" | hasRunnerBins] <> configuredPathEntries)
+  let pathSegments = prependPathEntries <> [inheritedPath | not (null inheritedPath)]
+  let pathValue = S.intercalate ":" pathSegments
 
   let base = Map.insert "PATH" pathValue defaults
 
@@ -55,12 +55,6 @@ mkGoldenEnv mRunner = do
         base,
         inherited
       ]
-
-resolvePathEntries :: Map.Map String String -> Maybe [FilePath] -> IO [FilePath]
-resolvePathEntries templateVars maybeConfigured =
-  case maybeConfigured of
-    Just templates -> pure (map (`expandTemplate` templateVars) templates)
-    Nothing -> pure []
 
 expandTemplate :: String -> Map.Map String String -> String
 expandTemplate raw vars =
