@@ -26,23 +26,20 @@ blockedEnvKeys = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE"]
 mkGoldenEnv :: Maybe CaseRunner -> IO [(String, String)]
 mkGoldenEnv mRunner = do
   current <- getEnvironment
-
-  let runnerEnvOverrides = fromMaybe Map.empty (mRunner >>= runnerEnv)
-  let configuredPathTemplates = fromMaybe [] (mRunner >>= runnerPath)
-  let hasRunnerBins = maybe False (not . Map.null) (mRunner >>= runnerBin)
-
-  let keep (k, _) = k `notElem` blockedEnvKeys
-  let inherited = Map.fromList (filter keep current)
-
-  let templateVars = Map.unions [runnerEnvOverrides, inherited]
-
   cwd <- getCurrentDirectory
-  let configuredPathEntries = map (`expandTemplate` templateVars) configuredPathTemplates
-  let autoPathEntries = [cwd </> "bin" | hasRunnerBins]
-  let prependPathEntries = ordNub (autoPathEntries <> configuredPathEntries)
-  let pathValue = buildPath prependPathEntries (S.lookup "PATH" current)
+  let runnerEnvOverrides = fromMaybe Map.empty (mRunner >>= runnerEnv)
+      configuredPathTemplates = fromMaybe [] (mRunner >>= runnerPath)
+      shouldPrependWorkBin = maybe False (not . Map.null) (mRunner >>= runnerBin)
+      inherited = Map.fromList (filter (not . (`elem` blockedEnvKeys) . fst) current)
+      templateVars = Map.union runnerEnvOverrides inherited
+      prependPathEntries =
+        ordNub
+          ( [cwd </> "bin" | shouldPrependWorkBin]
+              <> map (`expandTemplate` templateVars) configuredPathTemplates
+          )
+      pathValue = buildPath prependPathEntries (S.lookup "PATH" current)
 
-  pure $ Map.toList $ Map.unions [runnerEnvOverrides, Map.insert "PATH" pathValue inherited]
+  pure . Map.toList $ Map.insert "PATH" pathValue (Map.union runnerEnvOverrides inherited)
 
 buildPath :: [FilePath] -> Maybe String -> String
 buildPath prepend inheritedPath =
@@ -61,13 +58,15 @@ expandTemplate raw vars =
 resolveHwmExecutable :: Maybe CaseRunner -> IO FilePath
 resolveHwmExecutable caseRunner =
   case caseRunner >>= runnerBin >>= Map.lookup "hwm" of
-    Just path -> do
-      exists <- doesFileExist path
-      unless exists $ fail ("Configured runner.bin.hwm does not exist: " <> path)
-      perms <- getPermissions path
-      unless (executable perms) $ fail ("Configured runner.bin.hwm is not executable: " <> path)
-      pure path
+    Just path -> validateExecutable path $> path
     Nothing -> fromMaybe "hwm" <$> findExecutable "hwm"
+
+validateExecutable :: FilePath -> IO ()
+validateExecutable path = do
+  exists <- doesFileExist path
+  unless exists $ fail ("Configured runner.bin.hwm does not exist: " <> path)
+  perms <- getPermissions path
+  unless (executable perms) $ fail ("Configured runner.bin.hwm is not executable: " <> path)
 
 runHWM :: Maybe CaseRunner -> String -> IO (ChangeReport, (Bool, String))
 runHWM caseRunner cmd = trackChanges $ do
