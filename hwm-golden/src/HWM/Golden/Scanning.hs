@@ -161,8 +161,8 @@ loadScenario relScenarioPath = do
                 )
     Right _ -> pure (Left ["case.yaml root must be an object: " <> toText casePath])
 
-discoverScenarioMap :: IO (M.Map FilePath [Scenario], [Text])
-discoverScenarioMap = do
+discoverScenarioGroups :: IO ([(FilePath, [Scenario])], [Text])
+discoverScenarioGroups = do
   entries <- listDirectory goldenRoot
   commands <- sort <$> filterM (doesDirectoryExist . (goldenRoot </>)) entries
   triples <- forM commands $ \command -> do
@@ -171,9 +171,9 @@ discoverScenarioMap = do
     let errors = concatMap (fromLeft []) loaded
     let metas = rights loaded
     pure (command, metas, errors)
-  let scenarioMap = M.fromList [(cmd, metas) | (cmd, metas, _) <- triples]
+  let scenarioGroups = [(cmd, metas) | (cmd, metas, _) <- triples, not (null metas)]
   let allErrors = concatMap (\(_, _, errs) -> errs) triples
-  pure (scenarioMap, allErrors)
+  pure (scenarioGroups, allErrors)
 
 findInvalidLeafDirectories :: IO [FilePath]
 findInvalidLeafDirectories = walk goldenRoot False
@@ -190,13 +190,13 @@ findInvalidLeafDirectories = walk goldenRoot False
       let isInvalid = isLeaf && not supportHere && not hasCase
       pure (([dir | isInvalid]) <> nested)
 
-discoverGolden :: IO (Either [Text] (M.Map FilePath [Scenario]))
+discoverGolden :: IO (Either [Text] [(FilePath, [Scenario])])
 discoverGolden = do
-  (scenarioMap, loadErrors) <- discoverScenarioMap
+  (scenarioGroups, loadErrors) <- discoverScenarioGroups
   invalidLeafDirs <- findInvalidLeafDirectories
   let invalidLeafErrors =
         if null invalidLeafDirs
           then []
           else ["Invalid leaf directories without case.yaml: " <> toText (show invalidLeafDirs :: String)]
   let errors = loadErrors <> invalidLeafErrors
-  pure $ if null errors then Right scenarioMap else Left errors
+  pure $ if null errors then Right scenarioGroups else Left errors
