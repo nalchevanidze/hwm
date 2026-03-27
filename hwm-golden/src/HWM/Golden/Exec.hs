@@ -22,10 +22,9 @@ mkGoldenEnv :: Map.Map String String -> IO [(String, String)]
 mkGoldenEnv overrides = do
   cwd <- getCurrentDirectory
   current <- getEnvironment
-  let oldPath = fromMaybe "" (S.lookup "PATH" current)
   let home = ".home"
   let localBin = home </> ".local" </> "bin"
-  let pathValue = S.intercalate ":" [cwd </> "bin", localBin, oldPath]
+  let pathValue = S.intercalate ":" [cwd </> "bin", localBin, fromMaybe "" (S.lookup "PATH" current)]
   let goldenRunnerOS = Map.lookup "RUNNER_OS" overrides
   let goldenRunnerArch = Map.lookup "RUNNER_ARCH" overrides
   let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "RUNNER_OS", "RUNNER_ARCH"]
