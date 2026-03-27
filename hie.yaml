@@ -1,12 +1,10 @@
 cradle:
-  stack:
-    stackYaml: ./stack.yaml
-    components:
-    - path: ./hwm-golden/src
-      component: hwm-golden:lib
-    - path: ./hwm-golden/test
-      component: hwm-golden:test:hwm-golden-sync
-    - path: ./hwm/src
-      component: hwm:lib
-    - path: ./hwm/app
-      component: hwm:exe:hwm
+  cabal:
+  - path: ./hwm-golden/src
+    component: hwm-golden:lib
+  - path: ./hwm-golden/test
+    component: hwm-golden:test:hwm-golden-sync
+  - path: ./hwm/src
+    component: hwm:lib
+  - path: ./hwm/app
+    component: hwm:exe:hwm
