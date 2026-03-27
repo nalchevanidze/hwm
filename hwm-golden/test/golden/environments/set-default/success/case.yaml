@@ -1,9 +1,9 @@
-command: environments set-default ci
-expect:
-  files:
-    modified:
-    - hwm.yaml
 name: environments set-default success
 notes: |
   Scenario for environments/set-default/success (command: environments set-default ci)
 project: simple
+command: environments set-default ci
+expect:
+  files:
+    modified:
+      - hwm.yaml

@@ -1,12 +1,13 @@
-command: build ghosts
-expect:
-  failure: true
 name: build reject-unknown-workspace
 notes: |
   Scenario for build/reject-unknown-workspace (command: build ghosts)
 project: simple-bin
+command: build ghosts
 runner:
   bin:
     cabal: test/mocks/bin/cabal
     nix: test/mocks/bin/nix
     stack: test/mocks/bin/stack
+expect:
+  failure: true
+  files:

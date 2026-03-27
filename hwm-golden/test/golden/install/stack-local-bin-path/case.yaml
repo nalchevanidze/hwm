@@ -1,30 +1,31 @@
-command: install
-expect:
-  calls:
-  - args:
-    - install
-    - --local-bin-path
-    - .home/.local/bin
-    stack_yaml: stack-default.yaml
-    stack_yaml_content: |
-      resolver: lts-22.43
-      packages:
-      - ../../foo
-      - ../../bar
-      save-hackage-creds: false
-    tool: stack
 name: install stack-local-bin-path
 notes: |
   Scenario for install/stack-local-bin-path (command: install)
 project: simple-bin
+command: install
 runner:
   bin:
     cabal: test/mocks/bin/cabal
     nix: test/mocks/bin/nix
     stack: test/mocks/bin/stack
   env:
-    CI: '1'
+    CI: 1
     HOME: .home
     HWM_LOG_ID_FIXED: golden
   path:
-  - ${HOME}/.local/bin
+    - ${HOME}/.local/bin
+expect:
+  files:
+  calls:
+    - args:
+      - install
+      - --local-bin-path
+      - .home/.local/bin
+      stack_yaml: stack-default.yaml
+      stack_yaml_content: |
+        resolver: lts-22.43
+        packages:
+        - ../../foo
+        - ../../bar
+        save-hackage-creds: false
+      tool: stack

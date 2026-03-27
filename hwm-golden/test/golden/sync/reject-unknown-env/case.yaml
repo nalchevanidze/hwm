@@ -1,7 +1,8 @@
-command: sync ghost
-expect:
-  failure: true
 name: sync reject-unknown-env
 notes: |
   Scenario for sync/reject-unknown-env (command: sync ghost)
 project: simple
+command: sync ghost
+expect:
+  failure: true
+  files:

@@ -1,12 +1,12 @@
-command: registry add aeson --workspace libs
-expect:
-  files:
-    modified:
-    - bar/bar.cabal
-    - bar/package.yaml
-    - foo/foo.cabal
-    - foo/package.yaml
 name: registry add already-registered-workspace
 notes: |
   Scenario for registry/add/already-registered-workspace (command: registry add aeson --workspace libs)
 project: version-clean
+command: registry add aeson --workspace libs
+expect:
+  files:
+    modified:
+      - bar/bar.cabal
+      - bar/package.yaml
+      - foo/foo.cabal
+      - foo/package.yaml

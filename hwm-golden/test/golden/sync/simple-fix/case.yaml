@@ -1,15 +1,15 @@
-command: sync
-expect:
-  files:
-    added:
-    - cabal.project
-    - hie.yaml
-    modified:
-    - bar/bar.cabal
-    - bar/package.yaml
-    - foo/foo.cabal
-    - foo/package.yaml
 name: sync simple-fix
 notes: |
   Scenario for sync/simple-fix (command: sync)
 project: simple
+command: sync
+expect:
+  files:
+    added:
+      - cabal.project
+      - hie.yaml
+    modified:
+      - bar/bar.cabal
+      - bar/package.yaml
+      - foo/foo.cabal
+      - foo/package.yaml

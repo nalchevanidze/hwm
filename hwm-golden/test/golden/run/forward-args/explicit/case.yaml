@@ -1,5 +1,7 @@
-command: run lint -- --fix
 name: run forward-args-explicit
 notes: |
   Scenario for run/forward-args-explicit (command: run lint -- --fix)
 project: simple
+command: run lint -- --fix
+expect:
+  files:

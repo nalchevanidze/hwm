@@ -1,10 +1,8 @@
-command: install ghosts
-expect:
-  failure: true
 name: install reject-unknown-workspace
 notes: |
   Scenario for install/reject-unknown-workspace (command: install ghosts)
 project: simple-bin
+command: install ghosts
 runner:
   bin:
     cabal: test/mocks/bin/cabal
@@ -13,4 +11,7 @@ runner:
   env:
     HOME: .home
   path:
-  - ${HOME}/.local/bin
+    - ${HOME}/.local/bin
+expect:
+  failure: true
+  files:

@@ -1,25 +1,26 @@
-command: build
-expect:
-  calls:
-  - args:
-    - build
-    stack_yaml: stack-default.yaml
-    stack_yaml_content: |
-      resolver: lts-22.43
-      packages:
-      - ../../foo
-      - ../../bar
-      save-hackage-creds: false
-    tool: stack
 name: build stack-dispatch-shape
 notes: |
   Scenario for build/stack-dispatch-shape (command: build)
 project: simple-bin
+command: build
 runner:
   bin:
     cabal: test/mocks/bin/cabal
     nix: test/mocks/bin/nix
     stack: test/mocks/bin/stack
   env:
-    CI: '1'
+    CI: 1
     HWM_LOG_ID_FIXED: golden
+expect:
+  files:
+  calls:
+    - args:
+      - build
+      stack_yaml: stack-default.yaml
+      stack_yaml_content: |
+        resolver: lts-22.43
+        packages:
+        - ../../foo
+        - ../../bar
+        save-hackage-creds: false
+      tool: stack

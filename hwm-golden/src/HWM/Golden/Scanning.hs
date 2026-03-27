@@ -10,6 +10,7 @@ module HWM.Golden.Scanning
     Scenario (..),
     ScenarioTree (..),
     discoverGolden,
+    writeCaseFileOrdered,
   )
 where
 
@@ -17,6 +18,7 @@ import Data.Aeson (Value (..), object, withObject, (.:), (.:?), (.=))
 import Data.Aeson.Types (parseEither)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.Yaml as Yaml
 import HWM.Golden.Json (dropEmpty)
 import HWM.Golden.Types (ExpectedFiles (..))
@@ -147,12 +149,13 @@ buildScenarioTree :: FilePath -> [Scenario] -> ScenarioTree
 buildScenarioTree prefix scenarios =
   toScenarioTree
     $ foldl'
-      ( \acc meta@Scenario {scenarioPath} ->
+      ( \acc meta@Scenario {scenarioPath, scenarioCase = CaseFile {caseName}} ->
           let rel = makeRelative prefix scenarioPath
               segments = filter (/= ".") (splitDirectories rel)
-              (dirs, label) = case reverse segments of
+              (dirs, fallbackLabel) = case reverse segments of
                 [] -> ([], prefix)
                 l : revDirs -> (reverse revDirs, l)
+              label = maybe fallbackLabel toString caseName
            in insertWorkingTree dirs (label, meta) acc
       )
       emptyWorkingTree
@@ -231,6 +234,72 @@ findInvalidLeafDirectories = walk goldenRoot False
       let isEmptyLeaf = isLeaf && null entries
       let isInvalid = isLeaf && not isEmptyLeaf && not supportHere && not hasCase
       pure (([dir | isInvalid]) <> nested)
+
+writeCaseFileOrdered :: FilePath -> CaseFile -> IO ()
+writeCaseFileOrdered path caseFile = writeFileText path (renderCaseFile caseFile)
+
+renderCaseFile :: CaseFile -> Text
+renderCaseFile CaseFile {..} =
+  T.unlines
+    $ concat
+      [ fieldText "name" caseName,
+        fieldBlock "notes" caseNotes,
+        ["project: " <> toText caseProject],
+        ["command: " <> toText caseCommand],
+        maybe [] renderRunner caseRunner,
+        maybe [] renderExpect caseExpect
+      ]
+
+renderRunner :: CaseRunner -> [Text]
+renderRunner CaseRunner {..} =
+  ["runner:"]
+    <> maybe [] (renderMap "bin") runnerBin
+    <> maybe [] (renderMap "env") runnerEnv
+    <> maybe [] (renderList "path") runnerPath
+
+renderExpect :: CaseExpect -> [Text]
+renderExpect CaseExpect {..} =
+  ["expect:"]
+    <> (["  failure: true" | caseFailure])
+    <> maybe [] renderExpectedFiles caseFiles
+    <> maybe [] renderCalls caseCalls
+
+renderExpectedFiles :: ExpectedFiles -> [Text]
+renderExpectedFiles ExpectedFiles {added, deleted, modified, touched} =
+  ["  files:"]
+    <> renderNestedList "added" added
+    <> renderNestedList "deleted" deleted
+    <> renderNestedList "modified" modified
+    <> renderNestedList "touched" touched
+
+renderCalls :: Value -> [Text]
+renderCalls v =
+  let encoded = T.lines (TE.decodeUtf8 (Yaml.encode v))
+   in "  calls:" : map ("    " <>) encoded
+
+renderMap :: Text -> Map.Map String String -> [Text]
+renderMap label m =
+  ["  " <> label <> ":"]
+    <> ["    " <> toText k <> ": " <> toText v | (k, v) <- Map.toAscList m]
+
+renderList :: Text -> [FilePath] -> [Text]
+renderList label items =
+  ["  " <> label <> ":"] <> ["    - " <> toText x | x <- items]
+
+renderNestedList :: Text -> [FilePath] -> [Text]
+renderNestedList _ [] = []
+renderNestedList label items =
+  ["    " <> label <> ":"] <> ["      - " <> toText x | x <- items]
+
+fieldText :: Text -> Maybe Text -> [Text]
+fieldText _ Nothing = []
+fieldText label (Just v) = [label <> ": " <> v]
+
+fieldBlock :: Text -> Maybe Text -> [Text]
+fieldBlock _ Nothing = []
+fieldBlock label (Just v) =
+  let ls = T.lines v
+   in (label <> ": |") : map ("  " <>) ls
 
 discoverGolden :: IO ScenarioTree
 discoverGolden = do

@@ -1,7 +1,8 @@
-command: registry add aeson --workspace ghosts
-expect:
-  failure: true
 name: registry add reject-unknown-workspace
 notes: |
   Scenario for registry/add/reject-unknown-workspace (command: registry add aeson --workspace ghosts)
 project: version-clean
+command: registry add aeson --workspace ghosts
+expect:
+  failure: true
+  files:

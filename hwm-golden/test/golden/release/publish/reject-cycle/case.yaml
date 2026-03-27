@@ -1,7 +1,8 @@
-command: release publish --dry-run
-expect:
-  failure: true
 name: release publish rejects dependency cycle
 notes: |
   Uses override to introduce a cycle in the publish graph.
 project: publish
+command: release publish --dry-run
+expect:
+  failure: true
+  files:

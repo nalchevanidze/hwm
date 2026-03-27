@@ -1,13 +1,13 @@
-command: version minor
-expect:
-  files:
-    modified:
-    - bar/bar.cabal
-    - bar/package.yaml
-    - foo/foo.cabal
-    - foo/package.yaml
-    - hwm.yaml
 name: version bump-minor
 notes: |
   Scenario for version/bump-minor (command: version minor)
 project: version-clean
+command: version minor
+expect:
+  files:
+    modified:
+      - bar/bar.cabal
+      - bar/package.yaml
+      - foo/foo.cabal
+      - foo/package.yaml
+      - hwm.yaml

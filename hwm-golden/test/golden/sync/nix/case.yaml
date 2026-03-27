@@ -1,15 +1,15 @@
-command: sync
-expect:
-  files:
-    added:
-    - flake.nix
-    - hie.yaml
-    modified:
-    - morpheus-graphql-client/morpheus-graphql-client.cabal
-    - morpheus-graphql-code-gen/morpheus-graphql-code-gen.cabal
-    - morpheus-graphql-core/morpheus-graphql-core.cabal
-    - morpheus-graphql/morpheus-graphql.cabal
 name: sync nix
 notes: |
   Scenario for sync/nix (command: sync)
 project: morpheus
+command: sync
+expect:
+  files:
+    added:
+      - flake.nix
+      - hie.yaml
+    modified:
+      - morpheus-graphql-client/morpheus-graphql-client.cabal
+      - morpheus-graphql-code-gen/morpheus-graphql-code-gen.cabal
+      - morpheus-graphql-core/morpheus-graphql-core.cabal
+      - morpheus-graphql/morpheus-graphql.cabal

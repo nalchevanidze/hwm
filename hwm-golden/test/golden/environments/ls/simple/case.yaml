@@ -1,5 +1,7 @@
-command: environments ls
 name: environments ls simple
 notes: |
   Scenario for environments/ls/simple (command: environments ls)
 project: simple
+command: environments ls
+expect:
+  files:

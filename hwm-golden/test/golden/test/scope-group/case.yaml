@@ -1,26 +1,27 @@
-command: test libs
-expect:
-  calls:
-  - args:
-    - test
-    - bar
-    - foo
-    cabal_project_content: |
-      with-compiler: ghc-9.6.6
-      packages:
-        ../../foo
-        ../../bar
-    cabal_project_file: cabal-default.project
-    tool: cabal
 name: test scope-group
 notes: |
   Scenario for test/scope-group (command: test libs)
 project: simple-bin
+command: test libs
 runner:
   bin:
     cabal: test/mocks/bin/cabal
     nix: test/mocks/bin/nix
     stack: test/mocks/bin/stack
   env:
-    CI: '1'
+    CI: 1
     HWM_LOG_ID_FIXED: golden
+expect:
+  files:
+  calls:
+    - args:
+      - test
+      - bar
+      - foo
+      cabal_project_content: |
+        with-compiler: ghc-9.6.6
+        packages:
+          ../../foo
+          ../../bar
+      cabal_project_file: cabal-default.project
+      tool: cabal

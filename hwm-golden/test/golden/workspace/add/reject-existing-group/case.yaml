@@ -1,7 +1,8 @@
-command: workspace add libs
-expect:
-  failure: true
 name: workspace add reject-existing-group
 notes: |
   Scenario for workspace/add/reject-existing-group (command: workspace add libs)
 project: simple
+command: workspace add libs
+expect:
+  failure: true
+  files:

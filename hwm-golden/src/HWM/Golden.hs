@@ -5,12 +5,11 @@
 
 module HWM.Golden (goldenSpec) where
 
-import qualified Data.Yaml as Yaml
 import HWM.Golden.Assertions (diffChanges, saveSnapshot)
 import HWM.Golden.Types (ChangeReport (..))
 import HWM.Golden.Exec (isUpdateMode, runHWM)
 import HWM.Golden.Filesystem (inWorkDir, sanitizeAllCabals)
-import HWM.Golden.Scanning (CaseExpect (..), CaseFile (..), Scenario (..), ScenarioTree (..), discoverGolden)
+import HWM.Golden.Scanning (CaseExpect (..), CaseFile (..), Scenario (..), ScenarioTree (..), discoverGolden, writeCaseFileOrdered)
 import Relude
 import System.FilePath ((</>))
 import qualified System.IO as IO
@@ -50,7 +49,7 @@ runScenario updateMode Scenario {scenarioDir, scenarioCasePath, scenarioCase = C
                   caseName = caseName,
                   caseNotes = caseNotes
                 }
-        Yaml.encodeFile scenarioCasePath nextCase
+        writeCaseFileOrdered scenarioCasePath nextCase
       else do
         maybe False caseFailure caseExpect `shouldBe` isFailure
         expectedStdout <- IO.readFile stdoutFile

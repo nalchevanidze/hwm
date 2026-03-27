@@ -1,13 +1,13 @@
-command: workspace add libs/new --dir ignored --prefix ignored
-expect:
-  files:
-    added:
-    - hie.yaml
-    - new/new.cabal
-    - new/package.yaml
-    modified:
-    - hwm.yaml
 name: workspace add member-with-ignored-flags
 notes: |
   Scenario for workspace/add/member-with-ignored-flags (command: workspace add libs/new --dir ignored --prefix ignored)
 project: simple
+command: workspace add libs/new --dir ignored --prefix ignored
+expect:
+  files:
+    added:
+      - hie.yaml
+      - new/new.cabal
+      - new/package.yaml
+    modified:
+      - hwm.yaml

@@ -1,33 +1,34 @@
-command: install libs
-expect:
-  calls:
-  - args:
-    - install
-    - bar
-    - foo
-    - --install-method=copy
-    - --installdir
-    - .home/.local/bin
-    - --overwrite-policy=always
-    cabal_project_content: |
-      with-compiler: ghc-9.6.6
-      packages:
-        ../../foo
-        ../../bar
-    cabal_project_file: cabal-default.project
-    tool: cabal
 name: install scope-group
 notes: |
   Scenario for install/scope-group (command: install libs)
 project: simple-bin
+command: install libs
 runner:
   bin:
     cabal: test/mocks/bin/cabal
     nix: test/mocks/bin/nix
     stack: test/mocks/bin/stack
   env:
-    CI: '1'
+    CI: 1
     HOME: .home
     HWM_LOG_ID_FIXED: golden
   path:
-  - ${HOME}/.local/bin
+    - ${HOME}/.local/bin
+expect:
+  files:
+  calls:
+    - args:
+      - install
+      - bar
+      - foo
+      - --install-method=copy
+      - --installdir
+      - .home/.local/bin
+      - --overwrite-policy=always
+      cabal_project_content: |
+        with-compiler: ghc-9.6.6
+        packages:
+          ../../foo
+          ../../bar
+      cabal_project_file: cabal-default.project
+      tool: cabal

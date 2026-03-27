@@ -1,5 +1,7 @@
-command: sync
 name: sync check-hie-stack-wrong-path
 notes: |
   Scenario for sync/check-hie-stack-wrong-path (command: sync)
 project: simple
+command: sync
+expect:
+  files:

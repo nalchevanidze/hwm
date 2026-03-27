@@ -1,9 +1,9 @@
-command: environments add ci 9.6.3
-expect:
-  files:
-    modified:
-    - hwm.yaml
 name: environments add success
 notes: |
   Scenario for environments/add/success (command: environments add ci 9.6.3)
 project: simple
+command: environments add ci 9.6.3
+expect:
+  files:
+    modified:
+      - hwm.yaml

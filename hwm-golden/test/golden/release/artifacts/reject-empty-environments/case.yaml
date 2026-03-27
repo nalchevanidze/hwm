@@ -1,7 +1,8 @@
-command: release artifacts sample --builder=nix
-expect:
-  failure: true
 name: release artifacts rejects empty environments policy
 notes: |
   Artifact target explicitly disables all environments.
 project: simple
+command: release artifacts sample --builder=nix
+expect:
+  failure: true
+  files:

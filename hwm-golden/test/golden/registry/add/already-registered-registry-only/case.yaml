@@ -1,5 +1,7 @@
-command: registry add aeson
 name: registry add already-registered-registry-only
 notes: |
   Scenario for registry/add/already-registered-registry-only (command: registry add aeson)
 project: version-clean
+command: registry add aeson
+expect:
+  files:

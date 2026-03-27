@@ -1,25 +1,26 @@
-command: build --env default
-expect:
-  calls:
-  - args:
-    - build
-    - all
-    cabal_project_content: |
-      with-compiler: ghc-9.6.6
-      packages:
-        ../../foo
-        ../../bar
-    cabal_project_file: cabal-default.project
-    tool: cabal
 name: build env-specific
 notes: |
   Scenario for build/env-specific (command: build --env default)
 project: simple-bin
+command: build --env default
 runner:
   bin:
     cabal: test/mocks/bin/cabal
     nix: test/mocks/bin/nix
     stack: test/mocks/bin/stack
   env:
-    CI: '1'
+    CI: 1
     HWM_LOG_ID_FIXED: golden
+expect:
+  files:
+  calls:
+    - args:
+      - build
+      - all
+      cabal_project_content: |
+        with-compiler: ghc-9.6.6
+        packages:
+          ../../foo
+          ../../bar
+      cabal_project_file: cabal-default.project
+      tool: cabal

@@ -1,10 +1,8 @@
-command: install
-expect:
-  failure: true
 name: install reject-nix-builder
 notes: |
   Scenario for install/reject-nix-builder (command: install)
 project: simple-bin
+command: install
 runner:
   bin:
     cabal: test/mocks/bin/cabal
@@ -13,4 +11,7 @@ runner:
   env:
     HOME: .home
   path:
-  - ${HOME}/.local/bin
+    - ${HOME}/.local/bin
+expect:
+  failure: true
+  files:

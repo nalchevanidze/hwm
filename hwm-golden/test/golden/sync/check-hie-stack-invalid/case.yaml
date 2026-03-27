@@ -1,5 +1,7 @@
-command: sync
 name: sync check-hie-stack-invalid
 notes: |
   Scenario for sync/check-hie-stack-invalid (command: sync)
 project: simple
+command: sync
+expect:
+  files:
