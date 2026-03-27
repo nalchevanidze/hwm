@@ -7,6 +7,7 @@ runner:
     stack: test/mocks/bin/stack
     nix: test/mocks/bin/nix
   env:
+    HOME: .home
     RUNNER_ARCH: arm64
     RUNNER_OS: macos
     HWM_LOG_ID_FIXED: golden

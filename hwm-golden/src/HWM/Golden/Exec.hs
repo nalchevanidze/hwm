@@ -24,11 +24,7 @@ blockedEnvKeys :: [String]
 blockedEnvKeys = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE"]
 
 defaultEnv :: Map.Map String String
-defaultEnv =
-  Map.fromList
-    [ ("HOME", ".home"),
-      ("CI", "1")
-    ]
+defaultEnv = Map.fromList [("CI", "1")]
 
 mkGoldenEnv :: Maybe CaseRunner -> IO [(String, String)]
 mkGoldenEnv mRunner = do

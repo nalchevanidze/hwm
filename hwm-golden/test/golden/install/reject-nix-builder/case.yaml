@@ -1,5 +1,7 @@
 command: install
 runner:
+  env:
+    HOME: .home
   path:
     - ${HOME}/.local/bin
   bin:
