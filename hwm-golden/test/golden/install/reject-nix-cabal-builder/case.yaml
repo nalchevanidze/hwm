@@ -1,8 +1,9 @@
 command: install
 runner:
-  path:
-    - ${WORKING_DIR}/bin
-    - ${HOME}/.local/bin
+  bin:
+    cabal: test/mocks/bin/cabal
+    stack: test/mocks/bin/stack
+    nix: test/mocks/bin/nix
 expect:
   failure: true
 name: install reject-nix-cabal-builder

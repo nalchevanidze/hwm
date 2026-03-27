@@ -1,4 +1,9 @@
 command: install ghosts
+runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    stack: test/mocks/bin/stack
+    nix: test/mocks/bin/nix
 expect:
   failure: true
 name: install reject-unknown-workspace

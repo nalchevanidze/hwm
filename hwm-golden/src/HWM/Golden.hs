@@ -32,7 +32,7 @@ runScenario updateMode Scenario {scenarioDir, scenarioCasePath, scenarioCase = C
   let stdoutFile = scenarioDir </> "stdout.ansi"
   let expectedDir = scenarioDir </> "expected"
 
-  inWorkDir caseProject scenarioDir $ do
+  inWorkDir caseProject scenarioDir caseRunner $ do
     (changes, (isFailure, out)) <- runHWM caseRunner caseCommand
     sanitizeAllCabals
 

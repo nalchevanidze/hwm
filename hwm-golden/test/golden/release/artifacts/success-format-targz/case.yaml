@@ -1,5 +1,9 @@
 command: release artifacts sample --format tar.gz
 runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    stack: test/mocks/bin/stack
+    nix: test/mocks/bin/nix
   env:
     RUNNER_ARCH: arm64
     RUNNER_OS: macos

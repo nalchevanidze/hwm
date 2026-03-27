@@ -1,5 +1,9 @@
 command: test
 runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    stack: test/mocks/bin/stack
+    nix: test/mocks/bin/nix
   env:
     HWM_LOG_ID_FIXED: golden
 expect:

@@ -1,5 +1,9 @@
 command: release artifacts sample
 runner:
+  bin:
+    cabal: test/mocks/bin/cabal
+    stack: test/mocks/bin/stack
+    nix: test/mocks/bin/nix
   env:
     RUNNER_ARCH: aarch64
     RUNNER_OS: Darwin
