@@ -49,7 +49,8 @@ instance Yaml.ToJSON CaseExpect where
 
 data CaseRunner = CaseRunner
   { runnerEnv :: Maybe (Map.Map String String),
-    runnerPath :: Maybe [FilePath]
+    runnerPath :: Maybe [FilePath],
+    runnerBin :: Maybe (Map.Map String FilePath)
   }
 
 instance Yaml.FromJSON CaseRunner where
@@ -59,19 +60,21 @@ instance Yaml.FromJSON CaseRunner where
       .:? "env"
       <*> o
       .:? "path"
+      <*> o
+      .:? "bin"
 
 instance Yaml.ToJSON CaseRunner where
   toJSON CaseRunner {..} =
     dropEmpty
       $ object
         [ "env" .= runnerEnv,
-          "path" .= runnerPath
+          "path" .= runnerPath,
+          "bin" .= runnerBin
         ]
 
 data CaseFile = CaseFile
   { caseProject :: FilePath,
     caseCommand :: String,
-    caseEnv :: Maybe (Map.Map String String),
     caseRunner :: Maybe CaseRunner,
     caseExpect :: Maybe CaseExpect,
     caseName :: Maybe Text,
@@ -85,8 +88,6 @@ instance Yaml.FromJSON CaseFile where
       .: "project"
       <*> o
       .: "command"
-      <*> o
-      .:? "env"
       <*> o
       .:? "runner"
       <*> o
@@ -102,7 +103,6 @@ instance Yaml.ToJSON CaseFile where
       $ object
         [ "project" .= caseProject,
           "command" .= caseCommand,
-          "env" .= caseEnv,
           "runner" .= caseRunner,
           "name" .= caseName,
           "notes" .= caseNotes,

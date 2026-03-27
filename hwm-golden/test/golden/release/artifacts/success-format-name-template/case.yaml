@@ -1,6 +1,7 @@
 command: release artifacts sample --format zip --name-template '{{binary}}-{{version}}'
-env:
-  HWM_LOG_ID_FIXED: golden
+runner:
+  env:
+    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:

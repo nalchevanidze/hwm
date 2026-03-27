@@ -1,4 +1,8 @@
 command: install
+runner:
+  path:
+    - ${WORKING_DIR}/bin
+    - ${HOME}/.local/bin
 expect:
   failure: true
 name: install reject-nix-cabal-builder

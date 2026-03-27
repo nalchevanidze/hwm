@@ -15,12 +15,12 @@ import HWM.Golden.Changes (trackChanges)
 import HWM.Golden.Scanning (CaseRunner (..))
 import HWM.Golden.Types (ChangeReport)
 import Relude
-import System.Directory (getCurrentDirectory)
+import System.Directory (doesDirectoryExist, findExecutable, getCurrentDirectory)
 import System.Environment (getEnvironment)
 import System.Process (CreateProcess (env), readCreateProcessWithExitCode, shell)
 
-mkGoldenEnv :: Maybe CaseRunner -> Map.Map String String -> IO [(String, String)]
-mkGoldenEnv mRunner caseEnv = do
+mkGoldenEnv :: Maybe CaseRunner -> IO [(String, String)]
+mkGoldenEnv mRunner = do
   cwd <- getCurrentDirectory
   current <- getEnvironment
 
@@ -30,6 +30,7 @@ mkGoldenEnv mRunner caseEnv = do
   let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "WORKING_DIR"]
   let keep (k, _) = k `notElem` blocked
   let inherited = Map.fromList (filter keep current)
+  let inheritedPath = fromMaybe "" (S.lookup "PATH" current)
 
   let defaults =
         Map.fromList
@@ -38,36 +39,46 @@ mkGoldenEnv mRunner caseEnv = do
             ("WORKING_DIR", cwd)
           ]
 
-  let mergedForTemplate = Map.unions [caseEnv, runnerEnvOverrides, defaults, inherited]
+  let mergedForTemplate = Map.unions [runnerEnvOverrides, defaults, inherited]
   let templateVars = Map.insert "cwd" cwd mergedForTemplate
 
-  let pathTemplates = fromMaybe ["${WORKING_DIR}/bin", "${HOME}/.local/bin"] runnerPathEntries
-  let renderedPathEntries = map (`expandTemplate` templateVars) pathTemplates
-  let pathValue = S.intercalate ":" (renderedPathEntries <> maybeToList (S.lookup "PATH" current))
+  prependPathEntries <- resolvePathEntries templateVars runnerPathEntries
+  let pathValue = S.intercalate ":" (prependPathEntries <> [inheritedPath])
 
   let base = Map.insert "PATH" pathValue defaults
 
   pure
     $ Map.toList
     $ Map.unions
-      [ caseEnv,
-        runnerEnvOverrides,
+      [ runnerEnvOverrides,
         base,
         inherited
       ]
+
+resolvePathEntries :: Map.Map String String -> Maybe [FilePath] -> IO [FilePath]
+resolvePathEntries templateVars maybeConfigured =
+  case maybeConfigured of
+    Just templates -> pure (map (`expandTemplate` templateVars) templates)
+    Nothing -> do
+      let defaults = ["${WORKING_DIR}/bin", "${HOME}/.local/bin"]
+      let rendered = map (`expandTemplate` templateVars) defaults
+      filterM doesDirectoryExist rendered
 
 expandTemplate :: String -> Map.Map String String -> String
 expandTemplate raw vars =
   toString
     $ foldl'
-      (\acc (k, v) -> T.replace (("${" :: Text) <> toText k <> "}") (toText v) acc)
+      (\acc (k, v) -> T.replace ("${" <> toText k <> "}") (toText v) acc)
       (toText raw)
       (Map.toList vars)
 
-runHWM :: Maybe CaseRunner -> Map.Map String String -> String -> IO (ChangeReport, (Bool, String))
-runHWM caseRunner caseEnv cmd = trackChanges $ do
-  envVars <- mkGoldenEnv caseRunner caseEnv
-  (exitCode, out, err) <- readCreateProcessWithExitCode ((shell $ "hwm -- " <> cmd) {env = Just envVars}) ""
+runHWM :: Maybe CaseRunner -> String -> IO (ChangeReport, (Bool, String))
+runHWM caseRunner cmd = trackChanges $ do
+  envVars <- mkGoldenEnv caseRunner
+  defaultHwmExe <- fromMaybe "hwm" <$> findExecutable "hwm"
+  let hwmExe = fromMaybe defaultHwmExe (caseRunner >>= runnerBin >>= Map.lookup "hwm")
+  let command = show hwmExe <> " -- " <> cmd
+  (exitCode, out, err) <- readCreateProcessWithExitCode ((shell command) {env = Just envVars}) ""
   let failure = exitCode /= System.Exit.ExitSuccess
   pure (failure, if failure then out <> err else out)
 

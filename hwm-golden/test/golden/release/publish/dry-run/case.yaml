@@ -1,7 +1,8 @@
 command: release publish --dry-run
-env:
-  HWM_LOG_ID_FIXED: golden
-  HACKAGE_AUTH_TOKEN: golden-token
+runner:
+  env:
+    HWM_LOG_ID_FIXED: golden
+    HACKAGE_AUTH_TOKEN: golden-token
 name: release publish dry-run
 notes: |
   Validates token presence, sdist generation, and topological publish plan

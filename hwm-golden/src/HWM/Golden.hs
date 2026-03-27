@@ -5,7 +5,6 @@
 
 module HWM.Golden (goldenSpec) where
 
-import qualified Data.Map.Strict as Map
 import qualified Data.Yaml as Yaml
 import HWM.Golden.Assertions (diffChanges, saveSnapshot)
 import HWM.Golden.Types (ChangeReport (..))
@@ -34,7 +33,7 @@ runScenario updateMode Scenario {scenarioDir, scenarioCasePath, scenarioCase = C
   let expectedDir = scenarioDir </> "expected"
 
   inWorkDir caseProject scenarioDir $ do
-    (changes, (isFailure, out)) <- runHWM caseRunner (fromMaybe Map.empty caseEnv) caseCommand
+    (changes, (isFailure, out)) <- runHWM caseRunner caseCommand
     sanitizeAllCabals
 
     if updateMode
@@ -46,7 +45,6 @@ runScenario updateMode Scenario {scenarioDir, scenarioCasePath, scenarioCase = C
               CaseFile
                 { caseProject = caseProject,
                   caseCommand = caseCommand,
-                  caseEnv = caseEnv,
                   caseRunner = caseRunner,
                   caseExpect = Just expect,
                   caseName = caseName,

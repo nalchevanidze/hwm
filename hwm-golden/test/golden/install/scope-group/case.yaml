@@ -1,6 +1,10 @@
 command: install libs
-env:
-  HWM_LOG_ID_FIXED: golden
+runner:
+  env:
+    HWM_LOG_ID_FIXED: golden
+  path:
+    - ${WORKING_DIR}/bin
+    - ${HOME}/.local/bin
 expect:
   calls:
   - args:

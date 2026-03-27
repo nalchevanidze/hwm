@@ -1,8 +1,9 @@
 command: release artifacts sample --format tar.gz
-env:
-  RUNNER_ARCH: arm64
-  RUNNER_OS: macos
-  HWM_LOG_ID_FIXED: golden
+runner:
+  env:
+    RUNNER_ARCH: arm64
+    RUNNER_OS: macos
+    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:

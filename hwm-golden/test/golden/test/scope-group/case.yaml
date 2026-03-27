@@ -1,6 +1,7 @@
 command: test libs
-env:
-  HWM_LOG_ID_FIXED: golden
+runner:
+  env:
+    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:

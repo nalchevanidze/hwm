@@ -1,8 +1,9 @@
 command: release artifacts sample
-env:
-  RUNNER_ARCH: X64
-  RUNNER_OS: Linux
-  HWM_LOG_ID_FIXED: golden
+runner:
+  env:
+    RUNNER_ARCH: X64
+    RUNNER_OS: Linux
+    HWM_LOG_ID_FIXED: golden
 expect:
   calls:
   - args:
