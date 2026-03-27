@@ -5,6 +5,7 @@ runner:
     stack: test/mocks/bin/stack
     nix: test/mocks/bin/nix
   env:
+    CI: "1"
     HWM_LOG_ID_FIXED: golden
 expect:
   calls:

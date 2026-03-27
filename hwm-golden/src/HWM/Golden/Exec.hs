@@ -23,9 +23,6 @@ import System.Process (CreateProcess (env), readCreateProcessWithExitCode, shell
 blockedEnvKeys :: [String]
 blockedEnvKeys = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE"]
 
-defaultEnv :: Map.Map String String
-defaultEnv = Map.fromList [("CI", "1")]
-
 mkGoldenEnv :: Maybe CaseRunner -> IO [(String, String)]
 mkGoldenEnv mRunner = do
   current <- getEnvironment
@@ -36,25 +33,16 @@ mkGoldenEnv mRunner = do
 
   let keep (k, _) = k `notElem` blockedEnvKeys
   let inherited = Map.fromList (filter keep current)
-  let inheritedPath = S.lookup "PATH" current
 
-  -- Merge order for template expansion:
-  -- inherited < defaults < runner.env
-  let templateVars = Map.unions [runnerEnvOverrides, defaultEnv, inherited]
+  let templateVars = Map.unions [runnerEnvOverrides, inherited]
 
   cwd <- getCurrentDirectory
   let configuredPathEntries = map (`expandTemplate` templateVars) configuredPathTemplates
   let autoPathEntries = [cwd </> "bin" | hasRunnerBins]
   let prependPathEntries = ordNub (autoPathEntries <> configuredPathEntries)
-  let pathValue = buildPath prependPathEntries inheritedPath
+  let pathValue = buildPath prependPathEntries (S.lookup "PATH" current)
 
-  pure
-    $ Map.toList
-    $ Map.unions
-      [ runnerEnvOverrides,
-        Map.insert "PATH" pathValue defaultEnv,
-        inherited
-      ]
+  pure $ Map.toList $ Map.unions [runnerEnvOverrides, Map.insert "PATH" pathValue inherited]
 
 buildPath :: [FilePath] -> Maybe String -> String
 buildPath prepend inheritedPath =

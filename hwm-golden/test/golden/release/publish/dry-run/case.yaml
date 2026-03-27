@@ -1,6 +1,7 @@
 command: release publish --dry-run
 runner:
   env:
+    CI: "1"
     HWM_LOG_ID_FIXED: golden
     HACKAGE_AUTH_TOKEN: golden-token
 name: release publish dry-run
