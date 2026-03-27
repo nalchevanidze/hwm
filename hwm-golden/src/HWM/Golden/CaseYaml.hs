@@ -59,10 +59,8 @@ renderRunnerBins bins
                 <> renderTrace traceCfg
 
     renderTrace RunnerBinTrace {runnerBinTraceEnv, runnerBinTraceFiles} =
-      concat
-        [ if null runnerBinTraceEnv then [] else ["        env:"] <> ["          - " <> toText v | v <- runnerBinTraceEnv],
-          if null runnerBinTraceFiles then [] else ["        files:"] <> ["          - " <> toText v | v <- runnerBinTraceFiles]
-        ]
+      (if null runnerBinTraceEnv then [] else ["        env:"] <> ["          - " <> toText v | v <- runnerBinTraceEnv])
+        ++ (if null runnerBinTraceFiles then [] else ["        files:"] <> ["          - " <> toText v | v <- runnerBinTraceFiles])
 
 renderExpect :: CaseExpect -> [Text]
 renderExpect CaseExpect {..} =
