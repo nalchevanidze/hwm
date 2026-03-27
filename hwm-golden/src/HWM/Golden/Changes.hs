@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -10,14 +11,18 @@ import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import Data.Time.Clock.POSIX (POSIXTime)
+import Data.Time.Clock (UTCTime)
+#ifndef mingw32_HOST_OS
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+#endif
 import qualified Data.Yaml as Yaml
 import HWM.Golden.Types (ChangeReport (..), ExpectedFiles (..))
 import Relude
-import System.Directory (doesDirectoryExist, doesPathExist, listDirectory)
+import System.Directory (doesDirectoryExist, doesPathExist, getModificationTime, listDirectory)
 import System.FilePath (takeExtension, takeFileName, (</>))
+#ifndef mingw32_HOST_OS
 import qualified System.Posix.Files as Posix
-import System.Posix.Types (FileOffset)
+#endif
 
 managed :: [String]
 managed = [".cabal", ".yaml", ".nix", ".project"]
@@ -56,9 +61,9 @@ hashBytes = BS.foldl' fnvStep fnvOffset
     fnvStep h b = (h `xor` fromIntegral b) * fnvPrime
 
 data FileFingerprint = FileFingerprint
-  { fpMTime :: POSIXTime,
-    fpCTime :: POSIXTime,
-    fpSize :: FileOffset,
+  { fpMTime :: UTCTime,
+    fpCTime :: Maybe UTCTime,
+    fpSize :: Word64,
     fpHash :: Word64
   }
 
@@ -66,14 +71,22 @@ snapshotManagedFiles :: IO (Map.Map FilePath FileFingerprint)
 snapshotManagedFiles = do
   files <- findManagedFiles "."
   fmap Map.fromList $ forM files $ \path -> do
-    st <- Posix.getFileStatus path
+    mTime <- getModificationTime path
     content <- BS.readFile path
+#ifdef mingw32_HOST_OS
+    let cTime = Nothing
+        size = fromIntegral (BS.length content)
+#else
+    st <- Posix.getFileStatus path
+    let cTime = Just (posixSecondsToUTCTime (realToFrac (Posix.statusChangeTimeHiRes st)))
+        size = fromIntegral (Posix.fileSize st)
+#endif
     pure
       ( path,
         FileFingerprint
-          { fpMTime = Posix.modificationTimeHiRes st,
-            fpCTime = Posix.statusChangeTimeHiRes st,
-            fpSize = Posix.fileSize st,
+          { fpMTime = mTime,
+            fpCTime = cTime,
+            fpSize = size,
             fpHash = hashBytes content
           }
       )
