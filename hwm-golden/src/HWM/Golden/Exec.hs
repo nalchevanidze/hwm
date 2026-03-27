@@ -52,13 +52,11 @@ mkGoldenEnv mRunner = do
   let prependPathEntries = ordNub (autoPathEntries <> configuredPathEntries)
   let pathValue = buildPath prependPathEntries inheritedPath
 
-  let base = Map.insert "PATH" pathValue defaultEnv
-
   pure
     $ Map.toList
     $ Map.unions
       [ runnerEnvOverrides,
-        base,
+        Map.insert "PATH" pathValue defaultEnv,
         inherited
       ]
 
