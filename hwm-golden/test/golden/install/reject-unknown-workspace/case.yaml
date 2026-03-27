@@ -5,9 +5,21 @@ project: simple-bin
 command: install ghosts
 runner:
   bin:
-    cabal: test/mocks/bin/cabal
+    cabal:
+      src: test/mocks/bin/cabal
+      trace:
+        env:
+          - CABAL_PROJECT_FILE
+        files:
+          - ${CABAL_PROJECT_FILE}
     nix: test/mocks/bin/nix
-    stack: test/mocks/bin/stack
+    stack:
+      src: test/mocks/bin/stack
+      trace:
+        env:
+          - STACK_YAML
+        files:
+          - ${STACK_YAML}
   env:
     HOME: .home
   path:

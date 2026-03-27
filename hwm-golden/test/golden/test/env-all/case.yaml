@@ -5,9 +5,21 @@ project: simple-bin
 command: test --env all
 runner:
   bin:
-    cabal: test/mocks/bin/cabal
+    cabal:
+      src: test/mocks/bin/cabal
+      trace:
+        env:
+          - CABAL_PROJECT_FILE
+        files:
+          - ${CABAL_PROJECT_FILE}
     nix: test/mocks/bin/nix
-    stack: test/mocks/bin/stack
+    stack:
+      src: test/mocks/bin/stack
+      trace:
+        env:
+          - STACK_YAML
+        files:
+          - ${STACK_YAML}
   env:
     CI: "1"
     HWM_LOG_ID_FIXED: golden
@@ -16,20 +28,24 @@ expect:
     - args:
       - test
       - all
-      cabal_project_content: |
-        with-compiler: ghc-9.4.8
-        packages:
-          ../../foo
-          ../../bar
-      cabal_project_file: cabal-ci.project
+      env:
+        CABAL_PROJECT_FILE: .hwm/matrix/cabal-ci.project
+      files:
+        .hwm/matrix/cabal-ci.project: |
+          with-compiler: ghc-9.4.8
+          packages:
+            ../../foo
+            ../../bar
       tool: cabal
     - args:
       - test
       - all
-      cabal_project_content: |
-        with-compiler: ghc-9.6.6
-        packages:
-          ../../foo
-          ../../bar
-      cabal_project_file: cabal-default.project
+      env:
+        CABAL_PROJECT_FILE: .hwm/matrix/cabal-default.project
+      files:
+        .hwm/matrix/cabal-default.project: |
+          with-compiler: ghc-9.6.6
+          packages:
+            ../../foo
+            ../../bar
       tool: cabal

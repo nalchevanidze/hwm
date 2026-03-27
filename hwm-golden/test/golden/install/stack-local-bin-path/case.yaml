@@ -5,9 +5,21 @@ project: simple-bin
 command: install
 runner:
   bin:
-    cabal: test/mocks/bin/cabal
+    cabal:
+      src: test/mocks/bin/cabal
+      trace:
+        env:
+          - CABAL_PROJECT_FILE
+        files:
+          - ${CABAL_PROJECT_FILE}
     nix: test/mocks/bin/nix
-    stack: test/mocks/bin/stack
+    stack:
+      src: test/mocks/bin/stack
+      trace:
+        env:
+          - STACK_YAML
+        files:
+          - ${STACK_YAML}
   env:
     CI: "1"
     HOME: .home
@@ -20,11 +32,13 @@ expect:
       - install
       - --local-bin-path
       - .home/.local/bin
-      stack_yaml: stack-default.yaml
-      stack_yaml_content: |
-        resolver: lts-22.43
-        packages:
-        - ../../foo
-        - ../../bar
-        save-hackage-creds: false
+      env:
+        STACK_YAML: .hwm/matrix/stack-default.yaml
+      files:
+        .hwm/matrix/stack-default.yaml: |
+          resolver: lts-22.43
+          packages:
+          - ../../foo
+          - ../../bar
+          save-hackage-creds: false
       tool: stack
