@@ -280,7 +280,13 @@ renderCalls v =
 renderMap :: Text -> Map.Map String String -> [Text]
 renderMap label m =
   ["  " <> label <> ":"]
-    <> ["    " <> toText k <> ": " <> toText v | (k, v) <- Map.toAscList m]
+    <> ["    " <> toText k <> ": " <> quoteYaml v | (k, v) <- Map.toAscList m]
+
+quoteYaml :: String -> Text
+quoteYaml s =
+  let t = toText s
+      escaped = T.replace "\"" "\\\"" (T.replace "\\" "\\\\" t)
+   in "\"" <> escaped <> "\""
 
 renderList :: Text -> [FilePath] -> [Text]
 renderList label items =

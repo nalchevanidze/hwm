@@ -9,7 +9,7 @@ runner:
     nix: test/mocks/bin/nix
     stack: test/mocks/bin/stack
   env:
-    CI: 1
+    CI: "1"
     HOME: .home
     HWM_LOG_ID_FIXED: golden
     RUNNER_ARCH: X64

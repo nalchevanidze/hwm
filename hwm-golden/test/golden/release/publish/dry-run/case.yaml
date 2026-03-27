@@ -6,7 +6,7 @@ project: publish
 command: release publish --dry-run
 runner:
   env:
-    CI: 1
+    CI: "1"
     HACKAGE_AUTH_TOKEN: golden-token
     HWM_LOG_ID_FIXED: golden
 expect:
