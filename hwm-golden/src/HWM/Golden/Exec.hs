@@ -26,17 +26,19 @@ mkGoldenEnv mRunner = do
   cwd <- getCurrentDirectory
 
   let baseEnv = Map.union (fromMaybe Map.empty (mRunner >>= runnerEnv)) (Map.fromList current)
+      goldenLogPath = cwd </> ".hwm" </> "invocations.yaml"
+      baseEnvWithLog = Map.insert "HWM_GOLDEN_INVOCATIONS" goldenLogPath baseEnv
       pathTemplates = fromMaybe [] (mRunner >>= runnerPath)
       hasRunnerBins = maybe False (not . Map.null) (mRunner >>= runnerBin)
       prependPathEntries =
         ordNub
           ( [cwd </> "bin" | hasRunnerBins]
-              <> map (`expandTemplate` baseEnv) pathTemplates
+              <> map (`expandTemplate` baseEnvWithLog) pathTemplates
           )
       inheritedPath = S.lookup "PATH" current >>= nonEmptyString
       pathValue = S.intercalate ":" (prependPathEntries <> maybeToList inheritedPath)
 
-  pure . Map.toList $ Map.insert "PATH" pathValue baseEnv
+  pure . Map.toList $ Map.insert "PATH" pathValue baseEnvWithLog
   where
     nonEmptyString s = if null s then Nothing else Just s
 

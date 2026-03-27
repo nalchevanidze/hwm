@@ -13,9 +13,9 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import HWM.Golden.Types (CaseRunner (..))
 import Relude
-import System.Directory (Permissions (..), copyFile, createDirectoryIfMissing, doesDirectoryExist, getCurrentDirectory, getPermissions, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory, setPermissions)
+import System.Directory (Permissions (..), copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist, getCurrentDirectory, getPermissions, listDirectory, makeAbsolute, removePathForcibly, setCurrentDirectory, setPermissions)
 import System.Directory.Internal.Prelude (bracket)
-import System.FilePath ((</>))
+import System.FilePath (takeDirectory, (</>))
 import System.FilePath.Glob (glob)
 import System.IO.Temp (withSystemTempDirectory)
 
@@ -74,6 +74,16 @@ installRunnerBins repoRoot workDir mRunner = do
       copyFile srcAbs dst
       perms <- getPermissions dst
       setPermissions dst perms {executable = True}
+
+      let helperSrc = takeDirectory srcAbs </> "hwm-mock-write"
+      helperExists <- doesFileExist helperSrc
+      when helperExists $ do
+        let helperDst = workBinDir </> "hwm-mock-write"
+        alreadyCopied <- doesFileExist helperDst
+        unless alreadyCopied $ do
+          copyFile helperSrc helperDst
+          helperPerms <- getPermissions helperDst
+          setPermissions helperDst helperPerms {executable = True}
 
 sanitizeCabal :: T.Text -> T.Text
 sanitizeCabal =

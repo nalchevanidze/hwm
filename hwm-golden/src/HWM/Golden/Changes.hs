@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -12,8 +11,8 @@ import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX (POSIXTime)
-import HWM.Golden.Types (ChangeReport (..), ExpectedFiles (..))
 import qualified Data.Yaml as Yaml
+import HWM.Golden.Types (ChangeReport (..), ExpectedFiles (..))
 import Relude
 import System.Directory (doesDirectoryExist, doesPathExist, listDirectory)
 import System.FilePath (takeExtension, takeFileName, (</>))
@@ -26,21 +25,18 @@ managed = [".cabal", ".yaml", ".nix", ".project"]
 ignoredDirs :: [FilePath]
 ignoredDirs = [".hwm", ".stack-work", "dist-newstyle"]
 
-ignoredManagedFiles :: [FilePath]
-ignoredManagedFiles = ["invocations.yaml", "./invocations.yaml"]
-
 findManagedFiles :: FilePath -> IO [FilePath]
 findManagedFiles dir = do
   contents <- listDirectory dir
   paths <-
     mapM
-      (\path -> do
+      ( \path -> do
           let p = dir </> path
           isDir <- doesDirectoryExist p
           pure (p, isDir)
       )
       contents
-  let files = [p | (p, isDir) <- paths, not isDir, takeExtension p `elem` managed, p `notElem` ignoredManagedFiles]
+  let files = [p | (p, isDir) <- paths, not isDir, takeExtension p `elem` managed]
   subDirFiles <- concat <$> mapM collect paths
   pure (files ++ subDirFiles)
   where
@@ -102,18 +98,18 @@ buildChangeReport oldMap newMap =
               fpHash oldFp == fpHash newFp,
               wasTouched oldFp newFp
           ]
-   in ChangeReport (ExpectedFiles added deleted modified touched) Nothing
+   in ChangeReport ExpectedFiles {..} Nothing
 
 loadInvocations :: IO (Maybe Value)
 loadInvocations = do
-  let file = "invocations.yaml"
+  file <- fromMaybe ".hwm/invocations.yaml" <$> lookupEnv "HWM_GOLDEN_INVOCATIONS"
   exists <- doesPathExist file
   if not exists
     then pure Nothing
     else do
       parsed <- Yaml.decodeFileEither file
       case parsed of
-        Right (Object obj) -> pure (KM.lookup (K.fromText "calls") obj)
+        Right (Object obj) -> pure (KM.lookup (K.fromText "calls") obj <|> Just (Object obj))
         Right v -> pure (Just v)
         Left _ -> pure Nothing
 
