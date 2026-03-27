@@ -17,7 +17,7 @@ import Data.Aeson.Types (parseEither)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Yaml as Yaml
-import HWM.Golden.Core (ExpectedFiles (..), dropEmpty)
+import HWM.Golden.Changes (ExpectedFiles (..), dropEmpty)
 import Relude
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory, makeAbsolute)
 import System.FilePath (makeRelative, splitDirectories, takeFileName, (</>))

@@ -7,7 +7,10 @@ module HWM.Golden (goldenSpec) where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Yaml as Yaml
-import HWM.Golden.Core (ChangeReport (..), diffChanges, inWorkDir, isUpdateMode, runHWM, sanitizeAllCabals, saveSnapshot)
+import HWM.Golden.Assertions (diffChanges, saveSnapshot)
+import HWM.Golden.Changes (ChangeReport (..))
+import HWM.Golden.Exec (isUpdateMode, runHWM)
+import HWM.Golden.Filesystem (inWorkDir, sanitizeAllCabals)
 import HWM.Golden.Scanning (CaseExpect (..), CaseFile (..), Scenario (..), ScenarioTree (..), discoverGolden)
 import Relude
 import System.FilePath ((</>))

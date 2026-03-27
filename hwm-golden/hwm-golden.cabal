@@ -30,7 +30,10 @@ source-repository head
 library
   exposed-modules:
       HWM.Golden
-      HWM.Golden.Core
+      HWM.Golden.Assertions
+      HWM.Golden.Changes
+      HWM.Golden.Exec
+      HWM.Golden.Filesystem
   other-modules:
       HWM.Golden.Scanning
   hs-source-dirs:
