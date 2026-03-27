@@ -1,0 +1,28 @@
+name: build nix-dispatch-shape
+notes: |
+  Scenario for build/nix-dispatch-shape (command: build)
+project: simple-bin
+command: build
+runner:
+  bin:
+    cabal:
+      src: test/mocks/bin/cabal
+      trace:
+        env:
+          - CABAL_PROJECT_FILE
+        files:
+          - ${CABAL_PROJECT_FILE}
+    nix: test/mocks/bin/nix
+    stack:
+      src: test/mocks/bin/stack
+      trace:
+        env:
+          - STACK_YAML
+        files:
+          - ${STACK_YAML}
+  env:
+    CI: "1"
+    HWM_LOG_ID_FIXED: golden
+expect:
+  calls:
+    - command: nix build --no-link .#env-default-all

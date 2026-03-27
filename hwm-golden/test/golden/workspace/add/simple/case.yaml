@@ -1,0 +1,13 @@
+name: workspace add simple
+notes: |
+  Scenario for workspace/add/simple (command: workspace add libs/new)
+project: simple
+command: workspace add libs/new
+expect:
+  files:
+    added:
+      - hie.yaml
+      - new/new.cabal
+      - new/package.yaml
+    modified:
+      - hwm.yaml

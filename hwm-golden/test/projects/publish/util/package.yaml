@@ -1,0 +1,15 @@
+name: util
+version: 0.1.0
+license: MIT
+author: HWM
+category: Development
+synopsis: Util library
+maintainer: hwm@example.com
+license-file: LICENSE
+description: Util library for publish dry-run tests.
+dependencies:
+  base: '>=  4.7  &&  <  5.0'
+library:
+  source-dirs: src
+  exposed-modules:
+  - Util

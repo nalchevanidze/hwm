@@ -1,0 +1,9 @@
+name: workspace add group-with-dir-prefix
+notes: |
+  Scenario for workspace/add/group-with-dir-prefix (command: workspace add tools --dir applications/tools --prefix acme)
+project: simple
+command: workspace add tools --dir applications/tools --prefix acme
+expect:
+  files:
+    modified:
+      - hwm.yaml

@@ -1,65 +1,60 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Golden (Golden (..), goldenTest, goldenFailTest) where
+module HWM.Golden (goldenSpec) where
 
-import qualified Data.Yaml as Yaml
-import HWM.Golden.Core (cleanupEmptyDeltaFiles, diffChanges, hasNoChanges, inWorkDir, runHWM, runHWMFail, sanitizeAllCabals, saveSnapshot, trackChanges)
+import HWM.Golden.Assertions (diffChanges, saveSnapshot)
+import HWM.Golden.CaseYaml (writeCaseFileOrdered)
+import HWM.Golden.Exec (isUpdateMode, runHWM)
+import HWM.Golden.Filesystem (inWorkDir, sanitizeAllCabals)
+import HWM.Golden.Scanning (Scenario (..), ScenarioTree (..), discoverGolden)
+import HWM.Golden.Types (CaseExpect (..), CaseFile (..), ChangeReport (..))
 import Relude
-import System.Directory (doesFileExist, makeAbsolute, removeFile)
 import System.FilePath ((</>))
 import qualified System.IO as IO
-import Test.Hspec (Expectation, expectationFailure, shouldBe)
+import Test.Hspec (Expectation, Spec, describe, it, parallel, runIO, shouldBe)
 
-data Golden = Golden
-  { cmd :: String,
-    scenario :: FilePath,
-    project :: FilePath
-  }
+goldenSpec :: Spec
+goldenSpec = do
+  updateMode <- runIO isUpdateMode
+  scenarioTree <- runIO discoverGolden
+  parallel (runScenarioTree updateMode scenarioTree)
 
-isUpdateMode :: IO Bool
-isUpdateMode = (== Just "1") <$> lookupEnv "GOLDEN_UPDATE"
+runScenarioTree :: Bool -> ScenarioTree -> Spec
+runScenarioTree updateMode ScenarioTree {treeCases, treeChildren} = do
+  forM_ treeCases $ \(label, scenario) -> it label (runScenario updateMode scenario)
+  forM_ treeChildren $ \(name, child) -> describe name (runScenarioTree updateMode child)
 
-goldenTest :: Golden -> Expectation
-goldenTest = goldenRunWith runHWM
-
-goldenFailTest :: Golden -> Expectation
-goldenFailTest = goldenRunWith runHWMFail
-
-goldenRunWith :: (String -> IO String) -> Golden -> Expectation
-goldenRunWith runFn Golden {..} = do
-  goldenRoot <- makeAbsolute "test/golden"
-  scenarioDir <- makeAbsolute $ "test/golden/" </> scenario
-  let expectedDir = scenarioDir </> "expected"
+runScenario :: Bool -> Scenario -> Expectation
+runScenario updateMode Scenario {scenarioDir, scenarioCasePath, scenarioCase = CaseFile {..}} = do
   let stdoutFile = scenarioDir </> "stdout.ansi"
-  let deltaFile = scenarioDir </> "delta.yaml"
-  updateMode <- isUpdateMode
-  inWorkDir project scenarioDir $ do
-    (changes, out) <- trackChanges (runFn cmd)
+  let expectedDir = scenarioDir </> "expected"
+
+  inWorkDir caseProject scenarioDir caseRunner $ do
+    (changes, (isFailure, out)) <- runHWM caseRunner caseCommand
     sanitizeAllCabals
+
     if updateMode
       then do
         saveSnapshot changes expectedDir
         IO.writeFile stdoutFile out
-        if hasNoChanges changes
-          then do
-            hasDelta <- doesFileExist deltaFile
-            when hasDelta (removeFile deltaFile)
-          else Yaml.encodeFile deltaFile changes
-        cleanupEmptyDeltaFiles goldenRoot
+        let expect = CaseExpect {caseFailure = isFailure, caseFiles = Just (files changes), caseCalls = calls changes}
+        let nextCase =
+              CaseFile
+                { caseProject = caseProject,
+                  caseCommand = caseCommand,
+                  caseRunner = caseRunner,
+                  caseExpect = Just expect,
+                  caseName = caseName,
+                  caseNotes = caseNotes
+                }
+        writeCaseFileOrdered scenarioCasePath nextCase
       else do
+        maybe False caseFailure caseExpect `shouldBe` isFailure
         expectedStdout <- IO.readFile stdoutFile
         out `shouldBe` expectedStdout
-        hasDelta <- doesFileExist deltaFile
-        if hasDelta
-          then do
-            expectedDelta <- Yaml.decodeFileEither deltaFile
-            case expectedDelta of
-              Right delta -> changes `shouldBe` delta
-              Left parseErr -> expectationFailure ("Failed to parse delta.yaml: " <> show parseErr)
-          else
-            unless (hasNoChanges changes)
-              $ expectationFailure
-              $ "Missing delta.yaml for non-empty changes: "
-              <> show changes
+        forM_ (caseExpect >>= caseFiles) $ \v -> files changes `shouldBe` v
+        forM_ (caseExpect >>= caseCalls) $ \v -> calls changes `shouldBe` Just v
         diffChanges expectedDir changes

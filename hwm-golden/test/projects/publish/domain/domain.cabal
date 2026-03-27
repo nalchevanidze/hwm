@@ -1,0 +1,19 @@
+cabal-version:      1.12
+name:               domain
+version:            0.1.0
+license:            MIT
+license-file:       LICENSE
+author:             HWM
+maintainer:         hwm@example.com
+synopsis:           Domain library
+category:           Development
+description:        Domain library for publish dry-run tests.
+build-type:         Simple
+
+library
+  exposed-modules:    Domain
+  hs-source-dirs:     src
+  default-language:   Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , core >=0.1 && <0.2

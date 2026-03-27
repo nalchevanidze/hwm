@@ -1,0 +1,13 @@
+name: version bump-patch
+notes: |
+  Scenario for version/bump-patch (command: version patch)
+project: version-clean
+command: version patch
+expect:
+  files:
+    modified:
+      - bar/bar.cabal
+      - bar/package.yaml
+      - foo/foo.cabal
+      - foo/package.yaml
+      - hwm.yaml

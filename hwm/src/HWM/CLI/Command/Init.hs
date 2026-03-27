@@ -59,10 +59,7 @@ initWorkspace InitOptions {..} opts = runUI $ resolveResultUI $ do
     pkgs <- scanPkgs root
     scanning "packages" pkgs
     when (null pkgs)
-      $ throwError
-        "No Haskell packages detected in the current directory.\n\
-        \Please ensure you are in the project's root and that your packages are discoverable.\n\
-        \Try running 'hwm init' from the root directory containing your package sources."
+      $ throwError "No Haskell packages detected in the current directory. Run 'hwm init' from your project root containing package sources."
     packages <- traverse readCabalPackage pkgs
     cfgVersion <- deriveVersion (map getPkgVersion packages)
     cfgEnvironments <- buildMatrix pkgs stacks

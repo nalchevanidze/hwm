@@ -1,0 +1,5 @@
+name: registry audit default
+notes: |
+  Scenario for registry/audit/default (command: registry audit --help)
+project: version-clean
+command: registry audit --help

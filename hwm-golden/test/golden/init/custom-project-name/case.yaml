@@ -1,0 +1,9 @@
+name: init custom-project-name
+notes: |
+  Scenario for init/custom-project-name (command: init custom-workspace)
+project: simple
+command: init custom-workspace
+expect:
+  files:
+    added:
+      - hwm.yaml

@@ -1,0 +1,36 @@
+name: build scope-member
+notes: |
+  Scenario for build/scope-member (command: build libs/foo)
+project: simple-bin
+command: build libs/foo
+runner:
+  bin:
+    cabal:
+      src: test/mocks/bin/cabal
+      trace:
+        env:
+          - CABAL_PROJECT_FILE
+        files:
+          - ${CABAL_PROJECT_FILE}
+    nix: test/mocks/bin/nix
+    stack:
+      src: test/mocks/bin/stack
+      trace:
+        env:
+          - STACK_YAML
+        files:
+          - ${STACK_YAML}
+  env:
+    CI: "1"
+    HWM_LOG_ID_FIXED: golden
+expect:
+  calls:
+    - command: cabal build foo
+      env:
+        CABAL_PROJECT_FILE: .hwm/matrix/cabal-default.project
+      files:
+        .hwm/matrix/cabal-default.project: |
+          with-compiler: ghc-9.6.6
+          packages:
+            ../../foo
+            ../../bar

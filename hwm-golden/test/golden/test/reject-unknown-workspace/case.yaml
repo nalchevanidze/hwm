@@ -1,0 +1,24 @@
+name: test reject-unknown-workspace
+notes: |
+  Scenario for test/reject-unknown-workspace (command: test ghosts)
+project: simple-bin
+command: test ghosts
+runner:
+  bin:
+    cabal:
+      src: test/mocks/bin/cabal
+      trace:
+        env:
+          - CABAL_PROJECT_FILE
+        files:
+          - ${CABAL_PROJECT_FILE}
+    nix: test/mocks/bin/nix
+    stack:
+      src: test/mocks/bin/stack
+      trace:
+        env:
+          - STACK_YAML
+        files:
+          - ${STACK_YAML}
+expect:
+  failure: true

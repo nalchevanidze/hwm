@@ -62,18 +62,32 @@ detectOS :: String -> OS
 detectOS s = case map toLower s of
   "darwin" -> MacOS
   "macos" -> MacOS
+  "mac os" -> MacOS
+  "mac os x" -> MacOS
+  "osx" -> MacOS
   "linux" -> Linux
+  "linux-gnu" -> Linux
   "windows" -> Windows
+  "windows_nt" -> Windows
+  "win32" -> Windows
   "mingw32" -> Windows -- The crucial fix for GHC on Windows
+  "mingw64" -> Windows
+  "msys" -> Windows
+  "cygwin" -> Windows
   _ -> UnknownOS
 
 detectArch :: String -> Arch
 detectArch s = case map toLower s of
   "x86_64" -> X64
+  "x86-64" -> X64
   "x64" -> X64
   "amd64" -> X64
+  "x86_64h" -> X64
   "arm64" -> Arm64
+  "arm64e" -> Arm64
   "aarch64" -> Arm64 -- GHC uses aarch64 for Apple Silicon/Linux ARM
+  "armv8" -> Arm64
+  "armv8l" -> Arm64
   _ -> UnknownArch
 
 toNixSystem :: Platform -> Text

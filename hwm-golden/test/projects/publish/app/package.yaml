@@ -1,0 +1,17 @@
+name: app
+version: 0.1.0
+license: MIT
+author: HWM
+category: Development
+synopsis: App library
+maintainer: hwm@example.com
+license-file: LICENSE
+description: App library for publish dry-run tests.
+dependencies:
+  base: '>=  4.7  &&  <  5.0'
+  domain: '>=  0.1.0  &&  <  1.0.0'
+  api: '>=  0.1.0  &&  <  1.0.0'
+library:
+  source-dirs: src
+  exposed-modules:
+  - App

@@ -1,0 +1,5 @@
+name: sync check-hie-components-mismatch
+notes: |
+  Scenario for sync/check-hie-components-mismatch (command: sync)
+project: simple
+command: sync

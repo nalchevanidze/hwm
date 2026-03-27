@@ -1,0 +1,16 @@
+name: foo
+version: 0.1.0
+license: MIT
+author: HWM
+category: Development
+synopsis: Foo library
+maintainer: hwm@example.com
+license-file: LICENSE
+description: Foo library for golden version tests.
+dependencies:
+  aeson: '>=  1.5.6.0  &&  <=  2.2.3.0'
+  base: ' >=  4.7      &&  <   5.0'
+library:
+  source-dirs: src
+  exposed-modules:
+  - Foo

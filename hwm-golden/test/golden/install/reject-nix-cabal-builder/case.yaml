@@ -1,0 +1,28 @@
+name: install reject-nix-cabal-builder
+notes: |
+  Scenario for install/reject-nix-cabal-builder (command: install)
+project: simple-bin
+command: install
+runner:
+  bin:
+    cabal:
+      src: test/mocks/bin/cabal
+      trace:
+        env:
+          - CABAL_PROJECT_FILE
+        files:
+          - ${CABAL_PROJECT_FILE}
+    nix: test/mocks/bin/nix
+    stack:
+      src: test/mocks/bin/stack
+      trace:
+        env:
+          - STACK_YAML
+        files:
+          - ${STACK_YAML}
+  env:
+    HOME: .home
+  path:
+    - ${HOME}/.local/bin
+expect:
+  failure: true

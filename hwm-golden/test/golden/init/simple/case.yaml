@@ -1,0 +1,9 @@
+name: init simple
+notes: |
+  Scenario for init/simple (command: init)
+project: simple
+command: init
+expect:
+  files:
+    added:
+      - hwm.yaml

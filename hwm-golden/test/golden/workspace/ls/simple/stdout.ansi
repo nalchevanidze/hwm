@@ -1,0 +1,27 @@
+
+./ [1mworkspace[0m
+
+  • [1mlibs[0m
+  [2m└── [0mfoo [2m....[0m [33m![0m [33mhpack[0m[2m [0m[33m![0m [33mcabal[0m
+  [2m└── [0mbar [2m....[0m [33m![0m [33mhpack[0m[2m [0m[33m![0m [33mcabal[0m
+
+
+[1m• [0m[93m▌[0m [93mwarning[0m [93m▌[0m
+
+  [2m• [0m[1mbar[0m
+  [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
+      [2m└── [0m[2mfile: bar/package.yaml[0m
+      [2m└── [0m[2m• [0m[2mdependencies[0m
+          [2m└── [0mbase: [2m → >= 4.7 && <  5.0[0m
+  [2m└── [0m[2m• [0m[33mInvalid Package [Cabal check]: library does not expose any modules[0m
+  [2m└── [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'maintainer' field.[0m
+  [2m└── [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'description' field.[0m
+  [2m• [0m[1mfoo[0m
+  [2m└── [0m[2m• [0m[33m1 dependency issue(s)[0m
+      [2m└── [0m[2mfile: foo/package.yaml[0m
+      [2m└── [0m[2m• [0m[2mdependencies[0m
+          [2m└── [0mbase: [2m → >= 4.7 && <  5.0[0m
+  [2m└── [0m[2m• [0m[33mInvalid Package [Cabal check]: library does not expose any modules[0m
+  [2m└── [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'maintainer' field.[0m
+  [2m└── [0m[2m• [0m[33mInvalid Package [Cabal check]: No 'description' field.[0m
+

@@ -416,9 +416,9 @@ existsEnvironment n = do
   envs <- envsProfiles <$> askEnv
   pure $ isJust $ Map.lookup n envs
 
-printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env Workspace, Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => Maybe Name -> m ()
-printEnvironments name = do
-  active <- getBuildEnvironment name
+printEnvironments :: (Monad m, MonadUI m, MonadReader env m, Has env Workspace, Has env Environments, MonadIO m, MonadError Issue m, Has env Cache) => m ()
+printEnvironments = do
+  active <- getBuildEnvironment Nothing
   def <- envsDefault <$> askEnv
   environments <- getBuildEnvironments
   sectionEnvironments (Just $ format def) $ forTable_ environments $ \env ->

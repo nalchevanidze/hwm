@@ -1,0 +1,10 @@
+name: sync simple
+notes: |
+  Scenario for sync/simple (command: sync)
+project: simple
+command: sync
+expect:
+  files:
+    added:
+      - cabal.project
+      - hie.yaml

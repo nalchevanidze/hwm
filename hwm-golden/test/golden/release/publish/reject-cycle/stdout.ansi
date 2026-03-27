@@ -1,0 +1,13 @@
+
+• [1mpublish[0m
+  version [2m...........[0m [95m0.1.0[0m
+  target [2m............[0m [36mall[0m
+  registry [2m..........[0m hackage
+  mode [2m..............[0m [33mdry-run[0m
+
+
+[1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
+
+  [2m• [0m[1mdependency-resolution[0m
+  [2m└── [0m[2m• [0m[31mDependency cycle detected: api -> app -> core -> domain -> util[0m
+

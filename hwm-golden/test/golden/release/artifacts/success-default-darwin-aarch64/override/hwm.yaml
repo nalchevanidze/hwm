@@ -1,0 +1,19 @@
+version: 0.1.0
+name: simple
+workspace:
+  libs:
+    members:
+      - foo
+      - bar
+environments:
+  default: default
+  profiles:
+    default:
+      ghc: 9.6.6
+registry:
+  base: '>=  4.7  &&  <  5.0'
+release:
+  artifacts:
+    sample:
+      source: libs/foo:foo
+      formats: [zip]

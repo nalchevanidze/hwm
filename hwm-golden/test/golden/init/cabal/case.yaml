@@ -1,0 +1,9 @@
+name: init cabal
+notes: |
+  Scenario for init/cabal (command: init)
+project: morpheus
+command: init
+expect:
+  files:
+    added:
+      - hwm.yaml

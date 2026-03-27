@@ -1,0 +1,13 @@
+name: version bump-major
+notes: |
+  Scenario for version/bump-major (command: version major)
+project: version-clean
+command: version major
+expect:
+  files:
+    modified:
+      - bar/bar.cabal
+      - bar/package.yaml
+      - foo/foo.cabal
+      - foo/package.yaml
+      - hwm.yaml

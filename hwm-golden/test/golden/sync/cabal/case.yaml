@@ -1,0 +1,15 @@
+name: sync cabal
+notes: |
+  Scenario for sync/cabal (command: sync)
+project: morpheus
+command: sync
+expect:
+  files:
+    added:
+      - cabal.project
+      - hie.yaml
+    modified:
+      - morpheus-graphql-client/morpheus-graphql-client.cabal
+      - morpheus-graphql-code-gen/morpheus-graphql-code-gen.cabal
+      - morpheus-graphql-core/morpheus-graphql-core.cabal
+      - morpheus-graphql/morpheus-graphql.cabal

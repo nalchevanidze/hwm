@@ -1,6 +1,0 @@
-modifiedFiles:
-- ./bar/bar.cabal
-- ./bar/package.yaml
-- ./foo/foo.cabal
-- ./foo/package.yaml
-- ./hwm.yaml

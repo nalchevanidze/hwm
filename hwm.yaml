@@ -83,4 +83,4 @@ scripts:
   lint:
     curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
     -s .
-  test:update: GOLDEN_UPDATE=1 hwm test --fast
+  test:update: GOLDEN_UPDATE=1 stack test hwm-golden

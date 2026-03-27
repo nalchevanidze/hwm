@@ -1,0 +1,45 @@
+name: test env-all
+notes: |
+  Scenario for test/env-all (command: test --env all)
+project: simple-bin
+command: test --env all
+runner:
+  bin:
+    cabal:
+      src: test/mocks/bin/cabal
+      trace:
+        env:
+          - CABAL_PROJECT_FILE
+        files:
+          - ${CABAL_PROJECT_FILE}
+    nix: test/mocks/bin/nix
+    stack:
+      src: test/mocks/bin/stack
+      trace:
+        env:
+          - STACK_YAML
+        files:
+          - ${STACK_YAML}
+  env:
+    CI: "1"
+    HWM_LOG_ID_FIXED: golden
+expect:
+  calls:
+    - command: cabal test all
+      env:
+        CABAL_PROJECT_FILE: .hwm/matrix/cabal-ci.project
+      files:
+        .hwm/matrix/cabal-ci.project: |
+          with-compiler: ghc-9.4.8
+          packages:
+            ../../foo
+            ../../bar
+    - command: cabal test all
+      env:
+        CABAL_PROJECT_FILE: .hwm/matrix/cabal-default.project
+      files:
+        .hwm/matrix/cabal-default.project: |
+          with-compiler: ghc-9.6.6
+          packages:
+            ../../foo
+            ../../bar

@@ -1,0 +1,19 @@
+
+• [1martifacts[0m
+  destination [2m.......[0m .hwm/dist
+  version [2m...........[0m 0.1.0
+  targets [2m...........[0m sample
+  builder [2m...........[0m cabal
+
+• [1mbuild[0m
+[2K[1G  build [2m...........[0m [32m✓[0m[2m logs: .hwm/logs/golden-default.log[0m
+
+• [1marchive[0m
+
+  • [1m[32m✓[0m[0m
+    [2m└── [0m.hwm/dist/foo-v0.1.0-linux-x64.zip
+    [2m└── [0m.hwm/dist/foo-v0.1.0-linux-x64.zip.sha256
+
+
+[1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
+

@@ -1,0 +1,24 @@
+
+• [1mpublish[0m
+  version [2m...........[0m [95m0.1.0[0m
+  target [2m............[0m [36mall[0m
+  registry [2m..........[0m hackage
+  mode [2m..............[0m [33mdry-run[0m
+
+• [1mpublishing plan (topological sort)[0m
+  [2m└── [0m1. libs/util [2m......[0m .hwm/sdist/util/util-0.1.0.tar.gz
+  [2m└── [0m2. libs/core [2m......[0m .hwm/sdist/core/core-0.1.0.tar.gz
+  [2m└── [0m3. libs/domain [2m....[0m .hwm/sdist/domain/domain-0.1.0.tar.gz
+  [2m└── [0m4. libs/api [2m.......[0m .hwm/sdist/api/api-0.1.0.tar.gz
+  [2m└── [0m5. libs/app [2m.......[0m .hwm/sdist/app/app-0.1.0.tar.gz
+
+• [1mpublishing (dry-run)[0m
+  [2m└── [0mlibs/util [2m.........[0m [32m✓[0m
+  [2m└── [0mlibs/core [2m.........[0m [32m✓[0m
+  [2m└── [0mlibs/domain [2m.......[0m [32m✓[0m
+  [2m└── [0mlibs/api [2m..........[0m [32m✓[0m
+  [2m└── [0mlibs/app [2m..........[0m [32m✓[0m
+
+
+[1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
+

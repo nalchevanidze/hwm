@@ -1,0 +1,5 @@
+name: status simple
+notes: |
+  Scenario for status/simple (command: status)
+project: simple
+command: status

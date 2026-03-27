@@ -1,0 +1,10 @@
+name: sync simple-fix-ignore-packages
+notes: |
+  Scenario for sync/simple-fix-ignore-packages (command: sync)
+project: simple
+command: sync
+expect:
+  files:
+    added:
+      - cabal.project
+      - hie.yaml

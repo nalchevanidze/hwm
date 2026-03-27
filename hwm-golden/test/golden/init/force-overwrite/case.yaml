@@ -1,0 +1,9 @@
+name: init force-overwrite
+notes: |
+  Scenario for init/force-overwrite (command: init --force)
+project: simple
+command: init --force
+expect:
+  files:
+    modified:
+      - hwm.yaml

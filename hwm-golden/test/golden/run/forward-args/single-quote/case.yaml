@@ -1,0 +1,5 @@
+name: run forward-single-quote
+notes: |
+  Scenario for run/forward-single-quote (command: run arg1 -- "it's ok")
+project: simple
+command: run arg1 -- "it's ok"

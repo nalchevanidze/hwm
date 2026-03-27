@@ -1,0 +1,9 @@
+name: environments remove non-default
+notes: |
+  Scenario for environments/remove/non-default (command: environments remove ci)
+project: simple
+command: environments remove ci
+expect:
+  files:
+    modified:
+      - hwm.yaml

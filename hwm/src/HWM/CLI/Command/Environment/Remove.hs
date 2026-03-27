@@ -37,4 +37,4 @@ runEnvRemove EnvRemoveOptions {..} =
         nextEnvs <- removeEnvironmentByName envName envSetDefault cfgEnvironments
         pure cfg {cfgEnvironments = nextEnvs}
     )
-    (printEnvironments Nothing)
+    printEnvironments

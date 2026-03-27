@@ -1,0 +1,11 @@
+Usage: hwm registry COMMAND
+
+  Audit and manage the dependency registry and version bounds.
+
+Available options:
+  -h,--help                Show this help text
+
+Available commands:
+  add                      Add a dependency to the registry.
+  audit                    Audit and optionally fix the registry.
+  ls                       List registry entries.

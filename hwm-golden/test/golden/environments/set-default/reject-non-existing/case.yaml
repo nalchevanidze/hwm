@@ -1,0 +1,7 @@
+name: environments set-default reject-non-existing
+notes: |
+  Scenario for environments/set-default/reject-non-existing (command: environments set-default ghost)
+project: simple
+command: environments set-default ghost
+expect:
+  failure: true

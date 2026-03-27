@@ -1,0 +1,37 @@
+name: test stack-dispatch-shape
+notes: |
+  Scenario for test/stack-dispatch-shape (command: test)
+project: simple-bin
+command: test
+runner:
+  bin:
+    cabal:
+      src: test/mocks/bin/cabal
+      trace:
+        env:
+          - CABAL_PROJECT_FILE
+        files:
+          - ${CABAL_PROJECT_FILE}
+    nix: test/mocks/bin/nix
+    stack:
+      src: test/mocks/bin/stack
+      trace:
+        env:
+          - STACK_YAML
+        files:
+          - ${STACK_YAML}
+  env:
+    CI: "1"
+    HWM_LOG_ID_FIXED: golden
+expect:
+  calls:
+    - command: stack test
+      env:
+        STACK_YAML: .hwm/matrix/stack-default.yaml
+      files:
+        .hwm/matrix/stack-default.yaml: |
+          resolver: lts-22.43
+          packages:
+          - ../../foo
+          - ../../bar
+          save-hackage-creds: false

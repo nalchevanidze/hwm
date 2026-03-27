@@ -1,0 +1,16 @@
+name: domain
+version: 0.1.0
+license: MIT
+author: HWM
+category: Development
+synopsis: Domain library
+maintainer: hwm@example.com
+license-file: LICENSE
+description: Domain library for publish dry-run tests.
+dependencies:
+  base: '>=  4.7  &&  <  5.0'
+  core: '>=  0.1.0  &&  <  1.0.0'
+library:
+  source-dirs: src
+  exposed-modules:
+  - Domain

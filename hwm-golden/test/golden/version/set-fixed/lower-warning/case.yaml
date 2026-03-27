@@ -1,0 +1,13 @@
+name: version set-fixed-lower-warning
+notes: |
+  Scenario for version/set-fixed-lower-warning (command: version 0.0.9)
+project: version-clean
+command: version 0.0.9
+expect:
+  files:
+    modified:
+      - bar/bar.cabal
+      - bar/package.yaml
+      - foo/foo.cabal
+      - foo/package.yaml
+      - hwm.yaml

@@ -1,0 +1,19 @@
+cabal-version:      1.12
+name:               core
+version:            0.1.0
+license:            MIT
+license-file:       LICENSE
+author:             HWM
+maintainer:         hwm@example.com
+synopsis:           Core library
+category:           Development
+description:        Core library for publish dry-run tests.
+build-type:         Simple
+
+library
+  exposed-modules:    Core
+  hs-source-dirs:     src
+  default-language:   Haskell2010
+  build-depends:
+      base >=4.7 && <5
+    , app >=0.1 && <0.2

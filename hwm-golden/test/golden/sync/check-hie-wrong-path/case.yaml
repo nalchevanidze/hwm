@@ -1,0 +1,5 @@
+name: sync check-hie-wrong-path
+notes: |
+  Scenario for sync/check-hie-wrong-path (command: sync)
+project: simple
+command: sync

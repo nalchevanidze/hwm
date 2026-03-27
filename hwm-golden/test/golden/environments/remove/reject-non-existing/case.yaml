@@ -1,0 +1,7 @@
+name: environments remove reject-non-existing
+notes: |
+  Scenario for environments/remove/reject-non-existing (command: environments remove ghost)
+project: simple
+command: environments remove ghost
+expect:
+  failure: true

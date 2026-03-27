@@ -1,0 +1,11 @@
+
+• [1menvironments[2m (default: [0m[95mdefault[0m[2m)[0m[0m
+  ci (9.6.3) [2m........[0m [90mlts-22.43[0m
+  default (9.10) [2m....[0m [36mnightly (active)[0m
+
+
+[1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
+
+  [2m• [0m[1mgeneral[0m
+  [2m└── [0m[2m• [0m[31mEnvironment 'default' already exists.[0m
+

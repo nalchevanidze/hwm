@@ -1,0 +1,15 @@
+name: sync explicit-env
+notes: |
+  Scenario for sync/explicit-env (command: sync ci)
+project: simple
+command: sync ci
+expect:
+  files:
+    added:
+      - cabal.project
+      - hie.yaml
+    modified:
+      - bar/bar.cabal
+      - bar/package.yaml
+      - foo/foo.cabal
+      - foo/package.yaml
