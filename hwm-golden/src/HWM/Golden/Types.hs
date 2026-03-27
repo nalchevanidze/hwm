@@ -42,10 +42,18 @@ instance ToJSON ExpectedFiles where
 instance FromJSON ExpectedFiles where
   parseJSON = withObject "ExpectedFiles" $ \o ->
     ExpectedFiles
-      <$> o .:? "added" .!= []
-      <*> o .:? "deleted" .!= []
-      <*> o .:? "modified" .!= []
-      <*> o .:? "touched" .!= []
+      <$> o
+      .:? "added"
+      .!= []
+      <*> o
+      .:? "deleted"
+      .!= []
+      <*> o
+      .:? "modified"
+      .!= []
+      <*> o
+      .:? "touched"
+      .!= []
 
 data ChangeReport = ChangeReport
   { files :: ExpectedFiles,
@@ -68,7 +76,8 @@ instance FromJSON ChangeReport where
   parseJSON = withObject "ChangeReport" $ \o ->
     ChangeReport
       <$> (ExpectedFiles <$> o .:? "added" .!= [] <*> o .:? "deleted" .!= [] <*> o .:? "modified" .!= [] <*> o .:? "touched" .!= [])
-      <*> o .:? "calls"
+      <*> o
+      .:? "calls"
 
 data CaseExpect = CaseExpect
   { caseFailure :: Bool,
@@ -101,8 +110,12 @@ data RunnerBinTrace = RunnerBinTrace
 instance FromJSON RunnerBinTrace where
   parseJSON = withObject "RunnerBinTrace" $ \o ->
     RunnerBinTrace
-      <$> o .:? "env" .!= []
-      <*> o .:? "files" .!= []
+      <$> o
+      .:? "env"
+      .!= []
+      <*> o
+      .:? "files"
+      .!= []
 
 instance ToJSON RunnerBinTrace where
   toJSON RunnerBinTrace {..} =
@@ -123,11 +136,14 @@ instance FromJSON RunnerBin where
     case v of
       String _ -> RunnerBin <$> parseJSON v <*> pure Nothing
       _ ->
-        withObject "RunnerBin"
-          (\o ->
+        withObject
+          "RunnerBin"
+          ( \o ->
               RunnerBin
-                <$> o .: "src"
-                <*> o .:? "trace"
+                <$> o
+                .: "src"
+                <*> o
+                .:? "trace"
           )
           v
 
@@ -153,9 +169,12 @@ data CaseRunner = CaseRunner
 instance FromJSON CaseRunner where
   parseJSON = withObject "CaseRunner" $ \o ->
     CaseRunner
-      <$> o .:? "env"
-      <*> o .:? "path"
-      <*> o .:? "bin"
+      <$> o
+      .:? "env"
+      <*> o
+      .:? "path"
+      <*> o
+      .:? "bin"
 
 instance ToJSON CaseRunner where
   toJSON CaseRunner {..} =
@@ -178,12 +197,18 @@ data CaseFile = CaseFile
 instance FromJSON CaseFile where
   parseJSON = withObject "CaseFile" $ \o ->
     CaseFile
-      <$> o .: "project"
-      <*> o .: "command"
-      <*> o .:? "runner"
-      <*> o .:? "expect"
-      <*> o .:? "name"
-      <*> o .:? "notes"
+      <$> o
+      .: "project"
+      <*> o
+      .: "command"
+      <*> o
+      .:? "runner"
+      <*> o
+      .:? "expect"
+      <*> o
+      .:? "name"
+      <*> o
+      .:? "notes"
 
 instance ToJSON CaseFile where
   toJSON CaseFile {..} =

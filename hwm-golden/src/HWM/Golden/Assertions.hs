@@ -74,7 +74,8 @@ diffChanges expectedDir (ChangeReport (ExpectedFiles {added, deleted, modified})
     exists <- doesPathExist f
     when exists
       $ expectationFailure
-      $ "Idempotency failure: File should have been deleted but still exists: " <> f
+      $ "Idempotency failure: File should have been deleted but still exists: "
+      <> f
 
 collectFiles :: FilePath -> IO [FilePath]
 collectFiles root = go ""
@@ -100,11 +101,11 @@ compareFileContents rel expectedFile actualFile = do
   expectedContent <- BS.readFile expectedFile
   actualContent <- BS.readFile actualFile
   when (expectedContent /= actualContent) $ do
-    expectationFailure $
-      "Content mismatch in "
-        <> rel
-        <> ":\n"
-        <> renderContentDiff expectedContent actualContent
+    expectationFailure
+      $ "Content mismatch in "
+      <> rel
+      <> ":\n"
+      <> renderContentDiff expectedContent actualContent
 
 renderContentDiff :: BS.ByteString -> BS.ByteString -> String
 renderContentDiff expected actual =

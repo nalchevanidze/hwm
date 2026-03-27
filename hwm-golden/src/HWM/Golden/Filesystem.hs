@@ -81,8 +81,8 @@ renderTraceWrapper :: String -> FilePath -> Maybe RunnerBinTrace -> Text
 renderTraceWrapper tool src mTrace =
   T.unlines
     $ ["#!/bin/sh", "set -eu", "log=\"${HWM_GOLDEN_INVOCATIONS:-.hwm/invocations.yaml}\"", "mkdir -p \"$(dirname \"$log\")\"", "if [ ! -f \"$log\" ] || [ ! -s \"$log\" ]; then", "  : > \"$log\"", "fi", "", "cmd=" <> shSingleQuoted tool, "for a in \"$@\"; do", "  cmd=\"$cmd $a\"", "done", "printf -- \"- command: %s\\n\" \"$cmd\" >> \"$log\""]
-      <> renderTraceExtras (fromMaybe (RunnerBinTrace [] []) mTrace)
-      <> ["", "exec " <> shSingleQuoted src <> " \"$@\""]
+    <> renderTraceExtras (fromMaybe (RunnerBinTrace [] []) mTrace)
+    <> ["", "exec " <> shSingleQuoted src <> " \"$@\""]
 
 renderTraceExtras :: RunnerBinTrace -> [Text]
 renderTraceExtras RunnerBinTrace {runnerBinTraceEnv, runnerBinTraceFiles} =

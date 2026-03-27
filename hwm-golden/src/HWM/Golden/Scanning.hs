@@ -1,6 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Golden.Scanning
@@ -144,7 +143,6 @@ findInvalidLeafDirectories = walk goldenRoot False
       let isEmptyLeaf = isLeaf && null entries
       let isInvalid = isLeaf && not isEmptyLeaf && not supportHere && not hasCase
       pure (([dir | isInvalid]) <> nested)
-
 
 discoverGolden :: IO ScenarioTree
 discoverGolden = do

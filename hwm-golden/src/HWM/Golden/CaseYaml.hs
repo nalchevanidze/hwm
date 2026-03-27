@@ -110,7 +110,8 @@ isSafeUnquoted [] = False
 isSafeUnquoted xs =
   all isSafeChar xs
     && not (all isDigit xs)
-    && lowered `notElem` ambiguous
+    && lowered
+    `notElem` ambiguous
   where
     lowered = T.toLower (toText xs)
     ambiguous = ["true", "false", "null", "~", "yes", "no", "on", "off"]

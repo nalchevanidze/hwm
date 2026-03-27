@@ -13,8 +13,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified GHC.IO.Exception as System.Exit
 import HWM.Golden.Changes (trackChanges)
-import HWM.Golden.Types (CaseRunner (..), RunnerBin (..))
-import HWM.Golden.Types (ChangeReport)
+import HWM.Golden.Types (CaseRunner (..), ChangeReport, RunnerBin (..))
 import Relude
 import System.Directory (Permissions (..), doesFileExist, findExecutable, getCurrentDirectory, getPermissions)
 import System.Environment (getEnvironment)

@@ -88,15 +88,15 @@ buildChangeReport oldMap newMap =
       modified =
         sort
           [ canonicalPath path
-            | (path, (oldFp, newFp)) <- Map.toList common,
-              fpHash oldFp /= fpHash newFp
+          | (path, (oldFp, newFp)) <- Map.toList common,
+            fpHash oldFp /= fpHash newFp
           ]
       touched =
         sort
           [ canonicalPath path
-            | (path, (oldFp, newFp)) <- Map.toList common,
-              fpHash oldFp == fpHash newFp,
-              wasTouched oldFp newFp
+          | (path, (oldFp, newFp)) <- Map.toList common,
+            fpHash oldFp == fpHash newFp,
+            wasTouched oldFp newFp
           ]
    in ChangeReport ExpectedFiles {..} Nothing
 
