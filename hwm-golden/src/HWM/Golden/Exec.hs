@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HWM.Golden.Exec
@@ -25,22 +24,19 @@ mkGoldenEnv overrides = do
   let home = ".home"
   let localBin = home </> ".local" </> "bin"
   let pathValue = S.intercalate ":" [cwd </> "bin", localBin, fromMaybe "" (S.lookup "PATH" current)]
-  let goldenRunnerOS = Map.lookup "RUNNER_OS" overrides
-  let goldenRunnerArch = Map.lookup "RUNNER_ARCH" overrides
-  let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "RUNNER_OS", "RUNNER_ARCH"]
+  let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE"]
   let keep (k, _) = k `notElem` blocked
+  let base =
+        Map.fromList
+          [ ("PATH", pathValue),
+            ("HOME", home),
+            ("CI", "1")
+          ]
   pure
     $ Map.toList
     $ Map.unions
       [ overrides,
-        Map.fromList
-          $ [ ("PATH", pathValue),
-              ("HOME", home),
-              ("HWM_LOG_ID_FIXED", "golden"),
-              ("HACKAGE_AUTH_TOKEN", "golden-token"),
-              ("CI", "1")
-            ]
-          <> catMaybes [fmap ("RUNNER_OS",) goldenRunnerOS, fmap ("RUNNER_ARCH",) goldenRunnerArch],
+        base,
         Map.fromList (filter keep current)
       ]
 
