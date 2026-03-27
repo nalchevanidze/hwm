@@ -15,7 +15,7 @@ import HWM.Golden.Changes (trackChanges)
 import HWM.Golden.Scanning (CaseRunner (..))
 import HWM.Golden.Types (ChangeReport)
 import Relude
-import System.Directory (doesDirectoryExist, findExecutable, getCurrentDirectory)
+import System.Directory (findExecutable, getCurrentDirectory)
 import System.Environment (getEnvironment)
 import System.Process (CreateProcess (env), readCreateProcessWithExitCode, shell)
 
@@ -25,6 +25,7 @@ mkGoldenEnv mRunner = do
   current <- getEnvironment
   let runnerEnvOverrides = fromMaybe Map.empty (mRunner >>= runnerEnv)
   let runnerPathEntries = mRunner >>= runnerPath
+  let hasRunnerBins = maybe False (maybe False (not . Map.null) . runnerBin) mRunner
   let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "WORKING_DIR"]
   let keep (k, _) = k `notElem` blocked
   let inherited = Map.fromList (filter keep current)
@@ -40,7 +41,9 @@ mkGoldenEnv mRunner = do
   let mergedForTemplate = Map.unions [runnerEnvOverrides, defaults, inherited]
   let templateVars = Map.insert "cwd" cwd mergedForTemplate
 
-  prependPathEntries <- resolvePathEntries templateVars runnerPathEntries
+  configuredPathEntries <- resolvePathEntries templateVars runnerPathEntries
+  let autoPathEntries = [expandTemplate "${WORKING_DIR}/bin" templateVars | hasRunnerBins]
+  let prependPathEntries = ordNub (autoPathEntries <> configuredPathEntries)
   let pathValue = S.intercalate ":" (prependPathEntries <> [inheritedPath])
 
   let base = Map.insert "PATH" pathValue defaults
@@ -57,10 +60,7 @@ resolvePathEntries :: Map.Map String String -> Maybe [FilePath] -> IO [FilePath]
 resolvePathEntries templateVars maybeConfigured =
   case maybeConfigured of
     Just templates -> pure (map (`expandTemplate` templateVars) templates)
-    Nothing -> do
-      let defaults = ["${WORKING_DIR}/bin", "${HOME}/.local/bin"]
-      let rendered = map (`expandTemplate` templateVars) defaults
-      filterM doesDirectoryExist rendered
+    Nothing -> pure []
 
 expandTemplate :: String -> Map.Map String String -> String
 expandTemplate raw vars =
