@@ -80,7 +80,7 @@ installRunnerBins repoRoot workDir mRunner = do
 renderTraceWrapper :: String -> FilePath -> Maybe RunnerBinTrace -> Text
 renderTraceWrapper tool src mTrace =
   T.unlines
-    $ ["#!/bin/sh", "set -eu", "log=\"${HWM_GOLDEN_INVOCATIONS:-.hwm/invocations.yaml}\"", "mkdir -p \"$(dirname \"$log\")\"", "if [ ! -f \"$log\" ] || [ ! -s \"$log\" ]; then", "  : > \"$log\"", "fi", "", "printf -- \"- tool: %s\\n\" " <> shSingleQuoted tool <> " >> \"$log\"", "printf -- \"  args:\\n\" >> \"$log\"", "for a in \"$@\"; do", "  printf -- \"    - %s\\n\" \"$a\" >> \"$log\"", "done"]
+    $ ["#!/bin/sh", "set -eu", "log=\"${HWM_GOLDEN_INVOCATIONS:-.hwm/invocations.yaml}\"", "mkdir -p \"$(dirname \"$log\")\"", "if [ ! -f \"$log\" ] || [ ! -s \"$log\" ]; then", "  : > \"$log\"", "fi", "", "cmd=" <> shSingleQuoted tool, "for a in \"$@\"; do", "  cmd=\"$cmd $a\"", "done", "printf -- \"- command: %s\\n\" \"$cmd\" >> \"$log\""]
       <> renderTraceExtras (fromMaybe (RunnerBinTrace [] []) mTrace)
       <> ["", "exec " <> shSingleQuoted src <> " \"$@\""]
 

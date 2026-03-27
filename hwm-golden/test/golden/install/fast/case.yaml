@@ -28,14 +28,8 @@ runner:
     - ${HOME}/.local/bin
 expect:
   calls:
-    - args:
-      - install
-      - all:exes
-      - --install-method=copy
-      - --installdir
-      - .home/.local/bin
-      - --overwrite-policy=always
-      - --disable-optimization
+    - command: cabal install all:exes --install-method=copy --installdir .home/.local/bin
+        --overwrite-policy=always --disable-optimization
       env:
         CABAL_PROJECT_FILE: .hwm/matrix/cabal-default.project
       files:
@@ -44,4 +38,3 @@ expect:
           packages:
             ../../foo
             ../../bar
-      tool: cabal

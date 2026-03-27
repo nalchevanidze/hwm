@@ -25,10 +25,7 @@ runner:
     HWM_LOG_ID_FIXED: golden
 expect:
   calls:
-    - args:
-      - test
-      - all
-      - --disable-optimization
+    - command: cabal test all --disable-optimization
       env:
         CABAL_PROJECT_FILE: .hwm/matrix/cabal-default.project
       files:
@@ -37,4 +34,3 @@ expect:
           packages:
             ../../foo
             ../../bar
-      tool: cabal

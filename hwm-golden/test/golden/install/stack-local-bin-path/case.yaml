@@ -28,10 +28,7 @@ runner:
     - ${HOME}/.local/bin
 expect:
   calls:
-    - args:
-      - install
-      - --local-bin-path
-      - .home/.local/bin
+    - command: stack install --local-bin-path .home/.local/bin
       env:
         STACK_YAML: .hwm/matrix/stack-default.yaml
       files:
@@ -41,4 +38,3 @@ expect:
           - ../../foo
           - ../../bar
           save-hackage-creds: false
-      tool: stack

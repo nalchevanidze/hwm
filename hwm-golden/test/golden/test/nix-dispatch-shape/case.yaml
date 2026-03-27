@@ -25,8 +25,4 @@ runner:
     HWM_LOG_ID_FIXED: golden
 expect:
   calls:
-    - args:
-      - build
-      - --no-link
-      - .#env-default-all
-      tool: nix
+    - command: nix build --no-link .#env-default-all

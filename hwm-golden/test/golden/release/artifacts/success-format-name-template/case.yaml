@@ -28,17 +28,9 @@ runner:
     - ${HOME}/.local/bin
 expect:
   calls:
-    - args:
-      - install
-      - foo
-      - --install-method=copy
-      - --installdir
-      - .hwm/release/binaries/sample
-      - --overwrite-policy=always
-      - --ghc-options=-O2
-      - --ghc-options=-split-sections
-      - --ghc-options=-optl-s
-      - --ghc-options=-threaded
+    - command: cabal install foo --install-method=copy --installdir .hwm/release/binaries/sample
+        --overwrite-policy=always --ghc-options=-O2 --ghc-options=-split-sections --ghc-options=-optl-s
+        --ghc-options=-threaded
       env:
         CABAL_PROJECT_FILE: .hwm/matrix/cabal-default.project
       files:
@@ -47,4 +39,3 @@ expect:
           packages:
             ../../foo
             ../../bar
-      tool: cabal

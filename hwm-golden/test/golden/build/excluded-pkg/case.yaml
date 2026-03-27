@@ -25,9 +25,7 @@ runner:
     HWM_LOG_ID_FIXED: golden
 expect:
   calls:
-    - args:
-      - build
-      - foo
+    - command: cabal build foo
       env:
         CABAL_PROJECT_FILE: .hwm/matrix/cabal-default.project
       files:
@@ -35,4 +33,3 @@ expect:
           with-compiler: ghc-9.6.6
           packages:
             ../../foo
-      tool: cabal

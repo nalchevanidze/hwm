@@ -25,9 +25,7 @@ runner:
     HWM_LOG_ID_FIXED: golden
 expect:
   calls:
-    - args:
-      - test
-      - all
+    - command: cabal test all
       env:
         CABAL_PROJECT_FILE: .hwm/matrix/cabal-ci.project
       files:
@@ -36,10 +34,7 @@ expect:
           packages:
             ../../foo
             ../../bar
-      tool: cabal
-    - args:
-      - test
-      - all
+    - command: cabal test all
       env:
         CABAL_PROJECT_FILE: .hwm/matrix/cabal-default.project
       files:
@@ -48,4 +43,3 @@ expect:
           packages:
             ../../foo
             ../../bar
-      tool: cabal

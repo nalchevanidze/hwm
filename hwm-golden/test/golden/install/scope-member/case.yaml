@@ -28,13 +28,7 @@ runner:
     - ${HOME}/.local/bin
 expect:
   calls:
-    - args:
-      - install
-      - foo
-      - --install-method=copy
-      - --installdir
-      - .home/.local/bin
-      - --overwrite-policy=always
+    - command: cabal install foo --install-method=copy --installdir .home/.local/bin --overwrite-policy=always
       env:
         CABAL_PROJECT_FILE: .hwm/matrix/cabal-default.project
       files:
@@ -43,4 +37,3 @@ expect:
           packages:
             ../../foo
             ../../bar
-      tool: cabal
