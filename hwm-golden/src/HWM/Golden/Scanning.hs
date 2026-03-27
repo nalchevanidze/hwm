@@ -15,6 +15,7 @@ module HWM.Golden.Scanning
 where
 
 import Data.Aeson (Value (..), object, withObject, (.:), (.:?), (.=))
+import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (parseEither)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -252,32 +253,46 @@ renderCaseFile CaseFile {..} =
 
 renderRunner :: CaseRunner -> [Text]
 renderRunner CaseRunner {..} =
-  ["runner:"]
-    <> maybe [] (renderMap "bin") runnerBin
-    <> maybe [] (renderMap "env") runnerEnv
-    <> maybe [] (renderList "path") runnerPath
+  let sections =
+        concat
+          [ maybe [] (renderMap "bin") runnerBin,
+            maybe [] (renderMap "env") runnerEnv,
+            maybe [] (renderList "path") runnerPath
+          ]
+   in if null sections then [] else "runner:" : sections
 
 renderExpect :: CaseExpect -> [Text]
 renderExpect CaseExpect {..} =
-  ["expect:"]
-    <> (["  failure: true" | caseFailure])
-    <> maybe [] renderExpectedFiles caseFiles
-    <> maybe [] renderCalls caseCalls
+  let sections =
+        concat
+          [ ["  failure: true" | caseFailure],
+            maybe [] renderExpectedFiles caseFiles,
+            maybe [] renderCalls caseCalls
+          ]
+   in if null sections then [] else "expect:" : sections
 
 renderExpectedFiles :: ExpectedFiles -> [Text]
 renderExpectedFiles ExpectedFiles {added, deleted, modified, touched} =
-  ["  files:"]
-    <> renderNestedList "added" added
-    <> renderNestedList "deleted" deleted
-    <> renderNestedList "modified" modified
-    <> renderNestedList "touched" touched
+  let sections =
+        concat
+          [ renderNestedList "added" added,
+            renderNestedList "deleted" deleted,
+            renderNestedList "modified" modified,
+            renderNestedList "touched" touched
+          ]
+   in if null sections then [] else "  files:" : sections
 
 renderCalls :: Value -> [Text]
 renderCalls v =
-  let encoded = T.lines (TE.decodeUtf8 (Yaml.encode v))
-   in "  calls:" : map ("    " <>) encoded
+  let normalized = dropEmpty v
+   in case normalized of
+        Object o | KM.null o -> []
+        _ ->
+          let encoded = T.lines (TE.decodeUtf8 (Yaml.encode normalized))
+           in "  calls:" : map ("    " <>) encoded
 
 renderMap :: Text -> Map.Map String String -> [Text]
+renderMap _ m | Map.null m = []
 renderMap label m =
   ["  " <> label <> ":"]
     <> ["    " <> toText k <> ": " <> quoteYaml v | (k, v) <- Map.toAscList m]
@@ -289,6 +304,7 @@ quoteYaml s =
    in "\"" <> escaped <> "\""
 
 renderList :: Text -> [FilePath] -> [Text]
+renderList _ [] = []
 renderList label items =
   ["  " <> label <> ":"] <> ["    - " <> toText x | x <- items]
 
