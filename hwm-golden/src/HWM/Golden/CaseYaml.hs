@@ -7,6 +7,7 @@ module HWM.Golden.CaseYaml (writeCaseFileOrdered) where
 
 import Data.Aeson (Value (..))
 import qualified Data.Aeson.KeyMap as KM
+import Data.Char (isAlphaNum, isDigit)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -74,7 +75,23 @@ renderMap :: Text -> Map.Map String String -> [Text]
 renderMap _ m | Map.null m = []
 renderMap label m =
   ["  " <> label <> ":"]
-    <> ["    " <> toText k <> ": " <> quoteYaml v | (k, v) <- Map.toAscList m]
+    <> ["    " <> toText k <> ": " <> renderYamlScalar v | (k, v) <- Map.toAscList m]
+
+renderYamlScalar :: String -> Text
+renderYamlScalar s
+  | isSafeUnquoted s = toText s
+  | otherwise = quoteYaml s
+
+isSafeUnquoted :: String -> Bool
+isSafeUnquoted [] = False
+isSafeUnquoted xs =
+  all isSafeChar xs
+    && not (all isDigit xs)
+    && lowered `notElem` ambiguous
+  where
+    lowered = T.toLower (toText xs)
+    ambiguous = ["true", "false", "null", "~", "yes", "no", "on", "off"]
+    isSafeChar c = isAlphaNum c || c `elem` ("-_./" :: String)
 
 quoteYaml :: String -> Text
 quoteYaml s =

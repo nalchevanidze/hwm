@@ -69,8 +69,8 @@ installRunnerBins repoRoot workDir mRunner = do
     let workBinDir = workDir </> "bin"
     createDirectoryIfMissing True workBinDir
 
-    let helperSrc = repoRoot </> "test" </> "utils" </> "hwm-mock-write"
-    let helperDst = workBinDir </> "hwm-mock-write"
+    let helperSrc = repoRoot </> "test" </> "utils" </> "hwm-mock-utils"
+    let helperDst = workBinDir </> "hwm-mock-utils"
     copyFile helperSrc helperDst
     helperPerms <- getPermissions helperDst
     setPermissions helperDst helperPerms {executable = True}
