@@ -23,10 +23,8 @@ mkGoldenEnv :: Maybe CaseRunner -> IO [(String, String)]
 mkGoldenEnv mRunner = do
   cwd <- getCurrentDirectory
   current <- getEnvironment
-
   let runnerEnvOverrides = fromMaybe Map.empty (mRunner >>= runnerEnv)
   let runnerPathEntries = mRunner >>= runnerPath
-
   let blocked = ["PATH", "HOME", "STACK_YAML", "CABAL_PROJECT_FILE", "WORKING_DIR"]
   let keep (k, _) = k `notElem` blocked
   let inherited = Map.fromList (filter keep current)
