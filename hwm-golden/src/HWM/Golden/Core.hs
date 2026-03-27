@@ -5,7 +5,20 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HWM.Golden.Core (ExpectedFiles (..), ChangeReport (..), sanitizeAllCabals, diffChanges, copyLocalFiles, inWorkDir, diff, runHWM, saveSnapshot, dropEmpty) where
+module HWM.Golden.Core
+  ( ExpectedFiles (..),
+    ChangeReport (..),
+    sanitizeAllCabals,
+    diffChanges,
+    copyLocalFiles,
+    inWorkDir,
+    diff,
+    runHWM,
+    saveSnapshot,
+    dropEmpty,
+    isUpdateMode,
+  )
+where
 
 import Control.Concurrent (threadDelay)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, withObject, (.:?), (.=))
@@ -142,8 +155,8 @@ data ExpectedFiles = ExpectedFiles
 
 instance ToJSON ExpectedFiles where
   toJSON ExpectedFiles {..} =
-    dropEmpty $
-      object
+    dropEmpty
+      $ object
         [ "added" .= added,
           "deleted" .= deleted,
           "modified" .= modified
@@ -170,8 +183,8 @@ data ChangeReport = ChangeReport
 
 instance ToJSON ChangeReport where
   toJSON ChangeReport {files = ExpectedFiles {..}, calls} =
-    dropEmpty $
-      object
+    dropEmpty
+      $ object
         [ "added" .= added,
           "deleted" .= deleted,
           "modified" .= modified,
@@ -271,7 +284,7 @@ sanitizeAllCabals = do
     when (content /= sanitized) $ TIO.writeFile path sanitized
 
 dropEmpty :: Value -> Value
-dropEmpty (Object o) = Object $ M.filter (not . isEmptyValue)  o
+dropEmpty (Object o) = Object $ M.filter (not . isEmptyValue) o
 dropEmpty v = v
 
 isEmptyValue :: Value -> Bool
@@ -279,3 +292,6 @@ isEmptyValue Null = True
 isEmptyValue (Object o) = M.null o
 isEmptyValue (Array a) = null a || all isEmptyValue a
 isEmptyValue _ = False
+
+isUpdateMode :: IO Bool
+isUpdateMode = (== Just "1") <$> lookupEnv "GOLDEN_UPDATE"

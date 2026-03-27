@@ -7,7 +7,7 @@ module HWM.Golden (goldenSpec) where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Yaml as Yaml
-import HWM.Golden.Core (ChangeReport (..), diffChanges, inWorkDir, runHWM, sanitizeAllCabals, saveSnapshot)
+import HWM.Golden.Core (ChangeReport (..), diffChanges, inWorkDir, isUpdateMode, runHWM, sanitizeAllCabals, saveSnapshot)
 import HWM.Golden.Scanning (CaseExpect (..), CaseFile (..), Scenario (..), ScenarioTree (..), discoverGolden)
 import Relude
 import System.FilePath ((</>))
@@ -20,15 +20,10 @@ goldenSpec = do
   scenarioTree <- runIO discoverGolden
   parallel (runScenarioTree updateMode scenarioTree)
 
-isUpdateMode :: IO Bool
-isUpdateMode = (== Just "1") <$> lookupEnv "GOLDEN_UPDATE"
-
 runScenarioTree :: Bool -> ScenarioTree -> Spec
 runScenarioTree updateMode ScenarioTree {treeCases, treeChildren} = do
-  forM_ treeCases $ \(label, scenario) ->
-    it label (runScenario updateMode scenario)
-  forM_ treeChildren $ \(name, child) ->
-    describe name (runScenarioTree updateMode child)
+  forM_ treeCases $ \(label, scenario) -> it label (runScenario updateMode scenario)
+  forM_ treeChildren $ \(name, child) -> describe name (runScenarioTree updateMode child)
 
 runScenario :: Bool -> Scenario -> Expectation
 runScenario updateMode Scenario {scenarioDir, scenarioCasePath, scenarioCase = CaseFile {..}} = do
