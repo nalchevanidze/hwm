@@ -10,20 +10,40 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup Haskell (GHC & Cabal)
+    - name: Install Nix (Unix)
+      if: runner.os != 'Windows'
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Magic Nix Cache (Unix)
+      if: runner.os != 'Windows'
+      uses: DeterminateSystems/magic-nix-cache-action@main
+
+    - name: Build and Install HWM (Nix, Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        nix profile install .
+        hwm --version
+        hwm sync ci-nix
+
+    - name: Setup Haskell (GHC & Cabal, Windows)
+      if: runner.os == 'Windows'
       id: setup-haskell
       uses: haskell-actions/setup@v2
       with:
         ghc-version: ${{ inputs.ghc }}
         cabal-version: 'latest'
 
-    - name: Update Hackage & Freeze
+    - name: Update Hackage & Freeze (Windows)
+      if: runner.os == 'Windows'
       shell: bash
       run: |
         cabal update
         cabal freeze
 
-    - name: Cache Cabal Dependencies
+    - name: Cache Cabal Dependencies (Windows)
+      if: runner.os == 'Windows'
       uses: actions/cache@v4
       with:
         path: |
@@ -32,16 +52,15 @@ runs:
         key: ${{ runner.os }}-ghc-${{ inputs.ghc }}-cabal-${{ hashFiles('cabal.project.freeze') }}
         restore-keys: ${{ runner.os }}-ghc-${{ inputs.ghc }}-cabal-
 
-    - name: Build and Install HWM (Cabal)
+    - name: Build and Install HWM (Cabal, Windows)
+      if: runner.os == 'Windows'
       shell: bash
       run: |
-        # Install the executable locally
         cabal install exe:hwm --installdir="$HOME/.local/bin" --overwrite-policy=always
-
-        # Add local bin to PATH for the rest of the workflow
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Sync HWM (Windows specific)
+    - name: Sync HWM (Windows)
+      if: runner.os == 'Windows'
       shell: bash
       run: |
         hwm --version
