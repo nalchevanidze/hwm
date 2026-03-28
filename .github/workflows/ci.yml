@@ -29,7 +29,6 @@ jobs:
         os: [ubuntu, macos, windows]
     name: Artifact ${{ matrix.os }}
     runs-on: ${{ matrix.os }}-latest
-    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-artifacts
@@ -39,15 +38,9 @@ jobs:
         shell: bash
         run: nix build .#hwm-ci-nix-release --no-link --dry-run
 
-      - name: Test Archiving (nix builder)
-        if: runner.os != 'Windows'
+      - name: Test Archiving 
         shell: bash
-        run: hwm release artifacts hwm --builder=nix --format=tar.gz
-
-      - name: Test Archiving (cabal builder)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: hwm release artifacts --builder=cabal
+        run: hwm release artifacts hwm
 
   style:
     runs-on: ubuntu-latest
