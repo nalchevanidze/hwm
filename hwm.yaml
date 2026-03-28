@@ -20,6 +20,11 @@ environments:
     ci-nix:
       ghc: 9.6.3
       builder: nix
+      nix:
+        overrides:
+          req:
+            configure-flags:
+            - --ghc-options=-fexternal-interpreter
     local-nix:
       ghc: 9.6.3
       builder: nix/cabal
