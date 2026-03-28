@@ -17,6 +17,9 @@
         hwm = hfinal.callCabal2nix "hwm" ./hwm {};
       });
       hwmCiNixStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+        req = if hprev ? req then prev.haskell.lib.overrideCabal hprev.req (drv: {
+          configureFlags = (drv.configureFlags or []) ++ [ "--ghc-options=-fexternal-interpreter" ];
+        }) else null;
         hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
         hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
       });

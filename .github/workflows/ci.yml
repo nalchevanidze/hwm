@@ -36,7 +36,7 @@ jobs:
       - name: Preflight release derivation (nix)
         if: runner.os != 'Windows'
         shell: bash
-        run: nix build .#hwm-ci-nix-release --no-link --dry-run
+        run: nix build .#hwm-ci-nix-release --no-link -L --print-build-logs
 
       - name: Test Archiving 
         shell: bash

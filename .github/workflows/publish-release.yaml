@@ -41,6 +41,11 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-artifacts
 
+      - name: Preflight release derivation (nix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: nix build .#hwm-ci-nix-release --no-link -L --print-build-logs
+
       - name: Upload Artifacts
         shell: bash
         run: hwm release artifacts --github

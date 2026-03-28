@@ -131,7 +131,14 @@ rendergOverlayStatic Context {..} env@BuildEnvironment {..} =
   overlayFun
     (genStaticEnvName projectName env)
     ["pkgsStatic", "haskell", "packages", formatNixGhc buildGHC]
-    (map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
+    (staticCompatibilityOverrides <> map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
+
+staticCompatibilityOverrides :: [Text]
+staticCompatibilityOverrides =
+  [ "req = if hprev ? req then prev.haskell.lib.overrideCabal hprev.req (drv: {",
+    "  configureFlags = (drv.configureFlags or []) ++ [ \"--ghc-options=-fexternal-interpreter\" ];",
+    "}) else null;"
+  ]
 
 overlayFun :: Text -> [Text] -> [Text] -> [Text]
 overlayFun name extend = fun name (concatName $ ["prev"] <> extend <> ["extend"]) "hfinal: hprev:"
