@@ -44,13 +44,18 @@ jobs:
         os: [ubuntu, macos]
     name: Artifact nix ${{ matrix.os }}
     runs-on: ${{ matrix.os }}-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
+      - name: Preflight release derivation (nix)
+        shell: bash
+        run: nix build .#hwm-ci-nix-release --no-link --dry-run
+
       - name: Test Archiving (nix builder)
         shell: bash
-        run: hwm release artifacts
+        run: hwm release artifacts hwm --builder=nix --format=tar.gz
 
   style:
     runs-on: ubuntu-latest
