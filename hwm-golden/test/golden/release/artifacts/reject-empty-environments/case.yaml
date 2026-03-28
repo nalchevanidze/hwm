@@ -5,11 +5,11 @@ notes: |
 project: simple
 command: release artifacts sample --builder=nix
 runner:
-  env:
-    CI: "1"
   bin:
     nix: test/mocks/bin/nix
+  env:
+    CI: "1"
+    HWM_LOG_ID_FIXED: golden
 expect:
   failure: true
-  calls:
-    - command: nix build .#foo-stable-release -o .hwm/release/binaries/sample/result
+  calls: []

@@ -118,7 +118,9 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   activeEnv <- getBuildEnvironment Nothing
   let defaultBuilder = buildBuilder activeEnv
   let builder = fromMaybe defaultBuilder opsBuilder
-  forM_ cfgs (validateTargetEnvironment (buildName activeEnv))
+  case find (not . isArtifactEnabledInEnvironment (buildName activeEnv) . snd) cfgs of
+    Nothing -> pure ()
+    Just invalid -> validateTargetEnvironment (buildName activeEnv) invalid
   sectionTableM
     "artifacts"
     [ ("destination", pure $ maybe (format outputDir) format uploadUrl),
@@ -154,5 +156,6 @@ buildPkg outputDir builder (name, cfg@ArtifactConfig {..}) = do
   binaryDir <- genBindaryDir name
   (executableName, pkg) <- resolveArtifactConfig cfg
   env <- overrideBuilder builder <$> getBuildEnvironment Nothing
+  validateTargetEnvironment (buildName env) (name, cfg)
   dispatch (DispatcheCommand (BuildArtifact binaryDir) (ScopePkgs [pkg]) (map GHCOptionsFlag arcGhcOptions)) env
   pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})
