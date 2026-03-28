@@ -22,40 +22,32 @@ jobs:
         shell: bash
         run: hwm test --fast
 
-  artifacts-cabal:
+  artifacts:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
     name: Artifact ${{ matrix.os }}
     runs-on: ${{ matrix.os }}-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-artifacts
 
-      - name: Test Archiving
-        shell: bash
-        run: hwm release artifacts
-
-  artifacts-nix:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu, macos]
-    name: Artifact nix ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-
       - name: Preflight release derivation (nix)
+        if: runner.os != 'Windows'
         shell: bash
         run: nix build .#hwm-ci-nix-release --no-link --dry-run
 
       - name: Test Archiving (nix builder)
+        if: runner.os != 'Windows'
         shell: bash
         run: hwm release artifacts hwm --builder=nix --format=tar.gz
+
+      - name: Test Archiving (cabal builder)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: hwm release artifacts --builder=cabal
 
   style:
     runs-on: ubuntu-latest
