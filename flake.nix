@@ -18,7 +18,7 @@
       });
       hwmCiNixStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
         req = if hprev ? req then prev.haskell.lib.overrideCabal hprev.req (drv: {
-          configureFlags = (drv.configureFlags or []) ++ [ "--ghc-options=-fexternal-interpreter" ];
+          configureFlags = (drv.configureFlags or []) ++ [ "--ghc-options=-fexternal-interpreter" "--ghc-options=-pgmi=${prev.buildPackages.haskell.compiler.ghc96}/bin/ghc-iserv" ];
         }) else null;
         hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
         hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});

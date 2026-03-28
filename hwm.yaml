@@ -25,6 +25,7 @@ environments:
           req:
             configure-flags:
             - --ghc-options=-fexternal-interpreter
+            - --ghc-options=-pgmi=${prev.buildPackages.haskell.compiler.ghc96}/bin/ghc-iserv
     local-nix:
       ghc: 9.6.3
       builder: nix/cabal
