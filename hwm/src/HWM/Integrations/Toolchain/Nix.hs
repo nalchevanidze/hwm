@@ -15,11 +15,20 @@ import HWM.Core.Sync (SyncMode (..))
 import HWM.Core.Version (Era (eraNixpkgs), formatNixGhc, selectEra)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..))
+import HWM.Domain.Build (Builder (..))
 import HWM.Domain.Environments (BuildEnvironment (..), Environments (envsDefault), TargetModes (..), getBuildEnvironment, getBuildEnvironments)
 import HWM.Domain.Release (getArtifactEnvironments)
 import HWM.Runtime.Files (syncFile)
 import Relude
 import System.Directory (doesFileExist)
+
+isNixBuilder :: Builder -> Bool
+isNixBuilder NixBuilder = True
+isNixBuilder CabalBuilder {inNixDevelopment = True} = True
+isNixBuilder _ = False
+
+isNixBuildEnvironment :: BuildEnvironment -> Bool
+isNixBuildEnvironment = isNixBuilder . buildBuilder
 
 enabled :: SyncMode -> Bool
 enabled mode = mode /= SyncModeIgnore
@@ -29,9 +38,12 @@ syncNixFile SyncModeSync = do
   Config {..} <- asks config
   ops <- asks options
   benv <- getBuildEnvironment (Just $ envsDefault cfgEnvironments)
-  benvs <- filter (enabled . targetNix . buildTargets) <$> getBuildEnvironments
-  releasePkgs <- maybe (pure []) getArtifactEnvironments cfgRelease
-  syncFile (optionsNix ops) (deriveFlakeNix (Context releasePkgs cfgName (map (cfgName,) benvs)) (cfgName, benv) (map (cfgName,) benvs))
+  allEnvs <- getBuildEnvironments
+  let benvs = filter isNixBuildEnvironment allEnvs
+  let fallbackDefaultEnv = fromMaybe benv (find isNixBuildEnvironment (benv : allEnvs))
+  releasePkgsRaw <- maybe (pure []) getArtifactEnvironments cfgRelease
+  let releasePkgs = map (second (filter isNixBuildEnvironment)) releasePkgsRaw
+  syncFile (optionsNix ops) (deriveFlakeNix (Context releasePkgs cfgName (map (cfgName,) benvs)) (cfgName, fallbackDefaultEnv) (map (cfgName,) benvs))
 syncNixFile SyncModeCheck = do
   nixPath <- optionsNix <$> asks options
   exists <- liftIO $ doesFileExist nixPath
@@ -96,9 +108,13 @@ genOverlay :: Context -> [Text]
 genOverlay ctx@Context {..} =
   scoped
     "haskellOverlay = final: prev:"
-    (concatMap rendergOverlayItem environments <> concatMap (rendergOverlayStatic ctx) staticEnvs)
+    (concatMap rendergOverlayItem overlayEnvs <> concatMap (rendergOverlayStatic ctx) staticEnvs)
   where
     staticEnvs = Set.toList $ Set.fromList (concatMap snd release)
+    overlayEnvs =
+      Set.toList
+        $ Set.fromList
+        $ environments <> map (projectName,) staticEnvs
 
 rendergOverlayItem :: BCOntext -> [Text]
 rendergOverlayItem (name, BuildEnvironment {..}) =
