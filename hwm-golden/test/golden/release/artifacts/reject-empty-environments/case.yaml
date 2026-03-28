@@ -12,4 +12,3 @@ runner:
     HWM_LOG_ID_FIXED: golden
 expect:
   failure: true
-  calls: []

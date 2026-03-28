@@ -1,16 +1,7 @@
 
-• [1martifacts[0m
-  destination [2m.......[0m .hwm/dist
-  version [2m...........[0m 0.1.2
-  targets [2m...........[0m sample
-  builder [2m...........[0m nix
-
-• [1mbuild[0m
-
 
 [1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
 
   [2m• [0m[1mgeneral[0m
   [2m└── [0m[2m• [0m[31mArtifact 'sample' is not enabled for environment 'stable'. Allowed environments: <none>[0m
-  [2m└── [0m[2m• [0m[31mNix Binaries is not supported yet[0m
 
