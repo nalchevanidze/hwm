@@ -118,7 +118,7 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   activeEnv <- getBuildEnvironment Nothing
   let defaultBuilder = buildBuilder activeEnv
   let builder = fromMaybe defaultBuilder opsBuilder
-  traverse_ (validateTargetEnvironment (buildName activeEnv)) cfgs
+  forM_ cfgs (validateTargetEnvironment (buildName activeEnv))
   sectionTableM
     "artifacts"
     [ ("destination", pure $ maybe (format outputDir) format uploadUrl),

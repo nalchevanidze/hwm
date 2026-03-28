@@ -1,7 +1,15 @@
 name: release artifacts omitted environments allowed but builder fails later
 notes: |
   Omitting environments is allowed; command then fails on unsupported nix binaries path.
+  Ensure no external nix command is executed by the runner.
 project: simple
 command: release artifacts sample --builder=nix
+runner:
+  env:
+    CI: "1"
+  bin:
+    nix: test/mocks/bin/nix
 expect:
   failure: true
+  calls:
+    - command: nix build .#foo-stable-release -o .hwm/release/binaries/sample/result
