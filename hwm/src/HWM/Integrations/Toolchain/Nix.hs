@@ -5,6 +5,7 @@
 
 module HWM.Integrations.Toolchain.Nix (syncNixFile) where
 
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
@@ -15,7 +16,7 @@ import HWM.Core.Sync (SyncMode (..))
 import HWM.Core.Version (Era (eraNixpkgs), formatNixGhc, selectEra)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..))
-import HWM.Domain.Environments (BuildEnvironment (..), Environments (envsDefault), TargetModes (..), getBuildEnvironment, getBuildEnvironments)
+import HWM.Domain.Environments (BuildEnvironment (..), Environments (envsDefault), NixEnvironment (..), NixPackageOverride (..), TargetModes (..), getBuildEnvironment, getBuildEnvironments)
 import HWM.Domain.Release (getArtifactEnvironments)
 import HWM.Runtime.Files (syncFile)
 import Relude
@@ -115,7 +116,23 @@ rendergOverlayStatic Context {..} env@BuildEnvironment {..} =
   overlayFun
     (genStaticEnvName projectName env)
     ["pkgsStatic", "haskell", "packages", formatNixGhc buildGHC]
-    (map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
+    (staticCompatibilityOverrides env <> map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
+
+staticCompatibilityOverrides :: BuildEnvironment -> [Text]
+staticCompatibilityOverrides BuildEnvironment {buildNix = Just NixEnvironment {..}} =
+  concatMap renderOverride (Map.toList (fromMaybe mempty nixOverrides))
+  where
+    renderOverride :: (Name, NixPackageOverride) -> [Text]
+    renderOverride (pkg, NixPackageOverride {..}) =
+      maybe []
+        (\flags ->
+          [ format pkg <> " = if hprev ? " <> format pkg <> " then prev.haskell.lib.overrideCabal hprev." <> format pkg <> " (drv: {",
+            "  configureFlags = (drv.configureFlags or []) ++ [ " <> T.intercalate " " (map (\x -> "\"" <> x <> "\"") flags) <> " ];",
+            "}) else null;"
+          ]
+        )
+        npoConfigureFlags
+staticCompatibilityOverrides _ = []
 
 overlayFun :: Text -> [Text] -> [Text] -> [Text]
 overlayFun name extend = fun name (concatName $ ["prev"] <> extend <> ["extend"]) "hfinal: hprev:"

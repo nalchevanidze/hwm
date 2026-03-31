@@ -20,6 +20,12 @@ environments:
     ci-nix:
       ghc: 9.6.5
       builder: nix
+      nix:
+        overrides:
+          req:
+            configure-flags:
+            - --ghc-options=-fexternal-interpreter
+            - --ghc-options=-pgmi=${prev.buildPackages.haskell.compiler.ghc965}/bin/ghc-iserv
     local-nix:
       ghc: 9.6.5
       builder: nix/cabal
