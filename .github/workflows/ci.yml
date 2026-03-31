@@ -33,12 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-artifacts
 
-      - name: Preflight release derivation (nix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: nix build .#hwm-ci-nix-release --no-link -L --print-build-logs
-
-      - name: Test Archiving 
+      - name: Test Archiving
         shell: bash
         run: hwm release artifacts hwm
 

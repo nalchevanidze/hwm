@@ -118,44 +118,41 @@ runReleaseArchive ops@ReleaseArchiveOptions {..} = do
   activeEnv <- getBuildEnvironment Nothing
   let defaultBuilder = buildBuilder activeEnv
   let builder = fromMaybe defaultBuilder opsBuilder
-  case find (not . isArtifactEnabledInEnvironment (buildName activeEnv) . snd) cfgs of
-    Just invalid -> validateTargetEnvironment (buildName activeEnv) invalid
-    Nothing -> do
-      sectionTableM
-        "artifacts"
-        [ ("destination", pure $ maybe (format outputDir) format uploadUrl),
-          ("version", pure $ format version <> maybe "" (\tag -> " (GitHub Release " <> tag <> ")") ghTag),
-          ("targets", pure $ formatList "," (map fst cfgs)),
-          ("builder", pure $ format builder)
-        ]
+  traverse_ (validateTargetEnvironment (buildName activeEnv)) cfgs
+  sectionTableM
+    "artifacts"
+    [ ("destination", pure $ maybe (format outputDir) format uploadUrl),
+      ("version", pure $ format version <> maybe "" (\tag -> " (GitHub Release " <> tag <> ")") ghTag),
+      ("targets", pure $ formatList "," (map fst cfgs)),
+      ("builder", pure $ format builder)
+    ]
 
-      plans <- section "build" $ traverse (buildPkg outputDir builder) cfgs
-      uiSpace
+  plans <- section "build" $ traverse (buildPkg outputDir builder) cfgs
+  uiSpace
 
-      section "archive" $ pure ()
-      artifacts <- for plans $ \(name, plan) -> do
-        archives <- createArchive version plan
-        indent 1
-          $ section name
-          $ for_ archives
-          $ \ArchiveInfo {..} -> do
-            uiSubPath archivePath
-            uiSubPath sha256Path
-        pure (name, archives)
+  section "archive" $ pure ()
+  artifacts <- for plans $ \(name, plan) -> do
+    archives <- createArchive version plan
+    indent 1
+      $ section name
+      $ for_ archives
+      $ \ArchiveInfo {..} -> do
+        uiSubPath archivePath
+        uiSubPath sha256Path
+    pure (name, archives)
 
-      for_ uploadUrl $ \url -> section "publish (Github)"
-        $ for_ artifacts
-        $ \(name, archives) -> section name $ for_ archives $ \ArchiveInfo {..} -> do
-          uploadToGitHub url archivePath
-          uiSubPath archivePath
-          uploadToGitHub url sha256Path
-          uiSubPath sha256Path
+  for_ uploadUrl $ \url -> section "publish (Github)"
+    $ for_ artifacts
+    $ \(name, archives) -> section name $ for_ archives $ \ArchiveInfo {..} -> do
+      uploadToGitHub url archivePath
+      uiSubPath archivePath
+      uploadToGitHub url sha256Path
+      uiSubPath sha256Path
 
 buildPkg :: FilePath -> Builder -> (Name, ArtifactConfig) -> ConfigT (Text, ArchivingPlan)
 buildPkg outputDir builder (name, cfg@ArtifactConfig {..}) = do
   binaryDir <- genBindaryDir name
   (executableName, pkg) <- resolveArtifactConfig cfg
   env <- overrideBuilder builder <$> getBuildEnvironment Nothing
-  validateTargetEnvironment (buildName env) (name, cfg)
   dispatch (DispatcheCommand (BuildArtifact binaryDir) (ScopePkgs [pkg]) (map GHCOptionsFlag arcGhcOptions)) env
   pure (statusIcon Checked, ArchivingPlan {nameTemplate = arcNameTemplate, outDir = outputDir, sourceDir = binaryDir, name = executableName, archiveFormats = arcFormats})

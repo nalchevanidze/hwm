@@ -23,7 +23,7 @@ import HWM.Core.Parsing (Parse (..))
 import HWM.Core.Pkg (Pkg (..))
 import HWM.Core.Result (Issue)
 import HWM.Domain.Schema (TargetScope (..))
-import HWM.Integrations.Toolchain.Nix.Build (NixEnv (..), genNixBinary, inNixDevelop, nixBuild)
+import HWM.Integrations.Toolchain.Nix.Build (NixEnv (..), inNixDevelop, nixBuild)
 import HWM.Runtime.Process (EnvVars, Exec (..), mkExec)
 import Relude
 
@@ -123,6 +123,6 @@ toAction _ CabalBuilder {..} Install {..} scope
 toAction _ StackBuilder Install {..} scope = installStack scope dirPath
 toAction _ NixBuilder Install {} _ = throwError "Install command with Nix builder is not supported"
 --
-toAction ctx NixBuilder BuildArtifact {..} scope = genNixBinary ctx scope dirPath
+toAction _ NixBuilder BuildArtifact {} _ = throwError "Nix Binaries is not supported yet"
 toAction _ StackBuilder BuildArtifact {..} scope = installStack scope dirPath
 toAction _ CabalBuilder {} BuildArtifact {..} scope = installCabal scope dirPath

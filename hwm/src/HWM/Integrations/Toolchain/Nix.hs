@@ -5,7 +5,6 @@
 
 module HWM.Integrations.Toolchain.Nix (syncNixFile) where
 
-import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import HWM.Core.Common (Name)
@@ -16,20 +15,11 @@ import HWM.Core.Sync (SyncMode (..))
 import HWM.Core.Version (Era (eraNixpkgs), formatNixGhc, selectEra)
 import HWM.Domain.Config (Config (..))
 import HWM.Domain.ConfigT (ConfigT, Env (..))
-import HWM.Domain.Build (Builder (..))
-import HWM.Domain.Environments (BuildEnvironment (..), Environments (envsDefault), NixEnvironment (..), NixPackageOverride (..), TargetModes (..), getBuildEnvironment, getBuildEnvironments)
+import HWM.Domain.Environments (BuildEnvironment (..), Environments (envsDefault), TargetModes (..), getBuildEnvironment, getBuildEnvironments)
 import HWM.Domain.Release (getArtifactEnvironments)
 import HWM.Runtime.Files (syncFile)
 import Relude
 import System.Directory (doesFileExist)
-
-isNixBuilder :: Builder -> Bool
-isNixBuilder NixBuilder = True
-isNixBuilder CabalBuilder {inNixDevelopment = True} = True
-isNixBuilder _ = False
-
-isNixBuildEnvironment :: BuildEnvironment -> Bool
-isNixBuildEnvironment = isNixBuilder . buildBuilder
 
 enabled :: SyncMode -> Bool
 enabled mode = mode /= SyncModeIgnore
@@ -39,12 +29,9 @@ syncNixFile SyncModeSync = do
   Config {..} <- asks config
   ops <- asks options
   benv <- getBuildEnvironment (Just $ envsDefault cfgEnvironments)
-  allEnvs <- getBuildEnvironments
-  let benvs = filter isNixBuildEnvironment allEnvs
-  let fallbackDefaultEnv = fromMaybe benv (find isNixBuildEnvironment (benv : allEnvs))
-  releasePkgsRaw <- maybe (pure []) getArtifactEnvironments cfgRelease
-  let releasePkgs = map (second (filter isNixBuildEnvironment)) releasePkgsRaw
-  syncFile (optionsNix ops) (deriveFlakeNix (Context releasePkgs cfgName (map (cfgName,) benvs)) (cfgName, fallbackDefaultEnv) (map (cfgName,) benvs))
+  benvs <- filter (enabled . targetNix . buildTargets) <$> getBuildEnvironments
+  releasePkgs <- maybe (pure []) getArtifactEnvironments cfgRelease
+  syncFile (optionsNix ops) (deriveFlakeNix (Context releasePkgs cfgName (map (cfgName,) benvs)) (cfgName, benv) (map (cfgName,) benvs))
 syncNixFile SyncModeCheck = do
   nixPath <- optionsNix <$> asks options
   exists <- liftIO $ doesFileExist nixPath
@@ -109,13 +96,9 @@ genOverlay :: Context -> [Text]
 genOverlay ctx@Context {..} =
   scoped
     "haskellOverlay = final: prev:"
-    (concatMap rendergOverlayItem overlayEnvs <> concatMap (rendergOverlayStatic ctx) staticEnvs)
+    (concatMap rendergOverlayItem environments <> concatMap (rendergOverlayStatic ctx) staticEnvs)
   where
     staticEnvs = Set.toList $ Set.fromList (concatMap snd release)
-    overlayEnvs =
-      Set.toList
-        $ Set.fromList
-        $ environments <> map (projectName,) staticEnvs
 
 rendergOverlayItem :: BCOntext -> [Text]
 rendergOverlayItem (name, BuildEnvironment {..}) =
@@ -132,23 +115,7 @@ rendergOverlayStatic Context {..} env@BuildEnvironment {..} =
   overlayFun
     (genStaticEnvName projectName env)
     ["pkgsStatic", "haskell", "packages", formatNixGhc buildGHC]
-    (staticCompatibilityOverrides env <> map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
-
-staticCompatibilityOverrides :: BuildEnvironment -> [Text]
-staticCompatibilityOverrides BuildEnvironment {buildNix = Just NixEnvironment {..}} =
-  concatMap renderOverride (Map.toList (fromMaybe mempty nixOverrides))
-  where
-    renderOverride :: (Name, NixPackageOverride) -> [Text]
-    renderOverride (pkg, NixPackageOverride {..}) =
-      maybe []
-        (\flags ->
-          [ format pkg <> " = if hprev ? " <> format pkg <> " then prev.haskell.lib.overrideCabal hprev." <> format pkg <> " (drv: {",
-            "  configureFlags = (drv.configureFlags or []) ++ [ " <> T.intercalate " " (map (\x -> "\"" <> x <> "\"") flags) <> " ];",
-            "}) else null;"
-          ]
-        )
-        npoConfigureFlags
-staticCompatibilityOverrides _ = []
+    (map (renderPackageDef (stripExecutables . renderPackageBody)) buildPkgs)
 
 overlayFun :: Text -> [Text] -> [Text] -> [Text]
 overlayFun name extend = fun name (concatName $ ["prev"] <> extend <> ["extend"]) "hfinal: hprev:"

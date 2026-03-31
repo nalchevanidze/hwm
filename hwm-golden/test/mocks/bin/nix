@@ -2,16 +2,15 @@
 set -eu
 
 cmd="${1:-}"
-out_path=""
+out_dir=""
 targets=""
 if [ "$#" -gt 0 ]; then
   shift
 fi
-
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --installdir|--local-bin-path|-o)
-      out_path="${2:-}"
+    --installdir|--local-bin-path)
+      out_dir="${2:-}"
       shift 2
       ;;
     --*)
@@ -24,8 +23,8 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "$cmd" = "install" ] && [ -n "$out_path" ]; then
-  mkdir -p "$out_path"
+if [ "$cmd" = "install" ] && [ -n "$out_dir" ]; then
+  mkdir -p "$out_dir"
   for t in $targets; do
     case "$t" in
       all|all:exes)
@@ -33,35 +32,7 @@ if [ "$cmd" = "install" ] && [ -n "$out_path" ]; then
         ;;
     esac
     bin_name=$(basename "$t")
-    printf '#!/bin/sh\necho fake-binary-%s\n' "$bin_name" > "$out_path/$bin_name"
-    chmod +x "$out_path/$bin_name"
+    printf '#!/bin/sh\necho fake-binary-%s\n' "$bin_name" > "$out_dir/$bin_name"
+    chmod +x "$out_dir/$bin_name"
   done
-fi
-
-if [ "$cmd" = "build" ] && [ -n "$out_path" ]; then
-  target=""
-  for t in $targets; do
-    target="$t"
-    break
-  done
-
-  name="foo"
-  if [ -n "$target" ]; then
-    # target shape: .#foo-stable-release
-    raw="${target#.\#}"
-    raw="${raw%-release}"
-    name="${raw%-*}"
-    if [ -z "$name" ] || [ "$name" = "$raw" ]; then
-      name="foo"
-    fi
-  fi
-
-  store_dir=".hwm/mock-nix-store/$name"
-  mkdir -p "$store_dir/bin"
-  printf '#!/bin/sh\necho fake-nix-binary-%s\n' "$name" > "$store_dir/bin/$name"
-  chmod +x "$store_dir/bin/$name"
-
-  mkdir -p "$(dirname "$out_path")"
-  rm -rf "$out_path"
-  ln -s "$(pwd)/$store_dir" "$out_path"
 fi

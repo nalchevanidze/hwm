@@ -16,10 +16,15 @@
         hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
         hwm = hfinal.callCabal2nix "hwm" ./hwm {};
       });
+      hwmStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+        hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
+        hwm = hfinal.callCabal2nix "hwm" ./hwm {};
+      });
+      hwmCiCabalStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+        hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
+        hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
+      });
       hwmCiNixStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
-        req = if hprev ? req then prev.haskell.lib.overrideCabal hprev.req (drv: {
-          configureFlags = (drv.configureFlags or []) ++ [ "--ghc-options=-fexternal-interpreter" "--ghc-options=-pgmi=${prev.buildPackages.haskell.compiler.ghc96}/bin/ghc-iserv" ];
-        }) else null;
         hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
         hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
       });
@@ -55,13 +60,15 @@
           basePkg;
     in
     {
-      default = pkgs.hwmCiNixWorkspacePackages.hwm;
-      hwm-golden = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
-      hwm = pkgs.hwmCiNixWorkspacePackages.hwm;
+      default = pkgs.hwmStableWorkspacePackages.hwm;
+      hwm-golden = pkgs.hwmStableWorkspacePackages.hwm-golden;
+      hwm = pkgs.hwmStableWorkspacePackages.hwm;
       hwm-golden-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm-golden;
       hwm-ciNix = pkgs.hwmCiNixWorkspacePackages.hwm;
       hwm-golden-localNix = pkgs.hwmLocalNixWorkspacePackages.hwm-golden;
       hwm-localNix = pkgs.hwmLocalNixWorkspacePackages.hwm;
+      hwm-golden-stable = pkgs.hwmStableWorkspacePackages.hwm-golden;
+      hwm-stable = pkgs.hwmStableWorkspacePackages.hwm;
       env-ciNix-all = pkgs.symlinkJoin {
         name = "ci-nix-workspace";
         paths = [
@@ -76,16 +83,24 @@
           pkgs.hwmLocalNixWorkspacePackages.hwm
         ];
       };
+      env-stable-all = pkgs.symlinkJoin {
+        name = "stable-workspace";
+        paths = [
+          pkgs.hwmStableWorkspacePackages.hwm-golden
+          pkgs.hwmStableWorkspacePackages.hwm
+        ];
+      };
       hwm-ci-nix-release = mkReleaseArtifact "hwm" pkgs.hwmCiNixWorkspacePackages.hwm pkgs.hwmCiNixStaticWorkspacePackages.hwm;
+      hwm-ci-cabal-release = mkReleaseArtifact "hwm" pkgs.hwmCiCabalWorkspacePackages.hwm pkgs.hwmCiCabalStaticWorkspacePackages.hwm;
     });
     devShells = forAllSystems (system:
     let
       pkgs = import nixpkgs { inherit system; overlays = [ haskellOverlay ]; };
     in
     {
-      default = pkgs.hwmCiNixWorkspacePackages.shellFor {
+      default = pkgs.hwmStableWorkspacePackages.shellFor {
         packages = p: [ p.hwm-golden p.hwm ];
-        buildInputs = with pkgs.hwmCiNixWorkspacePackages; [
+        buildInputs = with pkgs.hwmStableWorkspacePackages; [
           cabal-install
           hlint
           stack
@@ -110,17 +125,16 @@
           haskell-language-server
         ];
       };
+      stable = pkgs.hwmStableWorkspacePackages.shellFor {
+        packages = p: [ p.hwm-golden p.hwm ];
+        buildInputs = with pkgs.hwmStableWorkspacePackages; [
+          cabal-install
+          hlint
+          stack
+          haskell-language-server
+        ];
+      };
     });
     checks = forAllSystems (system: self.packages.${system});
-  };
-  nixConfig = {
-    extra-substituters = [
-      "https://cache.iog.io"
-      "https://cache.zw3rk.com"
-    ];
-    extra-trusted-public-keys = [
-      "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
-      "loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk="
-    ];
   };
 }

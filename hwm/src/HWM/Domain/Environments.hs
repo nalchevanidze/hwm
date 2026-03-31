@@ -26,7 +26,6 @@ module HWM.Domain.Environments
     existsEnvironment,
     environmentHash,
     NixEnvironment (..),
-    NixPackageOverride (..),
     Feature (..),
     selectEnvironments,
     overrideBuilder,
@@ -37,7 +36,7 @@ module HWM.Domain.Environments
 where
 
 import Control.Monad.Except (MonadError (..))
-import Data.Aeson (FromJSON (..), ToJSON (toJSON), genericParseJSON, genericToJSON)
+import Data.Aeson (FromJSON (..), ToJSON (toJSON), genericParseJSON, genericToJSON, object)
 import Data.Aeson.Types (Value (..))
 import Data.Foldable (Foldable (..))
 import qualified Data.Map as M
@@ -148,34 +147,20 @@ instance FromJSON (Feature StackEnvironment) where
   parseJSON v = Enabled <$> parseJSON v
 
 instance FromJSON (Feature NixEnvironment) where
-  parseJSON (Bool b) = pure $ if b then Enabled (NixEnvironment Nothing) else Disabled
+  parseJSON (Bool b) = pure $ if b then Enabled NixEnvironment else Disabled
   parseJSON v = Enabled <$> parseJSON v
 
 instance (ToJSON a) => ToJSON (Feature a) where
   toJSON (Enabled se) = toJSON se
   toJSON Disabled = Bool False
 
-data NixPackageOverride = NixPackageOverride
-  { npoConfigureFlags :: Maybe [Text]
-  }
-  deriving (Generic, Show, Ord, Eq)
-
-instance FromJSON NixPackageOverride where
-  parseJSON = genericParseJSON (aesonYAMLOptionsAdvanced "npo")
-
-instance ToJSON NixPackageOverride where
-  toJSON = genericToJSON (aesonYAMLOptionsAdvanced "npo")
-
-data NixEnvironment = NixEnvironment
-  { nixOverrides :: Maybe (Map Name NixPackageOverride)
-  }
-  deriving (Generic, Show, Ord, Eq)
+data NixEnvironment = NixEnvironment deriving (Generic, Show, Ord, Eq)
 
 instance ToJSON NixEnvironment where
-  toJSON = genericToJSON (aesonYAMLOptionsAdvanced "nix")
+  toJSON NixEnvironment = object []
 
 instance FromJSON NixEnvironment where
-  parseJSON (Object v) = genericParseJSON (aesonYAMLOptionsAdvanced "nix") (Object v)
+  parseJSON (Object _) = pure NixEnvironment
   parseJSON _ = fail "Invalid Nix environment configuration. Expected an object or a boolean."
 
 data EnvironmentProfile = EnvironmentProfile
@@ -264,7 +249,6 @@ data BuildEnvironment = BuildEnvironment
     buildPkgs :: [Pkg],
     buildName :: Name,
     buildStack :: StackBuildConfig,
-    buildNix :: Maybe NixEnvironment,
     buildBuilder :: Builder,
     buildTargets :: TargetModes
   }
@@ -366,7 +350,6 @@ getBuildEnvironments = do
                 stackAllowNewer = profileStack env >>= unfeature >>= allowNewer
               },
           buildGHC = profileGhc env,
-          buildNix = unfeature =<< profileNix env,
           buildBuilder = builder,
           buildTargets = targetModes
         }

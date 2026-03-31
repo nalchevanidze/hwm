@@ -6,16 +6,10 @@
   builder [2m...........[0m nix
 
 • [1mbuild[0m
-[2K[1G  build [2m...........[0m [32m✓[0m[2m logs: .hwm/logs/golden-stable.log[0m
-
-• [1marchive[0m
-
-  • [1m[32m✓[0m[0m
-    [2m└── [0m.hwm/dist/foo-v0.1.2-macos-arm64.tar.gz
-    [2m└── [0m.hwm/dist/foo-v0.1.2-macos-arm64.tar.gz.sha256
-    [2m└── [0m.hwm/dist/foo-v0.1.2-macos-arm64.zip
-    [2m└── [0m.hwm/dist/foo-v0.1.2-macos-arm64.zip.sha256
 
 
-[1m• [0m[92m▌[0m [92msuccess[0m [92m▌[0m
+[1m• [0m[31m▌[0m [31merrors[0m [31m▌[0m
+
+  [2m• [0m[1mgeneral[0m
+  [2m└── [0m[2m• [0m[31mNix Binaries is not supported yet[0m
 
