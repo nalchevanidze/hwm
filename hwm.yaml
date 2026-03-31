@@ -13,18 +13,24 @@ environments:
   default: stable
   profiles:
     ci-cabal:
-      ghc: 9.6.3
+      ghc: 9.6.5
       builder: cabal
       targets:
         nix: ignore
     ci-nix:
-      ghc: 9.6.3
+      ghc: 9.6.5
       builder: nix
+      nix:
+        overrides:
+          req:
+            configure-flags:
+            - --ghc-options=-fexternal-interpreter
+            - --ghc-options=-pgmi=${prev.buildPackages.haskell.compiler.ghc965}/bin/ghc-iserv
     local-nix:
-      ghc: 9.6.3
+      ghc: 9.6.5
       builder: nix/cabal
     stable:
-      ghc: 9.6.3
+      ghc: 9.6.5
       stack:
         extra-deps:
           fastsum: 0.1.1.1

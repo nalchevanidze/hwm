@@ -8,23 +8,23 @@
     supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
     haskellOverlay = final: prev: {
-      hwmCiNixWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+      hwmCiNixWorkspacePackages = prev.haskell.packages.ghc965.extend (hfinal: hprev: {
         hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
         hwm = hfinal.callCabal2nix "hwm" ./hwm {};
       });
-      hwmLocalNixWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+      hwmLocalNixWorkspacePackages = prev.haskell.packages.ghc965.extend (hfinal: hprev: {
         hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
         hwm = hfinal.callCabal2nix "hwm" ./hwm {};
       });
-      hwmStableWorkspacePackages = prev.haskell.packages.ghc96.extend (hfinal: hprev: {
+      hwmStableWorkspacePackages = prev.haskell.packages.ghc965.extend (hfinal: hprev: {
         hwm-golden = hfinal.callCabal2nix "hwm-golden" ./hwm-golden {};
         hwm = hfinal.callCabal2nix "hwm" ./hwm {};
       });
-      hwmCiCabalStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+      hwmCiCabalStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc965.extend (hfinal: hprev: {
         hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
         hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
       });
-      hwmCiNixStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc96.extend (hfinal: hprev: {
+      hwmCiNixStaticWorkspacePackages = prev.pkgsStatic.haskell.packages.ghc965.extend (hfinal: hprev: {
         hwm-golden = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm-golden" ./hwm-golden {});
         hwm = prev.haskell.lib.justStaticExecutables ( hfinal.callCabal2nix "hwm" ./hwm {});
       });
