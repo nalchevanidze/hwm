@@ -57,7 +57,13 @@ toCabalVersion :: Version -> Cabal.Version
 toCabalVersion version = Cabal.mkVersion (toSeries version)
 
 formatNixGhc :: Version -> Text
-formatNixGhc Version {..} = "ghc" <> T.concat (map (T.pack . show) [major, minor])
+formatNixGhc Version {..} =
+  "ghc"
+    <> T.concat (map (T.pack . show) [major, minor])
+    <> maybe "" (T.pack . show) (nonZeroRevision revision)
+  where
+    nonZeroRevision (x : _) | x > 0 = Just x
+    nonZeroRevision _ = Nothing
 
 askVersion :: (MonadReader env m, Has env Version) => m Version
 askVersion = asks obtain
