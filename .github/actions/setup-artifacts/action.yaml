@@ -5,7 +5,7 @@ inputs:
   ghc:
     description: GHC Version (Used for Windows/Cabal fallback)
     required: false
-    default: '9.6.3'
+    default: '9.6.5'
 
 runs:
   using: 'composite'
